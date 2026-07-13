@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Cheong Woon Mexico</title>
+    <style>
+        /* Eliminar la barra de desplazamiento visualmente */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        .form-container { background: #2c2c2c; padding: 30px; border-radius: 10px; max-width: 800px; margin: auto; }
+        .row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .col { flex: 1; }
+        input, select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 12px; width: 100%; border-radius: 5px; box-sizing: border-box; }
+        button { background: #007bff; color: white; padding: 15px; border: none; border-radius: 5px; width: 100%; cursor: pointer; font-weight: bold; }
+        h3 { border-bottom: 1px solid #444; padding-bottom: 10px; }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+/* PARTE DERECHA - LOGO Y NOMBRE DE LA EMPPRESA*/
+        .branding { display: flex; align-items: center; gap: -5px; }
+        .logo { 
+            width: 100px;
+            height: 40px;
+            border-radius: 5px;
+            object-fit: contain;
+        }
+
+/* Menú */
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
+        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
+
+/* FORMULARIO */
+        form { 
+            color: #fff; 
+            padding: 25px; 
+            border-radius: 8px; 
+        }
+
+        input, select {
+            background: #3e3e3e !important;
+            border: 1px solid #555 !important;
+            color: #fff !important;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        label { color: #bbb; }
+
+
+/* FORMULARIO*/
+        .container { 
+            max-width: 1000px; 
+            margin: 1px auto;
+            padding: 20px;
+            border-radius: 12px; 
+        }
+
+        h3 { 
+            color: #fff !important; 
+            font-size: 1.1rem; 
+            margin-top: 5px;
+            margin-bottom: 20px; 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 8px;
+        }
+
+        h2 {
+            color: #fff !important; 
+            margin-bottom: 5px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        label {
+            display: block;
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            align-items: flex-start;
+        }
+
+        .col {
+            flex: 1; 
+        }
+
+        input, select { 
+            background: #2a2a2a !important; 
+            border: 1px solid #444 !important; 
+            color: #fff !important; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 6px; 
+            box-sizing: border-box;
+            transition: border 0.3s;
+        }
+
+        input:focus { border-color: #007bff !important; outline: none; }
+
+        /* Aviso de privacidad */
+        .aviso-container { 
+            background: #252525; 
+            padding: 20px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 30px 0; 
+            border: 1px solid #333;
+        }
+
+        .link-aviso { color: #4dabf7; text-decoration: none; font-weight: bold; margin-bottom: 12px; display: block; }
+        
+        /* Botón FINALIZADO */
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 14px; 
+            border: none; 
+            width: 100%; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">CHEONG WOON MEXICO</h1>
+        </div>
+
+        <nav class="nav-links">
+            <a href="main.html">Inicio</a>
+            <a href="registro.html" class="active">Registro</a>
+            <a href="portalrh.html">PortalRH</a>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <div style="margin-bottom: 20px;">
+                <h2 style="margin: 10px 0;">INFORMACION GENERAL</h2>
+                <p id="fecha-actual" style="color: #888; font-size: 0.9rem; margin-top: 5px;"></p>
+            </div>
+            
+            <form id="registroForm" action="/guardar-registro" method="POST">
+
+                <h3>DATOS PERSONALES</h3>
+                <!-- Nombre Completo -->
+                <div class="row">
+                    <div class="col">
+                        <label>Nombre Completo</label>
+                        <input type="text" name="nombre" 
+                            oninput="this.value = this.value.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());">
+                    </div>
+                </div>
+                <!-- Fecha de Nacimiento -->
+                <div class="row">
+                    <div class="col">
+                        <label>Fecha Nacimiento</label>
+                        <input type="date" id="fecha_nac" name="fecha_nac" required 
+                            onchange="calcularEdad()" onclick="if(this.showPicker) try{this.showPicker()}catch(e){}">
+                    </div>
+                    <!-- Edad Automatica -->
+                    <div class="col">
+                        <label>Edad</label>
+                        <input type="text" id="edad" name="edad" readonly 
+                             style="background-color: #f0f0f0; border: 1px solid #ccc; cursor: not-allowed;">
+                    </div>
+
+                    <!-- Género -->
+                    <div class="col">
+                        <label>Género</label>
+                        <select name="genero" required>
+                            <option value="" disabled selected>Selecciona la opcion</option>
+                            <option>MASCULINO</option>
+                            <option>FEMENINO</option>
+                        </select>
+                    </div>
+
+                    <!-- Estado Civil -->
+                    <div class="col">
+                        <label>Estado Civil</label>
+                        <select name="edo_civil" required>
+                            <option value="" disabled selected>Selecciona la opcion</option>
+                            <option>SOLTERO(A)</option>
+                            <option>CASADO(A)</option>
+                            <option>DIVORCIADO(A)</option>
+                            <option>VIUDO(A)</option>
+                            <option>UNIÓN LIBRE</option>
+                        </select>
+                    </div>
+                    <div class="col"><label>Nacionalidad</label><input type="text" name="nacionalidad"></div>
+                </div> 
+
+
+                <div class="row">
+                    <div class="col">
+                        <label>CURP</label>
+                        <input type="text" name="curp" id="curp" maxlength="18" required style="text-transform:uppercase;">
+                    </div>
+                    <div class="col">
+                        <label>RFC</label>
+                        <input type="text" name="rfc" id="rfc" maxlength="13" required style="text-transform:uppercase;">
+                    </div>
+                    <div class="col">
+                        <label>NSS</label>
+                        <input type="text" name="nss" id="nss" maxlength="11" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>Teléfono Móvil</label>
+                        <input type="tel" name="tel_movil" id="tel_movil" maxlength="10" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                    </div>
+                    <div class="col">
+                        <label>Correo Electrónico</label>
+                        <input type="email" name="correo" id="correo" required>
+                    </div>
+                </div>
+
+                <!-- DOMICILIO -->
+                <h3>DOMICILIO</h3>
+                <div class="row">
+                <div class="col">
+                    <label>Código Postal</label>
+                    <input type="text" 
+                        name="cp" 
+                        id="cp" 
+                        maxlength="5" 
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '');" 
+                        onblur="autocompletarCP()" 
+                        required>
+                </div>
+                    <div class="col">
+                        <label>Colonia</label>
+                        <select name="colonia" id="colonia">
+                            <option value="">Ingresar Codigo Postal...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Calle</label>
+                        <input type="text" name="calle">
+                    </div>
+                    <div class="col">
+                        <label>N° Ext</label>
+                        <input type="text" name="num_ext">
+                    </div>
+                    <div class="col">
+                        <label>N° Int</label>
+                        <input type="text" name="num_int">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Municipio</label>
+                        <input type="text" name="municipio" id="municipio" readonly placeholder="Municipio">
+                    </div>
+                    <div class="col">
+                        <label>Estado</label>
+                        <input type="text" name="estado" id="estado" readonly placeholder="Estado">
+                    </div>
+                </div>
+
+                <h3>CONTACTO DE EMERGENCIA</h3>
+                <div class="row">
+                    <!-- Nombre de Familiar-->
+                    <div class="col">
+                        <label>Nombre</label>
+                        <input type="text" name="nom_eme1">
+                    </div>
+
+                    <!-- Parentesco -->
+                    <div class="col">
+                        <label>Parentesco</label>
+                        <select name="par_eme1" required>
+                            <option value="" disabled selected>Selecciona la opcion</option>
+                            <option>PADRE</option>
+                            <option>MADRE</option>
+                            <option>ESPOSO(A)</option>
+                            <option>PAREJA</option>
+                            <option>HERMANO(A)</option>
+                        </select>
+                    </div>
+
+                    <!-- Teléfono de Familiar -->
+                    <div class="col">
+                        <label>Teléfono</label>
+                        <input type="tel" 
+                            name="tel_eme1" 
+                            pattern="\d{10}" 
+                            maxlength="10" 
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');" 
+                            required>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN AVISO DE PRIVACIDAD -->
+                <div class="aviso-container">
+                    <a href="https://drive.google.com/file/d/1vmVHipExfv9H8UPH_5Gb_6g4sXvJWjek/view?usp=drive_link" target="_blank" class="link-aviso">
+                        LEER AVISO DE PRIVACIDAD
+                    </a>
+                    <label style="display: inline; font-size: 0.9rem; color: #fff;">
+                        <input type="checkbox" name="acepto" required style="width: auto; margin-right: 10px;">
+                        He leído y acepto el Aviso de Privacidad
+                    </label>
+                </div>
+
+                <!-- FIRMA DEL CANDIDATO -->
+                <div class="form-group" style="margin-top: 30px; margin-bottom: 30px;">
+                    <label>Firma del Candidato</label>
+                    <div style="border: 2px dashed #555; background: #1e1e1e; border-radius: 8px; touch-action: none; width: 100%; height: 200px;">
+                        <canvas id="signature-pad" style="width: 100%; height: 100%; touch-action: none;"></canvas>
+                    </div>
+                    <button type="button" onclick="limpiarFirma()" style="background: #555; padding: 5px; margin-top: 5px; font-size: 0.8rem; width: auto;">Limpiar Firma</button>
+                </div>
+
+                <!-- BOTÓN FINALIZADO -->
+                <button type="button" onclick="if(prepararFirmaParaEnvio()) enviarRegistro();" 
+                        style="background: #007bff; color: white; padding: 15px; border: none; width: 100%; border-radius: 5px; cursor: pointer; font-size: 1rem;">
+                    Finalizado
+                </button>
+            </form>
+            <!-- Ventana de encuesta  -->
+            <div id="modal-encuesta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; z-index: 1000;">
+                <div id="modal-contenido" style="background:#1e1e1e; padding:30px; border-radius:12px; width:400px; border:1px solid #444; color:#fff; position:relative;">
+                    <h3 id="drag-handle" style="cursor:move; margin-top:0; user-select:none;">Información de Reclutamiento</h3>
+                    <p>Como te enteraste del empleo?</p>
+                    
+                    <select name="fuente" id="fuente" onchange="mostrarCampos()" style="width:100%; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;" required>
+                        <option value="">Selecciona una opción</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Posteo">Posteo</option>
+                        <option value="Volante">Volante</option>
+                        <option value="Recomendación">Recomendación</option>
+                        <option value="Agencia">Agencia</option>
+                    </select>
+                    <div id="div-dinamico" style="margin-top:15px;"></div> 
+
+                    <button id="btn-enviar" onclick="enviarEncuesta()" style="margin-top:20px; width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">Enviar Encuesta</button>
+                </div>
+            </div>
+            <div id="mensaje-exito" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#1e1e1e; padding:40px; border-radius:12px; border:2px solid #28a745; color:#28a745; font-size:1.5rem; font-weight:bold; z-index: 2000; text-align:center;">
+                ¡Registro completado con éxito!
+            </div>
+            <div id="mensaje-error" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2a1a1a; padding:16px; border-radius:8px; border:2px solid #ff4b4b; color:#ff4b4b; font-size:1rem; font-weight:bold; z-index: 2000; text-align:center;">
+                Por favor completa todos los campos obligatorios.
+            </div>
+        </div>
+    </main>
+    <script>
+        // FECHA DEL DIA --------------------------------------------------------------------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', function() {
+        function mostrarFecha() {
+            const fecha = new Date();
+            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const fechaTexto = fecha.toLocaleDateString('es-ES', opciones);
+            
+            // Convertimos la primera letra en mayúscula
+            document.getElementById('fecha-actual').innerText = 
+                fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
+        }
+        mostrarFecha();
+            
+        });
+    </script>
+    <script>
+        // FECHA - NACIMIENTO --------------------------------------------------------------------------------------------------------------------
+        const hoy = new Date();
+        const yearActual = hoy.getFullYear();
+        document.getElementById('fecha_nac').max = new Date(yearActual - 15, hoy.getMonth(), hoy.getDate()).toISOString().split('T')[0];
+        document.getElementById('fecha_nac').min = new Date(yearActual - 95, hoy.getMonth(), hoy.getDate()).toISOString().split('T')[0];
+
+        function calcularEdad() {
+            const fechaNac = new Date(document.getElementById('fecha_nac').value);
+            if (!fechaNac.getTime()) return;
+            let edad = hoy.getFullYear() - fechaNac.getFullYear();
+            const m = hoy.getMonth() - fechaNac.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) edad--;
+            document.getElementById('edad').value = edad;
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script>
+        // CODIGO PORTAL AUTOMATIZADO -----------------------------------------------------------------------------------------------------------
+        let datosCP = [];
+        Papa.parse("cp.csv", {
+            download: true,
+            header: true,
+            delimiter: "|",
+            complete: function(results) {
+                datosCP = results.data;
+                console.log("CSV cargado");
+            }
+        });
+
+        function autocompletarCP() {
+            const cpBuscado = document.getElementById('cp').value.trim();
+            const selectCol = document.getElementById('colonia');
+            const inputMun = document.getElementById('municipio');
+            const inputEst = document.getElementById('estado');
+
+            const resultados = datosCP.filter(fila => fila.d_codigo === cpBuscado);
+
+            if (resultados.length > 0) {
+                inputMun.value = resultados[0].D_mnpio;
+                inputEst.value = resultados[0].d_estado;
+
+                selectCol.innerHTML = '';
+                resultados.forEach(fila => {
+                    let opt = document.createElement('option');
+                    opt.value = fila.d_asenta;
+                    opt.text = fila.d_asenta;
+                    selectCol.add(opt);
+                });
+            } else {
+                alert("CP no encontrado");
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script>
+        // FIRMA -----------------------------------------------------------------------------------------------------------
+        const canvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(canvas, { penColor: '#ffffff' });
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+        }
+
+        function limpiarFirma() {
+            signaturePad.clear();
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        function prepararFirmaParaEnvio() {
+            if (signaturePad.isEmpty()) {
+                alert("Por favor, firma antes de continuar.");
+                return false;
+            }
+            
+            const firmaBase64 = signaturePad.toDataURL("image/png");
+            
+            let inputFirma = document.createElement("input");
+            inputFirma.type = "hidden";
+            inputFirma.name = "firma_png";
+            inputFirma.value = firmaBase64;
+            document.getElementById("registroForm").appendChild(inputFirma);
+            
+            return true;
+        }
+    </script>
+    <script>
+        function validarRegistro() {
+            const form = document.getElementById('registroForm');
+            const required = [
+                'nombre','fecha_nac','genero','edo_civil','curp','rfc','nss','tel_movil','correo',
+                'cp','colonia','calle','num_ext','municipio','estado','nom_eme1','par_eme1','tel_eme1'
+            ];
+
+            for (let name of required) {
+                const el = form.elements[name];
+                if (!el) return false;
+                const val = (el.type === 'checkbox') ? el.checked : (el.value || '').toString().trim();
+                if (!val) return false;
+            }
+
+            // Acepto checkbox
+            const acepto = form.elements['acepto'];
+            if (!acepto || !acepto.checked) return false;
+
+            // Firma
+            if (typeof signaturePad !== 'undefined' && signaturePad.isEmpty()) return false;
+
+            return true;
+        }
+
+        const API_BASE = 'http://192.168.1.59:5000';
+        const API_BASES = [API_BASE];
+
+        // Si se abre en local, intenta primero localhost sin perder la IP de red local.
+        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+            API_BASES.unshift('http://localhost:5000');
+        }
+
+        async function postConFallback(endpoint, body) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                        method: 'POST',
+                        body
+                    });
+
+                    const texto = await respuesta.text();
+                    return { respuesta, texto, baseUrl };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        function mostrarMensajeInferior(texto, duracionMs, recargar, esError) {
+            const msg = document.getElementById('mensaje-error');
+            msg.innerText = texto;
+            msg.style.display = 'block';
+
+            if (esError) {
+                msg.style.background = '#2a1a1a';
+                msg.style.borderColor = '#ff4b4b';
+                msg.style.color = '#ff4b4b';
+            } else {
+                msg.style.background = '#1a2a1a';
+                msg.style.borderColor = '#28a745';
+                msg.style.color = '#28a745';
+            }
+
+            setTimeout(() => {
+                msg.style.display = 'none';
+                if (recargar) {
+                    window.location.reload();
+                }
+            }, duracionMs);
+        }
+
+        // Enviar registro al servidor y luego abrir encuesta
+        async function enviarRegistro() {
+            // validar campos (num_int es opcional)
+            if (!validarRegistro()) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+
+            const form = document.getElementById('registroForm');
+            const formData = new FormData(form);
+
+            try {
+                const { respuesta, texto } = await postConFallback('/guardar-registro', formData);
+
+                if (respuesta.ok && texto.startsWith('OK')) {
+                    // mostrar encuesta solo cuando el registro quedó guardado
+                    document.getElementById('modal-encuesta').style.display = 'flex';
+                    return;
+                }
+
+                if (respuesta.status === 500) {
+                    alert('Error del servidor (500) al guardar registro: ' + (texto || 'Sin detalle'));
+                } else {
+                    alert(`Error guardando registro (${respuesta.status}): ${texto || 'Sin detalle'}`);
+                }
+            } catch (err) {
+                alert('Error de conexión al guardar registro: ' + err.message);
+            }
+        }
+
+        // ENVIAR ENCUESTA (se guarda en encuesta_reclutamiento)
+        async function enviarEncuesta() {
+            const fuente = document.getElementById('fuente').value;
+            const subOpcion = document.getElementById('sub-opcion');
+            const nombreReclutadorEl = document.getElementById('nombre-reclutador');
+            const nombreEmpleadoEl = document.getElementById('nombre-empleado');
+
+            const form = document.getElementById('registroForm');
+            const formData = new FormData(form);
+            const registro = Object.fromEntries(formData.entries());
+
+            const subFuente = subOpcion ? subOpcion.value : '';
+            const nombreReclutador = nombreReclutadorEl ? nombreReclutadorEl.value.trim() : '';
+            const nombreEmpleado = nombreEmpleadoEl ? nombreEmpleadoEl.value.trim() : '';
+
+            if (!fuente) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+            if (fuente === 'Agencia' && !subFuente) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+            if (fuente === 'Facebook' && !nombreReclutador) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+            if (fuente === 'Agencia' && subFuente === 'CW' && !nombreReclutador) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+            if (fuente === 'Recomendación' && !nombreEmpleado) {
+                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
+                return;
+            }
+
+            let detalle = '';
+            if (fuente === 'Facebook') {
+                detalle = `Reclutador: ${nombreReclutador}`;
+            } else if (fuente === 'Recomendación') {
+                detalle = `Empleado recomendó: ${nombreEmpleado}`;
+            } else if (fuente === 'Agencia' && subFuente === 'CW') {
+                detalle = `Reclutador CW: ${nombreReclutador}`;
+            }
+
+            const encuestaForm = new FormData();
+            encuestaForm.append('curp', registro.curp || '');
+            encuestaForm.append('fuente', fuente || '');
+            encuestaForm.append('sub_fuente', subFuente);
+            encuestaForm.append('nombre_reclutador', nombreReclutador);
+            encuestaForm.append('nombre_empleado', nombreEmpleado);
+            encuestaForm.append('detalle', detalle);
+
+            try {
+                const { respuesta, texto } = await postConFallback('/guardar-encuesta', encuestaForm);
+
+                if (respuesta.ok && texto.startsWith('OK')) {
+                    // ocultar modal encuesta
+                    document.getElementById('modal-encuesta').style.display = 'none';
+                    // mostrar mensaje inferior 2 segundos y recargar
+                    mostrarMensajeInferior('Registro completado con éxito.', 2000, true, false);
+                    return;
+                }
+
+                if (respuesta.status === 500) {
+                    alert('Error del servidor (500) al guardar encuesta: ' + (texto || 'Sin detalle'));
+                } else {
+                    alert(`Error guardando encuesta (${respuesta.status}): ${texto || 'Sin detalle'}`);
+                }
+            } catch (err) {
+                alert('Error de conexión al guardar encuesta: ' + err.message);
+            }
+        }
+
+        // Hacer movible la ventana de encuesta
+        (function habilitarArrastreModal() {
+            const modal = document.getElementById('modal-contenido');
+            const handle = document.getElementById('drag-handle');
+            let dragging = false;
+            let startX = 0;
+            let startY = 0;
+            let initialLeft = 0;
+            let initialTop = 0;
+
+            function onDown(e) {
+                dragging = true;
+                const rect = modal.getBoundingClientRect();
+                modal.style.position = 'fixed';
+                modal.style.left = rect.left + 'px';
+                modal.style.top = rect.top + 'px';
+                modal.style.margin = '0';
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            }
+
+            function onMove(e) {
+                if (!dragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                modal.style.left = (initialLeft + dx) + 'px';
+                modal.style.top = (initialTop + dy) + 'px';
+            }
+
+            function onUp() {
+                dragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+
+            if (handle && modal) {
+                handle.addEventListener('mousedown', onDown);
+            }
+        })();
+    </script>
+    <script>
+        //ENCUESTA RECLUTAMIENTO
+        function abrirEncuesta() {
+            document.getElementById('modal-encuesta').style.display = 'flex';
+        }
+
+        function mostrarCampos() {
+            const fuente = document.getElementById('fuente').value;
+            const div = document.getElementById('div-dinamico');
+            div.innerHTML = "";
+
+            if (fuente === "Agencia") {
+                div.innerHTML = `
+                    <label>Tipo de Reclutamiento:</label>
+                    <select id="sub-opcion" onchange="mostrarDetalle()" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                        <option value="">Selecciona...</option>
+                        <option value="PURO">Reclutamiento Puro</option>
+                        <option value="CW">Reclutamiento Cheong Woon</option>
+                    </select>
+                    <div id="detalle-final" style="margin-top:10px;"></div>
+                `;
+            } else if (fuente === "Facebook") {
+                div.innerHTML = `<label>¿Quién te atendió?</label>
+                                <input type="text" id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+            } else if (fuente === "Recomendación") {
+                div.innerHTML = `<label>Nombre del empleado que te recomendó:</label>
+                                <input type="text" id="nombre-empleado" placeholder="Nombre completo" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+            }
+        }
+
+        function mostrarDetalle() {
+            const sub = document.getElementById('sub-opcion').value;
+            const detalle = document.getElementById('detalle-final');
+            detalle.innerHTML = ""; // Limpiar
+
+            if (sub === "CW") {
+                detalle.innerHTML = `<label>Nombre de la persona de reclutamiento:</label>
+                                    <input type="text" id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+            }
+        }
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheong Woon Mexico</title>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <style>
+        /* Eliminar la barra de desplazamiento visualmente */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
+        .branding { display: flex; align-items: center; gap: 10px; }
+        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
+        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        
+        .dashboard-calendar { padding: 20px; display: flex; gap: 20px; height: 600px; }
+        #calendar { flex: 2; background: #2c2c2c; padding: 15px; border-radius: 8px; }
+        #agenda { flex: 1; background: #2c2c2c; padding: 15px; border-radius: 8px; overflow-y: auto; }
+        
+        .fc { color: #fff; }
+        .fc .fc-toolbar-title { text-transform: uppercase !important; }
+        
+        #lista-eventos p { color: #fff; margin: 10px 0; font-size: 0.9rem; border-bottom: 1px solid #444; padding-bottom: 5px; }
+
+        /* SECCIONES DE ENCABEZADO */
+        .main-header {
+            display: flex;
+            justify-content: space-between; /* Distribuye el espacio */
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+        /* CENTRAR MENU DE OPCIONES */
+        .header-section {
+            flex: 1; 
+            display: flex;
+            align-items: center;
+        }
+
+        .left { justify-content: flex-start; }  /* Logo a la izquierda */
+        .center { justify-content: center; }    /* Menú al centro */
+        .right { justify-content: flex-end; }   /* Botón a la derecha */
+
+        /* SEPARACION DE MENU DE OPCIONES */
+        .nav-links {
+            gap: 40px; 
+        }
+
+        /* Botón Cerrar Sesión */
+        .btn-logout {
+            text-decoration: none;
+            color: #ff4b4b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #ff4b4b;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: #ff4b4b; color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="iniciorh.html" class="active">Inicio</a>
+            <a href="Ingreso.html">Ingresos</a>
+            <a href="Cheong Woon.html">Cheong Woon</a>
+            <a href="Kronos.html">Kronos</a>
+        </nav>
+        <div class="header-right">
+            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+        </div>
+    </header>
+    <main class="dashboard-calendar">
+        <div id='calendar'></div>
+        <div id='agenda'>
+            <h3>Agenda del Mes</h3>
+            <div id="lista-eventos"></div>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var currentYear = new Date().getFullYear();
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                titleFormat: { month: 'long' }, 
+                headerToolbar: { 
+                    left: 'prev,next', 
+                    center: 'title', 
+                    right: 'today' 
+                },
+                customButtons: {
+                    today: {
+                        text: currentYear.toString(),
+                        click: function() { calendar.today(); }
+                    }
+                },
+                events: [
+                    { title: 'Año Nuevo 💫', start: '2026-01-01', color: '#228b22' },
+                    { title: 'Día de Reyes', start: '2026-01-06', color: '#228b22' },
+                    { title: 'Día del Amor y la Amistad', start: '2026-02-14', color: '#228b22' },
+                    { title: 'Día de la Bandera', start: '2026-02-24', color: '#228b22' },
+                    { title: 'Día Internacional de la Mujer', start: '2026-03-08', color: '#228b22' },
+                    { title: 'Natalicio de Benito Juárez', start: '2026-03-21', color: '#228b22' },
+                    { title: 'Día del Niño', start: '2026-04-30', color: '#228b22' },
+                    { title: 'Día del Trabajo', start: '2026-05-01', color: '#228b22' },
+                    { title: 'Batalla de Puebla', start: '2026-05-05', color: '#228b22' },
+                    { title: 'Día de las Madres', start: '2026-05-10', color: '#228b22' },
+                    { title: 'Día del Maestro', start: '2026-05-15', color: '#228b22' },
+                    { title: 'Día Mundial del Medio Ambiente', start: '2026-06-05', color: '#228b22' },
+                    { title: 'Día Internacional de los Abuelos', start: '2026-08-30', color: '#228b22' },
+                    { title: 'Niños Héroes', start: '2026-09-13', color: '#228b22' },
+                    { title: 'Grito de Independencia', start: '2026-09-15', color: '#228b22' },
+                    { title: 'Día de la Independencia', start: '2026-09-16', color: '#228b22' },
+                    { title: 'Consumación de la Independencia', start: '2026-09-27', color: '#228b22' },
+                    { title: 'Día Internacional del Café', start: '2026-10-01', color: '#228b22' },
+                    { title: 'Día Mundial de la Salud Mental', start: '2026-10-10', color: '#228b22' },
+                    { title: 'Día Mundial de la Alimentación', start: '2026-10-16', color: '#228b22' },
+                    { title: 'Día Internacional de la Lucha contra el Cáncer de Mama', start: '2026-10-19', color: '#228b22' },
+                    { title: 'Halloween', start: '2026-10-31', color: '#228b22' },
+                    { title: 'Día de Muertos', start: '2026-11-02', color: '#228b22' },
+                    { title: 'Día de la Revolución Mexicana', start: '2026-11-20', color: '#228b22' },
+                    { title: 'Día Mundial de la Lucha contra el Sida', start: '2026-12-01', color: '#228b22' },
+                    { title: 'Día de la Virgen de Guadalupe', start: '2026-12-12', color: '#228b22' },
+                    { title: 'Nochebuena', start: '2026-12-24', color: '#228b22' },
+                    { title: 'Navidad', start: '2026-12-25', color: '#228b22' },
+                    { title: 'Día de los Santos Inocentes', start: '2026-12-28', color: '#228b22' },
+                    { title: 'Fin de Año', start: '2026-12-31', color: '#228b22' },
+                    // Ejemplo de Cumpleaños (base de datos)
+                    { title: '🎂 Cumpleaños: Juan Pérez', start: '2026-07-25', color: '#e67e22' }
+                ],
+                // Detecta cuando cambia el mes en el calendario
+                datesSet: function(info) {
+                    actualizarAgenda(info.view.currentStart);
+                }
+            });
+            calendar.render();
+            function actualizarAgenda(fechaActual) {
+                var mesSiguiente = new Date(fechaActual);
+                mesSiguiente.setMonth(mesSiguiente.getMonth() + 1);
+                
+                var nombreMes = mesSiguiente.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+                document.querySelector('#agenda h3').innerText = "PROXIMOS EVENTOS DE " + nombreMes;
+
+                var lista = document.getElementById('lista-eventos');
+                lista.innerHTML = ""; 
+
+                var eventos = calendar.getEvents();
+                var eventosMesSiguiente = eventos.filter(e => e.start.getMonth() === mesSiguiente.getMonth());
+
+                eventosMesSiguiente.forEach(e => {
+                    lista.innerHTML += `<div style="margin-bottom: 10px; font-size: 0.9rem;">• ${e.start.getDate()} - ${e.title}</div>`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

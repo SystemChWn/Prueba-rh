@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheong Woon Mexico</title>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <style>
+
+/* Eliminar la barra de desplazamiento visualmente */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
+        .branding { display: flex; align-items: center; gap: 10px; }
+        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
+        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
+ 
+/* SECCIONES DE ENCABEZADO */
+        .main-header {
+            display: flex;
+            justify-content: space-between; /* Distribuye el espacio */
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+/* CENTRAR MENU DE OPCIONES */
+        .header-section {
+            flex: 1; 
+            display: flex;
+            align-items: center;
+        }
+
+        .left { justify-content: flex-start; }  /* Logo a la izquierda */
+        .center { justify-content: center; }    /* Menú al centro */
+        .right { justify-content: flex-end; }   /* Botón a la derecha */
+
+        /* SEPARACION DE MENU DE OPCIONES */
+        .nav-links {
+            gap: 40px; 
+        }
+
+/* Botón Cerrar Sesión */
+        .btn-logout {
+            text-decoration: none;
+            color: #ff4b4b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #ff4b4b;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: #ff4b4b; color: white; }
+
+/* FILTROS*/
+        .filtros-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 25px;
+        }
+
+        /* Estilo común para todos los inputs */
+        .filtro-input {
+            background: #121212;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        /* Efecto al hacer clic (focus) */
+        .filtro-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        /* Etiquetas de fecha */
+        .filtro-label {
+            font-size: 0.85rem;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="iniciorh.html">Inicio</a>
+            <a href="Ingreso.html">Ingresos</a>
+            <a href="Cheong Woon.html" class="active">Cheong Woon</a>
+            <a href="Kronos.html">Kronos</a>
+        </nav>
+        <div class="header-right">
+            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+        </div>
+    </header>
+    <main style="padding: 20px;">
+        <div class="filtros-container">
+            <div>
+                <span class="filtro-label">DE:</span>
+                <input type="date" class="filtro-input">
+                <span class="filtro-label" style="margin-left: 15px;">A:</span>
+                <input type="date" class="filtro-input">
+            </div>
+            <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar por nombre o # empleado..." style="width: 350px;">
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #444;">
+                    <th style="padding: 12px; text-align: left;">Nombre Completo</th>
+                    <th style="padding: 12px;">No. Empleado</th>
+                    <th style="padding: 12px;">Fecha Ingreso</th>
+                    <th style="padding: 12px;">Estatus</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo-tabla-empleados">
+                <tr>
+                    <td style="padding: 12px;">Juan Pérez</td>
+                    <td style="padding: 12px; text-align: center;">1023</td>
+                    <td style="padding: 12px; text-align: center;">2026-01-15</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <button onclick="abrirModal('Juan Pérez', this)" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">ACTIVO</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+
+    <div id="modal-baja" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
+        <div style="background:#1e1e1e; padding:20px; border-radius:8px; width:300px; border: 1px solid #444;">
+            <h3>Motivo de Baja</h3>
+            <p id="nombre-empleado-baja"></p>
+            <textarea id="motivo" style="width:100%; height:80px; background:#121212; color:#fff; border:1px solid #444;"></textarea>
+            <div style="margin-top:10px; display:flex; justify-content:space-between;">
+                <button onclick="cerrarModal()" style="background:#555; color:white; border:none; padding:5px 10px; border-radius:4px;">Cancelar</button>
+                <button onclick="confirmarBaja()" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px;">Confirmar Baja</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 1. Variables globales para recordar el estado
+        let botonClicado = null;
+        let nombreSeleccionado = ""; // <--- AÑADE ESTA VARIABLE
+
+        // 2. Abrir el modal y guardar el nombre
+        function abrirModal(nombre, elemento) {
+            botonClicado = elemento;
+            nombreSeleccionado = nombre; // <--- GUARDAMOS EL NOMBRE AQUÍ
+            document.getElementById('nombre-empleado-baja').innerText = "Dar de baja a: " + nombre;
+            document.getElementById('modal-baja').style.display = 'flex';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-baja').style.display = 'none';
+        }
+
+        // 3. Confirmar la baja con el nombre correcto
+        async function confirmarBaja() {
+            let motivo = document.getElementById('motivo').value;
+            
+            // Enviamos el nombre guardado en nombreSeleccionado
+            await fetch('/api/baja-empleado', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nombre: nombreSeleccionado, motivo: motivo })
+            });
+
+            if (botonClicado) {
+                botonClicado.innerText = "INACTIVO";
+                botonClicado.style.backgroundColor = "#dc3545";
+                botonClicado.disabled = true;
+            }
+            alert("Empleado dado de baja correctamente.");
+            cerrarModal();
+        }
+
+        // 4. Renderizado de empleados
+        // Nota: Asegúrate de que tu servidor realmente esté enviando {{ lista_empleados }}
+// Cambia la línea problemática por esto para debugear:
+        const empleados = JSON.parse('{{ lista_empleados | tojson | safe }}');
+        console.log(empleados); // Abre la consola (F12) y mira si salen tus datos
+        cuerpo.innerHTML = ""; 
+
+        empleados.forEach(emp => {
+            cuerpo.innerHTML += `
+                <tr>
+                    <td style="padding: 12px;">${emp.nombre}</td>
+                    <td style="padding: 12px; text-align: center;">${emp.no_empleado}</td>
+                    <td style="padding: 12px; text-align: center;">${emp.fecha_ingreso}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <button onclick="abrirModal('${emp.nombre}', this)" 
+                                style="background: ${emp.estatus === 'ACTIVO' ? '#28a745' : '#dc3545'}; 
+                                    color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
+                                ${emp.estatus === 'INACTIVO' ? 'disabled' : ''}>
+                            ${emp.estatus}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        // 5. Buscador
+        document.getElementById('buscador').addEventListener('keyup', function() {
+            let filtro = this.value.toLowerCase();
+            let filas = cuerpo.getElementsByTagName('tr');
+            for (let fila of filas) {
+                fila.style.display = fila.textContent.toLowerCase().includes(filtro) ? "" : "none";
+            }
+        });
+    </script>
+</body>
+</html>
