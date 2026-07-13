@@ -163,7 +163,7 @@
                 <p id="fecha-actual" style="color: #888; font-size: 0.9rem; margin-top: 5px;"></p>
             </div>
             
-            <form id="registroForm" action="/guardar-registro" method="POST">
+            <form id="registroForm" action="/api/guardar-registro" method="POST">
 
                 <h3>DATOS PERSONALES</h3>
                 <!-- Nombre Completo -->
@@ -503,32 +503,14 @@
             return true;
         }
 
-        const API_BASE = 'http://192.168.1.59:5000';
-        const API_BASES = [API_BASE];
+        async function postApi(endpoint, body) {
+            const respuesta = await fetch(endpoint, {
+                method: 'POST',
+                body
+            });
 
-        // Si se abre en local, intenta primero localhost sin perder la IP de red local.
-        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-            API_BASES.unshift('http://localhost:5000');
-        }
-
-        async function postConFallback(endpoint, body) {
-            let ultimoErrorRed = null;
-
-            for (const baseUrl of API_BASES) {
-                try {
-                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
-                        method: 'POST',
-                        body
-                    });
-
-                    const texto = await respuesta.text();
-                    return { respuesta, texto, baseUrl };
-                } catch (errorRed) {
-                    ultimoErrorRed = errorRed;
-                }
-            }
-
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            const texto = await respuesta.text();
+            return { respuesta, texto };
         }
 
         function mostrarMensajeInferior(texto, duracionMs, recargar, esError) {
@@ -566,7 +548,7 @@
             const formData = new FormData(form);
 
             try {
-                const { respuesta, texto } = await postConFallback('/guardar-registro', formData);
+                const { respuesta, texto } = await postApi('/api/guardar-registro', formData);
 
                 if (respuesta.ok && texto.startsWith('OK')) {
                     // mostrar encuesta solo cuando el registro quedó guardado
@@ -638,7 +620,7 @@
             encuestaForm.append('detalle', detalle);
 
             try {
-                const { respuesta, texto } = await postConFallback('/guardar-encuesta', encuestaForm);
+                const { respuesta, texto } = await postApi('/api/guardar-encuesta', encuestaForm);
 
                 if (respuesta.ok && texto.startsWith('OK')) {
                     // ocultar modal encuesta
