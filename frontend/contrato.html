@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Contrato de Trabajo</title>
+    <style>
+        body {
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Times New Roman', Times, serif, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 10pt;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+
+        #btn-descargar-contrato {
+            background-color: #3182ce;
+            color: white;
+        }
+
+        #btn-regresar {
+            background-color: #3182ce;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .page {
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 2.54cm 2.84cm 2.54cm 2.5cm;
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.35;
+            color: #1a202c;
+            text-align: justify;
+            overflow: hidden;
+        }
+
+        .declaracion-item {
+            margin: 4px 0;
+            padding-left: 35px;
+            text-indent: -35px;
+        }
+        
+        .declaracion-item strong {
+            display: inline-block;
+            width: 35px;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .controls {
+                display: none;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                height: 27.94cm;
+                page-break-after: always;
+                break-after: page;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+    <div class="controls">
+        <a id="btn-regresar" class="btn" href="#">Regresar</a>
+        <button id="btn-descargar-contrato" class="btn">Descargar Contrato</button>
+    </div>
+
+    <div class="page" id="contrato-page-1">
+        <p style="text-align: justify; font-size: 10pt; margin-bottom: 8px;">
+            <strong>CONTRATO INDIVIDUAL DE TRABAJO POR TIEMPO DETERMINADO</strong>, que celebran, por una parte, <strong>CHEONG WOON MEXICO, S.A. DE C.V.</strong> denominada en lo sucesivo como <strong>LA EMPRESA</strong>, y por otra parte, <strong><span id="lbl-nombre" style="text-transform: uppercase;"></span></strong>, a quien se le denominará como <strong>EL TRABAJADOR</strong>, estableciéndose las siguientes Declaraciones y Cláusulas:
+        </p>
+        <br>
+
+        <h3 style="text-align: center; margin: 5px 0;">D E C L A R A C I O N E S</h3>
+        <br>
+        <p style="margin: 4px 0;">Declara<strong> LA EMPRESA:</strong></p>
+        <br>
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">I.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que es una Sociedad Anónima legalmente constituida mediante la legislación nacional, con domicilio en <strong>Carr. Apodaca a Juárez # 2156 Col, Real Hacienda de Huinalá Apodaca, N.L. C.P. 66644</strong> que tiene como actividad preponderante otorgar servicios administrativos de trámite y cobranza.</div>
+        </div>
+
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">II.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que realiza las actividades antes mencionadas mediante orden o pedido expreso de Compañías Locales.</div>
+        </div>
+
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">III.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que es la propietaria de la información, materia prima, y del producto terminado.</div>
+        </div>
+
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">IV.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que para la supervisión, programación y vigilancia de los trabajos industriales y administrativos que requiere o llegase a requerir <strong>LA EMPRESA</strong> sólo podrá utilizar personal debidamente capacitado.</div>
+        </div>
+
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">V.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que cuenta con el personal suficiente para las labores habituales que realiza <strong>LA EMPRESA</strong>, más, sin embargo, como <strong>LA EMPRESA</strong> ha recibido pedidos extraordinarios de manufactura, requiere de incrementar su personal, tanto obrero, profesional y administrativo; El primero para la labor de manufactura, el segundo y tercero para la operación y vigilancia de esta, así como llevar a cabo los procesos administrativos y contables propios de <strong>LA EMPRESA</strong>.</div>
+        </div>
+        <br>
+
+        <p style="margin: 4px 0;">Declara<strong> EL TRABAJADOR:</strong></p>
+        <br>
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">VI.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que es de nacionalidad <strong><span id="lbl-nacionalidad" style="text-transform: uppercase;"></span></strong>, <strong><span id="lbl-edad"></span> años</strong> de edad, sexo <strong><span id="lbl-genero"></span></strong>, Estado Civil <strong><span id="lbl-estado-civil"></span></strong>, CURP: <strong><span id="lbl-curp" style="text-transform: uppercase;"></span></strong> RFC: <strong><span id="lbl-rfc" style="text-transform: uppercase;"></span></strong>, con domicilio en: <strong><span id="lbl-domicilio" style="text-transform: uppercase;"></span></strong></div>
+        </div>
+        
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">VII.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que conoce plenamente la operación de <strong>LA EMPRESA</strong> y que es apto y competente para prestar sus servicios personales y de confianza a la misma.</div>
+        </div>
+        
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">VIII.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que sabe en consecuencia, que en virtud de los pedidos extraordinarios se requiere la contratación de personal por tiempo determinado para llevar a cabo la consecución de los pedidos y las labores administrativas que se relacionen con ellos.</div>
+        </div>
+        
+        <div style="display: flex; margin: 4px 0;">
+            <div style="width: 30px; font-weight: bold; flex-shrink: 0;">IX.</div>
+            <div style="flex-grow: 1; text-align: justify;">Que sabe que <strong>LA EMPRESA</strong> tiene necesidad de rotar su personal de acuerdo con las necesidades de la misma, por lo que está de acuerdo en ser cambiado de puesto cuando sea necesario, sin perjuicio de su sueldo.</div>
+        </div>
+        
+        <p style="margin: 8px 0">Expuesto lo anterior, las partes otorgan las siguientes:</p>
+    </div>
+
+<!-- PÁGINA 2 -->
+    <div class="page" id="contrato-page-2">
+        <h3 style="text-align: center; margin: 30px 0;">C L A U S U L A S</h3>
+        <p style="margin: 3px 0;"><strong>PRIMERA. </strong> Conviene <strong>EL TRABAJADOR</strong> en prestar bajo la dirección y dependencia de <strong>LA EMPRESA</strong>, sus servicios personales y de confianza con el carácter de <strong><span id="lbl-puesto" style="text-transform: uppercase;"></strong></span> puesto que se describe en el análisis que se acompaña y manifiesta reunir las cualidades que precisa en dicho anexo.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>SEGUNDA. </strong> Este <strong>Contrato Individual de Trabajo</strong> se celebra  <strong>por Tiempo Determinado</strong> por un período que abarca del día <strong><span id="lbl-fecha-inicio"></strong></span> al <strong><span id="lbl-fecha-final"></strong></span> en atención a las declaraciones I, V y VII del presente Contrato y en atención de que <strong>EL TRABAJADOR</strong> sólo desarrollará las labores necesarias de carácter operativo para cumplir con las actividades que ocasiona la contratación de personal distinto al que de manera rutinaria tiene <strong>LA EMPRESA</strong> y está de acuerdo <strong>EL TRABAJADOR</strong> en que precisamente el día <strong><span id="lbl-fecha-final-2"></strong></span>, se dará por concluido el presente Contrato de conformidad con el Artículo 53 Fracción III de la Ley Federal del Trabajo.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>TERCERA. </strong> <strong>EL TRABAJADOR</strong> se obliga a prestar sus servicios en el domicilio de <strong>LA EMPRESA</strong> o en cualquier lugar del Municipio o del Estado en que lo requiera la misma.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>CUARTA. </strong> <strong>LA EMPRESA</strong> se obliga a pagar al <strong>TRABAJADOR</strong> por concepto de sueldo diario por el trabajo que desempeñe en los términos de la Cláusula primera la cantidad de <strong>$<span id="lbl-salario-num"></span> (<span id="lbl-salario-letra" style="text-transform: uppercase;"></span>)</strong> diarios, cantidad que será cubierta de manera <span id="lbl-periodo"><strong></strong></span>, por medio de dispersión electrónica bancaria, mediante la institución bancaria que se acuerde entre las partes.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>QUINTA. </strong> <strong>EL TRABAJADOR</strong> recibirá, de manera electrónica, sus comprobantes fiscales digitales (CFDI) correspondientes a las percepciones obtenidas por el desempeño de sus labores, siendo este <strong><span id="lbl-correo" style="border-bottom: 1px solid #000; padding-bottom: 1px;"></strong></span>. Dichos CFDI detallarán los conceptos y las retenciones de impuestos aplicadas a las cantidades percibidas, en cumplimiento con lo dispuesto por el artículo 101 de la Ley Federal del Trabajo y las disposiciones fiscales aplicables. Con esta entrega, se da cumplimiento a las obligaciones fiscales y laborales del patrón.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>SEXTA. </strong> <strong>EL TRABAJADOR</strong> en forma expresa y por motivo de seguridad y conveniencia, manifiesta su conformidad en recibir su pago, mediante sistemas electrónicos de pago, o cualquier otro instrumento Bancario el cual le permita la disposición inmediata de su salario en efectivo.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>SEPTIMA. </strong> <strong>EL TRABAJADOR</strong> deberá desempeñar dentro de su jornada de trabajo, las labores propias de su categoría, así como todas aquellas que resulten compatibles con la misma y está de acuerdo en que se cambie de trabajo cuando lo requieran las necesidades de <strong>LA EMPRESA</strong> y ésta así lo determine.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>OCTAVA. </strong> Conviene <strong>EL TRABAJADOR</strong> en dedicar sus mejores esfuerzos a los intereses de <strong>LA EMPRESA</strong> y no podrá sin el consentimiento previo y por escrito de esta, durante su período de empleo, dedicarse a ningún otro empleo o actividad que sea competitiva o esté en conflicto con <strong>LA EMPRESA</strong>.</p>
+    </div>
+
+<!-- PÁGINA 3 -->
+    <div class="page" id="contrato-page-3">
+        <p style="margin: 3px 0;"><strong>NOVENA. </strong> Conviene <strong>EL TRABAJADOR</strong> en que toda la información confidencial recibida por él en relación con el negocio particularmente aquella que se refiere a invenciones y a la administración, la considere estrictamente propiedad de <strong>LA EMPRESA</strong>, tanto durante como después de su empleo, sin límites por cuanto a tiempo y en ningún caso revelará tal información a terceros.</p>
+
+        <br>
+        
+        <p style="margin: 3px 0;"><strong>DECIMA. </strong> <strong>EL TRABAJADOR</strong> está de acuerdo en no hacer mal uso de la información catalogada como confidencial que le sea otorgada por parte de <strong>LA EMPRESA</strong>, también está de acuerdo en no emprender, por su cuenta o en sociedad, una empresa competitiva con los secretos industriales de <strong>LA EMPRESA</strong> a los que pueda tener acceso.</p>
+        
+        <br>
+
+        <p style="margin: 3px 0;"><strong>DECIMA PRIMERA. </strong>La jornada normal de trabajo será de Lunes a Sábado, pero las partes convienen en repartir las horas de trabajo de la jornada de Lunes a Viernes o cualquier otra modalidad equivalente a fin de permitir al <strong>EL TRABAJADOR</strong> el reposo del Domingo o cualquier otro día de la semana, sin perjuicio de que por necesidades de <strong>LA EMPRESA</strong> se labore de Lunes a Sábado.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>DECIMA SEGUNDA. </strong>Por cada 6-seis días de labores consecutivos, <strong>EL TRABAJADOR</strong> tendrá derecho a 1-un día de descanso con goce de sueldo. El día de descanso semanal será fijado por <strong>LA EMPRESA</strong>, de acuerdo con su programa de trabajo. En caso de que <strong>EL TRABAJADOR</strong> preste sus servicios en los días de descanso semanal, independientemente del salario que le correspondan por el descanso, recibirá salario doble por el servicio prestado.</p>
+        <br>
+        <p style="margin: 3px 0;">En el evento de que <strong>EL TRABAJADOR</strong> falte a sus labores injustificadamente se le descontará además de la falta o faltas injustificadas, la parte proporcional correspondiente al día de descanso semanal.</p>
+        <br>
+
+        <p style="margin: 3px 0;"><strong>DECIMA TERCERA. </strong><strong>LA EMPRESA</strong> podrá y <strong>EL TRABAJADOR</strong> accederá a cambiar los días de la semana en que deberá laborar, entendiéndose por tal que <strong>LA EMPRESA</strong>, podrá variar la semana laboral y así variar el día de descanso de <strong>EL TRABAJADOR</strong> por cada 6-seis de labores. Para el tal efecto <strong>LA EMPRESA</strong> deberá dar aviso por escrito a <strong>EL TRABAJADOR</strong> de su cambio de día de descanso y de jornada semanal con un mínimo de 1-un día de anticipación.</p>
+        <br>
+
+        <p style="margin: 3px 0;"><strong>DECIMA CUARTA.</strong> <strong>EL TRABAJADOR</strong> descansará con goce de sueldo los días:</p>
+        <ul style="margin: 4px 0 4px 20px; padding: 0; font-size: 10pt; line-height: 1.35; text-align: justify;">
+            <li style="margin: 3px 0;"><strong>El 1o. de enero</strong></li>
+            <li style="margin: 3px 0;"><strong>El primer lunes de febrero en conmemoración del 5 de febrero</strong></li>
+            <li style="margin: 3px 0;"><strong>El tercer lunes de marzo en conmemoración del 21 de marzo</strong></li>
+            <li style="margin: 3px 0;"><strong>1o. de Mayo</strong></li>
+            <li style="margin: 3px 0;"><strong>16 de Septiembre</strong></li>
+            <li style="margin: 3px 0;"><strong>El tercer lunes de noviembre en conmemoración del 20 de noviembre</strong></li>
+            <li style="margin: 3px 0;"><strong>El 1o. de octubre de cada seis años, cuando corresponda a la transmisión del Poder Ejecutivo Federal</strong></li>
+            <li style="margin: 3px 0;"><strong>El 25 de Diciembre</strong></li>
+            <li style="margin: 3px 0;"><strong>El que determinen las leyes federales y locales electorales, en el caso de elecciones ordinarias, para efectuar la jornada electoral</strong></li>
+        </ul>        
+        <br>
+
+    </div>
+
+<!-- PÁGINA 4 -->
+    <div class="page" id="contrato-page-4">
+        <p style="margin: 3px 0;">Si labora alguno de los días expresados, <strong>EL TRABAJADOR</strong> tendrá derecho a que se le pague, independientemente del salario que le corresponda por el descanso obligatorio, salario doble por el servicio prestado.</p>
+        <br>
+        <p style="margin: 3px 0;"><strong>DECIMA QUINTA.</strong> <strong>EL TRABAJADOR</strong> tendrá derecho a un período de vacaciones proporcionales al tiempo laborado, con goce de sueldo y de acuerdo con las siguientes bases:</p>
+        <ul style="margin: 4px 0 4px 20px; padding: 0; font-size: 10pt; line-height: 1.35; text-align: justify;">
+            <li style="margin: 3px 0;"><strong>Por un año de servicio, doce días de vacaciones</strong></li>
+            <li style="margin: 3px 0;"><strong>Por segundo año de servicio, catorce días de vacaciones</strong></li>
+            <li style="margin: 3px 0;"><strong>Por tercer año de servicio, dieciséis días de vacaciones</strong></li>
+            <li style="margin: 3px 0;"><strong>Por cuarto año de servicio, dieciocho días de vacaciones</strong></li>
+            <li style="margin: 3px 0;"><strong>Por quinto año de servicio, veinte días de vacaciones</strong></li>
+        </ul>
+        <br>
+
+        <p style="margin: 3px 0;">Después de alcanzar los 20 días, se incrementa en 2 días por cada cinco años de servicio. Estos períodos comprenden días laborables. El período de vacaciones será fijado por <strong>LA EMPRESA</strong>, de acuerdo con su programa de trabajo, pero deberán concederse dentro de los 6-seis meses siguientes al cumplimiento del año de servicio. El <strong>TRABAJADOR</strong> tendrá derecho a una prima del 25% (veinticinco por ciento), sobre los salarios que le correspondan durante el período de vacaciones.</p>
+        <br>
+
+        <p style="margin: 3px 0;"><strong>DECIMA SEXTA.</strong> <strong>EL TRABAJADOR</strong> tendrá derecho a un aguinaldo anual de 15-quince días de salario, el cual deberá cubrirse por <strong>LA EMPRESA</strong> antes del día 20 de diciembre del año correspondiente. La persona que no cumpla con el año completo prestando sus servicios a <strong>LA EMPRESA</strong>, recibirá proporcionalmente el aguinaldo mencionado.</p>
+        
+        <br>
+        
+        <p style="margin: 2px 0;"><strong>DECIMA SEPTIMA.</strong> La jornada semanal de <strong>EL TRABAJADOR</strong> será de 48-cuarenta y ocho horas la diurna, de 45-cuarenta y cinco la mixta y de 42-cuarenta y dos la nocturna, las cuales dada su categoría y actividades <strong>EL TRABAJADOR</strong> administrará y distribuirá de manera que optimice el trabajo contratado y mejor convenga a los intereses de <strong>LA EMPRESA</strong>, contando con un período para que este pueda salir a tomar sus alimentos, que no será menor de 30-treinta minutos, el cual no será considerado como tiempo efectivo dentro de la jornada legal. Queda prohibido consumir cualquier tipo de alimentos durante las horas de trabajo y fuera del área preestablecida por la empresa.</p>
+
+        <br>
+
+        <p style="margin: 2px 0;"><strong>DECIMA OCTAVA.</strong> Está estrictamente prohibido el consumo de bebidas embriagantes o estupefacientes de cualquier tipo dentro de las instalaciones de <strong>LA EMPRESA</strong>, además de fumar en el área de trabajo o en espacios cerrados. Se entiende por área de trabajo, el lugar donde físicamente <strong>EL TRABAJADOR</strong> desarrolla su trabajo contratado.</p>
+
+        <br>
+
+        <p style="margin: 2px 0;"><strong>DECIMA NOVENA.</strong> Queda estrictamente prohibido al <strong>TRABAJADOR</strong> laborar tiempo extraordinario, excepto en el caso de que fuera solicitado por escrito para ello por <strong>LA EMPRESA</strong> en cualquier momento y para la ejecución de trabajos determinados siempre y cuando no excedan de 9-nueve horas a la semana, caso en el cual será obligatorio para <strong>EL TRABAJADOR</strong> laborar tiempo extra, dentro de los límites establecidos.</p>
+
+        <br>
+
+        <p style="margin: 2px 0;"><strong>VIGESIMA.</strong> <strong>EL TRABAJADOR</strong> se obliga a usar en forma diaria durante su jornada de trabajo el uniforme, gafete que deberá estar situado en lugar perfectamente visible como lo es en su costado izquierdo a la altura del pecho y el equipo de protección proporcionados por <strong>LA EMPRESA</strong>.</p>
+
+        <br>
+    </div>
+
+<!-- PÁGINA 5 -->
+    <div class="page" id="contrato-page-5">
+        <p style="margin: 2px 0;"><strong>VIGESIMA PRIMERA.</strong> <strong>EL TRABAJADOR</strong> se obliga a autorizar y por lo tanto a firmar en forma semanal al principio de cada semana su tarjeta de tiempos, así como checar en ella la entrada y salida de todos los días que labore en <strong>LA EMPRESA</strong>.</p>
+        <br>
+        <p style="margin: 2px 0;"><strong>VIGESIMA SEGUNDA.</strong>  <strong>LA EMPRESA</strong> proporcionará al <strong>TRABAJADOR</strong> Capacitación y adiestramiento en los términos de los planes y programas que se establezcan en <strong>LA EMPRESA</strong>, conforme a lo dispuesto en la Ley Federal del Trabajo.</p>
+        <br>
+
+        <p style="margin: 2px 0;"><strong>VIGESIMA TERCERA.</strong> <strong>EL TRABAJADOR</strong> se obliga a asistir puntualmente a los cursos, sesiones de grupo y demás actividades que le señale <strong>LA EMPRESA</strong> y que forman parte del proceso de capacitación y adiestramiento, a atender las indicaciones de las personas que impartan dichas actividades, cumplir con los programas respectivos y presentar los exámenes de conocimientos y aptitud que le sean requeridos.</p>
+
+        <br>
+
+        <p style="margin: 2px 0;"><strong>VIGESIMA CUARTA.</strong> <strong>EL TRABAJADOR</strong> está de acuerdo en que este contrato se tendrá por terminado sin ninguna responsabilidad para <strong>LA EMPRESA</strong>, por cualquiera de las causas enumeradas en el Artículo 47 o por incumplimiento de lo estipulado en los Artículos 134 y 135, todos de la Ley Federal del Trabajo:</p>
+        <br>
+        <ul style="margin: 4px 0 4px 20px; padding: 0; font-size: 10pt; line-height: 1.35; text-align: justify;">
+            <li style="margin: 3px 0;">Cumplir con el Reglamento Interior de Trabajo.</li>
+            <li style="margin: 3px 0;">Se abstendrá a formar grupos no relacionados directamente con sus actividades, tanto en el centro de trabajo o en el domicilio donde desarrolle sus actividades laborales.</li>
+            <li style="margin: 3px 0;">En igual forma se abstendrá de dañar en alguna forma el honor y la integridad de <strong>LA EMPRESA</strong> y/o de los centros de trabajo a los que sea asignado.</li>
+            <li style="margin: 3px 0;">Obedecer todas y cada una de las órdenes de <strong>LA EMPRESA</strong> para la realización de sus fines.</li>
+            <li style="margin: 3px 0;">En general, observará las obligaciones, abstenciones y prohibiciones que en su caso le dicte <strong>LA EMPRESA</strong> o sus representantes, independientemente de las inherentes a su categoría y las establecidas por la Ley Federal del Trabajo.</li>
+        </ul>
+        <br>
+
+        <p style="margin: 2px 0;"><strong>VIGESIMA QUINTA.</strong> <strong>LA EMPRESA</strong> inscribirá al <strong>TRABAJADOR</strong> en el Instituto Mexicano del Seguro Social, por lo que las partes se sujetarán en lo relativo a riesgos profesionales, enfermedades no profesionales y demás prestaciones relativos a las disposiciones de la Ley del Seguro Social, por lo que de conformidad con el artículo 53 del ordenamiento jurídico mencionado, <strong>LA EMPRESA</strong> queda relevada de todas las responsabilidades que por riesgos profesionales le impone la Ley Federal del Trabajo.</p>
+
+        <br>
+        <p style="margin: 2px 0;">Asimismo, <strong>EL TRABAJADOR</strong> por su propia seguridad y la de sus compañeros de trabajo está de acuerdo en someterse a los exámenes médicos que acuerde <strong>LA EMPRESA</strong>, así como a poner en práctica las medidas de seguridad e higiene que la Comisión de Seguridad e Higiene o diversa autoridad le señalen.</p>
+        <br>
+        <p style="margin: 2px 0;"><strong>VIGESIMA SEXTA.</strong> En caso de fallecimiento o ser víctima de desaparición por causa criminal, <strong>EL TRABAJADOR</strong> podrá designar como beneficiarios de conformidad con el artículo 501 de la Ley Federal Del Trabajo a su esposa, hijos menores de dieciocho años, hijos menores de veinticinco años dependientes económicamente, padres o abuelos dependientes económicamente, indistintamente y en los porcentajes que estime conveniente, ocurriendo a designar en el presente acto a:</p>
+        <br>
+        <span style="display: inline-block; border-bottom: 1px solid #000; width: 500px; min-height: 15px;"></span>
+        <br>
+    </div>
+
+<!-- PÁGINA 6 -->
+    <div class="page" id="contrato-page-6">
+        <p style="margin: 4px 0; font-size: 10pt;"><strong>VIGESIMA SÉPTIMA.</strong> <strong>EL TRABAJADOR</strong> manifiesta haber leído y recibido un ejemplar del Reglamento Interior de Trabajo de <strong>LA EMPRESA</strong> y firma un tanto de conformidad junto con este Contrato.</p>
+        <br>
+        <p style="margin: 4px 0; font-size: 10pt;"> Para constancia, se extiende y firma el presente contrato por duplicado en la Ciudad de <strong>Apodaca, Nuevo León</strong>, a <strong><span id="lbl-fecha-firma"></span></strong>.</p>
+        <br><br><br>
+        <div style="margin-top: 15px; display: flex; justify-content: space-between; font-size: 10pt;">
+            <div style="text-align: center; width: 45%;">
+                ____________________________________<br>
+                <strong>LA EMPRESA</strong><br>
+                <strong>CHEONG WOON MEXICO, S.A. DE C.V.</strong>
+            </div>
+            <div style="text-align: center; width: 45%;">
+                ______________________________________<br>
+                <strong>EL TRABAJADOR</strong><br>
+                <strong>C. <span id="lbl-nombre-firma" style="text-transform: uppercase;"></span></strong>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
+        const SERVER_IP = currentHost || '192.168.1.85';
+        const PORT = '8000';
+        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id');
+
+        const btnRegresar = document.getElementById('btn-regresar');
+        if (idEmpleado) {
+            btnRegresar.href = `empleado.html?registro_id=${encodeURIComponent(idEmpleado)}`;
+        } else {
+            btnRegresar.href = 'empleado.html';
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = value === null || value === undefined || value === '' ? '' : String(value);
+        }
+
+        function buildDomicilio(data) {
+            const parts = [
+                data.calle,
+                data.num_ext,
+                data.num_int ? `Int. ${data.num_int}` : '',
+                data.colonia,
+                data.municipio,
+                data.estado,
+                data.codigo_postal ? `C.P. ${data.codigo_postal}` : ''
+            ].filter(Boolean);
+            return parts.join(', ');
+        }
+
+        function formatFechaLarga(fechaTexto) {
+            if (!fechaTexto) return '';
+            const match = String(fechaTexto).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return String(fechaTexto);
+
+            const [, year, month, day] = match;
+            const meses = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            return `${Number(day)} de ${meses[Number(month) - 1]} del ${year}`;
+        }
+
+        function sumarDiasFecha(fechaTexto, dias) {
+            if (!fechaTexto) return '';
+            const match = String(fechaTexto).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return String(fechaTexto);
+
+            const [, year, month, day] = match;
+            const fecha = new Date(Number(year), Number(month) - 1, Number(day));
+            fecha.setDate(fecha.getDate() + Number(dias || 0));
+
+            const yyyy = fecha.getFullYear();
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function numeroALetras(numero) {
+            const valor = Number(String(numero || '').replace(/[^0-9.-]/g, ''));
+            if (!Number.isFinite(valor)) return '';
+            const unidades = [
+                'cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
+            ];
+            const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+            const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+            const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+
+            function convertirHasta999(n) {
+                if (n < 10) return unidades[n];
+                if (n < 20) return especiales[n - 10];
+                if (n < 100) {
+                    const dec = Math.floor(n / 10);
+                    const uni = n % 10;
+                    if (uni === 0) return decenas[dec];
+                    return `${decenas[dec]} y ${unidades[uni]}`;
+                }
+                const cen = Math.floor(n / 100);
+                const rem = n % 100;
+                if (rem === 0) return centenas[cen];
+                return `${centenas[cen]} ${convertirHasta999(rem)}`;
+            }
+
+            if (valor === 0) return 'cero';
+            return convertirHasta999(Math.trunc(valor));
+        }
+
+        async function cargarEmpleadoContrato() {
+            if (!idEmpleado) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/obtener-empleado/${encodeURIComponent(idEmpleado)}`);
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                const fechaIngreso = data.fecha_ingreso || '';
+                const salario = data.salario || '';
+                const fechaInicioTexto = formatFechaLarga(fechaIngreso);
+                const fechaFinalTexto = formatFechaLarga(sumarDiasFecha(fechaIngreso, 30));
+
+                setText('lbl-nombre', data.nombre_completo || '');
+                setText('lbl-nacionalidad', data.nacionalidad || '');
+                setText('lbl-edad', data.edad || '');
+                setText('lbl-genero', data.genero || '');
+                setText('lbl-estado-civil', data.estado_civil || '');
+                setText('lbl-curp', data.curp || '');
+                setText('lbl-rfc', data.rfc || '');
+                setText('lbl-domicilio', buildDomicilio(data));
+                setText('lbl-puesto', data.puesto || '');
+                setText('lbl-fecha-inicio', fechaInicioTexto);
+                setText('lbl-fecha-final', fechaFinalTexto);
+                setText('lbl-fecha-final-2', fechaFinalTexto);
+                setText('lbl-salario-num', salario);
+                setText('lbl-salario-letra', numeroALetras(salario));
+                setText('lbl-periodo', data.pago || '');
+                setText('lbl-correo', data.correo || '');
+                setText('lbl-fecha-firma', fechaInicioTexto);
+                setText('lbl-nombre-firma', data.nombre_completo || '');
+            } catch (error) {
+                console.warn('No se pudo cargar el empleado para el contrato:', error);
+            }
+        }
+
+        document.getElementById('btn-descargar-contrato').addEventListener('click', () => {
+            window.print();
+        });
+
+        cargarEmpleadoContrato();
+    </script>
+</body>
+</html>

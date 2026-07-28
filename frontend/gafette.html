@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diseño de Gafete Vertical - Cheong Woon México</title>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --dark-blue: #1d4ed8;
+            --badge-width: 62mm;   
+            --badge-height: 87mm;
+
+            /* ==========================================================
+               PANEL DE CONTROL PARA MOVER ELEMENTOS A TU GUSTO:
+               ========================================================== */
+            --shape-top: 0mm;
+            --shape-left: 0mm;
+            --shape-width: 28mm;
+
+            --logo-top: 5.5mm;
+            --logo-left: 8mm;
+            --logo-width: 43mm;
+            }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #1e293b;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--dark-blue);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .badge-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .badge-card {
+            width: var(--badge-width);
+            height: var(--badge-height);
+            background: white;
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Cuadrícula guía invisible al imprimir */
+        .badge-card.grid-visible::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(37, 99, 235, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(37, 99, 235, 0.15) 1px, transparent 1px);
+            background-size: 5mm 5mm;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+/* FRENTE DEL GAFETE */
+        .top-shape-container {
+            position: absolute;
+            top: var(--shape-top);
+            left: var(--shape-left);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .top-shape-container img {
+            width: var(--shape-width);
+            height: auto;
+            display: block;
+        }
+
+        .logo-container-custom {
+            position: absolute;
+            top: var(--logo-top);
+            left: var(--logo-left);
+            z-index: 3;
+        }
+
+        .logo-container-custom img {
+            width: var(--logo-width);
+            height: auto;
+            display: block;
+        }
+
+        .front-content {
+            padding: 26mm 4mm 4mm 4mm;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .photo-box {
+            width: 25mm;
+            height: 27mm;
+            background: #f8fafc;
+            margin: 0 auto 4mm auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7pt;
+            color: #64748b;
+        }
+
+        .employee-info {
+            margin-bottom: 4mm;
+        }
+
+        .field-line {
+            font-size: 7.5pt;
+            font-weight: bold;
+            margin-bottom: 2.5mm;
+            color: #0f172a;
+            padding-bottom: 1mm;
+        }
+
+/* REVERSO DEL GAFETE */
+        .back-side .bottom-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20mm;
+            background: linear-gradient(135deg, #3b82f6, #1e4ed8);
+            border-top-left-radius: 40% 30%;
+            border-top-right-radius: 40% 30%;
+            z-index: 1;
+        }
+
+        .back-content {
+            padding: 10mm 4mm 18mm 4mm;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .back-fields {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        .back-field-item {
+            margin-bottom: 3mm;
+            padding-bottom: 1mm;
+        }
+
+        .back-logo-container {
+            position: absolute;
+            bottom: 10mm;
+            left: 0;
+            width: 95%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+        }
+
+        .back-logo-container img {
+            width: 47mm;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Estilos al imprimir */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .controls {
+                display: none;
+            }
+            .badge-card {
+                box-shadow: none;
+                border: 1px solid #ffffff;
+                page-break-inside: avoid;
+                margin-bottom: 20mm;
+            }
+
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button id="btn-regresar">Regresar</button>
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="badge-container">
+        <!-- FRENTE DEL GAFETE (VERTICAL) -->
+        <div class="badge-card front-side" id="cardFront">
+            <!-- Esquina superior izquierda -->
+            <div class="top-shape-container">
+                <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
+            </div>
+            
+            <!-- Logotipo oficial -->
+            <div class="logo-container-custom">
+                <img src="https://lh3.googleusercontent.com/d/1x-LF0sUvAY-LQedEB2UOk4FELp97-B5O=s800" alt="Cheong Woon México">
+            </div>
+
+            <div class="front-content">
+                <div style="margin-top: 0.1mm;">
+                    <div class="photo-box">
+                        <img id="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                        <span id="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
+                    </div>
+                    <div style="text-align: center; font-size: 8.5pt; font-weight: bold; margin-bottom: 4mm; color: #1e3a8a;" id="employee-name-front">
+                    <span id="employee-first-name"></span><br>
+                    <span id="employee-last-name"></span>
+                </div>
+                </div>
+                <div class="employee-info">
+                    <div class="field-line">IMSS: <span id="employee-nss"></span></div>
+                    <div class="field-line">CURP: <span id="employee-curp"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVERSO DEL GAFETE (VERTICAL) -->
+        <div class="badge-card back-side" id="cardBack">
+
+            <div class="back-content">
+                <div class="back-fields">
+                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                    <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-area"></span> </div>
+                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                    <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-contact-name"></span> </div>
+                    <div class="back-field-item" style="font-size: 8pt; margin-bottom: 2mm; text-align: center;">TEL: <span id="employee-contact-phone"></span></div>
+                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                    <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-fecha-ingreso"></span> </div>
+                </div>
+
+                <div class="back-logo-container">
+                    <img src="https://lh3.googleusercontent.com/d/1x-LF0sUvAY-LQedEB2UOk4FELp97-B5O=s800">
+                </div>
+                <div class="back-bg-container">
+                <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
+                </div>
+            </div>
+        </div>
+    <script>
+        const API_PORT = '8000';
+        const HOSTNAME = window.location.hostname || '';
+        const API_BASES = [];
+        if (HOSTNAME) {
+            API_BASES.push(`http://${HOSTNAME}:${API_PORT}`);
+        }
+        API_BASES.push('http://192.168.1.50:8000');
+        API_BASES.push('http://localhost:8000');
+
+        function parseNombreCompleto(nombreCompleto) {
+            const palabras = nombreCompleto.trim().split(/\s+/).filter(Boolean);
+            if (palabras.length === 0) {
+                return { firstName: '', lastName: '' };
+            }
+            const lastName = palabras.slice(-2).join(' ');
+            const firstName = palabras.slice(0, -2).join(' ');
+            return {
+                firstName: firstName || palabras[0],
+                lastName: lastName,
+            };
+        }
+
+        async function fetchFromBackend(endpoint) {
+            let lastError = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const response = await fetch(`${baseUrl}${endpoint}`);
+                    const text = await response.text();
+                    return { response, text };
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw new Error(`No se pudo conectar con el servidor: ${lastError ? lastError.message : 'error desconocido'}`);
+        }
+
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        function normalizePhotoUrl(url) {
+            if (!url) return '';
+            if (/^data:/i.test(url) || /^https?:\/\//i.test(url)) return url;
+            const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+            return `${API_BASES[0] || 'http://localhost:5000'}${normalizedPath}`;
+        }
+
+        function getStoredEmployeePhoto(registroId, curp) {
+            const candidates = [];
+            if (registroId) candidates.push(`foto_empleado_${registroId}`);
+            if (curp) candidates.push(`foto_empleado_${String(curp).toUpperCase()}`);
+            for (const key of candidates) {
+                const value = localStorage.getItem(key);
+                if (value) return value;
+            }
+
+            try {
+                const raw = localStorage.getItem('rh_empleados_v1');
+                if (!raw) return '';
+                const empleados = JSON.parse(raw);
+                if (!Array.isArray(empleados)) return '';
+                const empleado = empleados.find((item) => {
+                    const currentCurp = String(item.curp || '').toUpperCase();
+                    return currentCurp && curp && currentCurp === String(curp).toUpperCase();
+                });
+                if (!empleado) return '';
+                const docs = empleado.documentos || {};
+                const fotografia = docs.fotografia || null;
+                if (fotografia && fotografia.previewUrl) return normalizePhotoUrl(fotografia.previewUrl);
+            } catch (_) {
+                return '';
+            }
+
+            return '';
+        }
+
+        async function populateBadgeFields(datos) {
+            const nombre = parseNombreCompleto(datos.nombre_completo || '');
+            document.getElementById('employee-first-name').textContent = (nombre.firstName || '').toUpperCase();
+            document.getElementById('employee-last-name').textContent = (nombre.lastName || '').toUpperCase();
+            document.getElementById('employee-nss').textContent = datos.nss || '';
+            document.getElementById('employee-curp').textContent = (datos.curp || '').toUpperCase();
+            document.getElementById('employee-area').textContent = (datos.area || '').toUpperCase();
+            document.getElementById('employee-contact-name').textContent = (datos.nombre_emergencia || '').toUpperCase();
+            document.getElementById('employee-contact-phone').textContent = datos.telefono_emergencia || datos.num_emergencias || '';
+            document.getElementById('employee-fecha-ingreso').textContent = datos.fecha_ingreso || '';
+
+            const registroId = getQueryParam('registro_id');
+            const photoEl = document.getElementById('employee-photo');
+            const photoLabel = document.getElementById('photo-box-label');
+
+            let savedPhoto = getStoredEmployeePhoto(registroId, datos.curp);
+
+            if (!savedPhoto && datos.curp && datos.empresa) {
+                const empresa = String(datos.empresa || '').trim();
+                const empresaToken = empresa.toUpperCase().includes('KRONOS') ? 'KRONOS' : 'CHEONG WOON';
+                const curpToken = String(datos.curp || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+
+                for (const baseUrl of API_BASES) {
+                    try {
+                        const response = await fetch(`${baseUrl}/api/employee-files?curp=${encodeURIComponent(curpToken)}&empresa=${encodeURIComponent(empresaToken)}`);
+                        if (!response.ok) {
+                            continue;
+                        }
+
+                        const payload = await response.json();
+                        const previewUrl = payload && payload.fotografia && payload.fotografia.previewUrl ? payload.fotografia.previewUrl : '';
+                        if (previewUrl) {
+                            savedPhoto = `${baseUrl}${previewUrl}`;
+                            break;
+                        }
+                    } catch (_) {
+                        continue;
+                    }
+                }
+            }
+
+            if (savedPhoto && photoEl) {
+                photoEl.src = savedPhoto;
+                photoEl.style.display = 'block';
+                if (photoLabel) photoLabel.style.display = 'none';
+            } else if (photoEl) {
+                photoEl.style.display = 'none';
+                if (photoLabel) photoLabel.style.display = 'grid';
+            }
+        }
+
+        async function loadGafeteData() {
+            const registroId = getQueryParam('registro_id');
+            const returnUrl = getQueryParam('return_url');
+            const fromTab = getQueryParam('from_tab');
+
+            if (returnUrl) {
+                localStorage.setItem('gafeteReturnUrl', returnUrl);
+            }
+            if (fromTab) {
+                localStorage.setItem('empleadoActiveTab', fromTab);
+            }
+
+            if (registroId) {
+                try {
+                    const { response, text } = await fetchFromBackend(`/obtener-empleado/${encodeURIComponent(registroId)}`);
+                    if (response.ok) {
+                        const datos = JSON.parse(text || '{}');
+                        await populateBadgeFields(datos);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('Error cargando datos desde backend:', error.message);
+                }
+            }
+
+            const datosRaw = localStorage.getItem('gafeteData');
+            if (!datosRaw) {
+                return;
+            }
+            const datos = JSON.parse(datosRaw);
+            await populateBadgeFields(datos);
+        }
+
+        function navigateBackToEmpleado() {
+            const returnUrl = getQueryParam('return_url') || localStorage.getItem('gafeteReturnUrl');
+            localStorage.removeItem('gafeteReturnUrl');
+            localStorage.removeItem('gafeteData');
+            if (returnUrl) {
+                window.location.href = returnUrl;
+                return;
+            }
+            window.location.href = 'empleado.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGafeteData();
+            const regresarBtn = document.getElementById('btn-regresar');
+            if (regresarBtn) {
+                regresarBtn.addEventListener('click', navigateBackToEmpleado);
+            }
+        });
+    </script>
+</body>
+</html>
