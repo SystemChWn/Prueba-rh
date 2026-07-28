@@ -148,13 +148,13 @@
     <script>
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const SERVER_IP = currentHost || '192.168.1.85';
-        const PORT = '5000';
+        const PORT = '8000';
         const API_URL = `http://${SERVER_IP}:${PORT}`;
         const API_BASE = API_URL;
         const API_BASES = [API_BASE];
 
         if (['localhost', '127.0.0.1'].includes(currentHost)) {
-            API_BASES.unshift('http://localhost:5000');
+            API_BASES.unshift('http://localhost:8000');
         }
 
         const cuerpo = document.getElementById('cuerpo-tabla');
