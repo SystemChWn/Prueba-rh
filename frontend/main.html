@@ -270,7 +270,7 @@
             }
 
             try {
-                    const API_BASE = (location.protocol === 'file:') ? 'http://127.0.0.1:5000' : '';
+                    const API_BASE = (location.protocol === 'file:') ? 'http://127.0.0.1:8000' : '';
                     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
                     const datosMesInicial = await fetch(`${API_BASE}/api/datos-grafica?periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0]);
                     const datos12Meses = await fetch(`${API_BASE}/api/datos-grafica?periodo=12meses&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
