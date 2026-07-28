@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheong Woon Mexico</title>
-    <style>
+<style>
         /* Eliminar la barra de desplazamiento visualmente */
         ::-webkit-scrollbar {
             display: none;
         }
+
         body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
         .form-container { background: #2c2c2c; padding: 30px; border-radius: 10px; max-width: 800px; margin: auto; }
         .row { display: flex; gap: 15px; margin-bottom: 15px; }
@@ -26,7 +27,7 @@
             border-bottom: 2px solid #444;
         }
 
-/* PARTE DERECHA - LOGO Y NOMBRE DE LA EMPPRESA*/
+/* PARTE DERECHA - LOGO Y NOMBRE DE LA EMPRESA*/
         .branding { display: flex; align-items: center; gap: -5px; }
         .logo { 
             width: 100px;
@@ -40,27 +41,25 @@
         .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
-/*Dashboard  */
-        body {
-            margin: 0px;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        header { height: 40px; /* Tu encabezado */ }
-
+/* Dashboard Modificado */
         main {
             flex: 1;
-            padding: 15px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: 250px 1fr; /* Arriba 250px, abajo lo que sobre */
-            gap: 15px;
-            overflow-y: auto; /* Permite scroll solo si la ventana es muy pequeña */
+            padding: 5px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
         }
 
-        /* Tarjetas */
+        .dashboard-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            align-items: stretch;
+        }
+
+/* Estilos base compartidos de las tarjetas */
         .card {
             background: #1e1e1e;
             border-radius: 12px;
@@ -68,11 +67,72 @@
             border: 1px solid #333;
             display: flex;
             flex-direction: column;
+            flex: 1;
+            max-width: 50%;
+            box-sizing: border-box;
         }
 
-        .card h3 { color: #fff; margin: 0 0 15px 0; font-size: 0.9rem; text-transform: uppercase; }
+        .card h3 { 
+            color: #fff; 
+            margin: 0px 0px 20px 0;
+            font-size: 0.9rem; 
+            text-transform: uppercase; 
+        }
 
-/* CUADRO GRANDE */
+/* --- GRAFICA DE DONA (IZQUIERDA) --- */
+        .card-dona .filter-container {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .card-dona .chart-container-wrapper {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .card-dona .custom-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 15px;
+            justify-content: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.78rem;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+/* --- TARJETA ANUAL (DERECHA) --- */
+        .card-anual .chart-container-wrapper {
+            position: relative;
+            height: 500px; 
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        /* CUADRO GRANDE */
         .card-bottom { grid-column: 1 / -1; }
     </style>
 </head>
@@ -90,44 +150,103 @@
         </nav>
     </header>
     <main>
-        <section class="card">
-            <h3>Ingresos del Mes</h3>
-            <div id="lista-ingresos"></div>
-        </section>
+    <div class="dashboard-row">
+        <section class="card card-dona">
+            <h3>Reclutamiento por Mes</h3>
+            
+            <div class="filter-container">
+                <select id="selectMes">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+            </div>
 
-        <section class="card">
-            <h3>Reclutamiento: Mes</h3>
-            <div class="chart-wrapper">
-                <canvas id="graficaMes"></canvas>
+            <div class="chart-container-wrapper">
+                <div class="chart-wrapper" style="width: 100%; height: 100%;">
+                    <canvas id="graficaPastelMes"></canvas>
+                </div>
+            </div>
+
+            <div class="custom-legend">
+                <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
+                <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
+                <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
             </div>
         </section>
 
-        <section class="card">
-            <h3>Reclutamiento: Año</h3>
-            <div class="chart-wrapper">
-                <canvas id="graficaAno"></canvas>
+        <!-- Segunda Gráfica -->
+        <section class="card card-anual">
+            <h3>Comparativa Anual de Ingresos</h3>
+            <div class="chart-container-wrapper">
+                <div class="chart-wrapper" style="width: 100%; height: 100%;">
+                    <canvas id="grafica12Meses"></canvas>
+                </div>
             </div>
         </section>
-
-        <section class="card card-bottom">
-            <h3>Cumpleañeros del Mes</h3>
-            <div id="lista-cumpleaneros"></div>
-        </section>
+    </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Configuración base de la gráfica
-        function crearGraficaHorizontal(idCanvas, datos) {
+        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
+        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
+
+        let chartPastel = null;
+        let chartAnual = null;
+
+        function crearGraficaPastel(idCanvas, datos) {
             const ctx = document.getElementById(idCanvas).getContext('2d');
-            new Chart(ctx, {
+            if (chartPastel) chartPastel.destroy();
+
+            chartPastel = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsCategorias,
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: coloresCategorias,
+                        borderWidth: 2,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function crearGrafica12Meses(idCanvas, datosAnuales) {
+            const ctx = document.getElementById(idCanvas).getContext('2d');
+            const mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            if (chartAnual) chartAnual.destroy();
+
+            chartAnual = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'],
+                    labels: mesesLabels,
                     datasets: [{
-                        label: 'Cantidad',
-                        data: datos,
-                        backgroundColor: '#3498db'
+                        label: 'Ingresos Totales',
+                        data: datosAnuales,
+                        backgroundColor: '#C5CCD4'
                     }]
                 },
                 options: {
@@ -136,18 +255,41 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: { beginAtZero: true, grid: { color: '#333' } },
-                        y: { ticks: { font: { size: 10 }, color: '#fff' } }
+                        y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
                     },
                     plugins: { legend: { display: false } }
                 }
             });
         }
-        document.addEventListener("DOMContentLoaded", async () => {
-            const datosMes = await fetch('/api/datos-grafica?periodo=mes').then(res => res.json());
-            const datosAno = await fetch('/api/datos-grafica?periodo=ano').then(res => res.json());
 
-            crearGraficaHorizontal('graficaMes', datosMes);
-            crearGraficaHorizontal('graficaAno', datosAno);
+        document.addEventListener("DOMContentLoaded", async () => {
+            const mesActual = new Date().getMonth() + 1;
+            const selectMes = document.getElementById('selectMes');
+            if (selectMes) {
+                selectMes.value = mesActual;
+            }
+
+            try {
+                    const API_BASE = (location.protocol === 'file:') ? 'http://127.0.0.1:5000' : '';
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                    const datosMesInicial = await fetch(`${API_BASE}/api/datos-grafica?periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0]);
+                    const datos12Meses = await fetch(`${API_BASE}/api/datos-grafica?periodo=12meses&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+                crearGraficaPastel('graficaPastelMes', datosMesInicial);
+                crearGrafica12Meses('grafica12Meses', datos12Meses);
+
+                if (selectMes) {
+                    selectMes.addEventListener('change', async (e) => {
+                        const mesSeleccionado = e.target.value;
+                        const tzChange = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                        const nuevosDatosMes = await fetch(`${API_BASE}/api/datos-grafica?periodo=mes&mes=${mesSeleccionado}&tz=${encodeURIComponent(tzChange)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0]);
+                        crearGraficaPastel('graficaPastelMes', nuevosDatosMes);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error cargando datos de las gráficas", error);
+            }
         });
     </script>
 

@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expediente Digital</title>
+    <style>
+        :root {
+            --amarillo: #f8fb30;
+            --azrey: #26116d;
+            --griso: #403f3f;
+            --blanco: #fff;
+            --grisc: #bbbcbf;
+            --azul: #4da3ff;
+            --negro: #121212;
+            --rojo: #a42121;
+            --verde: #159e45;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--negro);
+            color: var(--blanco);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 18px 24px;
+            background: var(--negro);
+            border-bottom: 1px solid var(--blanco);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .company-name {
+            font-size: 1.7rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+        }
+
+/* Botón de retroceso */
+        .back-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--grisc);
+            border-radius: 999px;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--grisc);
+            padding: 10px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--negro);
+            color: var(--blanco);
+            border-color: var(--grisc);
+        }
+
+        .tab-btn.active-tab {
+            border-color: var(--azul);
+            box-shadow: inset 0 -2px 0 var(--azul);
+        }
+
+        .shell {
+            padding: 24px;
+            max-width: 1700px;
+            margin: 0 auto;
+        }
+
+        .employee-top-grid {
+            grid-template-columns: 300px minmax(0, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: start;
+        }
+
+        .employee-top-grid.solo-contenido {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .employee-top-grid.solo-contenido .top-spacer {
+            display: none;
+        }
+
+        .name-banner {
+            width: 100%;
+            margin-bottom: 0;
+            background: var(--negro);
+            border: none;
+            border-radius: 16px;
+            padding: 6px 4px;
+        }
+
+        .name-row {
+            display: flex;
+            align-items: center;
+            min-height: 60px;
+            gap: 5px;
+        }
+
+        .name-left {
+            flex: 1 9 auto;
+        }
+
+        .name-center {
+            flex: 5 1 auto;
+            font-size: 1.8rem;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 15px;
+        }
+
+        .name-actions {
+            display: flex;
+            flex: 0 0 240px;
+            width: 240px;
+            justify-content: flex-end;
+            align-items: center;
+            margin-left: auto;
+            gap: 8px;
+        }
+
+        .name-actions button {
+            justify-content: center;
+            padding: 8px 12px; 
+            white-space: nowrap; 
+            width: 240px;
+            margin: 0;
+        }
+
+/* Boton editar datos*/
+        .tab-btn, .btn-editar, .btn-guardar, .btn-cancelar {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+/* Editar Datos */
+        #btn-editar:hover {
+            background-color: var(--azrey);
+        }
+
+/* Guardar*/
+        #btn-guardar:hover {
+            background-color: var(--verde);
+        }
+
+/* Cancelar */
+        #btn-cancelar:hover {
+            background-color: var(--rojo);
+        }
+
+
+        .ingreso-line {
+            margin-top: 6px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+        }
+
+        .layout.solo-contenido {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .layout.solo-contenido .photo-panel {
+            display: none;
+        }
+
+        .layout.solo-contenido .content-panel {
+            grid-column: 1 / -1;
+        }
+
+        .panel {
+            background: var(--negro);
+            border: 1px solid var(--blanco);
+            border-radius: 18px;
+            box-shadow: var(--blanco);
+        }
+
+        .photo-panel {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 640px;
+            border: none;
+        }
+
+        .photo-frame {
+            width: 100%;
+            max-width: 250px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+            border-radius: 18px;
+            border: 1px solid var(--grisc);
+            overflow: hidden;
+            background: var(--negro);
+            display: grid;
+            place-items: center;
+            position: relative;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+        }
+
+        .photo-placeholder {
+            color: var(--blanco);
+            text-align: center;
+            padding: 24px;
+            line-height: 1.4;
+        }
+
+        .photo-actions {
+            display: grid;
+            gap: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .action-btn, .file-label, .secondary-btn, .edit-btn, .danger-btn {
+            width: 100%;
+            border: none;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-weight: 800;
+            transition: 0.2s ease;
+        }
+
+        .action-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--grisc);
+        }
+
+        .action-btn:hover,
+        .file-label:hover,
+        .secondary-btn:hover,
+        .edit-btn:hover,
+        .danger-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .file-label {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--grisc);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-input { display: none; }
+
+        .content-panel {
+            padding: 20px 12px 12px;
+            min-height: 720px;
+            border: none;
+            box-shadow: none;
+        }
+
+        .tabs-panel { display: none; animation: fadeIn 0.24s ease; }
+        .tabs-panel.active { display: block; }
+
+        .empty-panel {
+            min-height: 660px;
+            border:none;
+            border-radius: 16px;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 4px;
+        }
+
+        .info-card {
+            background: var(--negro);
+            border-radius: 10px;
+            padding: 10px 16px;
+            min-height: 50px;
+        }
+/*TITULO FECHA DE INGRESO*/
+        .label {
+            display: block;
+            color: var(--blanco);
+            font-size: 1.2rem;
+            display: grid;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .value-display {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--blanco);
+            line-height: 1.4;
+        }
+
+        .name-value {
+            font-size: 1.9rem;
+            font-weight: 900;
+        }
+
+        .row-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+        .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .row-2-contact { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; }
+        .row-2-wide { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 12px; }
+        .row { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+        .col { flex: 1; }
+
+
+        .editable-control {
+            width: 100%;
+            background: var(--negro);
+            color: var(--blanco);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.98rem;
+            outline: none;
+        }
+
+        .editable-control[readonly] {
+            background: var(--negro);
+            border: none;
+        }
+
+        .editable-control:disabled {
+            background: var(--negro);
+            border: none;
+            opacity: 1;
+            color: var(--blanco);
+            -webkit-text-fill-color: var(--blanco);
+        }
+
+        .editable-control:focus {
+            border-color: var(--azul);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.879);
+        }
+
+        .editable-control.name-field {
+            font-size: 1.9rem;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-height: 0;
+            resize: none;
+            text-align: center;
+        }
+
+        #tab-informacion.active .info-grid {
+            display: grid;
+        }
+
+        #tab-informacion.active .info-card {
+            display: block;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .fecha-inline {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 220px;
+        }
+
+        .edit-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            justify-content: flex-end;
+            width: 240px;
+            min-height: 38px;
+            position: relative;
+            margin-left: auto;
+        }
+
+        .top-info-stack {
+            display: grid;
+            gap: 10px;
+        }
+
+        .edit-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--blanco);
+            width: auto;
+            min-width: 92px;
+            font-weight: 400;
+            padding: 8px 10px;
+        }
+
+        #btn-editar,
+        #btn-guardar,
+        #btn-cancelar {
+            position: absolute;
+            top: 0;
+            height: 38px;
+        }
+
+        #btn-editar {
+            right: 0;
+            width: 120px;
+        }
+
+        #btn-guardar {
+            right: 124px;
+            width: 116px;
+        }
+
+        #btn-cancelar {
+            right: 0;
+            width: 116px;
+        }
+
+        .doc-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .doc-row {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 16px;
+            align-items: center;
+            border: 1px solid var(--grisc);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .doc-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 14px;
+            align-items: center;
+        }
+
+        .doc-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--grisc);
+            background: var(--negro);
+            color: var(--blanco);
+            border-radius: 8px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            width: max-content;
+            min-width: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .doc-btn.doc-muted {
+            opacity: 0.4;
+        }
+
+        .doc-btn.doc-solid {
+            opacity: 1;
+            background: var(--negro);
+            border-color: var(--blanco);
+        }
+
+        .doc-btn.doc-success {
+            opacity: 1;
+            background: var(--verde);
+            border-color: var(--verde);
+            color: var(--blanco);
+        }
+
+        .doc-btn.doc-danger {
+            opacity: 1;
+            background: var(--rojo);
+            border-color: var(--rojo);
+            color: var(--blanco);
+        }
+
+        .doc-btn[data-action="delete"] {
+            margin-left: 14px;
+        }
+
+        .doc-btn[disabled] {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .doc-btn[aria-disabled="true"] {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .doc-file-input {
+            display: none;
+        }
+
+        .doc-note {
+            font-size: 0.88rem;
+            color: var(--grisc);
+        }
+
+        .secondary-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--blanco);
+            width: auto;
+            min-width: 92px;
+            font-weight: 400;
+            padding: 8px 10px;
+        }
+
+        .danger-btn {
+            background: var(--negro);
+            color: var(--blanco);
+            border: 1px solid var(--blanco);
+            width: auto;
+            min-width: 92px;
+            font-weight: 400;
+            padding: 8px 10px;
+        }
+
+        .name-date-stack {
+            display: grid;
+            gap: 8px;
+        }
+
+        .loading, .error-box {
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            margin-bottom: 18px;
+        }
+
+        .error-box {
+            color: var(--blanco);
+            border-color: var(--line);
+        }
+
+        .footer-note {
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .muted {
+            color: var(--blanco);
+            font-size: 1rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1200px) {
+            .employee-top-grid {
+                grid-template-columns: 260px minmax(0, 1fr);
+            }
+
+            .employee-top-grid.solo-contenido {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .layout {
+                grid-template-columns: 260px minmax(0, 1fr);
+            }
+
+            .layout.solo-contenido {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .row-4,
+            .row-3,
+            .row-2-wide,
+            .row-2-contact {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            header { flex-direction: column; align-items: flex-start; }
+            .header-left { width: 100%; }
+            .employee-top-grid { grid-template-columns: 1fr; }
+            .name-row { flex-wrap: wrap; }
+            .name-center { order: 1; width: 100%; }
+            .name-actions { order: 2; width: 100%; justify-content: flex-end; }
+            .layout,
+            .row-4,
+            .row-3,
+            .row-2-wide,
+            .row-2-contact {
+                grid-template-columns: 1fr;
+            }
+            .top-row { flex-direction: column; }
+            .edit-group { width: 100%; }
+            .fecha-inline { min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <div class="company-name" id="company-name">EXPEDIENTE DIGITAL</div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active active-tab" data-tab="informacion">Información</button>
+            <button class="tab-btn" data-tab="papeleria">Papelería</button>
+        </div>
+    </header>
+
+    <main class="shell">
+        <div id="status-box" class="loading">Cargando expediente...</div>
+
+        <div id="employee-top" class="employee-top-grid">
+            <div class="top-spacer"></div>
+            <div class="name-banner">
+                <div class="name-row">
+                    <div class="name-left">
+                        <button id="btn-regresar" class="back-btn" type="button" aria-label="Regresar a lista" title="Regresar a lista">&larr;</button>
+                    </div>
+                    <div class="name-center">
+                        <input id="nombre-completo" class="editable-control name-field" type="text" readonly />
+                    </div>
+                    <div class="name-actions">
+                        <div class="edit-group">
+                            <button id="btn-editar" class="edit-btn" type="button">Editar datos</button>
+                            <button id="btn-guardar" class="secondary-btn" type="button" style="display:none;">Guardar datos</button>
+                            <button id="btn-cancelar" class="danger-btn" type="button" style="display:none;">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="expediente" class="layout" style="display:none;">
+            <section class="panel photo-panel">
+                <div class="section-title">
+                    <div class="name-date-stack" style="width:100%; min-width:0;">
+                    </div>
+                </div>
+                <div class="photo-frame">
+                    <img id="photo-preview" alt="Foto del empleado" style="display:none;" />
+                    <div id="photo-placeholder" class="photo-placeholder">
+                        Sin foto cargada.
+                        <br />
+                    </div>
+                </div>
+                <div class="photo-actions">
+                    <label class="file-label" for="foto-input">SUBIR FOTO</label>
+                    <input id="foto-input" class="file-input" type="file" accept="image/*" />
+                    <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
+                    <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
+                </div>
+            </section>
+
+            <section class="panel content-panel">
+                <div id="tab-informacion" class="tabs-panel active">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <span class="label">FECHA DE INGRESO</span>
+                            <input id="fecha-ingreso" class="editable-control" type="date" readonly />
+                        </div>
+
+                        <div class="info-card">
+                            <span class="label">DATOS PERSONALES</span>
+                            <div class="row-4">
+                                <div><div class="muted">Fecha de nacimiento</div><input id="fecha-nacimiento" class="editable-control" type="date" readonly /></div>
+                                <div><div class="muted">Edad</div><input id="edad" class="editable-control" type="text" readonly /></div>
+                                <div>
+                                    <div class="muted">Género</div>
+                                    <select id="genero" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="MASCULINO">MASCULINO</option>
+                                        <option value="FEMENINO">FEMENINO</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="muted">Estado civil</div>
+                                    <select id="estado-civil" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="SOLTERO(A)">SOLTERO(A)</option>
+                                        <option value="CASADO(A)">CASADO(A)</option>
+                                        <option value="DIVORCIADO(A)">DIVORCIADO(A)</option>
+                                        <option value="VIUDO(A)">VIUDO(A)</option>
+                                        <option value="UNIÓN LIBRE">UNIÓN LIBRE</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="row-3">
+                                <div><div class="muted">CURP</div><input id="curp" class="editable-control" type="text" maxlength="18" readonly /></div>
+                                <div><div class="muted">RFC</div><input id="rfc" class="editable-control" type="text" maxlength="13" readonly /></div>
+                                <div><div class="muted">NSS</div><input id="nss" class="editable-control" type="text" maxlength="11" readonly /></div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="row-2-wide">
+                                <div><div class="muted">Teléfono móvil</div><input id="tel-movil" class="editable-control" type="text" readonly /></div>
+                                <div><div class="muted">Correo electrónico</div><input id="correo" class="editable-control" type="email" readonly /></div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <span class="label">DOMICILIO</span>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="muted">Código Postal</div>
+                                    <input id="cp" class="editable-control" type="text" maxlength="5" oninput="this.value = this.value.replace(/[^0-9]/g, '');" onblur="autocompletarCP()" readonly />
+                                </div>
+                                <div class="col">
+                                    <div class="muted">Colonia</div>
+                                    <select id="colonia" class="editable-control" disabled>
+                                        <option value="">Ingresar Codigo Postal...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col"><div class="muted">Calle</div><input id="calle" class="editable-control" type="text" readonly /></div>
+                                <div class="col"><div class="muted">N° Ext</div><input id="num-ext" class="editable-control" type="text" readonly /></div>
+                                <div class="col"><div class="muted">N° Int</div><input id="num-int" class="editable-control" type="text" readonly /></div>
+                            </div>
+                            <div class="row">
+                                <div class="col"><div class="muted">Municipio</div><input id="municipio" class="editable-control" type="text" readonly placeholder="Municipio" /></div>
+                                <div class="col"><div class="muted">Estado</div><input id="estado" class="editable-control" type="text" readonly placeholder="Estado" /></div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <span class="label">CONTACTO DE EMERGENCIA</span>
+                            <div class="row-3">
+                                <div><div class="muted">Nombre</div><input id="emergencia-nombre" class="editable-control" type="text" readonly /></div>
+                                <div>
+                                    <div class="muted">Parentesco</div>
+                                    <select id="emergencia-parentesco" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="PADRE">PADRE</option>
+                                        <option value="MADRE">MADRE</option>
+                                        <option value="ESPOSO(A)">ESPOSO(A)</option>
+                                        <option value="PAREJA">PAREJA</option>
+                                        <option value="HERMANO(A)">HERMANO(A)</option>
+                                    </select>
+                                </div>
+                                <div><div class="muted">Teléfono</div><input id="emergencia-telefono" class="editable-control" type="text" readonly /></div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <span class="label">PUESTO ASIGNADO</span>
+                            <div class="row-4">
+                                <div><div class="muted">No. Empleado</div><input id="no-empleado" class="editable-control" type="text" readonly /></div>
+                                <div>
+                                    <div class="muted">Personal</div>
+                                    <select id="personal" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="OPERATIVO">OPERATIVO</option>
+                                        <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
+                                    </select>
+                                </div>
+                                <div><div class="muted">Puesto</div><input id="puesto" class="editable-control" type="text" readonly /></div>
+                                <div><div class="muted">Área</div><input id="area" class="editable-control" type="text" readonly /></div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="row-3">
+                                <div>
+                                    <div class="muted">Turno</div>
+                                    <select id="turno" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="DÍA">DÍA</option>
+                                        <option value="NOCHE">NOCHE</option>
+                                    </select>
+                                </div>
+                                <div><div class="muted">Salario</div><input id="salario" class="editable-control" type="text" readonly /></div>
+                                <div>
+                                    <div class="muted">Periodo de Pago</div>
+                                    <select id="pago" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="SEMANAL">SEMANAL</option>
+                                        <option value="QUINCENAL">QUINCENAL</option>
+                                        <option value="MENSUAL">MENSUAL</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-papeleria" class="tabs-panel">
+                    <div class="doc-grid">
+                        <div class="doc-row">
+                            <div><div class="label">INE</div></div>
+                            <div class="doc-actions" data-doc="ine">
+                                <label class="doc-btn" for="file-ine">Subir</label>
+                                <input id="file-ine" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="ine" download="ine" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="ine" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">COMPROBANTE DE DOMICILIO</div></div>
+                            <div class="doc-actions" data-doc="comprobante_domicilio">
+                                <label class="doc-btn" for="file-comprobante_domicilio">Subir</label>
+                                <input id="file-comprobante_domicilio" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="comprobante_domicilio" download="comprobante_domicilio" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="comprobante_domicilio" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">ACTA DE NACIMIENTO</div></div>
+                            <div class="doc-actions" data-doc="acta_nacimiento">
+                                <label class="doc-btn" for="file-acta_nacimiento">Subir</label>
+                                <input id="file-acta_nacimiento" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="acta_nacimiento" download="acta_nacimiento" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="acta_nacimiento" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">CURP</div></div>
+                            <div class="doc-actions" data-doc="curp_doc">
+                                <label class="doc-btn" for="file-curp_doc">Subir</label>
+                                <input id="file-curp_doc" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="curp_doc" download="curp" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="curp_doc" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">RFC</div></div>
+                            <div class="doc-actions" data-doc="rfc_doc">
+                                <label class="doc-btn" for="file-rfc_doc">Subir</label>
+                                <input id="file-rfc_doc" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="rfc_doc" download="rfc" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="rfc_doc" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">NUMERO DE SEGURO SOCIAL</div></div>
+                            <div class="doc-actions" data-doc="nss_doc">
+                                <label class="doc-btn" for="file-nss_doc">Subir</label>
+                                <input id="file-nss_doc" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="nss_doc" download="nss" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="nss_doc" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">COMPROBANTE DE ESTUDIOS</div></div>
+                            <div class="doc-actions" data-doc="comprobante_estudios">
+                                <label class="doc-btn" for="file-comprobante_estudios">Subir</label>
+                                <input id="file-comprobante_estudios" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="comprobante_estudios" download="comprobante_estudios" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="comprobante_estudios" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">INFONAVIT</div></div>
+                            <div class="doc-actions" data-doc="infonavit_doc">
+                                <label class="doc-btn" for="file-infonavit_doc">Subir</label>
+                                <input id="file-infonavit_doc" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="infonavit_doc" download="infonavit" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="infonavit_doc" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">CARTA DE AUTORIZACION</div></div>
+                            <div class="doc-actions" data-doc="carta_autorizacion">
+                                <label class="doc-btn" for="file-carta_autorizacion">Subir</label>
+                                <input id="file-carta_autorizacion" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="carta_autorizacion" download="carta_autorizacion" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="carta_autorizacion" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+
+                        <div class="doc-row">
+                            <div><div class="label">CONTRATO FIRMADO</div></div>
+                            <div class="doc-actions" data-doc="contrato_firmado">
+                                <label class="doc-btn" for="file-contrato_firmado">Subir</label>
+                                <input id="file-contrato_firmado" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                                <a class="doc-btn" data-action="download" data-doc="contrato_firmado" download="contrato_firmado" aria-disabled="true">Descargar</a>
+                                <button class="doc-btn" type="button" data-action="delete" data-doc="contrato_firmado" disabled>Eliminar archivo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <script src="data-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
+        const SERVER_IP = currentHost || '192.168.1.85';
+        const PORT = '5000';
+        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const API_BASE = API_URL;
+        const API_BASES = [API_BASE];
+        if (['localhost', '127.0.0.1'].includes(currentHost)) {
+            API_BASES.unshift('http://localhost:5000');
+        }
+
+        function getFallbackRegistroId() {
+            try {
+                const empleados = window.DataManager && typeof window.DataManager.getEmpleados === 'function'
+                    ? window.DataManager.getEmpleados()
+                    : [];
+                const firstEmpleado = Array.isArray(empleados) ? empleados[0] : null;
+                return firstEmpleado && firstEmpleado.registro_id ? String(firstEmpleado.registro_id) : '';
+            } catch (_) {
+                return '';
+            }
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const registroId = params.get('registro_id') || params.get('id') || localStorage.getItem('ultimoRegistroId') || getFallbackRegistroId();
+        if (registroId) {
+            localStorage.setItem('ultimoRegistroId', String(registroId));
+        }
+
+        const statusBox = document.getElementById('status-box');
+        const expediente = document.getElementById('expediente');
+        const employeeTop = document.getElementById('employee-top');
+        const companyName = document.getElementById('company-name');
+        const btnRegresar = document.getElementById('btn-regresar');
+        const photoInput = document.getElementById('foto-input');
+        const photoPreview = document.getElementById('photo-preview');
+        const photoPlaceholder = document.getElementById('photo-placeholder');
+        const btnDescargarCredencial = document.getElementById('btn-descargar-credencial');
+        const btnDescargarContrato = document.getElementById('btn-descargar-contrato');
+        const btnEditar = document.getElementById('btn-editar');
+        const btnGuardar = document.getElementById('btn-guardar');
+        const btnCancelar = document.getElementById('btn-cancelar');
+        const fechaIngresoEl = document.getElementById('fecha-ingreso');
+
+        const fields = {
+            'nombre-completo': document.getElementById('nombre-completo'),
+            'fecha-ingreso': document.getElementById('fecha-ingreso'),
+            'fecha-nacimiento': document.getElementById('fecha-nacimiento'),
+            'edad': document.getElementById('edad'),
+            'genero': document.getElementById('genero'),
+            'estado-civil': document.getElementById('estado-civil'),
+            'curp': document.getElementById('curp'),
+            'rfc': document.getElementById('rfc'),
+            'nss': document.getElementById('nss'),
+            'tel-movil': document.getElementById('tel-movil'),
+            'correo': document.getElementById('correo'),
+            'cp': document.getElementById('cp'),
+            'calle': document.getElementById('calle'),
+            'num-ext': document.getElementById('num-ext'),
+            'num-int': document.getElementById('num-int'),
+            'colonia': document.getElementById('colonia'),
+            'municipio': document.getElementById('municipio'),
+            'estado': document.getElementById('estado'),
+            'emergencia-nombre': document.getElementById('emergencia-nombre'),
+            'emergencia-parentesco': document.getElementById('emergencia-parentesco'),
+            'emergencia-telefono': document.getElementById('emergencia-telefono'),
+            'no-empleado': document.getElementById('no-empleado'),
+            'personal': document.getElementById('personal'),
+            'puesto': document.getElementById('puesto'),
+            'area': document.getElementById('area'),
+            'turno': document.getElementById('turno'),
+            'salario': document.getElementById('salario'),
+            'pago': document.getElementById('pago'),
+        };
+
+        let originalData = null;
+        let editMode = false;
+        let currentEmployeeCurp = '';
+        let documentosById = {};
+        let datosCP = [];
+
+        function getCompanyFromName(nombre) {
+            const text = (nombre || '').toUpperCase();
+            if (text.includes('KRONOS')) return 'KRONOS';
+            return 'CHEONG WOON';
+        }
+
+        function formatValue(value) {
+            if (value === null || value === undefined || value === '') return '--';
+            return String(value);
+        }
+
+        function getDisplayValue(value) {
+            return value === null || value === undefined ? '' : String(value);
+        }
+
+        function getEmpresaNormalizada() {
+            return (companyName.textContent || '').trim().toUpperCase().includes('KRONOS') ? 'KRONOS' : 'CHEONG WOON';
+        }
+
+        function getCurrentCurp() {
+            return String(currentEmployeeCurp || fields['curp'].value || '').trim().toUpperCase();
+        }
+
+        function getCurrentEmpleadoTab() {
+            const activeTab = document.querySelector('.tab-btn.active');
+            return activeTab && activeTab.dataset.tab ? activeTab.dataset.tab : 'informacion';
+        }
+
+        function getEmpresaToken() {
+            const empresa = getEmpresaNormalizada();
+            return String(empresa || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        }
+
+        function getCurpToken() {
+            return String(getCurrentCurp() || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        }
+
+        async function loadDynamicEmployeePhoto() {
+            const empresaNormalizada = getEmpresaNormalizada();
+            const curpActual = getCurrentCurp();
+            if (!empresaNormalizada || !curpActual) {
+                setPhotoPreviewFromUrl('');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/employee-files?curp=${encodeURIComponent(curpActual)}&empresa=${encodeURIComponent(empresaNormalizada)}`);
+                if (!response.ok) {
+                    throw new Error('No se encontró foto en el backend');
+                }
+
+                const payload = await response.json();
+                const previewUrl = payload && payload.fotografia && payload.fotografia.previewUrl ? payload.fotografia.previewUrl : '';
+                if (previewUrl) {
+                    setPhotoPreviewFromUrl(previewUrl, { persist: true });
+                    return;
+                }
+            } catch (_) {
+                // continuar con fallback visual
+            }
+
+            setPhotoPreviewFromUrl('');
+        }
+
+        function applyMaxLengthValue(fieldKey) {
+            const field = fields[fieldKey];
+            if (!field) return;
+            const maxLengths = {
+                curp: 18,
+                rfc: 13,
+                nss: 11,
+                'tel-movil': 10,
+            };
+            const maxLength = maxLengths[fieldKey];
+            if (!maxLength) return;
+            field.value = String(field.value || '').slice(0, maxLength);
+        }
+
+        function setSelectValue(selectEl, value) {
+            if (!selectEl) return;
+            const normalized = getDisplayValue(value).trim();
+            if (!normalized) {
+                selectEl.value = '';
+                return;
+            }
+
+            const exists = Array.from(selectEl.options).some((option) => option.value === normalized);
+            if (!exists) {
+                const dynamicOption = document.createElement('option');
+                dynamicOption.value = normalized;
+                dynamicOption.textContent = normalized;
+                selectEl.appendChild(dynamicOption);
+            }
+            selectEl.value = normalized;
+        }
+
+        function getRutaListaPorEmpresa() {
+            const empresa = (companyName.textContent || '').toUpperCase();
+            if (empresa.includes('KRONOS')) return 'Kronos.html';
+            return 'Cheong Woon.html';
+        }
+
+        async function getConFallback(endpoint) {
+            let ultimoErrorRed = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        async function postConFallback(endpoint, body) {
+            let ultimoErrorRed = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                        method: 'POST',
+                        headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
+                        body: isFormData ? body : JSON.stringify(body),
+                    });
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        function fillFields(data) {
+            fields['nombre-completo'].value = getDisplayValue(data.nombre_completo);
+            fields['fecha-nacimiento'].value = getDisplayValue(data.fecha_nacimiento);
+            fields['edad'].value = getDisplayValue(data.edad);
+            setSelectValue(fields['genero'], data.genero);
+            setSelectValue(fields['estado-civil'], data.estado_civil);
+            fields['curp'].value = getDisplayValue(data.curp).toUpperCase();
+            fields['rfc'].value = getDisplayValue(data.rfc).toUpperCase();
+            fields['nss'].value = getDisplayValue(data.nss);
+            fields['tel-movil'].value = getDisplayValue(data.tel_movil);
+            fields['correo'].value = getDisplayValue(data.correo);
+            fields['cp'].value = getDisplayValue(data.codigo_postal);
+            fields['calle'].value = getDisplayValue(data.calle);
+            fields['num-ext'].value = getDisplayValue(data.num_ext);
+            fields['num-int'].value = getDisplayValue(data.num_int);
+            setSelectValue(fields['colonia'], data.colonia);
+            fields['municipio'].value = getDisplayValue(data.municipio);
+            fields['estado'].value = getDisplayValue(data.estado);
+            fields['emergencia-nombre'].value = getDisplayValue(data.nombre_emergencia);
+            setSelectValue(fields['emergencia-parentesco'], data.parentesco_emergencia);
+            fields['emergencia-telefono'].value = getDisplayValue(data.telefono_emergencia);
+            fields['no-empleado'].value = getDisplayValue(data.no_empleado);
+            setSelectValue(fields['personal'], data.personal);
+            fields['puesto'].value = getDisplayValue(data.puesto);
+            fields['area'].value = getDisplayValue(data.area);
+            setSelectValue(fields['turno'], data.turno);
+            fields['salario'].value = getDisplayValue(data.salario);
+            setSelectValue(fields['pago'], data.pago);
+            fields['fecha-ingreso'].value = getDisplayValue(data.fecha_ingreso || data.fecha_registro || '');
+        }
+
+        function syncButtons() {
+            const tabActiva = document.querySelector('.tab-btn.active');
+            const esInformacion = !tabActiva || tabActiva.dataset.tab === 'informacion';
+            const esKronos = getEmpresaNormalizada() === 'KRONOS';
+
+            btnEditar.style.display = esInformacion ? 'inline-flex' : 'none';
+            btnGuardar.style.display = esInformacion ? 'inline-flex' : 'none';
+            btnCancelar.style.display = esInformacion ? 'inline-flex' : 'none';
+
+            if (!esInformacion) {
+                return;
+            }
+
+            if (btnDescargarCredencial) {
+                btnDescargarCredencial.style.display = esKronos ? 'none' : 'inline-flex';
+            }
+            if (btnDescargarContrato) {
+                btnDescargarContrato.style.display = esKronos ? 'none' : 'inline-flex';
+            }
+
+            if (editMode) {
+                btnEditar.style.visibility = 'hidden';
+                btnEditar.style.pointerEvents = 'none';
+                btnGuardar.style.visibility = 'visible';
+                btnGuardar.style.pointerEvents = 'auto';
+                btnCancelar.style.visibility = 'visible';
+                btnCancelar.style.pointerEvents = 'auto';
+            } else {
+                btnEditar.style.visibility = 'visible';
+                btnEditar.style.pointerEvents = 'auto';
+                btnGuardar.style.visibility = 'hidden';
+                btnGuardar.style.pointerEvents = 'none';
+                btnCancelar.style.visibility = 'hidden';
+                btnCancelar.style.pointerEvents = 'none';
+            }
+        }
+
+        function calcularEdad(fechaNacimiento) {
+            const fecha = new Date(fechaNacimiento);
+            if (!fecha.getTime()) return 0;
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - fecha.getFullYear();
+            const m = hoy.getMonth() - fecha.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+                edad -= 1;
+            }
+            return edad;
+        }
+
+        function getCurpActual() {
+            return (fields['curp'].value || currentEmployeeCurp || '').trim().toUpperCase();
+        }
+
+        function hydrateDocumentButtons(docKey) {
+            const uploadBtn = document.querySelector(`label[for="file-${docKey}"]`);
+            const previewBtn = document.querySelector(`[data-action="preview"][data-doc="${docKey}"]`);
+            const downloadLink = document.querySelector(`[data-action="download"][data-doc="${docKey}"]`);
+            const deleteBtn = document.querySelector(`[data-action="delete"][data-doc="${docKey}"]`);
+            const fileData = documentosById[docKey];
+            const hasFile = Boolean(fileData && fileData.previewUrl);
+            const previewUrl = fileData && fileData.previewUrl ? fileData.previewUrl : '';
+
+            if (uploadBtn) {
+                uploadBtn.classList.toggle('doc-solid', !hasFile);
+                uploadBtn.classList.toggle('doc-muted', hasFile);
+                uploadBtn.classList.remove('doc-success', 'doc-danger');
+                uploadBtn.style.pointerEvents = hasFile ? 'none' : 'auto';
+            }
+
+            if (previewBtn) {
+                previewBtn.disabled = !hasFile;
+                previewBtn.classList.toggle('doc-solid', hasFile);
+                previewBtn.classList.toggle('doc-muted', !hasFile);
+                previewBtn.classList.remove('doc-success', 'doc-danger');
+                previewBtn.style.pointerEvents = hasFile ? 'auto' : 'none';
+            }
+
+            if (deleteBtn) deleteBtn.disabled = !hasFile;
+            if (downloadLink) {
+                downloadLink.classList.toggle('doc-success', hasFile);
+                downloadLink.classList.toggle('doc-muted', !hasFile);
+                downloadLink.classList.remove('doc-solid', 'doc-danger');
+                if (hasFile) {
+                    downloadLink.href = previewUrl;
+                    downloadLink.download = '';
+                    downloadLink.style.pointerEvents = 'auto';
+                    downloadLink.style.opacity = '1';
+                    downloadLink.setAttribute('aria-disabled', 'false');
+                } else {
+                    downloadLink.removeAttribute('href');
+                    downloadLink.style.pointerEvents = 'none';
+                    downloadLink.style.opacity = '0.45';
+                    downloadLink.setAttribute('aria-disabled', 'true');
+                }
+            }
+
+            if (deleteBtn) {
+                deleteBtn.classList.toggle('doc-danger', hasFile);
+                deleteBtn.classList.toggle('doc-muted', !hasFile);
+                deleteBtn.classList.remove('doc-solid', 'doc-success');
+                deleteBtn.style.pointerEvents = hasFile ? 'auto' : 'none';
+            }
+        }
+
+        function refreshEdadDependiente() {
+            const edad = calcularEdad(fields['fecha-nacimiento'].value);
+            fields['edad'].value = edad > 0 ? String(edad) : fields['edad'].value;
+        }
+
+        async function cargarCatalogoCP() {
+            try {
+                const resp = await fetch('cp.csv');
+                if (!resp.ok) return;
+                const text = await resp.text();
+                const lines = text.split(/\r?\n/).filter(Boolean);
+                if (!lines.length) return;
+
+                const headers = lines[0].split('|').map((h) => h.trim());
+                const idxCP = headers.indexOf('d_codigo');
+                const idxColonia = headers.indexOf('d_asenta');
+                const idxMunicipio = headers.indexOf('D_mnpio');
+                const idxEstado = headers.indexOf('d_estado');
+                if (idxCP < 0 || idxColonia < 0 || idxMunicipio < 0 || idxEstado < 0) return;
+
+                datosCP = lines.slice(1).map((line) => {
+                    const parts = line.split('|');
+                    return {
+                        d_codigo: (parts[idxCP] || '').trim(),
+                        d_asenta: (parts[idxColonia] || '').trim(),
+                        D_mnpio: (parts[idxMunicipio] || '').trim(),
+                        d_estado: (parts[idxEstado] || '').trim(),
+                    };
+                }).filter((row) => row.d_codigo);
+            } catch (_) {
+                datosCP = [];
+            }
+        }
+
+        function autocompletarCP() {
+            const cpBuscado = (fields['cp'].value || '').trim();
+            const selectCol = fields['colonia'];
+            const inputMun = fields['municipio'];
+            const inputEst = fields['estado'];
+
+            if (!cpBuscado || !selectCol) return;
+
+            const resultados = datosCP.filter((fila) => fila.d_codigo === cpBuscado);
+            if (!resultados.length) return;
+
+            inputMun.value = resultados[0].D_mnpio || '';
+            inputEst.value = resultados[0].d_estado || '';
+
+            const valorActualColonia = (selectCol.value || '').trim();
+            selectCol.innerHTML = '';
+            resultados.forEach((fila) => {
+                const opt = document.createElement('option');
+                opt.value = fila.d_asenta;
+                opt.textContent = fila.d_asenta;
+                selectCol.appendChild(opt);
+            });
+
+            const existeActual = Array.from(selectCol.options).some((opt) => opt.value === valorActualColonia);
+            if (existeActual) {
+                selectCol.value = valorActualColonia;
+            }
+        }
+
+        window.autocompletarCP = autocompletarCP;
+
+        function saveLocalProfile() {
+            const curp = getCurpActual();
+            if (!curp) return;
+            const existing = window.DataManager.getByCurp(curp);
+            const merged = {
+                ...existing,
+                registro_id: registroId,
+                curp,
+                nombre: fields['nombre-completo'].value.trim(),
+                nombre_completo: fields['nombre-completo'].value.trim(),
+                fecha_ingreso: fields['fecha-ingreso'].value.trim(),
+                fecha_nacimiento: fields['fecha-nacimiento'].value.trim(),
+                edad: fields['edad'].value.trim(),
+                genero: fields['genero'].value.trim(),
+                estado_civil: fields['estado-civil'].value.trim(),
+                rfc: fields['rfc'].value.trim().toUpperCase(),
+                nss: fields['nss'].value.trim(),
+                tel_movil: fields['tel-movil'].value.trim(),
+                correo: fields['correo'].value.trim(),
+                codigo_postal: fields['cp'].value.trim(),
+                calle: fields['calle'].value.trim(),
+                num_ext: fields['num-ext'].value.trim(),
+                num_int: fields['num-int'].value.trim(),
+                colonia: fields['colonia'].value.trim(),
+                municipio: fields['municipio'].value.trim(),
+                estado: fields['estado'].value.trim(),
+                nombre_emergencia: fields['emergencia-nombre'].value.trim(),
+                parentesco_emergencia: fields['emergencia-parentesco'].value.trim(),
+                telefono_emergencia: fields['emergencia-telefono'].value.trim(),
+                no_empleado: fields['no-empleado'].value.trim(),
+                personal: fields['personal'].value.trim(),
+                puesto: fields['puesto'].value.trim(),
+                area: fields['area'].value.trim(),
+                turno: fields['turno'].value.trim(),
+                salario: fields['salario'].value.trim(),
+                pago: fields['pago'].value.trim(),
+                empresa: companyName.textContent.trim(),
+                fecha_registro: fields['fecha-ingreso'].value.trim(),
+                documentos: documentosById,
+            };
+            window.DataManager.upsertByCurp(merged);
+        }
+
+        function loadLocalProfile() {
+            const curp = getCurpActual();
+            let existing = window.DataManager.getEmpleadoByIdentity({ curp, registro_id: registroId });
+            if (!existing) {
+                existing = window.DataManager.getByCurp(curp);
+            }
+            documentosById = existing && existing.documentos ? existing.documentos : {};
+            Object.keys(documentosById).forEach((docKey) => hydrateDocumentButtons(docKey));
+        }
+
+        async function refreshServerDocuments() {
+            const curp = getCurrentCurp();
+            const empresa = getEmpresaNormalizada();
+            if (!curp || !empresa) return;
+
+            try {
+                const { respuesta, texto } = await getConFallback(`/api/employee-files?curp=${encodeURIComponent(curp)}&empresa=${encodeURIComponent(empresa)}`);
+                if (!respuesta.ok) return;
+
+                const payload = JSON.parse(texto || '{}');
+                const docs = Object.assign({}, payload.documentos || {});
+                if (payload.fotografia) {
+                    docs.fotografia = payload.fotografia;
+                }
+
+                documentosById = docs;
+                Object.keys(documentosById).forEach((docKey) => hydrateDocumentButtons(docKey));
+
+            } catch (error) {
+                console.warn('No se pudieron cargar documentos del servidor:', error.message);
+            }
+        }
+
+        async function uploadDocumentToServer(docKey, file) {
+            const curp = getCurrentCurp();
+            const empresa = getEmpresaNormalizada();
+            if (!curp || !empresa) {
+                throw new Error('Faltan datos del empleado para subir archivos.');
+            }
+
+            const formData = new FormData();
+            formData.append('curp', curp);
+            formData.append('empresa', empresa);
+            formData.append('doc_key', docKey);
+            formData.append('file', file);
+
+            const { respuesta, texto } = await postConFallback('/api/employee-files', formData);
+            if (!respuesta.ok) {
+                throw new Error(texto || 'No se pudo subir el archivo');
+            }
+
+            return JSON.parse(texto || '{}');
+        }
+
+        async function deleteDocumentFromServer(docKey) {
+            const curp = getCurrentCurp();
+            const empresa = getEmpresaNormalizada();
+            if (!curp || !empresa) {
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/api/employee-files?curp=${encodeURIComponent(curp)}&empresa=${encodeURIComponent(empresa)}&doc_key=${encodeURIComponent(docKey)}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const texto = await response.text();
+                throw new Error(texto || 'No se pudo eliminar el archivo');
+            }
+        }
+
+        async function handleDocumentUpload(docKey, file) {
+            if (!file) return;
+            const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                alert('Formato no permitido. Solo PDF, PNG, JPG o WEBP.');
+                return;
+            }
+
+            try {
+                const resultado = await uploadDocumentToServer(docKey, file);
+                documentosById[docKey] = {
+                    previewUrl: resultado.previewUrl || '',
+                    fileType: file.type,
+                };
+                hydrateDocumentButtons(docKey);
+                saveLocalProfile();
+                return resultado;
+            } catch (error) {
+                alert('Error al subir archivo: ' + error.message);
+                return null;
+            }
+        }
+
+        async function removeDocument(docKey) {
+            if (!documentosById[docKey]) return;
+
+            try {
+                await deleteDocumentFromServer(docKey);
+                delete documentosById[docKey];
+                hydrateDocumentButtons(docKey);
+                saveLocalProfile();
+            } catch (error) {
+                alert('Error al eliminar archivo: ' + error.message);
+            }
+        }
+
+
+        function applyReadOnlyState(isEdit) {
+            const permanentlyLocked = new Set(['fecha-nacimiento', 'edad', 'genero', 'curp', 'rfc', 'nss']);
+            Object.entries(fields).forEach(([fieldKey, el]) => {
+                if (!el) return;
+                const isName = fieldKey === 'nombre-completo';
+                if (el.tagName === 'SELECT') {
+                    el.disabled = permanentlyLocked.has(fieldKey) ? true : !isEdit;
+                    return;
+                }
+                el.readOnly = (isName || permanentlyLocked.has(fieldKey)) ? true : !isEdit;
+            });
+        }
+
+        function normalizePhotoUrl(url) {
+            if (!url) return '';
+            if (/^data:/i.test(url) || /^https?:\/\//i.test(url)) return url;
+            const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+            return `${API_URL}${normalizedPath}`;
+        }
+
+        function setPhotoPreviewFromUrl(url, { persist = false } = {}) {
+            const normalizedUrl = normalizePhotoUrl(url);
+            if (!normalizedUrl) {
+                photoPreview.removeAttribute('src');
+                photoPreview.style.display = 'none';
+                photoPlaceholder.style.display = 'block';
+                return false;
+            }
+
+            photoPreview.src = normalizedUrl;
+            photoPreview.style.display = 'block';
+            photoPlaceholder.style.display = 'none';
+            if (persist && registroId) {
+                localStorage.setItem(`foto_empleado_${registroId}`, normalizedUrl);
+            }
+            return true;
+        }
+
+        function getCurrentPhotoSource() {
+            const previewSrc = photoPreview && (photoPreview.getAttribute('src') || photoPreview.src || '');
+            if (previewSrc) return previewSrc;
+
+            const storedPhoto = localStorage.getItem(`foto_empleado_${registroId}`);
+            if (storedPhoto) return storedPhoto;
+
+            const fotografia = documentosById && documentosById.fotografia && documentosById.fotografia.previewUrl
+                ? documentosById.fotografia.previewUrl
+                : '';
+            return fotografia ? normalizePhotoUrl(fotografia) : '';
+        }
+
+        function loadPhotoFromStorage(idValue) {
+            const savedPhoto = localStorage.getItem(`foto_empleado_${idValue}`);
+            if (savedPhoto) {
+                setPhotoPreviewFromUrl(savedPhoto);
+            }
+        }
+
+        function updatePhotoPreview(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                setPhotoPreviewFromUrl(reader.result, { persist: true });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function downloadBlob(content, filename, type = 'text/html') {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 500);
+        }
+
+        function buildPrintableCredential(data) {
+            const currentPhotoSource = getCurrentPhotoSource();
+            const photoHtml = currentPhotoSource
+                ? `<img src="${currentPhotoSource}" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:18px;">`
+                : `<div style="display:grid;place-items:center;width:100%;height:100%;color:#777;">Sin foto</div>`;
+
+            return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Credencial ${data.nombre_completo || ''}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f3f6fb;}
+.card{width:680px;margin:0 auto;background:#fff;border:1px solid #d6dde9;border-radius:18px;overflow:hidden;}
+.top{background:linear-gradient(90deg,#0f6fff,#1746a2);color:#fff;padding:18px 22px;font-weight:800;display:flex;justify-content:space-between;}
+.body{display:grid;grid-template-columns:210px 1fr;gap:18px;padding:22px;}
+.photo{width:210px;height:210px;border:1px solid #d0d8e6;border-radius:18px;overflow:hidden;}
+.info h1{margin:0 0 10px;font-size:26px;}.row{margin:8px 0;font-size:14px;}.row b{display:inline-block;width:160px;}
+.footer{padding:16px 22px 22px;color:#5b6575;font-size:12px;}
+</style></head><body>
+<div class="card"><div class="top"><div>${data.empresa || 'EMPRESA'}</div><div>CREDENCIAL</div></div>
+<div class="body"><div class="photo">${photoHtml}</div><div class="info"><h1>${data.nombre_completo || ''}</h1>
+<div class="row"><b>No. Empleado:</b> ${formatValue(data.no_empleado)}</div>
+<div class="row"><b>Puesto:</b> ${formatValue(data.puesto)}</div>
+<div class="row"><b>Área:</b> ${formatValue(data.area)}</div>
+<div class="row"><b>Turno:</b> ${formatValue(data.turno)}</div>
+<div class="row"><b>Fecha ingreso:</b> ${formatValue(data.fecha_ingreso)}</div>
+</div></div><div class="footer">Documento generado automáticamente desde Expediente Digital.</div></div>
+</body></html>`;
+        }
+
+        function buildPrintableContract(data) {
+            return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Contrato ${data.nombre_completo || ''}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:40px;color:#111;line-height:1.6;}
+h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:40px;}.line{border-top:1px solid #333;padding-top:8px;text-align:center;}
+</style></head><body>
+<h1>Contrato de Trabajo</h1>
+<div class="block">Empleado: <b>${formatValue(data.nombre_completo)}</b></div>
+<div class="block">Empresa: <b>${formatValue(data.empresa)}</b></div>
+<div class="block">No. Empleado: <b>${formatValue(data.no_empleado)}</b></div>
+<div class="block">Puesto: <b>${formatValue(data.puesto)}</b></div>
+<div class="block">Área: <b>${formatValue(data.area)}</b></div>
+<div class="block">Salario: <b>${formatValue(data.salario)}</b></div>
+<div class="block">Periodo de Pago: <b>${formatValue(data.pago)}</b></div>
+<p>Este documento se genera de manera automática con los datos del expediente digital y sirve como base para revisión interna.</p>
+<div class="sign"><div class="line">Firma del empleado</div><div class="line">Firma de RH</div></div>
+</body></html>`;
+        }
+
+        async function cargarEmpleado() {
+            if (!registroId) {
+                const fallbackId = getFallbackRegistroId();
+                if (!fallbackId) {
+                    statusBox.className = 'error-box';
+                    statusBox.textContent = 'Falta el registro_id en la URL. Abre esta página desde la tabla de empleados.';
+                    return;
+                }
+                localStorage.setItem('ultimoRegistroId', fallbackId);
+                window.location.search = `?registro_id=${encodeURIComponent(fallbackId)}`;
+                return;
+            }
+
+            try {
+                const { respuesta, texto } = await getConFallback(`/obtener-empleado/${encodeURIComponent(registroId)}`);
+                if (!respuesta.ok) {
+                    statusBox.className = 'error-box';
+                    statusBox.textContent = texto || 'No se pudo cargar el expediente.';
+                    return;
+                }
+
+                const data = JSON.parse(texto || '{}');
+                originalData = data;
+                const empresa = getCompanyFromName(data.empresa || '');
+                currentEmployeeCurp = String(data.curp || '').toUpperCase();
+
+                companyName.textContent = empresa;
+                document.title = `${data.nombre_completo || 'Empleado'} - ${empresa}`;
+
+                fillFields(data);
+                refreshEdadDependiente();
+                loadPhotoFromStorage(registroId);
+                await loadDynamicEmployeePhoto();
+                saveLocalProfile();
+                loadLocalProfile();
+                await refreshServerDocuments();
+                statusBox.style.display = 'none';
+                expediente.style.display = 'grid';
+                applyReadOnlyState(false);
+                syncButtons();
+            } catch (error) {
+                statusBox.className = 'error-box';
+                statusBox.textContent = 'Error al cargar expediente: ' + error.message;
+            }
+        }
+
+        async function guardarCambios() {
+            const payload = {
+                nombre: fields['nombre-completo'].value.trim(),
+                nombre_completo: (originalData && originalData.nombre_completo) ? String(originalData.nombre_completo).trim() : fields['nombre-completo'].value.trim(),
+                fecha_nacimiento: fields['fecha-nacimiento'].value.trim(),
+                fecha_ingreso: fields['fecha-ingreso'].value.trim(),
+                fecha_ingreso_raw: fields['fecha-ingreso'].value.trim(),
+                fecha_registro: fields['fecha-ingreso'].value.trim(),
+                edad: fields['edad'].value.trim(),
+                genero: fields['genero'].value.trim(),
+                estado_civil: fields['estado-civil'].value.trim(),
+                curp: fields['curp'].value.trim().toUpperCase(),
+                rfc: fields['rfc'].value.trim().toUpperCase(),
+                nss: fields['nss'].value.trim(),
+                tel_movil: fields['tel-movil'].value.trim(),
+                correo: fields['correo'].value.trim(),
+                calle: fields['calle'].value.trim(),
+                numeracion: `${fields['num-ext'].value.trim()} / ${fields['num-int'].value.trim()}`,
+                colonia: fields['colonia'].value.trim(),
+                ubicacion: `${fields['municipio'].value.trim()} / ${fields['estado'].value.trim()} / ${fields['cp'].value.trim()}`,
+                emergencia_nombre: fields['emergencia-nombre'].value.trim(),
+                emergencia_parentesco: fields['emergencia-parentesco'].value.trim(),
+                emergencia_telefono: fields['emergencia-telefono'].value.trim(),
+                no_empleado: fields['no-empleado'].value.trim(),
+                personal: fields['personal'].value.trim(),
+                puesto: fields['puesto'].value.trim(),
+                area: fields['area'].value.trim(),
+                turno: fields['turno'].value.trim(),
+                salario: fields['salario'].value.trim(),
+                pago: fields['pago'].value.trim(),
+                empresa: companyName.textContent.trim(),
+            };
+
+            try {
+                const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, payload);
+                if (!respuesta.ok) {
+                    alert(`No se pudieron guardar los cambios: ${texto || 'Sin detalle'}`);
+                    return;
+                }
+
+                const data = JSON.parse(texto || '{}');
+                originalData = data;
+                fillFields(data);
+                companyName.textContent = getCompanyFromName(data.empresa || '');
+                currentEmployeeCurp = String(data.curp || currentEmployeeCurp).toUpperCase();
+                saveLocalProfile();
+                window.actualizarVistas();
+                editMode = false;
+                syncButtons();
+                applyReadOnlyState(false);
+                alert('Datos actualizados correctamente.');
+            } catch (error) {
+                alert('Error de conexión al guardar: ' + error.message);
+            }
+        }
+
+        function bindTabButtons() {
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active-tab'));
+                    document.querySelectorAll('.tabs-panel').forEach((p) => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    btn.classList.add('active-tab');
+                    const panel = document.getElementById(`tab-${btn.dataset.tab}`);
+                    if (panel) {
+                        panel.classList.add('active');
+                    }
+
+                    const esInformacion = btn.dataset.tab === 'informacion';
+                    expediente.classList.remove('solo-contenido');
+                    employeeTop.classList.remove('solo-contenido');
+                    syncButtons();
+                });
+            });
+        }
+
+        bindTabButtons();
+
+        btnRegresar.addEventListener('click', () => {
+            window.location.href = getRutaListaPorEmpresa();
+        });
+
+        photoInput.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            handleDocumentUpload('fotografia', file).then((resultado) => {
+                const previewUrl = resultado && resultado.previewUrl ? resultado.previewUrl : '';
+                if (previewUrl) {
+                    localStorage.setItem(`foto_empleado_${registroId}`, previewUrl);
+                }
+            });
+        });
+
+        btnEditar.addEventListener('click', () => {
+            editMode = true;
+            syncButtons();
+            applyReadOnlyState(true);
+        });
+
+        btnCancelar.addEventListener('click', () => {
+            if (originalData) fillFields(originalData);
+            refreshEdadDependiente();
+            editMode = false;
+            syncButtons();
+            applyReadOnlyState(false);
+            statusBox.style.display = 'none';
+        });
+
+        fields['fecha-nacimiento'].addEventListener('change', refreshEdadDependiente);
+        ['curp', 'rfc'].forEach((fieldKey) => {
+            fields[fieldKey].addEventListener('input', () => {
+                fields[fieldKey].value = String(fields[fieldKey].value || '').toUpperCase();
+                applyMaxLengthValue(fieldKey);
+            });
+        });
+        ['nss', 'tel-movil'].forEach((fieldKey) => {
+            fields[fieldKey].addEventListener('input', () => applyMaxLengthValue(fieldKey));
+        });
+
+        document.querySelectorAll('.doc-file-input').forEach((inputEl) => {
+            inputEl.addEventListener('change', (event) => {
+                const file = event.target.files && event.target.files[0];
+                const docKey = inputEl.id.replace('file-', '');
+                handleDocumentUpload(docKey, file);
+            });
+        });
+
+        document.querySelectorAll('[data-action="preview"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const docKey = button.dataset.doc;
+                const fileData = documentosById[docKey];
+                const previewUrl = fileData && fileData.previewUrl ? fileData.previewUrl : '';
+                if (!previewUrl) return;
+                window.open(previewUrl, '_blank', 'noopener');
+            });
+        });
+
+        document.querySelectorAll('[data-action="delete"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const docKey = button.dataset.doc;
+                removeDocument(docKey);
+            });
+        });
+
+
+        btnGuardar.addEventListener('click', guardarCambios);
+
+        window.addEventListener('rh:data-updated', () => {
+            if (window.DataManager && getCurpActual()) {
+                const empleadoActual = window.DataManager.getByCurp(getCurpActual());
+                if (empleadoActual && empleadoActual.estatus) {
+                    statusBox.textContent = `Estatus actual: ${empleadoActual.estatus}`;
+                    statusBox.style.display = 'block';
+                }
+            }
+        });
+
+        cargarEmpleado().catch((error) => {
+            statusBox.className = 'error-box';
+            statusBox.textContent = 'Error al iniciar expediente: ' + (error && error.message ? error.message : error);
+        });
+
+/*GAFETTE*/
+        document.getElementById('btn-descargar-credencial').addEventListener('click', () => {
+            const activeTab = getCurrentEmpleadoTab();
+            const returnUrl = window.location.href;
+
+            const datosRespaldo = {
+                nombre_completo: fields['nombre-completo'].value,
+                nss: fields['nss'].value,
+                curp: fields['curp'].value,
+                area: fields['area'].value,
+                nombre_emergencia: fields['emergencia-nombre'].value,
+                telefono_emergencia: fields['emergencia-telefono'].value,
+                fecha_ingreso: fechaIngresoEl.value || fechaIngresoEl.textContent,
+                empresa: companyName.textContent
+            };
+            localStorage.setItem('gafeteData', JSON.stringify(datosRespaldo));
+            localStorage.setItem('empleadoActiveTab', activeTab);
+            localStorage.setItem('gafeteReturnUrl', returnUrl);
+
+            window.location.href = `gafette.html?registro_id=${encodeURIComponent(registroId)}`;
+        });
+
+/*CONTRATO*/
+        document.getElementById('btn-descargar-contrato').addEventListener('click', () => {
+            window.location.href = `contrato.html?id=${encodeURIComponent(registroId)}`;
+        });
+
+    </script>
+</body>
+</html>

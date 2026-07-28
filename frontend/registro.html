@@ -163,7 +163,7 @@
                 <p id="fecha-actual" style="color: #888; font-size: 0.9rem; margin-top: 5px;"></p>
             </div>
             
-            <form id="registroForm" action="/api/guardar-registro" method="POST">
+            <form id="registroForm" action="/guardar-registro" method="POST">
 
                 <h3>DATOS PERSONALES</h3>
                 <!-- Nombre Completo -->
@@ -371,6 +371,7 @@
             </div>
         </div>
     </main>
+    <script src="data-manager.js"></script>
     <script>
         // FECHA DEL DIA --------------------------------------------------------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', function() {
@@ -503,14 +504,36 @@
             return true;
         }
 
-        async function postApi(endpoint, body) {
-            const respuesta = await fetch(endpoint, {
-                method: 'POST',
-                body
-            });
+        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
+        const SERVER_IP = currentHost || '192.168.1.85';
+        const PORT = '5000';
+        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const API_BASE = API_URL;
+        const API_BASES = [API_BASE];
 
-            const texto = await respuesta.text();
-            return { respuesta, texto };
+        // Si se abre en local, intenta primero localhost sin perder la IP de red local.
+        if (['localhost', '127.0.0.1'].includes(currentHost)) {
+            API_BASES.unshift('http://localhost:5000');
+        }
+
+        async function postConFallback(endpoint, body) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                        method: 'POST',
+                        body
+                    });
+
+                    const texto = await respuesta.text();
+                    return { respuesta, texto, baseUrl };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         function mostrarMensajeInferior(texto, duracionMs, recargar, esError) {
@@ -548,9 +571,26 @@
             const formData = new FormData(form);
 
             try {
-                const { respuesta, texto } = await postApi('/api/guardar-registro', formData);
+                const { respuesta, texto } = await postConFallback('/guardar-registro', formData);
 
                 if (respuesta.ok && texto.startsWith('OK')) {
+                    if (window.DataManager) {
+                        const curpValue = (formData.get('curp') || '').toString().trim().toUpperCase();
+                        window.DataManager.upsertByCurp({
+                            curp: curpValue,
+                            nombre: (formData.get('nombre') || '').toString().trim(),
+                            nombre_completo: (formData.get('nombre') || '').toString().trim(),
+                            fecha_nacimiento: (formData.get('fecha_nac') || '').toString().trim(),
+                            edad: (formData.get('edad') || '').toString().trim(),
+                            genero: (formData.get('genero') || '').toString().trim(),
+                            estado_civil: (formData.get('edo_civil') || '').toString().trim(),
+                            rfc: (formData.get('rfc') || '').toString().trim(),
+                            nss: (formData.get('nss') || '').toString().trim(),
+                            tel_movil: (formData.get('tel_movil') || '').toString().trim(),
+                            correo: (formData.get('correo') || '').toString().trim(),
+                            estatus: 'ACTIVO',
+                        });
+                    }
                     // mostrar encuesta solo cuando el registro quedó guardado
                     document.getElementById('modal-encuesta').style.display = 'flex';
                     return;
@@ -578,6 +618,13 @@
             const registro = Object.fromEntries(formData.entries());
 
             const subFuente = subOpcion ? subOpcion.value : '';
+            // Normalizar "Agencia" a etiquetas finales esperadas por el servidor
+            let fuenteParaEnviar = fuente;
+            if (fuente === 'Agencia') {
+                if (subFuente === 'CW') fuenteParaEnviar = 'RECLU CW';
+                else if (subFuente === 'PURO') fuenteParaEnviar = 'RECLU PURO';
+                else fuenteParaEnviar = subFuente || 'AGENCIA';
+            }
             const nombreReclutador = nombreReclutadorEl ? nombreReclutadorEl.value.trim() : '';
             const nombreEmpleado = nombreEmpleadoEl ? nombreEmpleadoEl.value.trim() : '';
 
@@ -613,16 +660,17 @@
 
             const encuestaForm = new FormData();
             encuestaForm.append('curp', registro.curp || '');
-            encuestaForm.append('fuente', fuente || '');
+            encuestaForm.append('fuente', fuenteParaEnviar || '');
             encuestaForm.append('sub_fuente', subFuente);
             encuestaForm.append('nombre_reclutador', nombreReclutador);
             encuestaForm.append('nombre_empleado', nombreEmpleado);
             encuestaForm.append('detalle', detalle);
 
             try {
-                const { respuesta, texto } = await postApi('/api/guardar-encuesta', encuestaForm);
+                const { respuesta, texto } = await postConFallback('/guardar-encuesta', encuestaForm);
 
                 if (respuesta.ok && texto.startsWith('OK')) {
+                    if (window.actualizarVistas) window.actualizarVistas();
                     // ocultar modal encuesta
                     document.getElementById('modal-encuesta').style.display = 'none';
                     // mostrar mensaje inferior 2 segundos y recargar

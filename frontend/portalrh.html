@@ -95,23 +95,18 @@
     </main>
 
     <script>
-        // ACCESO DE RH
         function verificarAcceso() {
-            // 1. Obtener valores
             const u = document.getElementById('user').value;
             const p = document.getElementById('pass').value;
             
-            // 2. Definir la variable del mensaje de error
             const errorMsg = document.getElementById('mensajeError');
 
-            // 3. Validar
-            if (u === "admin" && p === "123") {
+// USUARIO / CONTRASEÑA
+            if (u === "RH" && p === "123") {
                 window.location.href = "iniciorh.html";
             } else {
-                // Mostrar error
                 errorMsg.style.display = 'block';
                 
-                // Ocultar automáticamente después de 3 segundos
                 setTimeout(() => {
                     errorMsg.style.display = 'none';
                 }, 3000);

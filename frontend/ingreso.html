@@ -19,7 +19,6 @@
         table { width: 100%; border-collapse: collapse; color: #fff; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         
-        /* Estilos para inputs y selects */
         select, input { 
             background: #121212; color: #fff; border: 1px solid #444; 
             padding: 5px; border-radius: 4px; width: 100%; box-sizing: border-box;
@@ -63,6 +62,43 @@
             transition: 0.3s;
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
+
+        .titulo-acciones {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-guardar {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-guardar:hover { background: #218838; }
+
+        .fila-error {
+            outline: 2px solid #ff4b4b;
+            background: rgba(255, 75, 75, 0.08);
+        }
+
+        .fila-exito {
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .mensaje-fila-error {
+            color: #ff7b7b;
+            font-size: 0.82rem;
+            margin-top: 4px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -73,9 +109,9 @@
         </div>
         <nav class="nav-links">
             <a href="iniciorh.html">Inicio</a>
-            <a href="ingreso.html" class="active">Ingresos</a>
-            <a href="cheong-woon.html">Cheong Woon</a>
-            <a href="kronos.html">Kronos</a>
+            <a href="Ingreso.html" class="active">Ingresos</a>
+            <a href="Cheong Woon.html">Cheong Woon</a>
+            <a href="Kronos.html">Kronos</a>
         </nav>
         <div class="header-right">
             <a href="main.html" class="btn-logout">Cerrar Sesión</a>
@@ -83,7 +119,10 @@
     </header>
     <main>
         <div class="container">
-            <h3>Asignación de Puesto</h3>
+            <div class="titulo-acciones">
+                <h3 style="margin: 0;">Asignación de Puesto</h3>
+                <button id="btn-guardar-datos" class="btn-guardar" type="button">Guardar Datos</button>
+            </div>
             <div class="table-container">
                 <table id="tabla-ingresos">
                     <thead>
@@ -96,7 +135,7 @@
                             <th>Área</th>
                             <th>Turno</th>
                             <th>Salario</th>
-                            <th>Pago</th>
+                            <th>Periodo de Pago</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo-tabla">
@@ -107,48 +146,236 @@
     </main>
 
     <script>
-        const empleados = [{ nombre: "Juan Pérez" }];
-        const cuerpo = document.getElementById('cuerpo-tabla');
+        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
+        const SERVER_IP = currentHost || '192.168.1.85';
+        const PORT = '5000';
+        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const API_BASE = API_URL;
+        const API_BASES = [API_BASE];
 
-        empleados.forEach(emp => {
-            cuerpo.innerHTML = `
-                <tr>
-                    <td>${emp.nombre}</td>
+        if (['localhost', '127.0.0.1'].includes(currentHost)) {
+            API_BASES.unshift('http://localhost:5000');
+        }
+
+        const cuerpo = document.getElementById('cuerpo-tabla');
+    const btnGuardarDatos = document.getElementById('btn-guardar-datos');
+
+        async function getConFallback(endpoint) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        async function postConFallback(endpoint, body) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        function filaTemplate(candidato) {
+            return `
+                <tr data-id="${candidato.id}">
+                    <td>${candidato.nombre_completo || ''}</td>
                     <td>
-                        <select>
-                            <option value="" disabled selected>Selecciona la opcion</option>
-                            <option>CHEONG WOON</option>
-                            <option>KRONOS</option>
+                        <select class="campo-empresa" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="CHEONG WOON">CHEONG WOON</option>
+                            <option value="KRONOS">KRONOS</option>
                         </select>
                     </td>
-                    <td><input type="text" placeholder="Ej. 1234"></td>
+                    <td><input class="campo-no-empleado" type="text" required></td>
                     <td>
-                        <select>
-                            <option value="" disabled selected>Selecciona la opcion</option>
-                            <option>OPERATIVO</option>
-                            <option>ADMINISTRATIVO</option>
+                        <select class="campo-personal" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="OPERATIVO">OPERATIVO</option>
+                            <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
                         </select>
                     </td>
-                    <td><input type="text" placeholder="Puesto"></td>
-                    <td><input type="text" placeholder="Área"></td>
+                    <td><input class="campo-puesto" type="text" required></td>
+                    <td><input class="campo-area" type="text" required></td>
                     <td>
-                        <select>
-                            <option value="" disabled selected>Selecciona la opcion</option>
-                            <option>DÍA</option>
-                            <option>NOCHE</option>
+                        <select class="campo-turno" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="DÍA">DÍA</option>
+                            <option value="NOCHE">NOCHE</option>
                         </select>
                     </td>
-                    <td><input type="text" placeholder="$ Diario"></td>
+                    <td><input class="campo-salario" type="text" required></td>
                     <td>
-                        <select>
-                            <option value="" disabled selected>Selecciona la opcion</option>
-                            <option>SEMANAL</option>
-                            <option>QUINCENAL</option>
-                            <option>MENSUAL</option>
+                        <select class="campo-pago" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="SEMANAL">SEMANAL</option>
+                            <option value="QUINCENAL">QUINCENAL</option>
+                            <option value="MENSUAL">MENSUAL</option>
                         </select>
                     </td>
                 </tr>
             `;
+        }
+
+        async function cargarPendientes() {
+            cuerpo.innerHTML = '<tr><td colspan="9">Cargando candidatos...</td></tr>';
+
+            try {
+                const { respuesta, texto } = await getConFallback('/obtener-pendientes');
+
+                if (!respuesta.ok) {
+                    alert(`Error al obtener pendientes (${respuesta.status}): ${texto || 'Sin detalle'}`);
+                    cuerpo.innerHTML = '<tr><td colspan="9">No se pudieron cargar candidatos.</td></tr>';
+                    return;
+                }
+
+                const candidatos = JSON.parse(texto || '[]');
+                if (!Array.isArray(candidatos) || !candidatos.length) {
+                    cuerpo.innerHTML = '<tr><td colspan="9">No hay candidatos pendientes.</td></tr>';
+                    return;
+                }
+
+                cuerpo.innerHTML = candidatos.map(filaTemplate).join('');
+            } catch (error) {
+                alert('Error de conexión al cargar pendientes: ' + error.message);
+                cuerpo.innerHTML = '<tr><td colspan="9">No se pudieron cargar candidatos.</td></tr>';
+            }
+        }
+
+        function construirFilaPayload(tr) {
+            const nombre = tr.querySelector('td:first-child')?.textContent.trim() || '';
+            return {
+                registro_id: (tr.dataset.id || '').trim(),
+                nombre_candidato: nombre,
+                empresa: tr.querySelector('.campo-empresa')?.value.trim() || '',
+                no_empleado: tr.querySelector('.campo-no-empleado')?.value.trim() || '',
+                personal: tr.querySelector('.campo-personal')?.value.trim() || '',
+                puesto: tr.querySelector('.campo-puesto')?.value.trim() || '',
+                area: tr.querySelector('.campo-area')?.value.trim() || '',
+                turno: tr.querySelector('.campo-turno')?.value.trim() || '',
+                salario: tr.querySelector('.campo-salario')?.value.trim() || '',
+                pago: tr.querySelector('.campo-pago')?.value.trim() || '',
+            };
+        }
+
+        function limpiarEstadoFila(tr) {
+            tr.classList.remove('fila-error');
+            const marcaAnterior = tr.querySelector('.mensaje-fila-error');
+            if (marcaAnterior) {
+                marcaAnterior.remove();
+            }
+        }
+
+        function marcarErrorFila(tr, mensaje) {
+            tr.classList.add('fila-error');
+            const celdaNombre = tr.querySelector('td:first-child');
+            if (!celdaNombre) return;
+
+            const aviso = document.createElement('small');
+            aviso.className = 'mensaje-fila-error';
+            aviso.textContent = mensaje;
+            celdaNombre.appendChild(aviso);
+        }
+
+        function esFilaCompleta(fila) {
+            const campos = ['nombre_candidato', 'empresa', 'no_empleado', 'personal', 'puesto', 'area', 'turno', 'salario', 'pago', 'registro_id'];
+
+            for (const campo of campos) {
+                if (!String(fila[campo] || '').trim()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function guardarDatosCompletos() {
+            const filasHtml = Array.from(cuerpo.querySelectorAll('tr[data-id]'));
+            if (!filasHtml.length) {
+                alert('No hay filas para evaluar.');
+                return;
+            }
+
+            const filasCompletas = [];
+            filasHtml.forEach((tr) => {
+                limpiarEstadoFila(tr);
+                const fila = construirFilaPayload(tr);
+                if (esFilaCompleta(fila)) {
+                    filasCompletas.push({ ...fila, __tr: tr });
+                }
+            });
+
+            if (!filasCompletas.length) {
+                alert('No hay filas completas para guardar.');
+                return;
+            }
+
+            let guardadas = 0;
+            let conError = 0;
+
+            for (const fila of filasCompletas) {
+                const tr = fila.__tr;
+                const payload = {
+                    nombre_candidato: fila.nombre_candidato,
+                    empresa: fila.empresa,
+                    no_empleado: fila.no_empleado,
+                    personal: fila.personal,
+                    puesto: fila.puesto,
+                    area: fila.area,
+                    turno: fila.turno,
+                    salario: fila.salario,
+                    pago: fila.pago,
+                    registro_id: fila.registro_id,
+                };
+
+                try {
+                    const { respuesta, texto } = await postConFallback('/guardar-ingreso', payload);
+                    if (respuesta.ok && texto.startsWith('OK')) {
+                        guardadas += 1;
+                        tr.classList.add('fila-exito');
+                        setTimeout(() => tr.remove(), 320);
+                    } else {
+                        conError += 1;
+                        const detalle = texto || `HTTP ${respuesta.status}`;
+                        marcarErrorFila(tr, `No se pudo guardar: ${detalle}`);
+                    }
+                } catch (errorFila) {
+                    conError += 1;
+                    marcarErrorFila(tr, `Error de conexión: ${errorFila.message}`);
+                }
+            }
+
+            if (guardadas && !conError) {
+                alert(`Se guardaron ${guardadas} fila(s) correctamente.`);
+            } else if (guardadas && conError) {
+                alert(`Se guardaron ${guardadas} fila(s) y ${conError} quedaron marcadas con error.`);
+            } else {
+                alert('No se pudo guardar ninguna fila completa. Revisa las filas marcadas en rojo.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarPendientes();
+            btnGuardarDatos.addEventListener('click', guardarDatosCompletos);
         });
     </script>
 </body>

@@ -1,8 +1,9 @@
 CREATE TABLE IF NOT EXISTS registro (
     id                      SERIAL PRIMARY KEY,
-    nombre_completo         VARCHAR(255) NOT NULL,
+    fecha_registro          DATE DEFAULT CURRENT_DATE,
+    nombre_completo         VARCHAR(100) NOT NULL,
     fecha_nacimiento        DATE,
-    edad                    SMALLINT,
+    edad                    INTEGER,
     genero                  VARCHAR(30),
     estado_civil            VARCHAR(30),
     nacionalidad            VARCHAR(60),
@@ -21,17 +22,25 @@ CREATE TABLE IF NOT EXISTS registro (
     nombre_emergencia       VARCHAR(255),
     parentesco_emergencia   VARCHAR(100),
     telefono_emergencia     VARCHAR(20),
-    firma_archivo           TEXT,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+    firma_archivo           TEXT
 );
 
 CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
-    id                      SERIAL PRIMARY KEY,
-    curp                    VARCHAR(18),
-    fuente                  VARCHAR(100) NOT NULL,
-    sub_fuente              VARCHAR(100),
-    nombre_reclutador       VARCHAR(255),
-    nombre_empleado         VARCHAR(255),
-    detalle                 TEXT,
-    fecha_registro          TIMESTAMPTZ NOT NULL DEFAULT now()
+    id              SERIAL PRIMARY KEY,
+    fuente          VARCHAR(255),
+    fecha_registro  DATE DEFAULT CURRENT_DATE
+);
+
+CREATE TABLE IF NOT EXISTS ingresos_puesto (
+    id                  SERIAL PRIMARY KEY,
+    nombre_candidato    VARCHAR(100),
+    empresa             VARCHAR(150),
+    no_empleado         VARCHAR(50),
+    personal            VARCHAR(100),
+    puesto              VARCHAR(150),
+    area                VARCHAR(150),
+    turno               VARCHAR(50),
+    salario             VARCHAR(50),
+    pago                VARCHAR(50),
+    registro_id         INTEGER REFERENCES registro(id) ON DELETE CASCADE
 );
