@@ -8,9 +8,6 @@ from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from openpyxl.drawing.image import Image as OpenPyxlImage
 from io import BytesIO
-from pathlib import Path
-import gspread
-from google.oauth2.service_account import Credentials
 import requests
 
 app = Flask(__name__)
