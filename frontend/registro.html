@@ -339,7 +339,7 @@
                 </div>
 
                 <!-- BOTÓN FINALIZADO -->
-                <button type="button" onclick="if(prepararFirmaParaEnvio()) enviarRegistro();" 
+                <button type="button" onclick="if(prepararFirmaParaEnvio()) validarRegistro();" 
                         style="background: #007bff; color: white; padding: 15px; border: none; width: 100%; border-radius: 5px; cursor: pointer; font-size: 1rem;">
                     Finalizado
                 </button>
@@ -553,48 +553,41 @@
         }
 
         // Enviar registro al servidor y luego abrir encuesta
-        async function enviarRegistro() {
-            if (!validarRegistro()) {
-                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
-                return;
-            }
-
+        function validarRegistro() {
             const form = document.getElementById('registroForm');
-            const formData = new FormData(form);
+            const required = [
+                'nombre','fecha_nac','genero','edo_civil','curp','rfc','nss','tel_movil','correo',
+                'cp','colonia','calle','num_ext','municipio','estado','nom_eme1','par_eme1','tel_eme1'
+            ];
 
-            try {
-                const { respuesta, texto } = await postConFallback('/guardar-registro', formData);
-
-                if (respuesta.ok && texto.startsWith('OK')) {
-                    if (window.DataManager) {
-                        const curpValue = (formData.get('curp') || '').toString().trim().toUpperCase();
-                        window.DataManager.upsertByCurp({
-                            curp: curpValue,
-                            nombre: (formData.get('nombre') || '').toString().trim(),
-                            nombre_completo: (formData.get('nombre') || '').toString().trim(),
-                            fecha_nacimiento: (formData.get('fecha_nac') || '').toString().trim(),
-                            edad: (formData.get('edad') || '').toString().trim(),
-                            genero: (formData.get('genero') || '').toString().trim(),
-                            estado_civil: (formData.get('edo_civil') || '').toString().trim(),
-                            rfc: (formData.get('rfc') || '').toString().trim(),
-                            nss: (formData.get('nss') || '').toString().trim(),
-                            tel_movil: (formData.get('tel_movil') || '').toString().trim(),
-                            correo: (formData.get('correo') || '').toString().trim(),
-                            estatus: 'ACTIVO',
-                        });
-                    }
-                    document.getElementById('modal-encuesta').style.display = 'flex';
-                    return;
+            for (let name of required) {
+                const el = form.elements[name];
+                if (!el) {
+                    console.warn(`Falta el elemento en el formulario: ${name}`);
+                    return false;
                 }
-
-                if (respuesta.status === 500) {
-                    alert('Error del servidor (500) al guardar registro: ' + (texto || 'Sin detalle'));
-                } else {
-                    alert(`Error guardando registro (${respuesta.status}): ${texto || 'Sin detalle'}`);
+                const val = (el.type === 'checkbox') ? el.checked : (el.value || '').toString().trim();
+                if (!val) {
+                    console.warn(`Campo vacío o sin seleccionar: ${name}`);
+                    el.focus(); // Opcional: enfoca el campo faltante
+                    return false;
                 }
-            } catch (err) {
-                alert('Error de conexión al guardar registro: ' + err.message);
             }
+
+            // Acepto checkbox
+            const acepto = form.elements['acepto'];
+            if (!acepto || !acepto.checked) {
+                console.warn('Debe aceptar el aviso de privacidad');
+                return false;
+            }
+
+            // Firma
+            if (typeof signaturePad !== 'undefined' && signaturePad.isEmpty()) {
+                alert('Por favor, firma en el recuadro antes de continuar.');
+                return false;
+            }
+
+            return true;
         }
 
 // ENVIAR ENCUESTA (se guarda en encuesta_reclutamiento)
