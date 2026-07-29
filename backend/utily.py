@@ -332,7 +332,6 @@ def guardar_encuesta():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # Solo guardamos lo que existe en tu tabla actual
                 cur.execute(
                     "INSERT INTO encuesta_reclutamiento (fuente, fecha_registro) VALUES (%s, now())",
                     (fuente_norm,)
@@ -815,8 +814,6 @@ def guardar_ingresos():
                 print(f"Columna: {e.diag.column_name}")
         print(f"Payload recibido en /guardar-ingresos: {payload}")
         return (f"ERROR: {str(e)}", 500)
-
-# NOTE: the server is started at the end of this file after all routes are defined
 
 #----------------------------------------------------------------------------------------------------
 # GAFETE
