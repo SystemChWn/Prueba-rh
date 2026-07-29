@@ -506,15 +506,10 @@
 
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const SERVER_IP = currentHost || '192.168.1.85';
-        const PORT = '8000';
+        const PORT = '8001';
         const API_URL = `http://${SERVER_IP}:${PORT}`;
         const API_BASE = API_URL;
         const API_BASES = [API_BASE];
-
-        // Si se abre en local, intenta primero localhost sin perder la IP de red local.
-        if (['localhost', '127.0.0.1'].includes(currentHost)) {
-            API_BASES.unshift('http://localhost:8000');
-        }
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
