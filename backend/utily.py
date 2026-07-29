@@ -116,11 +116,11 @@ def obtener_ruta_documento(empresa, file_name):
 
 def get_db_connection():
     return psycopg2.connect(
-        host="localhost",
-        port="5432",
-        database="Rh-System",
-        user="postgres",
-        password="S1s73m4s!",
+        host=os.getenv("POSTGRES_HOST", "postgres"),
+        port=os.getenv("POSTGRES_PORT", "5432"),
+        database=os.getenv("POSTGRES_DB", "Rh-System"),
+        user=os.getenv("POSTGRES_USER", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     )
 
 
