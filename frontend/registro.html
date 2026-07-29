@@ -444,7 +444,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
-        // FIRMA -----------------------------------------------------------------------------------------------------------
+// FIRMA -----------------------------------------------------------------------------------------------------------
         const canvas = document.getElementById('signature-pad');
         const signaturePad = new SignaturePad(canvas, { penColor: '#ffffff' });
 
@@ -504,13 +504,10 @@
             return true;
         }
 
-        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
-        const SERVER_IP = currentHost || '192.168.1.85';
-        const PORT = '8000'; 
-        const API_URL = `http://${SERVER_IP}:${PORT}`;
-        console.log("Conectando al servidor en:", API_URL);
+        const currentHost = window.location.hostname;
+        const PORT = '8000';
+        const API_URL = `http://${currentHost}:${PORT}`;
 
-        
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
 
@@ -556,7 +553,6 @@
 
         // Enviar registro al servidor y luego abrir encuesta
         async function enviarRegistro() {
-            // validar campos (num_int es opcional)
             if (!validarRegistro()) {
                 mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
                 return;
@@ -586,7 +582,6 @@
                             estatus: 'ACTIVO',
                         });
                     }
-                    // mostrar encuesta solo cuando el registro quedó guardado
                     document.getElementById('modal-encuesta').style.display = 'flex';
                     return;
                 }
@@ -601,7 +596,7 @@
             }
         }
 
-        // ENVIAR ENCUESTA (se guarda en encuesta_reclutamiento)
+// ENVIAR ENCUESTA (se guarda en encuesta_reclutamiento)
         async function enviarEncuesta() {
             const fuente = document.getElementById('fuente').value;
             const subOpcion = document.getElementById('sub-opcion');
@@ -613,7 +608,7 @@
             const registro = Object.fromEntries(formData.entries());
 
             const subFuente = subOpcion ? subOpcion.value : '';
-            // Normalizar "Agencia" a etiquetas finales esperadas por el servidor
+
             let fuenteParaEnviar = fuente;
             if (fuente === 'Agencia') {
                 if (subFuente === 'CW') fuenteParaEnviar = 'RECLU CW';

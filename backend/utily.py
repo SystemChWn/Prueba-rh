@@ -119,7 +119,7 @@ def get_db_connection():
         host=os.getenv("POSTGRES_HOST", "postgres"),
         port=os.getenv("POSTGRES_PORT", "5432"),
         database=os.getenv("POSTGRES_DB", "Rh-System"),
-        user=os.getenv("POSTGRES_USER", "postgres"),
+        user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     )
 
@@ -812,78 +812,6 @@ def guardar_ingresos():
         return (f"ERROR: {str(e)}", 500)
 
 #----------------------------------------------------------------------------------------------------
-# GAFETE
-
-def generar_gafete_excel(datos):
-    datos = datos or {}
-
-    try:
-        url_plantilla_nueva = "https://drive.google.com/uc?export=download&id=1rdKx-wvjIUXuuMoGQdNH_gwIKhwvZ61B"
-        print(f"Descargando plantilla desde Drive: {url_plantilla_nueva}")
-
-        response = requests.get(url_plantilla_nueva, timeout=60)
-        response.raise_for_status()
-
-        if not response.content:
-            raise FileNotFoundError("No se pudo descargar el archivo desde Drive")
-
-        wb = openpyxl.load_workbook(BytesIO(response.content), data_only=False)
-        ws = wb.active
-
-        nombre_completo = str(datos.get('nombre_completo', '')).strip()
-        palabras = nombre_completo.split()
-
-        if len(palabras) >= 2:
-            apellido = ' '.join(palabras[-2:])
-            nombre = ' '.join(palabras[:-2])
-        elif len(palabras) == 1:
-            nombre = palabras[0]
-            apellido = ''
-        else:
-            nombre = ''
-            apellido = ''
-
-        asignaciones = {
-            'C14': nombre,
-            'C16': apellido,
-            'D18': datos.get('nss', ''),
-            'D21': datos.get('curp', ''),
-            'G5': datos.get('area', ''),
-            'G9': datos.get('nom_emergencias', ''),
-            'G11': datos.get('cont_emergencias', ''),
-            'G14': datos.get('fecha_ingreso', ''),
-        }
-
-        for celda, valor in asignaciones.items():
-            ws[celda] = '' if valor is None else str(valor)
-
-        excel_buffer_out = BytesIO()
-        wb.save(excel_buffer_out)
-        excel_buffer_out.seek(0)
-
-        return excel_buffer_out, "Formato_Gafete.xlsx"
-
-    except Exception as e:
-        print(f"Error al generar la credencial: {e}")
-        traceback.print_exc()
-        return None, None
-
-
-@app.route('/descargar-credencial', methods=['POST'])
-def descargar_credencial():
-    datos = request.get_json(silent=True) or {}
-
-    buffer, nombre_archivo = generar_gafete_excel(datos)
-    if not buffer:
-        return jsonify({"error": "No se pudo generar el archivo de credencial"}), 500
-
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name=nombre_archivo,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-
 
 @app.route('/generar-credencial', methods=['POST'])
 def generar_credencial():
