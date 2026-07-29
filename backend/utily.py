@@ -6,7 +6,6 @@ import psycopg2
 import openpyxl
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
-from openpyxl.drawing.image import Image as OpenPyxlImage
 from io import BytesIO
 import requests
 

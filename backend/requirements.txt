@@ -5,3 +5,4 @@ gunicorn
 openpyxl
 pandas
 python-dotenv
+requests
