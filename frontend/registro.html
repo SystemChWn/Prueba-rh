@@ -406,7 +406,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
-        // CODIGO PORTAL AUTOMATIZADO -----------------------------------------------------------------------------------------------------------
+// CODIGO PORTAL AUTOMATIZADO -----------------------------------------------------------------------------------------------------------
         let datosCP = [];
         Papa.parse("cp.csv", {
             download: true,
@@ -506,11 +506,11 @@
 
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const SERVER_IP = currentHost || '192.168.1.85';
-        const PORT = '8000';
+        const PORT = '8000'; 
         const API_URL = `http://${SERVER_IP}:${PORT}`;
-        const API_BASE = API_URL;
-        const API_BASES = [API_BASE];
+        console.log("Conectando al servidor en:", API_URL);
 
+        
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
 

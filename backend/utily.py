@@ -10,7 +10,7 @@ from io import BytesIO
 import requests
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
 
 @app.after_request
@@ -1048,4 +1048,5 @@ def api_datos_grafica():
         return jsonify([0] * 12), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    port = int(os.environ.get('PORT', 8000))
+    app.run(host='0.0.0.0', port=port, debug=True)
