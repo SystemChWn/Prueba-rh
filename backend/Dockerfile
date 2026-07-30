@@ -7,9 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY utily.py .
 
-EXPOSE 8001
+EXPOSE 8000
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || exit 1
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8001", "--workers", "3", "--threads", "2", "--timeout", "60", "utily:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "--timeout", "60", "utily:app"]
