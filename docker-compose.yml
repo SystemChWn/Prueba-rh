@@ -25,6 +25,8 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
+    volumes:
+      - ./frontend:/usr/share/nginx/html
     depends_on:
       - backend
     ports:
