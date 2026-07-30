@@ -339,7 +339,7 @@
                 </div>
 
                 <!-- BOTÓN FINALIZADO -->
-                <button type="button" onclick="if(prepararFirmaParaEnvio()) validarRegistro();" 
+                <button type="button" id="btn-finalizar" onclick="finalizarRegistro()"
                         style="background: #007bff; color: white; padding: 15px; border: none; width: 100%; border-radius: 5px; cursor: pointer; font-size: 1rem;">
                     Finalizado
                 </button>
@@ -373,7 +373,7 @@
     </main>
     <script src="data-manager.js"></script>
     <script>
-        // FECHA DEL DIA --------------------------------------------------------------------------------------------------------------------
+// FECHA DEL DIA --------------------------------------------------------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', function() {
         function mostrarFecha() {
             const fecha = new Date();
@@ -389,7 +389,7 @@
         });
     </script>
     <script>
-        // FECHA - NACIMIENTO --------------------------------------------------------------------------------------------------------------------
+// FECHA - NACIMIENTO --------------------------------------------------------------------------------------------------------------------
         const hoy = new Date();
         const yearActual = hoy.getFullYear();
         document.getElementById('fecha_nac').max = new Date(yearActual - 15, hoy.getMonth(), hoy.getDate()).toISOString().split('T')[0];
@@ -574,7 +574,7 @@
                 }
             }
 
-            // Acepto checkbox
+// Acepto checkbox
             const acepto = form.elements['acepto'];
             if (!acepto || !acepto.checked) {
                 console.warn('Debe aceptar el aviso de privacidad');
@@ -590,7 +590,7 @@
             return true;
         }
 
-// ENVIAR ENCUESTA (se guarda en encuesta_reclutamiento)
+// ENVIAR ENCUESTA 
         async function enviarEncuesta() {
             const fuente = document.getElementById('fuente').value;
             const subOpcion = document.getElementById('sub-opcion');
@@ -655,9 +655,7 @@
 
                 if (respuesta.ok && texto.startsWith('OK')) {
                     if (window.actualizarVistas) window.actualizarVistas();
-                    // ocultar modal encuesta
                     document.getElementById('modal-encuesta').style.display = 'none';
-                    // mostrar mensaje inferior 2 segundos y recargar
                     mostrarMensajeInferior('Registro completado con éxito.', 2000, true, false);
                     return;
                 }
