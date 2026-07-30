@@ -1,12 +1,13 @@
+import os
 import psycopg2
 
 def get_conn():
     return psycopg2.connect(
-        host="localhost",
-        port="5432",
-        database="Rh-System",
-        user="postgres",
-        password="S1s73m4s!",
+        host=os.getenv("POSTGRES_HOST", "postgres"),
+        port=os.getenv("POSTGRES_PORT", "5432"),
+        database=os.getenv("POSTGRES_DB", "rh_system"),
+        user=os.getenv("POSTGRES_USER", "rh_app"),
+        password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     )
 
 case_sql = """
