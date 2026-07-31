@@ -90,22 +90,6 @@
             border-style: dashed;
         }
 
-        /* Cuadrícula guía invisible al imprimir */
-        .badge-card.grid-visible::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(to right, rgba(37, 99, 235, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(37, 99, 235, 0.15) 1px, transparent 1px);
-            background-size: 5mm 5mm;
-            z-index: 100;
-            pointer-events: none;
-        }
-
 /* FRENTE DEL GAFETE */
         .top-shape-container {
             position: absolute;
