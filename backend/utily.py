@@ -37,7 +37,6 @@ DOC_FILENAME_KEYS = {
     'fotografia': 'FOTOGRAFIA',
 }
 
-
 def normalizar_empresa(empresa):
     texto = (empresa or '').strip().upper()
     if 'KRONOS' in texto:
@@ -107,7 +106,6 @@ def buscar_documentos(curp, empresa):
         }
 
     return documentos
-
 
 def obtener_ruta_documento(empresa, file_name):
     _, base_dir = normalizar_empresa(empresa)
@@ -228,7 +226,6 @@ def obtener_empleado_dict(cur, registro_id):
         'pago': row[30],
     }
 
-
 def separar_numeracion(valor):
     texto = (valor or '').strip()
     if not texto:
@@ -301,7 +298,6 @@ def guardar_encuesta():
     fuente = (datos.get('fuente') or '').strip()
     sub_fuente = (datos.get('sub_fuente') or '').strip()
 
-    # Normalizar valores para que coincidan con las etiquetas usadas en el frontend
     def normalizar_fuente(fuente_raw, sub_raw):
         f = (fuente_raw or '').strip().upper()
         s = (sub_raw or '').strip().upper()
@@ -370,7 +366,6 @@ def obtener_pendientes():
         print(f"Error: {e}")
         return (f"ERROR: {str(e)}", 500)
 
-
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/obtener-ingresos', methods=['GET'])
 def obtener_ingresos(empresa=None):
@@ -432,7 +427,6 @@ def obtener_ingresos(empresa=None):
     except Exception as e:
         print(f"Error detallado: {e}")
         return (f"ERROR: {str(e)}", 500)
-
 
 @app.route('/obtener-empleado/<int:registro_id>', methods=['GET'])
 def obtener_empleado(registro_id):
@@ -812,12 +806,11 @@ def guardar_ingresos():
         return (f"ERROR: {str(e)}", 500)
 
 #----------------------------------------------------------------------------------------------------
-
 @app.route('/generar-credencial', methods=['POST'])
 def generar_credencial():
     return descargar_credencial()
 
-
+#-----------------------------------------------------------------------------------------------------------------
 @app.route('/admin/normalize-encuestas', methods=['POST'])
 def admin_normalize_encuestas():
     """Endpoint temporal: normaliza los valores de `fuente` en encuesta_reclutamiento.
@@ -858,7 +851,6 @@ WHERE fuente IS NOT NULL;
         traceback.print_exc()
         return (f"ERROR: {str(e)}", 500)
 
-
 @app.route('/admin/preview-encuestas', methods=['GET'])
 def admin_preview_encuestas():
     try:
@@ -874,7 +866,6 @@ def admin_preview_encuestas():
         traceback.print_exc()
         return (f"ERROR: {str(e)}", 500)
 
-#-----------------------------------------------------------------------------------------------------------------
 @app.route('/api/datos-grafica')
 def api_datos_grafica():
     periodo = request.args.get('periodo')
@@ -886,7 +877,6 @@ def api_datos_grafica():
                 if periodo == 'mes':
                     mes = int(request.args.get('mes', '1'))
 
-                    # Prefer explicit sub_fuente when present; detect column existence first
                     cur.execute("""
                         SELECT 1 FROM information_schema.columns
                         WHERE table_name = 'encuesta_reclutamiento' AND column_name = 'sub_fuente'
