@@ -71,7 +71,7 @@
 
         .badge-container {
             display: flex;
-            gap: 1px;
+            gap: 0px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -127,6 +127,7 @@
             justify-content: space-between;
             position: relative;
             z-index: 2;
+            font-size: 9pt;
         }
 
         .photo-box {
@@ -137,7 +138,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 7pt;
+            font-size: 9pt;
             color: #64748b;
         }
 
@@ -146,7 +147,6 @@
         }
 
         .field-line {
-            font-size: 7.5pt;
             font-weight: bold;
             margin-bottom: 2.5mm;
             color: #0f172a;
@@ -178,7 +178,6 @@
         }
 
         .back-fields {
-            font-size: 7.5pt;
             font-weight: bold;
             color: #0f172a;
         }
@@ -206,7 +205,6 @@
             display: block;
         }
 
-        /* Estilos al imprimir */
         @media print {
             body {
                 background: none;
@@ -269,12 +267,12 @@
 
             <div class="back-content">
                 <div class="back-fields">
-                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                    <div class="back-field-item" style="font-size: 9pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
                     <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-area"></span> </div>
-                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                    <div class="back-field-item" style="font-size: 9pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
                     <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-contact-name"></span> </div>
-                    <div class="back-field-item" style="font-size: 8pt; margin-bottom: 2mm; text-align: center;">TEL: <span id="employee-contact-phone"></span></div>
-                    <div class="back-field-item" style="font-size: 8pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                    <div class="back-field-item" style="font-size: 9pt; margin-bottom: 2mm; text-align: center;">TEL: <span id="employee-contact-phone"></span></div>
+                    <div class="back-field-item" style="font-size: 9pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
                     <div class="back-field-item" style="text-align: center; margin-bottom: 4mm;"> <span id="employee-fecha-ingreso"></span> </div>
                 </div>
 
