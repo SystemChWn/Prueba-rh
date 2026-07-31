@@ -160,15 +160,15 @@
 <!-- PÁGINA 2 -->
     <div class="page" id="contrato-page-2">
         <h3 style="text-align: center; margin: 30px 0;">C L A U S U L A S</h3>
-        <p style="margin: 3px 0;"><strong>PRIMERA. </strong> Conviene <strong>EL TRABAJADOR</strong> en prestar bajo la dirección y dependencia de <strong>LA EMPRESA</strong>, sus servicios personales y de confianza con el carácter de <strong><span id="lbl-puesto" style="text-transform: uppercase;"></strong></span> puesto que se describe en el análisis que se acompaña y manifiesta reunir las cualidades que precisa en dicho anexo.</p>
+        <p style="margin: 3px 0;"><strong>PRIMERA. </strong> Conviene <strong>EL TRABAJADOR</strong> en prestar bajo la dirección y dependencia de <strong>LA EMPRESA</strong>, sus servicios personales y de confianza con el carácter de <strong><span id="lbl-puesto" style="text-transform: uppercase;"></span></strong> puesto que se describe en el análisis que se acompaña y manifiesta reunir las cualidades que precisa en dicho anexo.</p>
         <br>
-        <p style="margin: 3px 0;"><strong>SEGUNDA. </strong> Este <strong>Contrato Individual de Trabajo</strong> se celebra  <strong>por Tiempo Determinado</strong> por un período que abarca del día <strong><span id="lbl-fecha-inicio"></strong></span> al <strong><span id="lbl-fecha-final"></strong></span> en atención a las declaraciones I, V y VII del presente Contrato y en atención de que <strong>EL TRABAJADOR</strong> sólo desarrollará las labores necesarias de carácter operativo para cumplir con las actividades que ocasiona la contratación de personal distinto al que de manera rutinaria tiene <strong>LA EMPRESA</strong> y está de acuerdo <strong>EL TRABAJADOR</strong> en que precisamente el día <strong><span id="lbl-fecha-final-2"></strong></span>, se dará por concluido el presente Contrato de conformidad con el Artículo 53 Fracción III de la Ley Federal del Trabajo.</p>
+        <p style="margin: 3px 0;"><strong>SEGUNDA. </strong> Este <strong>Contrato Individual de Trabajo</strong> se celebra  <strong>por Tiempo Determinado</strong> por un período que abarca del día <strong><span id="lbl-fecha-inicio"></span></strong> al <strong><span id="lbl-fecha-final"></span></strong> en atención a las declaraciones I, V y VII del presente Contrato y en atención de que <strong>EL TRABAJADOR</strong> sólo desarrollará las labores necesarias de carácter operativo para cumplir con las actividades que ocasiona la contratación de personal distinto al que de manera rutinaria tiene <strong>LA EMPRESA</strong> y está de acuerdo <strong>EL TRABAJADOR</strong> en que precisamente el día <strong><span id="lbl-fecha-final-2"></span></strong>, se dará por concluido el presente Contrato de conformidad con el Artículo 53 Fracción III de la Ley Federal del Trabajo.</p>
         <br>
         <p style="margin: 3px 0;"><strong>TERCERA. </strong> <strong>EL TRABAJADOR</strong> se obliga a prestar sus servicios en el domicilio de <strong>LA EMPRESA</strong> o en cualquier lugar del Municipio o del Estado en que lo requiera la misma.</p>
         <br>
         <p style="margin: 3px 0;"><strong>CUARTA. </strong> <strong>LA EMPRESA</strong> se obliga a pagar al <strong>TRABAJADOR</strong> por concepto de sueldo diario por el trabajo que desempeñe en los términos de la Cláusula primera la cantidad de <strong>$<span id="lbl-salario-num"></span> (<span id="lbl-salario-letra" style="text-transform: uppercase;"></span>)</strong> diarios, cantidad que será cubierta de manera <span id="lbl-periodo"><strong></strong></span>, por medio de dispersión electrónica bancaria, mediante la institución bancaria que se acuerde entre las partes.</p>
         <br>
-        <p style="margin: 3px 0;"><strong>QUINTA. </strong> <strong>EL TRABAJADOR</strong> recibirá, de manera electrónica, sus comprobantes fiscales digitales (CFDI) correspondientes a las percepciones obtenidas por el desempeño de sus labores, siendo este <strong><span id="lbl-correo" style="border-bottom: 1px solid #000; padding-bottom: 1px;"></strong></span>. Dichos CFDI detallarán los conceptos y las retenciones de impuestos aplicadas a las cantidades percibidas, en cumplimiento con lo dispuesto por el artículo 101 de la Ley Federal del Trabajo y las disposiciones fiscales aplicables. Con esta entrega, se da cumplimiento a las obligaciones fiscales y laborales del patrón.</p>
+        <p style="margin: 3px 0;"><strong>QUINTA. </strong> <strong>EL TRABAJADOR</strong> recibirá, de manera electrónica, sus comprobantes fiscales digitales (CFDI) correspondientes a las percepciones obtenidas por el desempeño de sus labores, siendo este <strong><span id="lbl-correo" style="border-bottom: 1px solid #000; padding-bottom: 1px;"></span></strong>. Dichos CFDI detallarán los conceptos y las retenciones de impuestos aplicadas a las cantidades percibidas, en cumplimiento con lo dispuesto por el artículo 101 de la Ley Federal del Trabajo y las disposiciones fiscales aplicables. Con esta entrega, se da cumplimiento a las obligaciones fiscales y laborales del patrón.</p>
         <br>
         <p style="margin: 3px 0;"><strong>SEXTA. </strong> <strong>EL TRABAJADOR</strong> en forma expresa y por motivo de seguridad y conveniencia, manifiesta su conformidad en recibir su pago, mediante sistemas electrónicos de pago, o cualquier otro instrumento Bancario el cual le permita la disposición inmediata de su salario en efectivo.</p>
         <br>
@@ -303,11 +303,18 @@
             </div>
         </div>
     </div>
+
     <script>
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const SERVER_IP = currentHost || 'localhost';
         const PORT = '8000';
-        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const API_BASES = [];
+        if (currentHost) {
+            API_BASES.push(`http://${currentHost}:${PORT}`);
+        }
+        API_BASES.push(`http://localhost:${PORT}`);
+        API_BASES.push('http://127.0.0.1:8000');
+
         const urlParams = new URLSearchParams(window.location.search);
         const idEmpleado = urlParams.get('id') || urlParams.get('registro_id');
 
@@ -397,18 +404,32 @@
             return convertirHasta999(Math.trunc(valor));
         }
 
+        async function fetchFromBackend(endpoint) {
+            let lastError = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const response = await fetch(`${baseUrl}${endpoint}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data;
+                    }
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw new Error(`No se pudo conectar con el servidor: ${lastError ? lastError.message : 'desconocido'}`);
+        }
+
         async function cargarEmpleadoContrato() {
             if (!idEmpleado) {
+                console.warn('No se encontró ID de empleado en la URL.');
                 return;
             }
 
             try {
-                const response = await fetch(`${API_URL}/obtener-empleado/${encodeURIComponent(idEmpleado)}`);
-                if (!response.ok) {
-                    return;
-                }
+                const data = await fetchFromBackend(`/obtener-empleado/${encodeURIComponent(idEmpleado)}`);
+                if (!data) return;
 
-                const data = await response.json();
                 const fechaIngreso = data.fecha_ingreso || '';
                 const salario = data.salario || '';
                 const fechaInicioTexto = formatFechaLarga(fechaIngreso);
@@ -418,7 +439,7 @@
                 setText('lbl-nacionalidad', data.nacionalidad || '');
                 setText('lbl-edad', data.edad || '');
                 setText('lbl-genero', data.genero || '');
-                setText('lbl-estado-civil', data.estado_civil || '');
+                setText('estado-civil', data.estado_civil || '');
                 setText('lbl-curp', data.curp || '');
                 setText('lbl-rfc', data.rfc || '');
                 setText('lbl-domicilio', buildDomicilio(data));
