@@ -366,6 +366,7 @@ def obtener_pendientes():
         print(f"Error: {e}")
         return (f"ERROR: {str(e)}", 500)
 
+
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/obtener-ingresos', methods=['GET'])
 def obtener_ingresos(empresa=None):
