@@ -961,6 +961,46 @@ def api_datos_grafica():
         traceback.print_exc()
         return jsonify([0] * 12), 500
 
+#-----------------------------------------------------------------------------------------------------------------
+@app.route('/obtener-empleado/<id_empleado>', methods=['GET'])
+def obtener_empleado(id_empleado):
+    try:
+        # Ajusta esta consulta según cómo tengas definido tu modelo de base de datos en utily.py
+        # Ejemplo común con SQLAlchemy: Empleado.query.get(id_empleado)
+        empleado = Empleado.query.get(id_empleado)
+        
+        if not empleado:
+            return jsonify({"error": "Empleado no encontrado"}), 404
+
+        # Mapeamos los campos a un diccionario para que el frontend los lea correctamente
+        empleado_data = {
+            "id": empleado.id,
+            "nombre_completo": empleado.nombre_completo,
+            "nacionalidad": empleado.nacionalidad,
+            "edad": empleado.edad,
+            "genero": empleado.genero,
+            "estado_civil": empleado.estado_civil,
+            "curp": empleado.curp,
+            "rfc": empleado.rfc,
+            "calle": empleado.calle,
+            "num_ext": empleado.num_ext,
+            "num_int": empleado.num_int,
+            "colonia": empleado.colonia,
+            "municipio": empleado.municipio,
+            "estado": empleado.estado,
+            "codigo_postal": empleado.codigo_postal,
+            "puesto": empleado.puesto,
+            "fecha_ingreso": str(empleado.fecha_ingreso), # Asegúrate del formato YYYY-MM-DD
+            "salario": empleado.salario,
+            "pago": empleado.pago, # Ej: "quincenal", "semanal"
+            "correo": empleado.correo
+        }
+
+        return jsonify(empleado_data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=True)
