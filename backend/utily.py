@@ -965,40 +965,44 @@ def api_datos_grafica():
 @app.route('/obtener-empleado/<id_empleado>', methods=['GET'])
 def obtener_empleado(id_empleado):
     try:
-        # Ajusta esta consulta según cómo tengas definido tu modelo de base de datos en utily.py
-        # Ejemplo común con SQLAlchemy: Empleado.query.get(id_empleado)
-        empleado = Empleado.query.get(id_empleado)
+        print(f"Buscando empleado con ID recibido: {id_empleado}") # Esto saldrá en tu terminal negra de Flask
+        
+        # Convertimos el id a entero por seguridad para la consulta de SQLAlchemy
+        empleado_id_int = int(id_empleado)
+        empleado = Empleado.query.get(empleado_id_int)
         
         if not empleado:
+            print(f"No se encontró ningún empleado con el ID: {empleado_id_int}")
             return jsonify({"error": "Empleado no encontrado"}), 404
 
         # Mapeamos los campos a un diccionario para que el frontend los lea correctamente
         empleado_data = {
             "id": empleado.id,
-            "nombre_completo": empleado.nombre_completo,
-            "nacionalidad": empleado.nacionalidad,
-            "edad": empleado.edad,
-            "genero": empleado.genero,
-            "estado_civil": empleado.estado_civil,
-            "curp": empleado.curp,
-            "rfc": empleado.rfc,
-            "calle": empleado.calle,
-            "num_ext": empleado.num_ext,
-            "num_int": empleado.num_int,
-            "colonia": empleado.colonia,
-            "municipio": empleado.municipio,
-            "estado": empleado.estado,
-            "codigo_postal": empleado.codigo_postal,
-            "puesto": empleado.puesto,
-            "fecha_ingreso": str(empleado.fecha_ingreso), # Asegúrate del formato YYYY-MM-DD
-            "salario": empleado.salario,
-            "pago": empleado.pago, # Ej: "quincenal", "semanal"
-            "correo": empleado.correo
+            "nombre_completo": getattr(empleado, 'nombre_completo', ''),
+            "nacionalidad": getattr(empleado, 'nacionalidad', ''),
+            "edad": getattr(empleado, 'edad', ''),
+            "genero": getattr(empleado, 'genero', ''),
+            "estado_civil": getattr(empleado, 'estado_civil', ''),
+            "curp": getattr(empleado, 'curp', ''),
+            "rfc": getattr(empleado, 'rfc', ''),
+            "calle": getattr(empleado, 'calle', ''),
+            "num_ext": getattr(empleado, 'num_ext', ''),
+            "num_int": getattr(empleado, 'num_int', ''),
+            "colonia": getattr(empleado, 'colonia', ''),
+            "municipio": getattr(empleado, 'municipio', ''),
+            "estado": getattr(empleado, 'estado', ''),
+            "codigo_postal": getattr(empleado, 'codigo_postal', ''),
+            "puesto": getattr(empleado, 'puesto', ''),
+            "fecha_ingreso": str(empleado.fecha_ingreso) if empleado.fecha_ingreso else '',
+            "salario": getattr(empleado, 'salario', ''),
+            "pago": getattr(empleado, 'pago', ''),
+            "correo": getattr(empleado, 'correo', '')
         }
 
         return jsonify(empleado_data), 200
 
     except Exception as e:
+        print(f"Error crítico en /obtener-empleado: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
