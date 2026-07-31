@@ -12,7 +12,7 @@
             --badge-height: 87mm;
 
 /* ==========================================================
-    PANEL DE CONTROL PARA MOVER ELEMENTOS:
+        PANEL DE CONTROL PARA MOVER ELEMENTOS:
 ========================================================== */
             --shape-top: 0mm;
             --shape-left: 0mm;
@@ -71,7 +71,7 @@
 
         .badge-container {
             display: flex;
-            gap: 40px;
+            gap: 1px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -82,10 +82,12 @@
             background: white;
             position: relative;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border: 1px solid #cbd5e1;
             border-radius: 4px;
             overflow: hidden;
             box-sizing: border-box;
+            /* Líneas punteadas tipo reporte */
+            border: 2px dashed #94a3b8;
+            border-style: dashed;
         }
 
         /* Cuadrícula guía invisible al imprimir */
@@ -247,7 +249,7 @@
     </div>
 
     <div class="badge-container">
-        <!-- FRENTE DEL GAFETE (VERTICAL) -->
+        <!-- FRENTE DEL GAFETE -->
         <div class="badge-card front-side" id="cardFront">
             <!-- Esquina superior izquierda -->
             <div class="top-shape-container">
@@ -277,7 +279,7 @@
             </div>
         </div>
 
-        <!-- REVERSO DEL GAFETE (VERTICAL) -->
+        <!-- REVERSO DEL GAFETE -->
         <div class="badge-card back-side" id="cardBack">
 
             <div class="back-content">
