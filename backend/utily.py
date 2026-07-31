@@ -805,11 +805,6 @@ def guardar_ingresos():
         print(f"Payload recibido en /guardar-ingresos: {payload}")
         return (f"ERROR: {str(e)}", 500)
 
-#----------------------------------------------------------------------------------------------------
-@app.route('/generar-credencial', methods=['POST'])
-def generar_credencial():
-    return descargar_credencial()
-
 #-----------------------------------------------------------------------------------------------------------------
 @app.route('/admin/normalize-encuestas', methods=['POST'])
 def admin_normalize_encuestas():
