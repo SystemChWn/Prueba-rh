@@ -1005,7 +1005,7 @@
         const currentHost = window.location.hostname;
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
         const DOC_KEYS = ['ine', 'comprobante_domicilio', 'acta_nacimiento', 'curp_doc', 'rfc_doc', 'nss_doc', 'comprobante_estudios', 'infonavit_doc', 'carta_autorizacion', 'contrato_firmado'];
 
         function getFallbackRegistroId() {
