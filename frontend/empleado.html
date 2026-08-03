@@ -1574,6 +1574,17 @@
                 return false;
             }
 
+            photoPreview.onerror = () => {
+                const currentSrc = photoPreview.getAttribute('src') || '';
+                if (currentSrc === normalizedUrl) {
+                    photoPreview.removeAttribute('src');
+                    photoPreview.style.display = 'none';
+                    photoPlaceholder.style.display = 'block';
+                    if (registroId) {
+                        localStorage.removeItem(`foto_empleado_${registroId}`);
+                    }
+                }
+            };
             photoPreview.src = normalizedUrl;
             photoPreview.style.display = 'block';
             photoPlaceholder.style.display = 'none';
