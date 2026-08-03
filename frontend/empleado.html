@@ -729,8 +729,6 @@
                     </div>
                 </div>
                 <div class="photo-actions">
-                    <label class="file-label" for="foto-input">SUBIR FOTO</label>
-                    <input id="foto-input" class="file-input" type="file" accept="image/*" />
                     <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
                 </div>
@@ -884,7 +882,7 @@
                             </div>
                         </div>
 
-                        <div class="doc-row">
+                                <div><div class="muted">Periodo de Pago</div>
                             <div><div class="label">COMPROBANTE DE DOMICILIO</div></div>
                             <div class="doc-actions" data-doc="comprobante_domicilio">
                                 <label class="doc-btn" for="file-comprobante_domicilio">Subir</label>
@@ -1011,7 +1009,6 @@
         const employeeTop = document.getElementById('employee-top');
         const companyName = document.getElementById('company-name');
         const btnRegresar = document.getElementById('btn-regresar');
-        const photoInput = document.getElementById('foto-input');
         const photoPreview = document.getElementById('photo-preview');
         const photoPlaceholder = document.getElementById('photo-placeholder');
         const btnDescargarCredencial = document.getElementById('btn-descargar-credencial');
@@ -1084,42 +1081,6 @@
         function getCurrentEmpleadoTab() {
             const activeTab = document.querySelector('.tab-btn.active');
             return activeTab && activeTab.dataset.tab ? activeTab.dataset.tab : 'informacion';
-        }
-
-        function getEmpresaToken() {
-            const empresa = getEmpresaNormalizada();
-            return String(empresa || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-        }
-
-        function getCurpToken() {
-            return String(getCurrentCurp() || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-        }
-
-        async function loadDynamicEmployeePhoto() {
-            const empresaNormalizada = getEmpresaNormalizada();
-            const curpActual = getCurrentCurp();
-            if (!empresaNormalizada || !curpActual) {
-                setPhotoPreviewFromUrl('');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/api/employee-files?curp=${encodeURIComponent(curpActual)}&empresa=${encodeURIComponent(empresaNormalizada)}`);
-                if (!response.ok) {
-                    throw new Error('No se encontró foto en el backend');
-                }
-
-                const payload = await response.json();
-                const previewUrl = payload && payload.fotografia && payload.fotografia.previewUrl ? payload.fotografia.previewUrl : '';
-                if (previewUrl) {
-                    setPhotoPreviewFromUrl(previewUrl, { persist: true });
-                    return;
-                }
-            } catch (_) {
-                // continuar con fallback visual
-            }
-
-            setPhotoPreviewFromUrl('');
         }
 
         function applyMaxLengthValue(fieldKey) {
@@ -1456,12 +1417,7 @@
                 if (!respuesta.ok) return;
 
                 const payload = JSON.parse(texto || '{}');
-                const docs = Object.assign({}, payload.documentos || {});
-                if (payload.fotografia) {
-                    docs.fotografia = payload.fotografia;
-                }
-
-                documentosById = docs;
+                documentosById = Object.assign({}, payload.documentos || {});
                 Object.keys(documentosById).forEach((docKey) => hydrateDocumentButtons(docKey));
 
             } catch (error) {
@@ -1557,15 +1513,8 @@
             });
         }
 
-        function normalizePhotoUrl(url) {
-            if (!url) return '';
-            if (/^data:/i.test(url) || /^https?:\/\//i.test(url)) return url;
-            const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-            return `${API_URL}${normalizedPath}`;
-        }
-
         function setPhotoPreviewFromUrl(url, { persist = false } = {}) {
-            const normalizedUrl = normalizePhotoUrl(url);
+            const normalizedUrl = String(url || '').trim();
             if (!normalizedUrl) {
                 photoPreview.removeAttribute('src');
                 photoPreview.style.display = 'none';
@@ -1576,9 +1525,6 @@
             photoPreview.src = normalizedUrl;
             photoPreview.style.display = 'block';
             photoPlaceholder.style.display = 'none';
-            if (persist && registroId) {
-                localStorage.setItem(`foto_empleado_${registroId}`, normalizedUrl);
-            }
             return true;
         }
 
@@ -1586,29 +1532,8 @@
             const previewSrc = photoPreview && (photoPreview.getAttribute('src') || photoPreview.src || '');
             if (previewSrc) return previewSrc;
 
-            const storedPhoto = localStorage.getItem(`foto_empleado_${registroId}`);
-            if (storedPhoto) return storedPhoto;
-
-            const fotografia = documentosById && documentosById.fotografia && documentosById.fotografia.previewUrl
-                ? documentosById.fotografia.previewUrl
-                : '';
-            return fotografia ? normalizePhotoUrl(fotografia) : '';
-        }
-
-        function loadPhotoFromStorage(idValue) {
-            const savedPhoto = localStorage.getItem(`foto_empleado_${idValue}`);
-            if (savedPhoto) {
-                setPhotoPreviewFromUrl(savedPhoto);
-            }
-        }
-
-        function updatePhotoPreview(file) {
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                setPhotoPreviewFromUrl(reader.result, { persist: true });
-            };
-            reader.readAsDataURL(file);
+            const base64Photo = originalData && originalData.fotografia_base64 ? String(originalData.fotografia_base64).trim() : '';
+            return base64Photo;
         }
 
         function downloadBlob(content, filename, type = 'text/html') {
@@ -1702,8 +1627,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
                 fillFields(data);
                 refreshEdadDependiente();
-                loadPhotoFromStorage(registroId);
-                await loadDynamicEmployeePhoto();
+                setPhotoPreviewFromUrl(data.fotografia_base64 || '');
                 saveLocalProfile();
                 loadLocalProfile();
                 await refreshServerDocuments();
@@ -1798,17 +1722,6 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
-        });
-
-        photoInput.addEventListener('change', (event) => {
-            const file = event.target.files && event.target.files[0];
-            if (!file) return;
-            handleDocumentUpload('fotografia', file).then((resultado) => {
-                const previewUrl = resultado && resultado.previewUrl ? resultado.previewUrl : '';
-                if (previewUrl) {
-                    localStorage.setItem(`foto_empleado_${registroId}`, previewUrl);
-                }
-            });
         });
 
         btnEditar.addEventListener('click', () => {

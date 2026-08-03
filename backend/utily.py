@@ -52,7 +52,6 @@ DOC_FILENAME_KEYS = {
     'infonavit_doc': 'INFONAVIT',
     'carta_autorizacion': 'CARTA_AUTORIZACION',
     'contrato_firmado': 'CONTRATO_FIRMADO',
-    'fotografia': 'FOTOGRAFIA',
 }
 
 def normalizar_empresa(empresa):
@@ -80,9 +79,6 @@ def construir_nombre_documento(curp, empresa, doc_key, original_filename):
     empresa_texto = limpiar_fragmento(empresa_normalizada)
     doc_texto = DOC_FILENAME_KEYS.get(doc_key, limpiar_fragmento(doc_key))
     extension = extension_desde_nombre(original_filename)
-
-    if doc_key == 'fotografia':
-        return f"{curp_texto}_FOTOGRAFIA{extension}"
 
     return f"{curp_texto}-{empresa_texto}-{doc_texto}{extension}"
 
@@ -134,13 +130,6 @@ def buscar_documentos(curp, empresa):
 
     for file_name in os.listdir(base_dir):
         nombre_upper = file_name.upper()
-        if doc_key := 'fotografia' if nombre_upper.startswith(f"{curp_texto}_FOTOGRAFIA") else None:
-            documentos[doc_key] = {
-                'fileName': file_name,
-                'previewUrl': f"/api/documentos/{empresa_texto}/{file_name}",
-            }
-            continue
-
         if not nombre_upper.startswith(prefijo):
             continue
 
@@ -200,6 +189,7 @@ def obtener_empleado_dict(cur, registro_id):
             break
 
     fecha_select = f"r.{fecha_col} AS fecha_ingreso" if fecha_col else "NULL::timestamp AS fecha_ingreso"
+    fotografia_select = "r.fotografia_base64 AS fotografia_base64" if 'fotografia_base64' in cols_registro else "NULL::text AS fotografia_base64"
 
     cur.execute(
         f"""
@@ -226,6 +216,7 @@ def obtener_empleado_dict(cur, registro_id):
             r.nombre_emergencia,
             r.parentesco_emergencia,
             r.telefono_emergencia,
+            {fotografia_select},
             {fecha_select},
             ip.empresa,
             ip.no_empleado,
@@ -270,15 +261,16 @@ def obtener_empleado_dict(cur, registro_id):
         'nombre_emergencia': row[19],
         'parentesco_emergencia': row[20],
         'telefono_emergencia': row[21],
-        'fecha_ingreso': row[22].strftime('%Y-%m-%d') if row[22] else None,
-        'empresa': row[23],
-        'no_empleado': row[24],
-        'personal': row[25],
-        'puesto': row[26],
-        'area': row[27],
-        'turno': row[28],
-        'salario': row[29],
-        'pago': row[30],
+        'fotografia_base64': row[22],
+        'fecha_ingreso': row[23].strftime('%Y-%m-%d') if row[23] else None,
+        'empresa': row[24],
+        'no_empleado': row[25],
+        'personal': row[26],
+        'puesto': row[27],
+        'area': row[28],
+        'turno': row[29],
+        'salario': row[30],
+        'pago': row[31],
     }
 
 def separar_numeracion(valor):
@@ -317,14 +309,15 @@ def guardar_registro():
 
     try:
         firma_png = datos.get('firma_png') or None
+        fotografia_base64 = datos.get('fotografia_base64') or None
 
         query = """
         INSERT INTO registro (
             nombre_completo, fecha_nacimiento, edad, genero, estado_civil, nacionalidad,
             curp, rfc, nss, tel_movil, correo, codigo_postal, colonia, calle,
             num_ext, num_int, municipio, estado, nombre_emergencia,
-            parentesco_emergencia, telefono_emergencia, firma_archivo
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            parentesco_emergencia, telefono_emergencia, firma_archivo, fotografia_base64
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         values = (
@@ -333,11 +326,12 @@ def guardar_registro():
             datos.get('nss'), datos.get('tel_movil'), datos.get('correo'), datos.get('cp'),
             datos.get('colonia'), datos.get('calle'), datos.get('num_ext'), datos.get('num_int'),
             datos.get('municipio'), datos.get('estado'), datos.get('nom_eme1'), datos.get('par_eme1'),
-            datos.get('tel_eme1'), firma_png,
+            datos.get('tel_eme1'), firma_png, fotografia_base64,
         )
 
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
                 cur.execute(query, values)
             conn.commit()
 
@@ -665,14 +659,7 @@ def listar_archivos_empleado():
         return ("ERROR: curp y empresa son obligatorios", 400)
 
     documentos = buscar_documentos(curp, empresa)
-    fotografia = documentos.get('fotografia')
-    if fotografia:
-        documentos = {k: v for k, v in documentos.items() if k != 'fotografia'}
-
-    return jsonify({
-        'documentos': documentos,
-        'fotografia': fotografia,
-    }), 200
+    return jsonify({'documentos': documentos}), 200
 
 
 @app.route('/api/employee-files', methods=['POST'])
@@ -717,13 +704,6 @@ def eliminar_archivo_empleado():
 
     empresa_normalizada, directorio = normalizar_empresa(empresa)
     directorio = asegurar_directorio(directorio)
-    if doc_key == 'fotografia':
-        prefijo = f"{limpiar_fragmento(curp)}_FOTOGRAFIA"
-        for existing_file in os.listdir(directorio) if os.path.isdir(directorio) else []:
-            if existing_file.upper().startswith(prefijo):
-                os.remove(os.path.join(directorio, existing_file))
-                return ("OK", 200)
-        return ("ERROR: Archivo no encontrado", 404)
 
     file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, 'archivo.dat')
     ruta = os.path.join(directorio, file_name)

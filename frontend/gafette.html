@@ -325,42 +325,6 @@
             return params.get(name);
         }
 
-        function normalizePhotoUrl(url) {
-            if (!url) return '';
-            if (/^data:/i.test(url) || /^https?:\/\//i.test(url)) return url;
-            const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-            return `${API_BASES[0] || 'http://localhost:5000'}${normalizedPath}`;
-        }
-
-        function getStoredEmployeePhoto(registroId, curp) {
-            const candidates = [];
-            if (registroId) candidates.push(`foto_empleado_${registroId}`);
-            if (curp) candidates.push(`foto_empleado_${String(curp).toUpperCase()}`);
-            for (const key of candidates) {
-                const value = localStorage.getItem(key);
-                if (value) return value;
-            }
-
-            try {
-                const raw = localStorage.getItem('rh_empleados_v1');
-                if (!raw) return '';
-                const empleados = JSON.parse(raw);
-                if (!Array.isArray(empleados)) return '';
-                const empleado = empleados.find((item) => {
-                    const currentCurp = String(item.curp || '').toUpperCase();
-                    return currentCurp && curp && currentCurp === String(curp).toUpperCase();
-                });
-                if (!empleado) return '';
-                const docs = empleado.documentos || {};
-                const fotografia = docs.fotografia || null;
-                if (fotografia && fotografia.previewUrl) return normalizePhotoUrl(fotografia.previewUrl);
-            } catch (_) {
-                return '';
-            }
-
-            return '';
-        }
-
         async function populateBadgeFields(datos) {
             const nombre = parseNombreCompleto(datos.nombre_completo || '');
             document.getElementById('employee-first-name').textContent = (nombre.firstName || '').toUpperCase();
@@ -376,31 +340,7 @@
             const photoEl = document.getElementById('employee-photo');
             const photoLabel = document.getElementById('photo-box-label');
 
-            let savedPhoto = getStoredEmployeePhoto(registroId, datos.curp);
-
-            if (!savedPhoto && datos.curp && datos.empresa) {
-                const empresa = String(datos.empresa || '').trim();
-                const empresaToken = empresa.toUpperCase().includes('KRONOS') ? 'KRONOS' : 'CHEONG WOON';
-                const curpToken = String(datos.curp || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_');
-
-                for (const baseUrl of API_BASES) {
-                    try {
-                        const response = await fetch(`${baseUrl}/api/employee-files?curp=${encodeURIComponent(curpToken)}&empresa=${encodeURIComponent(empresaToken)}`);
-                        if (!response.ok) {
-                            continue;
-                        }
-
-                        const payload = await response.json();
-                        const previewUrl = payload && payload.fotografia && payload.fotografia.previewUrl ? payload.fotografia.previewUrl : '';
-                        if (previewUrl) {
-                            savedPhoto = `${baseUrl}${previewUrl}`;
-                            break;
-                        }
-                    } catch (_) {
-                        continue;
-                    }
-                }
-            }
+            const savedPhoto = String(datos.fotografia_base64 || '').trim();
 
             if (savedPhoto && photoEl) {
                 photoEl.src = savedPhoto;

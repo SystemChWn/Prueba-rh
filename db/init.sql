@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS registro (
     nombre_emergencia       VARCHAR(255),
     parentesco_emergencia   VARCHAR(100),
     telefono_emergencia     VARCHAR(20),
-    firma_archivo           TEXT
+    firma_archivo           TEXT,
+    fotografia_base64       TEXT
 );
 
 CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
