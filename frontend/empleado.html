@@ -1568,8 +1568,35 @@
             return true;
         }
 
+        function normalizeImageSource(url) {
+            const raw = String(url || '').trim();
+            if (!raw) return '';
+
+            if (/^data:image\//i.test(raw)) {
+                return raw;
+            }
+
+            if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) {
+                return raw;
+            }
+
+            const cleaned = raw.replace(/^data:[^,]+,/i, '').replace(/\s+/g, '');
+            if (!/^[A-Za-z0-9+/=]+$/.test(cleaned)) {
+                return raw;
+            }
+
+            let mimeType = 'image/png';
+            if (cleaned.startsWith('/9j/')) {
+                mimeType = 'image/jpeg';
+            } else if (cleaned.startsWith('UklGR')) {
+                mimeType = 'image/webp';
+            }
+
+            return `data:${mimeType};base64,${cleaned}`;
+        }
+
         function setSignaturePreviewFromUrl(url) {
-            const normalizedUrl = String(url || '').trim();
+            const normalizedUrl = normalizeImageSource(url);
             if (!normalizedUrl) {
                 signaturePreview.removeAttribute('src');
                 signaturePreview.style.display = 'none';
@@ -1577,10 +1604,25 @@
                 return false;
             }
 
+            signaturePreview.onload = () => {
+                signaturePreview.style.display = 'block';
+                signaturePlaceholder.style.display = 'none';
+            };
+
+            signaturePreview.onerror = () => {
+                signaturePreview.removeAttribute('src');
+                signaturePreview.style.display = 'none';
+                signaturePlaceholder.style.display = 'block';
+            };
+
             signaturePreview.src = normalizedUrl;
-            signaturePreview.style.display = 'block';
-            signaturePlaceholder.style.display = 'none';
-            return true;
+            if (signaturePreview.complete && signaturePreview.naturalWidth > 0) {
+                signaturePreview.style.display = 'block';
+                signaturePlaceholder.style.display = 'none';
+                return true;
+            }
+
+            return false;
         }
 
         function setPhotoUploadStatus(message, tone = 'neutral') {
