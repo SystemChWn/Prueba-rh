@@ -983,8 +983,10 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
-        const API_URL = '';
-        const API_BASES = [''];
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
         function getFallbackRegistroId() {
             try {
@@ -1110,7 +1112,7 @@
                 const payload = await response.json();
                 const previewUrl = payload && payload.fotografia && payload.fotografia.previewUrl ? payload.fotografia.previewUrl : '';
                 if (previewUrl) {
-                    await loadValidatedPhoto(previewUrl, { persist: true });
+                    setPhotoPreviewFromUrl(previewUrl, { persist: true });
                     return;
                 }
             } catch (_) {
@@ -1519,9 +1521,6 @@
                     previewUrl: resultado.previewUrl || '',
                     fileType: file.type,
                 };
-                if (docKey === 'fotografia' && resultado && resultado.previewUrl) {
-                    setPhotoPreviewFromUrl(resultado.previewUrl, { persist: true });
-                }
                 hydrateDocumentButtons(docKey);
                 saveLocalProfile();
                 return resultado;
@@ -1565,56 +1564,6 @@
             return `${API_URL}${normalizedPath}`;
         }
 
-        async function loadValidatedPhoto(url, { persist = false } = {}) {
-            const normalizedUrl = normalizePhotoUrl(url);
-            if (!normalizedUrl) {
-                setPhotoPreviewFromUrl('');
-                return false;
-            }
-
-            try {
-                const response = await fetch(normalizedUrl, { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const contentType = (response.headers.get('content-type') || '').toLowerCase();
-                if (!contentType.startsWith('image/')) {
-                    throw new Error(contentType || 'tipo no válido');
-                }
-
-                const blob = await response.blob();
-                const objectUrl = URL.createObjectURL(blob);
-                photoPreview.onerror = () => {
-                    URL.revokeObjectURL(objectUrl);
-                    photoPreview.removeAttribute('src');
-                    photoPreview.style.display = 'none';
-                    photoPlaceholder.style.display = 'block';
-                    if (registroId) {
-                        localStorage.removeItem(`foto_empleado_${registroId}`);
-                    }
-                };
-                photoPreview.onload = () => {
-                    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-                };
-                photoPreview.src = objectUrl;
-                photoPreview.style.display = 'block';
-                photoPlaceholder.style.display = 'none';
-                if (persist && registroId) {
-                    localStorage.setItem(`foto_empleado_${registroId}`, normalizedUrl);
-                }
-                return true;
-            } catch (_) {
-                photoPreview.removeAttribute('src');
-                photoPreview.style.display = 'none';
-                photoPlaceholder.style.display = 'block';
-                if (registroId) {
-                    localStorage.removeItem(`foto_empleado_${registroId}`);
-                }
-                return false;
-            }
-        }
-
         function setPhotoPreviewFromUrl(url, { persist = false } = {}) {
             const normalizedUrl = normalizePhotoUrl(url);
             if (!normalizedUrl) {
@@ -1624,17 +1573,6 @@
                 return false;
             }
 
-            photoPreview.onerror = () => {
-                const currentSrc = photoPreview.getAttribute('src') || '';
-                if (currentSrc === normalizedUrl) {
-                    photoPreview.removeAttribute('src');
-                    photoPreview.style.display = 'none';
-                    photoPlaceholder.style.display = 'block';
-                    if (registroId) {
-                        localStorage.removeItem(`foto_empleado_${registroId}`);
-                    }
-                }
-            };
             photoPreview.src = normalizedUrl;
             photoPreview.style.display = 'block';
             photoPlaceholder.style.display = 'none';
@@ -1660,7 +1598,7 @@
         function loadPhotoFromStorage(idValue) {
             const savedPhoto = localStorage.getItem(`foto_empleado_${idValue}`);
             if (savedPhoto) {
-                loadValidatedPhoto(savedPhoto);
+                setPhotoPreviewFromUrl(savedPhoto);
             }
         }
 
