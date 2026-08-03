@@ -1907,7 +1907,8 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 nombre_emergencia: fields['emergencia-nombre'].value,
                 telefono_emergencia: fields['emergencia-telefono'].value,
                 fecha_ingreso: fechaIngresoEl.value || fechaIngresoEl.textContent,
-                empresa: companyName.textContent
+                empresa: companyName.textContent,
+                fotografia_base64: getCurrentPhotoSource()
             };
             localStorage.setItem('gafeteData', JSON.stringify(datosRespaldo));
             localStorage.setItem('empleadoActiveTab', activeTab);
