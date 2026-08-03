@@ -745,6 +745,49 @@ def actualizar_empleado(registro_id):
         return (f"ERROR: {str(e)}", 500)
 
 
+@app.route('/api/eliminar-empleado/<int:registro_id>', methods=['DELETE'])
+@app.route('/eliminar-empleado/<int:registro_id>', methods=['DELETE'])
+def eliminar_empleado(registro_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT curp FROM registro WHERE id = %s LIMIT 1", (registro_id,))
+                row = cur.fetchone()
+                if not row:
+                    return ("ERROR: Empleado no encontrado", 404)
+
+                curp = (row[0] or '').strip()
+
+                # Limpieza de archivos legacy (si existieran en disco).
+                if curp:
+                    for empresa in ('CHEONG WOON', 'KRONOS'):
+                        _, directorio = normalizar_empresa(empresa)
+                        directorio = asegurar_directorio(directorio)
+                        if not os.path.isdir(directorio):
+                            continue
+
+                        curp_fragmento = limpiar_fragmento(curp)
+                        empresa_fragmento = limpiar_fragmento(empresa)
+                        prefijo_base = f"{curp_fragmento}-{empresa_fragmento}-"
+
+                        for existing_file in os.listdir(directorio):
+                            if not existing_file.upper().startswith(prefijo_base):
+                                continue
+                            try:
+                                os.remove(os.path.join(directorio, existing_file))
+                            except OSError:
+                                pass
+
+                cur.execute("DELETE FROM registro WHERE id = %s", (registro_id,))
+
+            conn.commit()
+
+        return jsonify({'ok': True, 'registro_id': registro_id}), 200
+    except Exception as e:
+        print(f"Error detallado en /eliminar-empleado: {e}")
+        return (f"ERROR: {str(e)}", 500)
+
+
 @app.route('/api/obtener-empleado/<id_empleado>', methods=['GET'])
 @app.route('/obtener-empleado/<id_empleado>', methods=['GET'])
 def obtener_empleado_por_id(id_empleado):

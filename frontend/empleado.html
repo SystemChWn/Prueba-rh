@@ -733,6 +733,7 @@
                     <input id="foto-input" class="file-input" type="file" accept="image/*" />
                     <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
+                    <button class="action-btn" id="btn-eliminar-empleado" type="button" style="display:none; background:var(--rojo); border-color:var(--rojo); color:var(--blanco);">ELIMINAR EMPLEADO</button>
                 </div>
                 <div id="photo-upload-status" style="width:100%; max-width:300px; margin:10px auto 0; min-height:20px; text-align:center; font-size:0.9rem; color:var(--grisc);"></div>
                 <div style="width:100%; max-width:300px; margin: 34px auto 0; display:none;">
@@ -1037,6 +1038,7 @@
         const signaturePlaceholder = document.getElementById('signature-placeholder');
         const btnDescargarCredencial = document.getElementById('btn-descargar-credencial');
         const btnDescargarContrato = document.getElementById('btn-descargar-contrato');
+        const btnEliminarEmpleado = document.getElementById('btn-eliminar-empleado');
         const btnEditar = document.getElementById('btn-editar');
         const btnGuardar = document.getElementById('btn-guardar');
         const btnCancelar = document.getElementById('btn-cancelar');
@@ -1244,6 +1246,9 @@
             }
             if (btnDescargarContrato) {
                 btnDescargarContrato.style.display = esKronos ? 'none' : 'inline-flex';
+            }
+            if (btnEliminarEmpleado) {
+                btnEliminarEmpleado.style.display = editMode ? 'inline-flex' : 'none';
             }
 
             if (editMode) {
@@ -1992,6 +1997,48 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         document.getElementById('btn-descargar-contrato').addEventListener('click', () => {
             window.location.href = `contrato.html?id=${encodeURIComponent(registroId)}`;
         });
+
+        if (btnEliminarEmpleado) {
+            btnEliminarEmpleado.addEventListener('click', async () => {
+                if (!registroId) {
+                    alert('No se pudo identificar el empleado.');
+                    return;
+                }
+
+                const confirmed = window.confirm('Esta accion eliminara por completo al empleado y no se puede deshacer. Deseas continuar?');
+                if (!confirmed) {
+                    return;
+                }
+
+                btnEliminarEmpleado.disabled = true;
+                try {
+                    const { respuesta, texto } = await deleteConFallback(`/api/eliminar-empleado/${encodeURIComponent(registroId)}`);
+                    if (!respuesta.ok) {
+                        throw new Error(texto || 'No se pudo eliminar el empleado');
+                    }
+
+                    const curpActual = getCurpActual();
+                    const empleados = window.DataManager && typeof window.DataManager.getEmpleados === 'function'
+                        ? window.DataManager.getEmpleados()
+                        : [];
+                    const filtrados = (Array.isArray(empleados) ? empleados : []).filter((item) => {
+                        if (!item) return false;
+                        if (String(item.registro_id || '') === String(registroId)) return false;
+                        if (curpActual && String(item.curp || '').toUpperCase() === curpActual) return false;
+                        return true;
+                    });
+
+                    localStorage.setItem('rh_empleados_v1', JSON.stringify(filtrados));
+                    localStorage.removeItem(`foto_empleado_${registroId}`);
+                    localStorage.removeItem('gafeteData');
+                    window.actualizarVistas();
+                    window.location.href = getRutaListaPorEmpresa();
+                } catch (error) {
+                    alert('Error al eliminar empleado: ' + error.message);
+                    btnEliminarEmpleado.disabled = false;
+                }
+            });
+        }
 
     </script>
 </body>
