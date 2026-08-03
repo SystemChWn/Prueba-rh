@@ -1,5 +1,7 @@
 import os
 import re
+import json
+import base64
 import tempfile
 import traceback
 import mimetypes
@@ -52,6 +54,14 @@ DOC_FILENAME_KEYS = {
     'infonavit_doc': 'INFONAVIT',
     'carta_autorizacion': 'CARTA_AUTORIZACION',
     'contrato_firmado': 'CONTRATO_FIRMADO',
+}
+
+DOC_ALLOWED_MIME_TYPES = {
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/webp',
 }
 
 def normalizar_empresa(empresa):
@@ -149,6 +159,108 @@ def buscar_documentos(curp, empresa):
             'previewUrl': f"/api/documentos/{empresa_texto}/{file_name}",
         }
 
+    return documentos
+
+
+def asegurar_columna_documentos(cur):
+    cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS documentos_papeleria TEXT")
+
+
+def parsear_documentos_papeleria(raw_value):
+    if not raw_value:
+        return {}
+    if isinstance(raw_value, dict):
+        return raw_value
+
+    try:
+        parsed = json.loads(raw_value)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def resolver_registro_para_documentos(cur, registro_id=None, curp=None, empresa=None):
+    if registro_id:
+        try:
+            rid = int(str(registro_id).strip())
+            cur.execute("SELECT id FROM registro WHERE id = %s LIMIT 1", (rid,))
+            row = cur.fetchone()
+            return row[0] if row else None
+        except (TypeError, ValueError):
+            return None
+
+    curp_texto = (curp or '').strip().upper()
+    if not curp_texto:
+        return None
+
+    empresa_texto = limpiar_fragmento(normalizar_empresa(empresa or '')[0]) if empresa else ''
+    if empresa_texto:
+        cur.execute(
+            """
+            SELECT r.id
+            FROM registro r
+            LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
+            WHERE UPPER(COALESCE(r.curp, '')) = %s
+              AND UPPER(REPLACE(COALESCE(ip.empresa, ''), ' ', '_')) = %s
+            ORDER BY r.id DESC
+            LIMIT 1
+            """,
+            (curp_texto, empresa_texto),
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0]
+
+    cur.execute(
+        """
+        SELECT id
+        FROM registro
+        WHERE UPPER(COALESCE(curp, '')) = %s
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (curp_texto,),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def obtener_curp_empresa_para_registro(cur, registro_id):
+    cur.execute(
+        """
+        SELECT r.curp, COALESCE(ip.empresa, '')
+        FROM registro r
+        LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
+        WHERE r.id = %s
+        ORDER BY ip.id DESC NULLS LAST
+        LIMIT 1
+        """,
+        (registro_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return '', ''
+    return (row[0] or '').strip(), (row[1] or '').strip()
+
+
+def leer_documentos_papeleria(cur, registro_id):
+    cur.execute("SELECT documentos_papeleria FROM registro WHERE id = %s LIMIT 1", (registro_id,))
+    row = cur.fetchone()
+    return parsear_documentos_papeleria(row[0] if row else None)
+
+
+def serializar_documentos_para_respuesta(registro_id, documentos_guardados):
+    documentos = {}
+    for doc_key, doc_data in (documentos_guardados or {}).items():
+        if doc_key not in DOC_FILENAME_KEYS or not isinstance(doc_data, dict):
+            continue
+        if not doc_data.get('base64Content'):
+            continue
+        documentos[doc_key] = {
+            'fileName': doc_data.get('fileName') or '',
+            'mimeType': doc_data.get('mimeType') or 'application/octet-stream',
+            'previewUrl': f"/api/documentos-db/{registro_id}/{doc_key}",
+        }
     return documentos
 
 def obtener_ruta_documento(empresa, file_name):
@@ -658,71 +770,201 @@ def obtener_empleado_por_id(id_empleado):
 def listar_archivos_empleado():
     curp = request.args.get('curp', '').strip()
     empresa = request.args.get('empresa', '').strip()
+    registro_id = request.args.get('registro_id', '').strip()
 
-    if not curp or not empresa:
-        return ("ERROR: curp y empresa son obligatorios", 400)
+    if not registro_id and (not curp or not empresa):
+        return ("ERROR: registro_id o (curp y empresa) son obligatorios", 400)
 
-    documentos = buscar_documentos(curp, empresa)
-    return jsonify({'documentos': documentos}), 200
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_documentos(cur)
+                resolved_registro_id = resolver_registro_para_documentos(
+                    cur,
+                    registro_id=registro_id,
+                    curp=curp,
+                    empresa=empresa,
+                )
+
+                if not resolved_registro_id:
+                    conn.commit()
+                    return jsonify({'documentos': {}, 'registro_id': None}), 200
+
+                documentos_guardados = leer_documentos_papeleria(cur, resolved_registro_id)
+                documentos = serializar_documentos_para_respuesta(resolved_registro_id, documentos_guardados)
+
+                # Compatibilidad con documentos legacy guardados en disco.
+                if not documentos and curp and empresa:
+                    documentos = buscar_documentos(curp, empresa)
+
+            conn.commit()
+
+        return jsonify({'documentos': documentos, 'registro_id': resolved_registro_id}), 200
+    except Exception as e:
+        print(f"Error detallado en /api/employee-files GET: {e}")
+        return (f"ERROR: {str(e)}", 500)
 
 
 @app.route('/api/employee-files', methods=['POST'])
 def subir_archivo_empleado():
     curp = (request.form.get('curp') or '').strip()
     empresa = (request.form.get('empresa') or '').strip()
+    registro_id = (request.form.get('registro_id') or '').strip()
     doc_key = (request.form.get('doc_key') or '').strip()
     archivo = request.files.get('file')
 
-    if not curp or not empresa or not doc_key or archivo is None:
-        return ("ERROR: curp, empresa, doc_key y file son obligatorios", 400)
+    if not doc_key or archivo is None:
+        return ("ERROR: doc_key y file son obligatorios", 400)
+
+    if not registro_id and (not curp or not empresa):
+        return ("ERROR: registro_id o (curp y empresa) son obligatorios", 400)
 
     if doc_key not in DOC_FILENAME_KEYS:
         return ("ERROR: doc_key inválido", 400)
 
-    empresa_normalizada, directorio = normalizar_empresa(empresa)
-    directorio = asegurar_directorio(directorio)
+    mime_type = (archivo.mimetype or '').lower().strip()
+    if mime_type not in DOC_ALLOWED_MIME_TYPES:
+        return ("ERROR: Formato no permitido", 400)
 
-    file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, archivo.filename)
-    file_path = os.path.join(directorio, file_name)
-    archivo.save(file_path)
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_documentos(cur)
+                resolved_registro_id = resolver_registro_para_documentos(
+                    cur,
+                    registro_id=registro_id,
+                    curp=curp,
+                    empresa=empresa,
+                )
+                if not resolved_registro_id:
+                    return ("ERROR: Empleado no encontrado", 404)
 
-    return jsonify({
-        'ok': True,
-        'docKey': doc_key,
-        'fileName': archivo.filename,
-        'previewUrl': f"/api/documentos/{limpiar_fragmento(empresa_normalizada)}/{file_name}",
-    }), 200
+                if not curp or not empresa:
+                    curp_db, empresa_db = obtener_curp_empresa_para_registro(cur, resolved_registro_id)
+                    curp = curp or curp_db
+                    empresa = empresa or empresa_db
+
+                empresa_normalizada = normalizar_empresa(empresa or '')[0]
+                file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, archivo.filename)
+                contenido = archivo.read() or b''
+                contenido_base64 = base64.b64encode(contenido).decode('ascii')
+
+                documentos_guardados = leer_documentos_papeleria(cur, resolved_registro_id)
+                documentos_guardados[doc_key] = {
+                    'fileName': file_name,
+                    'mimeType': mime_type,
+                    'base64Content': contenido_base64,
+                }
+
+                cur.execute(
+                    "UPDATE registro SET documentos_papeleria = %s WHERE id = %s",
+                    (json.dumps(documentos_guardados), resolved_registro_id),
+                )
+
+            conn.commit()
+
+        return jsonify({
+            'ok': True,
+            'registro_id': resolved_registro_id,
+            'docKey': doc_key,
+            'fileName': file_name,
+            'previewUrl': f"/api/documentos-db/{resolved_registro_id}/{doc_key}",
+        }), 200
+    except Exception as e:
+        print(f"Error detallado en /api/employee-files POST: {e}")
+        return (f"ERROR: {str(e)}", 500)
 
 
 @app.route('/api/employee-files', methods=['DELETE'])
 def eliminar_archivo_empleado():
     curp = (request.args.get('curp') or '').strip()
     empresa = (request.args.get('empresa') or '').strip()
+    registro_id = (request.args.get('registro_id') or '').strip()
     doc_key = (request.args.get('doc_key') or '').strip()
 
-    if not curp or not empresa or not doc_key:
-        return ("ERROR: curp, empresa y doc_key son obligatorios", 400)
+    if not doc_key:
+        return ("ERROR: doc_key es obligatorio", 400)
+
+    if not registro_id and (not curp or not empresa):
+        return ("ERROR: registro_id o (curp y empresa) son obligatorios", 400)
 
     if doc_key not in DOC_FILENAME_KEYS:
         return ("ERROR: doc_key inválido", 400)
 
-    empresa_normalizada, directorio = normalizar_empresa(empresa)
-    directorio = asegurar_directorio(directorio)
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_documentos(cur)
+                resolved_registro_id = resolver_registro_para_documentos(
+                    cur,
+                    registro_id=registro_id,
+                    curp=curp,
+                    empresa=empresa,
+                )
+                if not resolved_registro_id:
+                    return ("ERROR: Empleado no encontrado", 404)
 
-    file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, 'archivo.dat')
-    ruta = os.path.join(directorio, file_name)
+                documentos_guardados = leer_documentos_papeleria(cur, resolved_registro_id)
+                if doc_key in documentos_guardados:
+                    del documentos_guardados[doc_key]
+                    cur.execute(
+                        "UPDATE registro SET documentos_papeleria = %s WHERE id = %s",
+                        (json.dumps(documentos_guardados), resolved_registro_id),
+                    )
 
-    if os.path.exists(ruta):
-        os.remove(ruta)
+                # Limpieza legacy en disco si existiera documento previo.
+                if curp and empresa:
+                    empresa_normalizada, directorio = normalizar_empresa(empresa)
+                    directorio = asegurar_directorio(directorio)
+
+                    file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, 'archivo.dat')
+                    ruta = os.path.join(directorio, file_name)
+
+                    if os.path.exists(ruta):
+                        os.remove(ruta)
+                    else:
+                        prefijo = f"{limpiar_fragmento(curp)}-{limpiar_fragmento(empresa_normalizada)}-{DOC_FILENAME_KEYS[doc_key]}"
+                        for existing_file in os.listdir(directorio) if os.path.isdir(directorio) else []:
+                            if existing_file.upper().startswith(prefijo):
+                                os.remove(os.path.join(directorio, existing_file))
+                                break
+
+            conn.commit()
+
         return ("OK", 200)
+    except Exception as e:
+        print(f"Error detallado en /api/employee-files DELETE: {e}")
+        return (f"ERROR: {str(e)}", 500)
 
-    prefijo = f"{limpiar_fragmento(curp)}-{limpiar_fragmento(empresa_normalizada)}-{DOC_FILENAME_KEYS[doc_key]}"
-    for existing_file in os.listdir(directorio) if os.path.isdir(directorio) else []:
-        if existing_file.upper().startswith(prefijo):
-            os.remove(os.path.join(directorio, existing_file))
-            return ("OK", 200)
 
-    return ("ERROR: Archivo no encontrado", 404)
+@app.route('/api/documentos-db/<int:registro_id>/<doc_key>', methods=['GET'])
+def servir_documento_desde_db(registro_id, doc_key):
+    if doc_key not in DOC_FILENAME_KEYS:
+        return ("ERROR: doc_key inválido", 400)
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_documentos(cur)
+                documentos_guardados = leer_documentos_papeleria(cur, registro_id)
+
+        doc = documentos_guardados.get(doc_key)
+        if not isinstance(doc, dict) or not doc.get('base64Content'):
+            return ("ERROR: Archivo no encontrado", 404)
+
+        contenido = base64.b64decode(doc.get('base64Content'))
+        mime_type = (doc.get('mimeType') or 'application/octet-stream').strip() or 'application/octet-stream'
+        file_name = (doc.get('fileName') or f"{doc_key}.dat").strip() or f"{doc_key}.dat"
+
+        return send_file(
+            BytesIO(contenido),
+            mimetype=mime_type,
+            as_attachment=False,
+            download_name=file_name,
+        )
+    except Exception as e:
+        print(f"Error detallado en /api/documentos-db: {e}")
+        return (f"ERROR: {str(e)}", 500)
 
 
 @app.route('/api/documentos/<empresa>/<path:file_name>', methods=['GET'])

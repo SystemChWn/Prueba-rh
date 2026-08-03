@@ -318,19 +318,6 @@
                     </div>
                 </div>
 
-                <h3>FOTOGRAFÍA</h3>
-                <div class="row">
-                    <div class="col">
-                        <label>Fotografía del candidato (opcional)</label>
-                        <input type="file" id="fotografia-input" accept="image/*">
-                        <input type="hidden" name="fotografia_base64" id="fotografia_base64">
-                        <div id="fotografia-preview-box" style="margin-top:12px; width:180px; height:220px; border:1px solid #444; border-radius:8px; overflow:hidden; background:#1e1e1e; display:none;">
-                            <img id="fotografia-preview" alt="Vista previa de fotografía" style="width:100%;height:100%;object-fit:cover;display:none;" />
-                            <div id="fotografia-preview-label" style="display:grid;place-items:center;width:100%;height:100%;color:#888;">Sin foto</div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- SECCIÓN AVISO DE PRIVACIDAD -->
                 <div class="aviso-container">
                     <a href="https://drive.google.com/file/d/1vmVHipExfv9H8UPH_5Gb_6g4sXvJWjek/view?usp=drive_link" target="_blank" class="link-aviso">
@@ -491,40 +478,6 @@
             return true;
         }
 
-        const fotografiaInput = document.getElementById('fotografia-input');
-        const fotografiaBase64Input = document.getElementById('fotografia_base64');
-        const fotografiaPreview = document.getElementById('fotografia-preview');
-        const fotografiaPreviewBox = document.getElementById('fotografia-preview-box');
-        const fotografiaPreviewLabel = document.getElementById('fotografia-preview-label');
-
-        function limpiarVistaFotografia() {
-            fotografiaBase64Input.value = '';
-            fotografiaPreview.removeAttribute('src');
-            fotografiaPreview.style.display = 'none';
-            fotografiaPreviewLabel.style.display = 'grid';
-            fotografiaPreviewBox.style.display = 'none';
-        }
-
-        if (fotografiaInput) {
-            fotografiaInput.addEventListener('change', () => {
-                const file = fotografiaInput.files && fotografiaInput.files[0];
-                if (!file) {
-                    limpiarVistaFotografia();
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const dataUrl = String(reader.result || '');
-                    fotografiaBase64Input.value = dataUrl;
-                    fotografiaPreview.src = dataUrl;
-                    fotografiaPreview.style.display = 'block';
-                    fotografiaPreviewLabel.style.display = 'none';
-                    fotografiaPreviewBox.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            });
-        }
     </script>
     <script>
         async function finalizarRegistro() {
