@@ -122,7 +122,7 @@
             <a href="Kronos.html">Kronos</a>
         </nav>
         <div class="header-right">
-            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+            <a href="main.html" class="btn-logout" onclick="return cerrarSesion(event);">Cerrar Sesión</a>
         </div>
     </header>
     <main style="padding: 20px;">
@@ -317,6 +317,15 @@
                 window.DataManager.subscribeVistas(cargarEmpleadosCheongWoon);
             }
         });
+    </script>
+    <script>
+        function cerrarSesion(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            window.location.replace('main.html');
+            return false;
+        }
     </script>
 </body>
 </html>
