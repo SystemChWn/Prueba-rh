@@ -580,6 +580,27 @@ def actualizar_empleado(registro_id):
         return (f"ERROR: {str(e)}", 500)
 
 
+@app.route('/api/obtener-empleado/<id_empleado>', methods=['GET'])
+@app.route('/obtener-empleado/<id_empleado>', methods=['GET'])
+def obtener_empleado_por_id(id_empleado):
+    try:
+        registro_id = int(str(id_empleado).strip())
+    except (TypeError, ValueError):
+        return ("ERROR: ID de empleado inválido", 400)
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                data = obtener_empleado_dict(cur, registro_id)
+
+        if not data:
+            return ("ERROR: Empleado no encontrado", 404)
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error detallado en /obtener-empleado: {e}")
+        return (f"ERROR: {str(e)}", 500)
+
+
 @app.route('/api/employee-files', methods=['GET'])
 def listar_archivos_empleado():
     curp = request.args.get('curp', '').strip()
@@ -962,49 +983,6 @@ def api_datos_grafica():
         return jsonify([0] * 12), 500
 
 #-----------------------------------------------------------------------------------------------------------------
-@app.route('/obtener-empleado/<id_empleado>', methods=['GET'])
-def obtener_empleado(id_empleado):
-    try:
-        print(f"Buscando empleado con ID recibido: {id_empleado}") # Esto saldrá en tu terminal negra de Flask
-        
-        # Convertimos el id a entero por seguridad para la consulta de SQLAlchemy
-        empleado_id_int = int(id_empleado)
-        empleado = Empleado.query.get(empleado_id_int)
-        
-        if not empleado:
-            print(f"No se encontró ningún empleado con el ID: {empleado_id_int}")
-            return jsonify({"error": "Empleado no encontrado"}), 404
-
-        # Mapeamos los campos a un diccionario para que el frontend los lea correctamente
-        empleado_data = {
-            "id": empleado.id,
-            "nombre_completo": getattr(empleado, 'nombre_completo', ''),
-            "nacionalidad": getattr(empleado, 'nacionalidad', ''),
-            "edad": getattr(empleado, 'edad', ''),
-            "genero": getattr(empleado, 'genero', ''),
-            "estado_civil": getattr(empleado, 'estado_civil', ''),
-            "curp": getattr(empleado, 'curp', ''),
-            "rfc": getattr(empleado, 'rfc', ''),
-            "calle": getattr(empleado, 'calle', ''),
-            "num_ext": getattr(empleado, 'num_ext', ''),
-            "num_int": getattr(empleado, 'num_int', ''),
-            "colonia": getattr(empleado, 'colonia', ''),
-            "municipio": getattr(empleado, 'municipio', ''),
-            "estado": getattr(empleado, 'estado', ''),
-            "codigo_postal": getattr(empleado, 'codigo_postal', ''),
-            "puesto": getattr(empleado, 'puesto', ''),
-            "fecha_ingreso": str(empleado.fecha_ingreso) if empleado.fecha_ingreso else '',
-            "salario": getattr(empleado, 'salario', ''),
-            "pago": getattr(empleado, 'pago', ''),
-            "correo": getattr(empleado, 'correo', '')
-        }
-
-        return jsonify(empleado_data), 200
-
-    except Exception as e:
-        print(f"Error crítico en /obtener-empleado: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=True)

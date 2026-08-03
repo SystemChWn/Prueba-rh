@@ -33,33 +33,6 @@
             padding: 10px;
         }
 
-        .filtros-eventos {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-            flex-wrap: nowrap;
-        }
-
-        .filtro-btn {
-            flex: 1 1 0;
-            min-width: 0;
-            height: 34px;
-            border: 1px solid #555;
-            border-radius: 8px;
-            background: #1b1b1b;
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 6px 8px;
-            cursor: pointer;
-        }
-
-        .filtro-btn.active,
-        .filtro-btn:active {
-            background: #0f3d74;
-            border-color: #4da3ff;
-        }
-
         .evento-item {
             margin-bottom: 8px;
             padding: 8px;
@@ -270,9 +243,9 @@
             align-items: center;
         }
 
-        .left { justify-content: flex-start; }  /* Logo a la izquierda */
-        .center { justify-content: center; }    /* Menú al centro */
-        .right { justify-content: flex-end; }   /* Botón a la derecha */
+        .left { justify-content: flex-start; }
+        .center { justify-content: center; }
+        .right { justify-content: flex-end; }
 
         /* SEPARACION DE MENU DE OPCIONES */
         .nav-links {
@@ -314,9 +287,6 @@
         <div id='calendar'></div>
         <div id='agenda'>
             <h3>Agenda del Mes</h3>
-            <div class="filtros-eventos" id="filtros-eventos">
-                <button class="filtro-btn active" data-filter="festividades" type="button">Festividades</button>
-            </div>
             <div id="lista-eventos"></div>
             <div id="evento-personalizado" class="evento-crear">
                 <h3>Programar actividad</h3>
@@ -343,7 +313,7 @@
                     </div>
                     <div id="campo-asistentes">
                         <label for="evento-asistentes">Quiénes ingresarán</label>
-                        <textarea id="evento-asistentes" placeholder="Agrega los nombres separados por comas o saltos de línea"></textarea>
+                        <textarea id="evento-asistentes" placeholder="Agrega los nombres separados"></textarea>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" id="btn-cancelar-evento">Cancelar</button>
@@ -359,7 +329,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             var listaEventosEl = document.getElementById('lista-eventos');
-            var filtrosEventosEl = document.getElementById('filtros-eventos');
             var currentYear = new Date().getFullYear();
             var empleadosCalendario = [];
             var editingEventId = null;
@@ -705,16 +674,6 @@
                 attachAgendaButtons();
             }
 
-            function refreshCalendar() {
-                limpiarEventosVencidos();
-                var visibleYear = getVisibleYear();
-                calendar.removeAllEvents();
-                getCalendarEvents(visibleYear).forEach(function(evt) {
-                    calendar.addEvent(evt);
-                });
-                actualizarAgenda(calendar.view.currentStart);
-            }
-
             function limpiarEventosVencidos() {
                 cleanExpiredCustomEvents();
             }
@@ -761,14 +720,6 @@
                 });
                 saveCustomEvents(eventos);
                 refreshCalendar();
-            }
-
-            function getMonthDay(fechaValue) {
-                var fecha = new Date(fechaValue);
-                if (!fecha.getTime()) return '';
-                var mm = String(fecha.getMonth() + 1).padStart(2, '0');
-                var dd = String(fecha.getDate()).padStart(2, '0');
-                return mm + '-' + dd;
             }
 
             function sortByFechaHora(items) {
@@ -930,12 +881,6 @@
                 if (event.target === this) {
                     cerrarModalEvento();
                 }
-            });
-
-            filtrosEventosEl.addEventListener('click', function(event) {
-                var btn = event.target.closest('.filtro-btn');
-                if (!btn) return;
-                mostrarEventosFestividades(calendar.view.currentStart);
             });
 
             function actualizarAgenda(fechaActual) {
