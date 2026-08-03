@@ -55,6 +55,36 @@
             background: #3e3e3e; border: 1px solid #555; border-radius: 5px; 
             box-sizing: border-box; color: white;
         }
+
+        .password-wrap {
+            position: relative;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .password-wrap input {
+            margin: 0;
+            padding-right: 48px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border: none;
+            background: transparent;
+            color: #ddd;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .toggle-password:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
         
         .login-container button { 
             width: 100%; padding: 12px; background: #007bff; 
@@ -84,9 +114,12 @@
             <h2 style="margin-top: 0; color: #fff;">CW CONNECT</h2>
             
             <input type="text" id="user" placeholder="Usuario" required>
-            <input type="password" id="pass" placeholder="Contraseña" required>
+            <div class="password-wrap">
+                <input type="password" id="pass" placeholder="Contraseña" required>
+                <button type="button" class="toggle-password" id="togglePass" aria-label="Mostrar contraseña" title="Mostrar contraseña">👁</button>
+            </div>
             
-            <button onclick="verificarAcceso()">Ingresar</button>
+            <button type="button" aria-disabled="true">Ingresar</button>
 
             <div id="mensajeError" style="color: #ff4d4d; margin-top: 15px; font-size: 0.9rem; display: none; text-align: center;">
                 ⚠️ Usuario o contraseña incorrectos
@@ -112,6 +145,32 @@
                 }, 3000);
             }
         }
+
+        (function configurarLogin() {
+            const user = document.getElementById('user');
+            const pass = document.getElementById('pass');
+            const togglePass = document.getElementById('togglePass');
+
+            function intentarIngresarConEnter(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    verificarAcceso();
+                }
+            }
+
+            if (user) user.addEventListener('keydown', intentarIngresarConEnter);
+            if (pass) pass.addEventListener('keydown', intentarIngresarConEnter);
+
+            if (togglePass && pass) {
+                togglePass.addEventListener('click', function() {
+                    const mostrar = pass.type === 'password';
+                    pass.type = mostrar ? 'text' : 'password';
+                    togglePass.textContent = mostrar ? '🙈' : '👁';
+                    togglePass.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                    togglePass.setAttribute('title', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                });
+            }
+        })();
     </script>
 
 </body>
