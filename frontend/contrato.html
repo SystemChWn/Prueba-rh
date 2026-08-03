@@ -323,6 +323,15 @@
             return bases.filter((value, index, arr) => arr.indexOf(value) === index);
         }
 
+        function tieneDatosCompletos(data) {
+            if (!data || typeof data !== 'object') return false;
+            const camposClave = ['nacionalidad', 'edad', 'genero', 'estado_civil', 'curp', 'rfc', 'calle', 'colonia', 'municipio', 'estado', 'codigo_postal', 'nombre_completo'];
+            return camposClave.some((campo) => {
+                const valor = data[campo];
+                return valor !== null && valor !== undefined && String(valor).trim() !== '';
+            });
+        }
+
         function getEmployeeRecordFromCache() {
             const gafeteData = (() => {
                 try {
@@ -345,7 +354,7 @@
                             || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
                     }
 
-                    if (encontrado) {
+                    if (encontrado && tieneDatosCompletos(encontrado)) {
                         return {
                             ...(encontrado || {}),
                             ...(gafeteData || {}),
@@ -362,22 +371,10 @@
 
             try {
                 const raw = localStorage.getItem('rh_empleados_v1');
-                if (!raw) return (gafeteData ? {
-                    ...(gafeteData || {}),
-                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
-                    curp: gafeteData?.curp || '',
-                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
-                    puesto: gafeteData?.puesto || gafeteData?.area || '',
-                } : null);
+                if (!raw) return null;
 
                 const empleados = JSON.parse(raw);
-                if (!Array.isArray(empleados)) return (gafeteData ? {
-                    ...(gafeteData || {}),
-                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
-                    curp: gafeteData?.curp || '',
-                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
-                    puesto: gafeteData?.puesto || gafeteData?.area || '',
-                } : null);
+                if (!Array.isArray(empleados)) return null;
 
                 let encontrado = null;
                 if (idEmpleado) {
@@ -385,14 +382,8 @@
                         || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
                 }
 
-                if (!encontrado) {
-                    return (gafeteData ? {
-                        ...(gafeteData || {}),
-                        nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
-                        curp: gafeteData?.curp || '',
-                        fecha_ingreso: gafeteData?.fecha_ingreso || '',
-                        puesto: gafeteData?.puesto || gafeteData?.area || '',
-                    } : null);
+                if (!encontrado || !tieneDatosCompletos(encontrado)) {
+                    return null;
                 }
 
                 return {
@@ -404,13 +395,7 @@
                     puesto: encontrado.puesto || gafeteData?.puesto || gafeteData?.area || '',
                 };
             } catch (_) {
-                return (gafeteData ? {
-                    ...(gafeteData || {}),
-                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
-                    curp: gafeteData?.curp || '',
-                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
-                    puesto: gafeteData?.puesto || gafeteData?.area || '',
-                } : null);
+                return null;
             }
         }
 
@@ -427,6 +412,15 @@
             const el = document.getElementById(id);
             if (!el) return;
             el.textContent = value === null || value === undefined || value === '' ? '' : String(value);
+        }
+
+        function hasValue(value) {
+            return value !== null && value !== undefined && String(value).trim() !== '';
+        }
+
+        function getMissingRequiredFields(data) {
+            const required = ['nacionalidad', 'edad', 'genero', 'estado_civil', 'curp', 'rfc', 'calle', 'colonia', 'municipio', 'estado', 'codigo_postal'];
+            return required.filter((field) => !hasValue(data?.[field]));
         }
 
         function buildDomicilio(data) {
@@ -530,10 +524,14 @@
             const cached = getEmployeeRecordFromCache();
             if (cached) {
                 aplicarDatosContrato(cached);
-                return;
             }
 
             if (!idEmpleado) {
+                return;
+            }
+
+            const needsBackend = !cached || getMissingRequiredFields(cached).length > 0;
+            if (!needsBackend) {
                 return;
             }
 
@@ -549,7 +547,7 @@
                     }
 
                     const data = await response.json();
-                    aplicarDatosContrato(data);
+                    aplicarDatosContrato({ ...(cached || {}), ...data });
                     return;
                 } catch (error) {
                     ultimoError = error;
