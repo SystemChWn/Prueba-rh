@@ -303,6 +303,7 @@
             </div>
         </div>
     </div>
+    <script src="data-manager.js"></script>
     <script>
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const urlParams = new URLSearchParams(window.location.search);
@@ -310,24 +311,49 @@
 
         function buildEmpleadoEndpoint(idValue) {
             const encodedId = encodeURIComponent(idValue);
-            return [
+            const bases = [
                 `/api/obtener-empleado/${encodedId}`,
+                `http://${currentHost || 'localhost'}:8000/api/obtener-empleado/${encodedId}`,
                 `http://${currentHost || 'localhost'}:8001/api/obtener-empleado/${encodedId}`,
+                `http://localhost:8000/api/obtener-empleado/${encodedId}`,
+                `http://127.0.0.1:8000/api/obtener-empleado/${encodedId}`,
                 `http://localhost:8001/api/obtener-empleado/${encodedId}`,
                 `http://127.0.0.1:8001/api/obtener-empleado/${encodedId}`
             ];
+            return bases.filter((value, index, arr) => arr.indexOf(value) === index);
         }
 
         function getEmployeeRecordFromCache() {
+            const gafeteData = (() => {
+                try {
+                    const gafeteRaw = localStorage.getItem('gafeteData');
+                    if (!gafeteRaw) return null;
+                    const parsed = JSON.parse(gafeteRaw);
+                    return parsed && typeof parsed === 'object' ? parsed : null;
+                } catch (_) {
+                    return null;
+                }
+            })();
+
             try {
                 const manager = window.DataManager;
                 if (manager && typeof manager.getEmpleados === 'function') {
                     const empleados = manager.getEmpleados() || [];
+                    let encontrado = null;
                     if (idEmpleado) {
-                        const byId = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado));
-                        if (byId) return byId;
-                        const byCurp = empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
-                        if (byCurp) return byCurp;
+                        encontrado = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado))
+                            || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
+                    }
+
+                    if (encontrado) {
+                        return {
+                            ...(encontrado || {}),
+                            ...(gafeteData || {}),
+                            nombre_completo: encontrado.nombre_completo || encontrado.nombre || gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                            curp: encontrado.curp || gafeteData?.curp || '',
+                            fecha_ingreso: encontrado.fecha_ingreso || encontrado.fecha_registro || gafeteData?.fecha_ingreso || '',
+                            puesto: encontrado.puesto || gafeteData?.puesto || gafeteData?.area || '',
+                        };
                     }
                 }
             } catch (_) {
@@ -336,18 +362,55 @@
 
             try {
                 const raw = localStorage.getItem('rh_empleados_v1');
-                if (!raw) return null;
+                if (!raw) return (gafeteData ? {
+                    ...(gafeteData || {}),
+                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                    curp: gafeteData?.curp || '',
+                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
+                    puesto: gafeteData?.puesto || gafeteData?.area || '',
+                } : null);
+
                 const empleados = JSON.parse(raw);
-                if (!Array.isArray(empleados)) return null;
+                if (!Array.isArray(empleados)) return (gafeteData ? {
+                    ...(gafeteData || {}),
+                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                    curp: gafeteData?.curp || '',
+                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
+                    puesto: gafeteData?.puesto || gafeteData?.area || '',
+                } : null);
+
+                let encontrado = null;
                 if (idEmpleado) {
-                    const byId = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado));
-                    if (byId) return byId;
-                    const byCurp = empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
-                    if (byCurp) return byCurp;
+                    encontrado = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado))
+                        || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
                 }
-                return null;
+
+                if (!encontrado) {
+                    return (gafeteData ? {
+                        ...(gafeteData || {}),
+                        nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                        curp: gafeteData?.curp || '',
+                        fecha_ingreso: gafeteData?.fecha_ingreso || '',
+                        puesto: gafeteData?.puesto || gafeteData?.area || '',
+                    } : null);
+                }
+
+                return {
+                    ...(encontrado || {}),
+                    ...(gafeteData || {}),
+                    nombre_completo: encontrado.nombre_completo || encontrado.nombre || gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                    curp: encontrado.curp || gafeteData?.curp || '',
+                    fecha_ingreso: encontrado.fecha_ingreso || encontrado.fecha_registro || gafeteData?.fecha_ingreso || '',
+                    puesto: encontrado.puesto || gafeteData?.puesto || gafeteData?.area || '',
+                };
             } catch (_) {
-                return null;
+                return (gafeteData ? {
+                    ...(gafeteData || {}),
+                    nombre_completo: gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                    curp: gafeteData?.curp || '',
+                    fecha_ingreso: gafeteData?.fecha_ingreso || '',
+                    puesto: gafeteData?.puesto || gafeteData?.area || '',
+                } : null);
             }
         }
 
@@ -464,13 +527,13 @@
         }
 
         async function cargarEmpleadoContrato() {
-            if (!idEmpleado) {
-                return;
-            }
-
             const cached = getEmployeeRecordFromCache();
             if (cached) {
                 aplicarDatosContrato(cached);
+                return;
+            }
+
+            if (!idEmpleado) {
                 return;
             }
 
