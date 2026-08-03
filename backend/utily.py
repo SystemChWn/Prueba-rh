@@ -505,6 +505,7 @@ def actualizar_empleado(registro_id):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
                 cols_registro = obtener_columnas(cur, 'registro')
                 cols_ingresos = obtener_columnas(cur, 'ingresos_puesto')
 
