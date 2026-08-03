@@ -76,6 +76,15 @@
             justify-content: center;
         }
 
+        .gafete-status {
+            margin-top: 12px;
+            min-height: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e3a8a;
+            text-align: center;
+        }
+
         .badge-card {
             width: var(--badge-width);
             height: var(--badge-height);
@@ -283,6 +292,10 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="gafete-status" class="gafete-status">Procesando...</div>
+
     <script>
         const API_PORT = '8000';
         const HOSTNAME = window.location.hostname || '';
@@ -325,6 +338,21 @@
             return params.get(name);
         }
 
+        function setGafeteStatus(message, tone = 'info') {
+            const statusEl = document.getElementById('gafete-status');
+            if (!statusEl) return;
+            statusEl.textContent = message || '';
+            if (tone === 'success') {
+                statusEl.style.color = '#166534';
+                return;
+            }
+            if (tone === 'warn') {
+                statusEl.style.color = '#92400e';
+                return;
+            }
+            statusEl.style.color = '#1e3a8a';
+        }
+
         async function populateBadgeFields(datos) {
             const nombre = parseNombreCompleto(datos.nombre_completo || '');
             document.getElementById('employee-first-name').textContent = (nombre.firstName || '').toUpperCase();
@@ -356,6 +384,7 @@
             const registroId = getQueryParam('registro_id');
             const returnUrl = getQueryParam('return_url');
             const fromTab = getQueryParam('from_tab');
+            let localLoaded = false;
 
             if (returnUrl) {
                 localStorage.setItem('gafeteReturnUrl', returnUrl);
@@ -364,25 +393,48 @@
                 localStorage.setItem('empleadoActiveTab', fromTab);
             }
 
+            setGafeteStatus('Procesando datos del gafete...', 'info');
+
+            const datosRaw = localStorage.getItem('gafeteData');
+            if (datosRaw) {
+                try {
+                    const datosLocales = JSON.parse(datosRaw);
+                    await populateBadgeFields(datosLocales);
+                    localLoaded = true;
+                    setGafeteStatus('Procesando datos actualizados...', 'info');
+                } catch (_) {
+                    // Ignorar cache inválida y continuar con backend.
+                }
+            }
+
             if (registroId) {
                 try {
                     const { response, text } = await fetchFromBackend(`/obtener-empleado/${encodeURIComponent(registroId)}`);
                     if (response.ok) {
                         const datos = JSON.parse(text || '{}');
                         await populateBadgeFields(datos);
+                        setGafeteStatus('Datos listos.', 'success');
+                        return;
+                    }
+                    if (localLoaded) {
+                        setGafeteStatus('Mostrando datos locales (sin respuesta del servidor).', 'warn');
                         return;
                     }
                 } catch (error) {
                     console.warn('Error cargando datos desde backend:', error.message);
+                    if (localLoaded) {
+                        setGafeteStatus('Mostrando datos locales (sin conexion al servidor).', 'warn');
+                        return;
+                    }
                 }
             }
 
-            const datosRaw = localStorage.getItem('gafeteData');
-            if (!datosRaw) {
+            if (localLoaded) {
+                setGafeteStatus('Datos listos.', 'success');
                 return;
             }
-            const datos = JSON.parse(datosRaw);
-            await populateBadgeFields(datos);
+
+            setGafeteStatus('No se encontraron datos para este gafete.', 'warn');
         }
 
         function navigateBackToEmpleado() {
