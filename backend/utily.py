@@ -216,6 +216,7 @@ def obtener_empleado_dict(cur, registro_id):
             r.nombre_emergencia,
             r.parentesco_emergencia,
             r.telefono_emergencia,
+            r.firma_archivo,
             {fotografia_select},
             {fecha_select},
             ip.empresa,
@@ -261,16 +262,17 @@ def obtener_empleado_dict(cur, registro_id):
         'nombre_emergencia': row[19],
         'parentesco_emergencia': row[20],
         'telefono_emergencia': row[21],
-        'fotografia_base64': row[22],
-        'fecha_ingreso': row[23].strftime('%Y-%m-%d') if row[23] else None,
-        'empresa': row[24],
-        'no_empleado': row[25],
-        'personal': row[26],
-        'puesto': row[27],
-        'area': row[28],
-        'turno': row[29],
-        'salario': row[30],
-        'pago': row[31],
+        'firma_archivo': row[22],
+        'fotografia_base64': row[23],
+        'fecha_ingreso': row[24].strftime('%Y-%m-%d') if row[24] else None,
+        'empresa': row[25],
+        'no_empleado': row[26],
+        'personal': row[27],
+        'puesto': row[28],
+        'area': row[29],
+        'turno': row[30],
+        'salario': row[31],
+        'pago': row[32],
     }
 
 def separar_numeracion(valor):
@@ -537,6 +539,7 @@ def actualizar_empleado(registro_id):
                     'nombre_emergencia': payload.get('emergencia_nombre'),
                     'parentesco_emergencia': payload.get('emergencia_parentesco'),
                     'telefono_emergencia': payload.get('emergencia_telefono'),
+                    'fotografia_base64': payload.get('fotografia_base64'),
                 }
 
                 if fecha_col:

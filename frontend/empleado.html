@@ -729,8 +729,17 @@
                     </div>
                 </div>
                 <div class="photo-actions">
+                    <label class="file-label" for="foto-input">SUBIR FOTO</label>
+                    <input id="foto-input" class="file-input" type="file" accept="image/*" />
                     <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
+                </div>
+                <div style="width:100%; max-width:300px; margin: 34px auto 0;">
+                    <div class="muted" style="margin-bottom:10px; text-align:center;">Firma del registro</div>
+                    <div style="width:100%; min-height:120px; border:1px solid var(--grisc); border-radius:14px; overflow:hidden; background:#fff; display:grid; place-items:center; padding:10px;">
+                        <img id="signature-preview" alt="Firma del registro" style="width:100%; height:100%; object-fit:contain; display:none;" />
+                        <div id="signature-placeholder" style="color:#64748b; text-align:center;">Sin firma</div>
+                    </div>
                 </div>
             </section>
 
@@ -1009,8 +1018,11 @@
         const employeeTop = document.getElementById('employee-top');
         const companyName = document.getElementById('company-name');
         const btnRegresar = document.getElementById('btn-regresar');
+        const photoInput = document.getElementById('foto-input');
         const photoPreview = document.getElementById('photo-preview');
         const photoPlaceholder = document.getElementById('photo-placeholder');
+        const signaturePreview = document.getElementById('signature-preview');
+        const signaturePlaceholder = document.getElementById('signature-placeholder');
         const btnDescargarCredencial = document.getElementById('btn-descargar-credencial');
         const btnDescargarContrato = document.getElementById('btn-descargar-contrato');
         const btnEditar = document.getElementById('btn-editar');
@@ -1528,6 +1540,21 @@
             return true;
         }
 
+        function setSignaturePreviewFromUrl(url) {
+            const normalizedUrl = String(url || '').trim();
+            if (!normalizedUrl) {
+                signaturePreview.removeAttribute('src');
+                signaturePreview.style.display = 'none';
+                signaturePlaceholder.style.display = 'block';
+                return false;
+            }
+
+            signaturePreview.src = normalizedUrl;
+            signaturePreview.style.display = 'block';
+            signaturePlaceholder.style.display = 'none';
+            return true;
+        }
+
         function getCurrentPhotoSource() {
             const previewSrc = photoPreview && (photoPreview.getAttribute('src') || photoPreview.src || '');
             if (previewSrc) return previewSrc;
@@ -1628,6 +1655,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 fillFields(data);
                 refreshEdadDependiente();
                 setPhotoPreviewFromUrl(data.fotografia_base64 || '');
+                setSignaturePreviewFromUrl(data.firma_archivo || '');
                 saveLocalProfile();
                 loadLocalProfile();
                 await refreshServerDocuments();
@@ -1722,6 +1750,34 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
+        });
+
+        photoInput.addEventListener('change', () => {
+            const file = photoInput.files && photoInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const dataUrl = String(reader.result || '');
+                setPhotoPreviewFromUrl(dataUrl);
+
+                try {
+                    const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, {
+                        fotografia_base64: dataUrl,
+                    });
+                    if (!respuesta.ok) {
+                        throw new Error(texto || 'No se pudo guardar la fotografía');
+                    }
+
+                    const updated = JSON.parse(texto || '{}');
+                    originalData = updated;
+                    setPhotoPreviewFromUrl(updated.fotografia_base64 || dataUrl);
+                    saveLocalProfile();
+                } catch (error) {
+                    alert('Error al subir la fotografía: ' + error.message);
+                }
+            };
+            reader.readAsDataURL(file);
         });
 
         btnEditar.addEventListener('click', () => {
