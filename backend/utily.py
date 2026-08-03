@@ -62,6 +62,10 @@ def construir_nombre_documento(curp, empresa, doc_key, original_filename):
     empresa_texto = limpiar_fragmento(empresa_normalizada)
     doc_texto = DOC_FILENAME_KEYS.get(doc_key, limpiar_fragmento(doc_key))
     extension = extension_desde_nombre(original_filename)
+
+    if doc_key == 'fotografia':
+        return f"{curp_texto}_FOTOGRAFIA{extension}"
+
     return f"{curp_texto}-{empresa_texto}-{doc_texto}{extension}"
 
 
@@ -86,7 +90,15 @@ def buscar_documentos(curp, empresa):
     prefijo = f"{curp_texto}-{empresa_texto}-"
 
     for file_name in os.listdir(base_dir):
-        if not file_name.upper().startswith(prefijo):
+        nombre_upper = file_name.upper()
+        if doc_key := 'fotografia' if nombre_upper.startswith(f"{curp_texto}_FOTOGRAFIA") else None:
+            documentos[doc_key] = {
+                'fileName': file_name,
+                'previewUrl': f"/api/documentos/{empresa_texto}/{file_name}",
+            }
+            continue
+
+        if not nombre_upper.startswith(prefijo):
             continue
 
         nombre_base, _ = os.path.splitext(file_name)
@@ -661,6 +673,14 @@ def eliminar_archivo_empleado():
         return ("ERROR: doc_key inválido", 400)
 
     empresa_normalizada, directorio = normalizar_empresa(empresa)
+    if doc_key == 'fotografia':
+        prefijo = f"{limpiar_fragmento(curp)}_FOTOGRAFIA"
+        for existing_file in os.listdir(directorio) if os.path.isdir(directorio) else []:
+            if existing_file.upper().startswith(prefijo):
+                os.remove(os.path.join(directorio, existing_file))
+                return ("OK", 200)
+        return ("ERROR: Archivo no encontrado", 404)
+
     file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, 'archivo.dat')
     ruta = os.path.join(directorio, file_name)
 
