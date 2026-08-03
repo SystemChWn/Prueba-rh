@@ -324,8 +324,15 @@
                     </div>
                     <label for="evento-titulo">Título</label>
                     <input id="evento-titulo" type="text" placeholder="Nombre de la junta o evento">
-                    <label for="evento-fecha">Fecha</label>
-                    <input id="evento-fecha" type="date">
+                    <label>Fecha</label>
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <select id="evento-dia" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                            <option value="">Día</option>
+                        </select>
+                        <select id="evento-mes" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                            <option value="">Mes</option>
+                        </select>
+                    </div>
                     <div id="campos-hora-evento">
                         <label for="evento-inicio">Hora inicial</label>
                         <input id="evento-inicio" type="time">
@@ -461,6 +468,77 @@
             var EVENTO_TIPO_EVENTO = 'evento';
             var EVENTO_TIPO_REUNION = 'reunion';
 
+            var MESES = [
+                { value: '01', label: 'Enero' },
+                { value: '02', label: 'Febrero' },
+                { value: '03', label: 'Marzo' },
+                { value: '04', label: 'Abril' },
+                { value: '05', label: 'Mayo' },
+                { value: '06', label: 'Junio' },
+                { value: '07', label: 'Julio' },
+                { value: '08', label: 'Agosto' },
+                { value: '09', label: 'Septiembre' },
+                { value: '10', label: 'Octubre' },
+                { value: '11', label: 'Noviembre' },
+                { value: '12', label: 'Diciembre' }
+            ];
+
+            function pad2(valor) {
+                return String(valor || '').padStart(2, '0');
+            }
+
+            function getDiaMesFromEventValue(valor) {
+                var texto = String(valor || '').trim();
+                var match = texto.match(/^(\d{2})-(\d{2})$/);
+                if (match) {
+                    return { dia: match[1], mes: match[2] };
+                }
+                match = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (match) {
+                    return { dia: match[3], mes: match[2] };
+                }
+                return { dia: '', mes: '' };
+            }
+
+            function buildEventMonthDay(dia, mes) {
+                var day = pad2(dia);
+                var month = pad2(mes);
+                return day && month ? day + '-' + month : '';
+            }
+
+            function formatDayMonthLabel(monthDay) {
+                var parts = String(monthDay || '').split('-');
+                if (parts.length !== 2) return '';
+                return parts[0] + '/' + parts[1];
+            }
+
+            function getEventDateForYear(monthDay, year) {
+                var parts = String(monthDay || '').split('-');
+                if (parts.length !== 2) return '';
+                return String(year || getVisibleYear()) + '-' + parts[1] + '-' + parts[0];
+            }
+
+            function fillDateSelectors() {
+                var diaSelect = document.getElementById('evento-dia');
+                var mesSelect = document.getElementById('evento-mes');
+                if (diaSelect && diaSelect.options.length === 1) {
+                    for (var d = 1; d <= 31; d += 1) {
+                        var optDia = document.createElement('option');
+                        optDia.value = pad2(d);
+                        optDia.textContent = pad2(d);
+                        diaSelect.appendChild(optDia);
+                    }
+                }
+                if (mesSelect && mesSelect.options.length === 1) {
+                    MESES.forEach(function(mes) {
+                        var optMes = document.createElement('option');
+                        optMes.value = mes.value;
+                        optMes.textContent = mes.label;
+                        mesSelect.appendChild(optMes);
+                    });
+                }
+            }
+
             function safeParseJSON(value) {
                 if (value === null || value === undefined || value === '') {
                     return [];
@@ -568,36 +646,34 @@
             }
 
             function cleanExpiredCustomEvents() {
-                var now = new Date();
                 var eventos = loadCustomEvents().filter(function(evt) {
-                    if (!evt) return false;
-                    if (evt.tipo === EVENTO_TIPO_CUMPLEANOS) return true;
-                    var end = new Date(evt.date + 'T' + (evt.endTime || '23:59'));
-                    return end >= now;
+                    return !!evt;
                 });
                 saveCustomEvents(eventos);
                 return eventos;
             }
 
             function getCustomEvents(year) {
-                var now = new Date();
                 return cleanExpiredCustomEvents().filter(function(evt) {
                     if (!evt) return false;
+                    var monthDay = evt.monthDay || evt.date || '';
                     var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
-                    var start = new Date(evt.date + 'T' + (evt.startTime || '00:00'));
-                    var end = isBirthday ? new Date(evt.date + 'T23:59:59') : new Date(evt.date + 'T' + (evt.endTime || '23:59'));
+                    var start = new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.startTime || '00:00'));
+                    var end = isBirthday ? new Date(getEventDateForYear(monthDay, year) + 'T23:59:59') : new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.endTime || '23:59'));
                     var targetYear = Number(year || getVisibleYear());
                     var sameYear = start.getFullYear() === targetYear || end.getFullYear() === targetYear;
-                    return sameYear && (isBirthday || end >= now);
+                    return sameYear;
                 }).map(function(evt) {
                     var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
                     var tipo = isBirthday ? 'cumpleanos' : (evt.tipo || EVENTO_TIPO_REUNION);
+                    var monthDay = evt.monthDay || evt.date || '';
                     var colors = getTipoColor(tipo);
+                    var fechaRender = getEventDateForYear(monthDay, year);
                     return {
                         id: evt.id,
                         title: getDisplayEventTitle(evt),
-                        start: isBirthday ? evt.date : evt.date + 'T' + evt.startTime,
-                        end: isBirthday ? evt.date : evt.date + 'T' + evt.endTime,
+                        start: isBirthday ? fechaRender : fechaRender + 'T' + evt.startTime,
+                        end: isBirthday ? fechaRender : fechaRender + 'T' + evt.endTime,
                         allDay: isBirthday,
                         backgroundColor: colors.background,
                         borderColor: colors.border,
@@ -606,6 +682,7 @@
                             asistentes: evt.asistantes || '',
                             descripcion: evt.descripcion || '',
                             tipo: tipo,
+                            monthDay: monthDay,
                             isCustomEvent: true,
                         }
                     };
@@ -623,7 +700,8 @@
             function resetModalEvento() {
                 editingEventId = null;
                 document.getElementById('evento-titulo').value = '';
-                document.getElementById('evento-fecha').value = '';
+                document.getElementById('evento-dia').value = '';
+                document.getElementById('evento-mes').value = '';
                 document.getElementById('evento-inicio').value = '';
                 document.getElementById('evento-fin').value = '';
                 document.getElementById('evento-asistentes').value = '';
@@ -636,12 +714,13 @@
             function validarEventoForm() {
                 var tipo = getSelectedEventType();
                 var titulo = document.getElementById('evento-titulo').value.trim();
-                var fecha = document.getElementById('evento-fecha').value;
+                var dia = document.getElementById('evento-dia').value;
+                var mes = document.getElementById('evento-mes').value;
                 var inicio = document.getElementById('evento-inicio').value;
                 var fin = document.getElementById('evento-fin').value;
 
-                if (!titulo || !fecha) {
-                    alert('Completa título y fecha.');
+                if (!titulo || !dia || !mes) {
+                    alert('Completa título, día y mes.');
                     return false;
                 }
 
@@ -651,8 +730,9 @@
                         return false;
                     }
 
-                    var inicioDate = new Date(fecha + 'T' + inicio);
-                    var finDate = new Date(fecha + 'T' + fin);
+                    var baseDate = getEventDateForYear(buildEventMonthDay(dia, mes), getVisibleYear());
+                    var inicioDate = new Date(baseDate + 'T' + inicio);
+                    var finDate = new Date(baseDate + 'T' + fin);
                     if (!inicioDate.getTime() || !finDate.getTime() || finDate <= inicioDate) {
                         alert('La hora final debe ser posterior a la hora inicial.');
                         return false;
@@ -665,7 +745,9 @@
             function saveEventoFromForm() {
                 var tipo = getSelectedEventType();
                 var titulo = document.getElementById('evento-titulo').value.trim();
-                var fecha = document.getElementById('evento-fecha').value;
+                var dia = document.getElementById('evento-dia').value;
+                var mes = document.getElementById('evento-mes').value;
+                var monthDay = buildEventMonthDay(dia, mes);
                 var inicio = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-inicio').value;
                 var fin = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-fin').value;
                 var asistentes = tipo === EVENTO_TIPO_REUNION ? document.getElementById('evento-asistentes').value.trim() : '';
@@ -677,7 +759,7 @@
                         return {
                             id: editingEventId,
                             title: titulo,
-                            date: fecha,
+                            monthDay: monthDay,
                             startTime: inicio,
                             endTime: fin,
                             asistentes: asistentes,
@@ -689,7 +771,7 @@
                     eventos.push({
                         id: 'evt-' + Date.now(),
                         title: titulo,
-                        date: fecha,
+                        monthDay: monthDay,
                         startTime: inicio,
                         endTime: fin,
                         asistentes: asistentes,
@@ -734,11 +816,12 @@
 
                 var eventosPersonalizados = cleanExpiredCustomEvents()
                     .filter(function(evt) {
-                        var fecha = new Date(evt.date + 'T' + (evt.startTime || '00:00'));
-                        return fecha.getFullYear() === fechaActual.getFullYear() && fecha.getMonth() === fechaActual.getMonth();
+                        var monthDay = evt.monthDay || evt.date || '';
+                        var fecha = new Date(getEventDateForYear(monthDay, fechaActual.getFullYear()) + 'T' + (evt.startTime || '00:00'));
+                        return fecha.getMonth() === fechaActual.getMonth();
                     })
                     .sort(function(a, b) {
-                        return a.date.localeCompare(b.date) || (a.startTime || '').localeCompare(b.startTime || '');
+                        return String(a.monthDay || a.date || '').localeCompare(String(b.monthDay || b.date || '')) || (a.startTime || '').localeCompare(b.startTime || '');
                     });
 
                 html += '<div class="evento-item" style="margin-top:12px; font-weight:700;">Eventos guardados</div>';
@@ -751,9 +834,10 @@
                         var colors = getTipoColor(tipo === EVENTO_TIPO_CUMPLEANOS ? 'cumpleanos' : tipo);
                         var horario = evt.startTime && evt.endTime ? ' · ' + evt.startTime + ' - ' + evt.endTime : '';
                         var asistentesHtml = renderizarAsistentes(evt.asistentes);
+                        var fechaEtiqueta = formatDayMonthLabel(evt.monthDay || evt.date || '');
                         return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(255,255,255,0.04);">' +
                             '<div><strong>' + escapeHtml(getDisplayEventTitle(evt)) + '</strong></div>' +
-                            '<div class="evento-meta">' + escapeHtml(tipoLabel) + ' · ' + escapeHtml(evt.date) + horario + '</div>' +
+                            '<div class="evento-meta">' + escapeHtml(tipoLabel) + ' · ' + escapeHtml(fechaEtiqueta) + horario + '</div>' +
                             asistentesHtml +
                             '<div style="margin-top:8px; display:flex; gap:6px;">' +
                             '<button type="button" class="btn-secondary btn-small btn-editar-evento" data-event-id="' + evt.id + '">Editar</button>' +
@@ -797,7 +881,9 @@
                 var tipo = evento.tipo || EVENTO_TIPO_REUNION;
                 actualizarCamposTipoEvento(tipo);
                 document.getElementById('evento-titulo').value = evento.title;
-                document.getElementById('evento-fecha').value = evento.date;
+                var fechaEdit = getDiaMesFromEventValue(evento.monthDay || evento.date || '');
+                document.getElementById('evento-dia').value = fechaEdit.dia;
+                document.getElementById('evento-mes').value = fechaEdit.mes;
                 document.getElementById('evento-inicio').value = evento.startTime || '';
                 document.getElementById('evento-fin').value = evento.endTime || '';
                 document.getElementById('evento-asistentes').value = evento.asistentes || '';
@@ -977,6 +1063,8 @@
                     cerrarModalEvento();
                 }
             });
+
+            fillDateSelectors();
 
             function actualizarAgenda(fechaActual) {
                 var nombreMes = fechaActual.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
