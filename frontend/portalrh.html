@@ -82,11 +82,13 @@
         <div id="loginSection" class="login-container">
             <span style='font-size: 60px;'>웃</span>
             <h2 style="margin-top: 0; color: #fff;">CW CONNECT</h2>
-            
-            <input type="text" id="user" placeholder="Usuario" required>
-            <input type="password" id="pass" placeholder="Contraseña" required>
-            
-            <button type="button" aria-disabled="true">Ingresar</button>
+
+            <form id="loginForm" autocomplete="off">
+                <input type="text" id="user" placeholder="Usuario" required>
+                <input type="password" id="pass" placeholder="Contraseña" required>
+
+                <button type="submit">Ingresar</button>
+            </form>
 
             <div id="mensajeError" style="color: #ff4d4d; margin-top: 15px; font-size: 0.9rem; display: none; text-align: center;">
                 ⚠️ Usuario o contraseña incorrectos
@@ -96,13 +98,13 @@
 
     <script>
         function verificarAcceso() {
-            const u = document.getElementById('user').value;
-            const p = document.getElementById('pass').value;
+            const u = String(document.getElementById('user').value || '').trim().toUpperCase();
+            const p = String(document.getElementById('pass').value || '').trim();
             
             const errorMsg = document.getElementById('mensajeError');
 
 // USUARIO / CONTRASEÑA
-            if (u === "RH" && p === "123") {
+            if ((u === "RH" || u === "ADMIN") && p === "123") {
                 window.location.href = "iniciorh.html";
             } else {
                 errorMsg.style.display = 'block';
@@ -116,6 +118,7 @@
         (function configurarLogin() {
             const user = document.getElementById('user');
             const pass = document.getElementById('pass');
+            const form = document.getElementById('loginForm');
 
             function intentarIngresarConEnter(event) {
                 if (event.key === 'Enter') {
@@ -126,6 +129,12 @@
 
             if (user) user.addEventListener('keydown', intentarIngresarConEnter);
             if (pass) pass.addEventListener('keydown', intentarIngresarConEnter);
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    verificarAcceso();
+                });
+            }
         })();
     </script>
 
