@@ -306,7 +306,7 @@
     <script>
         const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const urlParams = new URLSearchParams(window.location.search);
-        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id');
+        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id') || localStorage.getItem('ultimoRegistroId') || '';
 
         function buildEmpleadoEndpoint(idValue) {
             const encodedId = encodeURIComponent(idValue);
@@ -316,6 +316,39 @@
                 `http://localhost:8001/api/obtener-empleado/${encodedId}`,
                 `http://127.0.0.1:8001/api/obtener-empleado/${encodedId}`
             ];
+        }
+
+        function getEmployeeRecordFromCache() {
+            try {
+                const manager = window.DataManager;
+                if (manager && typeof manager.getEmpleados === 'function') {
+                    const empleados = manager.getEmpleados() || [];
+                    if (idEmpleado) {
+                        const byId = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado));
+                        if (byId) return byId;
+                        const byCurp = empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
+                        if (byCurp) return byCurp;
+                    }
+                }
+            } catch (_) {
+                // continuar con fallback
+            }
+
+            try {
+                const raw = localStorage.getItem('rh_empleados_v1');
+                if (!raw) return null;
+                const empleados = JSON.parse(raw);
+                if (!Array.isArray(empleados)) return null;
+                if (idEmpleado) {
+                    const byId = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado));
+                    if (byId) return byId;
+                    const byCurp = empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
+                    if (byCurp) return byCurp;
+                }
+                return null;
+            } catch (_) {
+                return null;
+            }
         }
 
         const btnRegresar = document.getElementById('btn-regresar');
@@ -404,8 +437,40 @@
             return convertirHasta999(Math.trunc(valor));
         }
 
+        function aplicarDatosContrato(data) {
+            const fechaIngreso = data.fecha_ingreso || data.fecha_registro || '';
+            const salario = data.salario || '';
+            const fechaInicioTexto = formatFechaLarga(fechaIngreso);
+            const fechaFinalTexto = formatFechaLarga(sumarDiasFecha(fechaIngreso, 30));
+
+            setText('lbl-nombre', data.nombre_completo || data.nombre || '');
+            setText('lbl-nacionalidad', data.nacionalidad || '');
+            setText('lbl-edad', data.edad || '');
+            setText('lbl-genero', data.genero || '');
+            setText('estado-civil', data.estado_civil || '');
+            setText('lbl-curp', data.curp || '');
+            setText('lbl-rfc', data.rfc || '');
+            setText('lbl-domicilio', buildDomicilio(data));
+            setText('lbl-puesto', data.puesto || '');
+            setText('lbl-fecha-inicio', fechaInicioTexto);
+            setText('lbl-fecha-final', fechaFinalTexto);
+            setText('lbl-fecha-final-2', fechaFinalTexto);
+            setText('lbl-salario-num', salario);
+            setText('lbl-salario-letra', numeroALetras(salario));
+            setText('lbl-periodo', data.pago || '');
+            setText('lbl-correo', data.correo || '');
+            setText('lbl-fecha-firma', fechaInicioTexto);
+            setText('lbl-nombre-firma', data.nombre_completo || data.nombre || '');
+        }
+
         async function cargarEmpleadoContrato() {
             if (!idEmpleado) {
+                return;
+            }
+
+            const cached = getEmployeeRecordFromCache();
+            if (cached) {
+                aplicarDatosContrato(cached);
                 return;
             }
 
@@ -421,30 +486,7 @@
                     }
 
                     const data = await response.json();
-                    const fechaIngreso = data.fecha_ingreso || '';
-                    const salario = data.salario || '';
-                    const fechaInicioTexto = formatFechaLarga(fechaIngreso);
-                    const fechaFinalTexto = formatFechaLarga(sumarDiasFecha(fechaIngreso, 30));
-
-                    setText('lbl-nombre', data.nombre_completo || '');
-                    setText('lbl-nacionalidad', data.nacionalidad || '');
-                    setText('lbl-edad', data.edad || '');
-                    setText('lbl-genero', data.genero || '');
-                    setText('estado-civil', data.estado_civil || '');
-                    setText('lbl-estado-civil', data.estado_civil || '');
-                    setText('lbl-curp', data.curp || '');
-                    setText('lbl-rfc', data.rfc || '');
-                    setText('lbl-domicilio', buildDomicilio(data));
-                    setText('lbl-puesto', data.puesto || '');
-                    setText('lbl-fecha-inicio', fechaInicioTexto);
-                    setText('lbl-fecha-final', fechaFinalTexto);
-                    setText('lbl-fecha-final-2', fechaFinalTexto);
-                    setText('lbl-salario-num', salario);
-                    setText('lbl-salario-letra', numeroALetras(salario));
-                    setText('lbl-periodo', data.pago || '');
-                    setText('lbl-correo', data.correo || '');
-                    setText('lbl-fecha-firma', fechaInicioTexto);
-                    setText('lbl-nombre-firma', data.nombre_completo || '');
+                    aplicarDatosContrato(data);
                     return;
                 } catch (error) {
                     ultimoError = error;
