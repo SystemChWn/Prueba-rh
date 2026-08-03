@@ -68,7 +68,7 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            max-width: 50%;
+            max-width: 100%;
             box-sizing: border-box;
         }
 
@@ -186,15 +186,6 @@
             </div>
         </section>
 
-<!-- Segunda Gráfica -->
-        <section class="card card-anual">
-            <h3>Comparativa Anual de Ingresos</h3>
-            <div class="chart-container-wrapper">
-                <div class="chart-wrapper" style="width: 100%; height: 100%;">
-                    <canvas id="grafica12Meses"></canvas>
-                </div>
-            </div>
-        </section>
     </div>
     </main>
 
@@ -204,7 +195,6 @@
         const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
 
         let chartPastel = null;
-        let chartAnual = null;
 
         function crearGraficaPastel(idCanvas, datos) {
             const ctx = document.getElementById(idCanvas).getContext('2d');
@@ -232,35 +222,6 @@
             });
         }
 
-        function crearGrafica12Meses(idCanvas, datosAnuales) {
-            const ctx = document.getElementById(idCanvas).getContext('2d');
-            const mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            
-            if (chartAnual) chartAnual.destroy();
-
-            chartAnual = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: mesesLabels,
-                    datasets: [{
-                        label: 'Ingresos Totales',
-                        data: datosAnuales,
-                        backgroundColor: '#C5CCD4'
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { beginAtZero: true, grid: { color: '#333' } },
-                        y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
         document.addEventListener("DOMContentLoaded", async () => {
             const mesActual = new Date().getMonth() + 1;
             const selectMes = document.getElementById('selectMes');
@@ -272,10 +233,7 @@
                     const API_BASE = (location.protocol === 'file:') ? 'http://127.0.0.1:8000' : '';
                     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
                     const datosMesInicial = await fetch(`${API_BASE}/api/datos-grafica?periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0]);
-                    const datos12Meses = await fetch(`${API_BASE}/api/datos-grafica?periodo=12meses&tz=${encodeURIComponent(tz)}`).then(res => res.json()).catch(() => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-
                 crearGraficaPastel('graficaPastelMes', datosMesInicial);
-                crearGrafica12Meses('grafica12Meses', datos12Meses);
 
                 if (selectMes) {
                     selectMes.addEventListener('change', async (e) => {

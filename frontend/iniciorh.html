@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheong Woon Mexico</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Eliminar la barra de desplazamiento visualmente */
         ::-webkit-scrollbar {
@@ -22,6 +23,30 @@
         .dashboard-calendar { padding: 20px; display: flex; gap: 20px; height: 570px; }
         #calendar { flex: 2; background: #2c2c2c; padding: 15px; border-radius: 8px; }
         #agenda { flex: 1; background: #2c2c2c; padding: 15px; border-radius: 8px; overflow-y: auto; }
+
+        .dashboard-ingresos {
+            padding: 0 20px 20px;
+        }
+
+        .ingresos-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .ingresos-card h3 {
+            color: #fff;
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .ingresos-chart-wrap {
+            position: relative;
+            height: 420px;
+            width: 100%;
+        }
         
         .fc { color: #fff; }
         .fc .fc-toolbar-title { text-transform: uppercase !important; }
@@ -324,6 +349,14 @@
             </div>
         </div>
     </main>
+    <section class="dashboard-ingresos">
+        <div class="ingresos-card">
+            <h3>Comparativa Anual de Ingresos</h3>
+            <div class="ingresos-chart-wrap">
+                <canvas id="grafica12MesesInicio"></canvas>
+            </div>
+        </div>
+    </section>
     <script src="data-manager.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -332,6 +365,7 @@
             var currentYear = new Date().getFullYear();
             var empleadosCalendario = [];
             var editingEventId = null;
+            var chartIngresosAnual = null;
 
             const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
             const SERVER_IP = currentHost || '192.168.1.85';
@@ -362,6 +396,68 @@
                     }
                 }
                 throw new Error('No se pudo conectar con el servidor (' + API_BASES.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            async function getJsonConFallback(endpoint, fallbackData) {
+                var ultimoErrorRed = null;
+                var bases = [''].concat(API_BASES || []);
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
+                    try {
+                        var respuesta = await fetch(baseUrl + endpoint);
+                        if (!respuesta.ok) {
+                            continue;
+                        }
+                        return await respuesta.json();
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                if (fallbackData !== undefined) {
+                    return fallbackData;
+                }
+                throw new Error('No se pudo conectar con el servidor (' + bases.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            function crearGraficaIngresosAnual(datosAnuales) {
+                var canvas = document.getElementById('grafica12MesesInicio');
+                if (!canvas) return;
+
+                var ctx = canvas.getContext('2d');
+                var mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+                if (chartIngresosAnual) {
+                    chartIngresosAnual.destroy();
+                }
+
+                chartIngresosAnual = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: mesesLabels,
+                        datasets: [{
+                            label: 'Ingresos Totales',
+                            data: Array.isArray(datosAnuales) ? datosAnuales : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: '#C5CCD4'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: '#fff' } },
+                            y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            async function cargarGraficaIngresosAnual() {
+                var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                var endpoint = '/api/datos-grafica?periodo=12meses&tz=' + encodeURIComponent(tz);
+                var datos = await getJsonConFallback(endpoint, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+                crearGraficaIngresosAnual(datos);
             }
 
             var EVENTOS_PERSONALIZADOS_KEY = 'rh_eventos_personalizados_v1';
@@ -844,6 +940,9 @@
             }
 
             refreshCalendar();
+            cargarGraficaIngresosAnual().catch(function(error) {
+                console.error('Error cargando grafica anual de ingresos', error);
+            });
 
             if (window.DataManager) {
                 window.DataManager.subscribeVistas(function() {
