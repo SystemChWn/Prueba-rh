@@ -734,6 +734,7 @@
                     <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
                 </div>
+                <div id="photo-upload-status" style="width:100%; max-width:300px; margin:10px auto 0; min-height:20px; text-align:center; font-size:0.9rem; color:var(--grisc);"></div>
                 <div style="width:100%; max-width:300px; margin: 34px auto 0;">
                     <div class="muted" style="margin-bottom:10px; text-align:center;">Firma del registro</div>
                     <div style="width:100%; min-height:120px; border:1px solid var(--grisc); border-radius:14px; overflow:hidden; background:#fff; display:grid; place-items:center; padding:10px;">
@@ -1029,6 +1030,7 @@
         const btnGuardar = document.getElementById('btn-guardar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const fechaIngresoEl = document.getElementById('fecha-ingreso');
+        const photoUploadStatus = document.getElementById('photo-upload-status');
 
         const fields = {
             'nombre-completo': document.getElementById('nombre-completo'),
@@ -1555,12 +1557,37 @@
             return true;
         }
 
+        function setPhotoUploadStatus(message, tone = 'neutral') {
+            if (!photoUploadStatus) return;
+            photoUploadStatus.textContent = message || '';
+            if (tone === 'success') {
+                photoUploadStatus.style.color = '#22c55e';
+                return;
+            }
+            if (tone === 'error') {
+                photoUploadStatus.style.color = '#f87171';
+                return;
+            }
+            if (tone === 'info') {
+                photoUploadStatus.style.color = '#60a5fa';
+                return;
+            }
+            photoUploadStatus.style.color = 'var(--grisc)';
+        }
+
         function getCurrentPhotoSource() {
             const previewSrc = photoPreview && (photoPreview.getAttribute('src') || photoPreview.src || '');
             if (previewSrc) return previewSrc;
 
             const base64Photo = originalData && originalData.fotografia_base64 ? String(originalData.fotografia_base64).trim() : '';
-            return base64Photo;
+            if (base64Photo) return base64Photo;
+
+            if (registroId) {
+                const storedPhoto = localStorage.getItem(`foto_empleado_${registroId}`);
+                if (storedPhoto) return storedPhoto;
+            }
+
+            return '';
         }
 
         function downloadBlob(content, filename, type = 'text/html') {
@@ -1654,7 +1681,8 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
                 fillFields(data);
                 refreshEdadDependiente();
-                setPhotoPreviewFromUrl(data.fotografia_base64 || '');
+                const fotoEmpleado = data.fotografia_base64 || (registroId ? localStorage.getItem(`foto_empleado_${registroId}`) : '') || '';
+                setPhotoPreviewFromUrl(fotoEmpleado);
                 setSignaturePreviewFromUrl(data.firma_archivo || '');
                 saveLocalProfile();
                 loadLocalProfile();
@@ -1755,11 +1783,17 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         photoInput.addEventListener('change', () => {
             const file = photoInput.files && photoInput.files[0];
             if (!file) return;
+            if (!registroId) {
+                setPhotoUploadStatus('No se pudo identificar el empleado.', 'error');
+                alert('No se pudo identificar el empleado para guardar la fotografía.');
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = async () => {
                 const dataUrl = String(reader.result || '');
-                setPhotoPreviewFromUrl(dataUrl);
+                setPhotoUploadStatus('Guardando fotografia...', 'info');
+                photoInput.disabled = true;
 
                 try {
                     const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, {
@@ -1771,12 +1805,23 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
                     const updated = JSON.parse(texto || '{}');
                     originalData = updated;
-                    setPhotoPreviewFromUrl(updated.fotografia_base64 || dataUrl);
+                    const persistedPhoto = updated.fotografia_base64 || dataUrl;
+                    setPhotoPreviewFromUrl(persistedPhoto);
+                    localStorage.setItem(`foto_empleado_${registroId}`, persistedPhoto);
                     saveLocalProfile();
+                    setPhotoUploadStatus('Fotografia guardada correctamente.', 'success');
                 } catch (error) {
+                    setPhotoUploadStatus('Error al guardar fotografia.', 'error');
                     alert('Error al subir la fotografía: ' + error.message);
+                } finally {
+                    photoInput.disabled = false;
                 }
             };
+
+            reader.onerror = () => {
+                setPhotoUploadStatus('No se pudo leer la fotografia.', 'error');
+            };
+
             reader.readAsDataURL(file);
         });
 
