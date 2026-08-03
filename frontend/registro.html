@@ -483,7 +483,6 @@
         async function finalizarRegistro() {
             // 1. Validar campos obligatorios del formulario
             if (!validarRegistro()) {
-                mostrarMensajeInferior('Por favor completa todos los campos obligatorios.', 2000, false, true);
                 return;
             }
 
@@ -559,6 +558,181 @@
             }, duracionMs);
         }
 
+        function normalizarTexto(texto) {
+            return String(texto || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^A-Za-z\s]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toUpperCase();
+        }
+
+        function obtenerPartesNombreCompleto(nombreCompleto) {
+            const conectores = new Set(['DE', 'DEL', 'LA', 'LAS', 'LOS', 'Y', 'MC', 'VON', 'VAN', 'DA', 'DAS', 'DO', 'DOS']);
+            const partesCrudas = normalizarTexto(nombreCompleto).split(' ').filter(Boolean);
+            const partes = partesCrudas.filter((p) => !conectores.has(p));
+
+            if (partes.length === 0) {
+                return { nombre: '', paterno: '', materno: '' };
+            }
+
+            if (partes.length === 1) {
+                return { nombre: partes[0], paterno: '', materno: '' };
+            }
+
+            if (partes.length === 2) {
+                return { nombre: partes[1], paterno: partes[0], materno: '' };
+            }
+
+            return {
+                nombre: partes.slice(2).join(' '),
+                paterno: partes[0],
+                materno: partes[1],
+            };
+        }
+
+        function primeraVocalInterna(texto) {
+            const base = normalizarTexto(texto);
+            for (let i = 1; i < base.length; i += 1) {
+                if ('AEIOU'.includes(base[i])) return base[i];
+            }
+            return 'X';
+        }
+
+        function primeraConsonanteInterna(texto) {
+            const base = normalizarTexto(texto);
+            for (let i = 1; i < base.length; i += 1) {
+                const c = base[i];
+                if (/[A-Z]/.test(c) && !'AEIOU'.includes(c)) return c;
+            }
+            return 'X';
+        }
+
+        function primeraLetra(texto) {
+            const base = normalizarTexto(texto);
+            return base ? base[0] : 'X';
+        }
+
+        function primerNombreValido(nombreCompuesto) {
+            const ignorar = new Set(['JOSE', 'J', 'J.', 'MARIA', 'MA', 'MA.', 'MA.']);
+            const partes = normalizarTexto(nombreCompuesto).split(' ').filter(Boolean);
+            for (const p of partes) {
+                if (!ignorar.has(p)) return p;
+            }
+            return partes[0] || '';
+        }
+
+        function obtenerYYMMDD(fechaISO) {
+            const fecha = new Date(fechaISO);
+            if (!fecha.getTime()) return '';
+            const yy = String(fecha.getFullYear()).slice(-2);
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            return `${yy}${mm}${dd}`;
+        }
+
+        function obtenerSexoCURP(genero) {
+            const g = normalizarTexto(genero);
+            if (g.startsWith('MASC')) return 'H';
+            if (g.startsWith('FEM')) return 'M';
+            return '';
+        }
+
+        function esNacionalidadExtranjera(nacionalidad) {
+            const n = normalizarTexto(nacionalidad);
+            if (!n) return false;
+            if (n.includes('MEX')) return false;
+            return true;
+        }
+
+        function validarCURPConDatos(curp, nombreCompleto, fechaNac, genero, nacionalidad) {
+            const valor = String(curp || '').trim().toUpperCase();
+            const regexEstructura = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]{2}$/;
+            if (!regexEstructura.test(valor)) {
+                return 'La CURP debe tener 18 caracteres con formato válido.';
+            }
+
+            const partes = obtenerPartesNombreCompleto(nombreCompleto);
+            const nombreClave = primerNombreValido(partes.nombre);
+            const bloqueNombre =
+                primeraLetra(partes.paterno) +
+                primeraVocalInterna(partes.paterno) +
+                primeraLetra(partes.materno) +
+                primeraLetra(nombreClave);
+
+            if (valor.slice(0, 4) !== bloqueNombre) {
+                return 'La CURP no coincide con las iniciales de nombre y apellidos.';
+            }
+
+            const fechaCURP = valor.slice(4, 10);
+            const fechaEsperada = obtenerYYMMDD(fechaNac);
+            if (!fechaEsperada || fechaCURP !== fechaEsperada) {
+                return 'La CURP no coincide con la fecha de nacimiento.';
+            }
+
+            const sexoCURP = valor[10];
+            const sexoEsperado = obtenerSexoCURP(genero);
+            if (!sexoEsperado || sexoCURP !== sexoEsperado) {
+                return 'La CURP no coincide con el género capturado.';
+            }
+
+            const entidad = valor.slice(11, 13);
+            const entidadesValidas = new Set([
+                'AS','BC','BS','CC','CL','CM','CS','CH','DF','DG','GT','GR','HG','JC','MC','MN',
+                'MS','NT','NL','OC','PL','QT','QR','SP','SL','SR','TC','TS','TL','VZ','YN','ZS','NE'
+            ]);
+            if (!entidadesValidas.has(entidad)) {
+                return 'La CURP tiene una clave de entidad inválida.';
+            }
+
+            const extranjero = esNacionalidadExtranjera(nacionalidad);
+            if (extranjero && entidad !== 'NE') {
+                return 'Para nacionalidad extranjera, la CURP debe usar entidad NE.';
+            }
+            if (!extranjero && entidad === 'NE') {
+                return 'Para nacionalidad mexicana, la CURP no debe usar entidad NE.';
+            }
+
+            const consonantes =
+                primeraConsonanteInterna(partes.paterno) +
+                primeraConsonanteInterna(partes.materno) +
+                primeraConsonanteInterna(nombreClave);
+            if (valor.slice(13, 16) !== consonantes) {
+                return 'La CURP no coincide con las consonantes internas esperadas.';
+            }
+
+            return '';
+        }
+
+        function validarRFCConDatos(rfc, nombreCompleto, fechaNac) {
+            const valor = String(rfc || '').trim().toUpperCase();
+            const regexEstructura = /^[A-Z&Ñ]{4}\d{6}[A-Z0-9]{3}$/;
+            if (!regexEstructura.test(valor)) {
+                return 'El RFC debe tener 13 caracteres con homoclave válida.';
+            }
+
+            const partes = obtenerPartesNombreCompleto(nombreCompleto);
+            const nombreClave = primerNombreValido(partes.nombre);
+            const bloqueNombre =
+                primeraLetra(partes.paterno) +
+                primeraVocalInterna(partes.paterno) +
+                primeraLetra(partes.materno) +
+                primeraLetra(nombreClave);
+
+            if (valor.slice(0, 4) !== bloqueNombre) {
+                return 'El RFC no coincide con las iniciales de nombre y apellidos.';
+            }
+
+            const fechaRFC = valor.slice(4, 10);
+            const fechaEsperada = obtenerYYMMDD(fechaNac);
+            if (!fechaEsperada || fechaRFC !== fechaEsperada) {
+                return 'El RFC no coincide con la fecha de nacimiento.';
+            }
+
+            return '';
+        }
+
         // Enviar registro al servidor y luego abrir encuesta
         function validarRegistro() {
             const form = document.getElementById('registroForm');
@@ -567,17 +741,41 @@
                 'cp','colonia','calle','num_ext','municipio','estado','nom_eme1','par_eme1','tel_eme1'
             ];
 
+            const labels = {
+                nombre: 'Nombre completo',
+                fecha_nac: 'Fecha nacimiento',
+                genero: 'Género',
+                edo_civil: 'Estado civil',
+                nacionalidad: 'Nacionalidad',
+                curp: 'CURP',
+                rfc: 'RFC',
+                nss: 'NSS',
+                tel_movil: 'Teléfono móvil',
+                correo: 'Correo electrónico',
+                cp: 'Código Postal',
+                colonia: 'Colonia',
+                calle: 'Calle',
+                num_ext: 'N° Ext',
+                municipio: 'Municipio',
+                estado: 'Estado',
+                nom_eme1: 'Nombre de emergencia',
+                par_eme1: 'Parentesco',
+                tel_eme1: 'Teléfono de emergencia',
+                acepto: 'Aviso de privacidad',
+                firma: 'Firma del candidato'
+            };
+
+            const faltantes = [];
+
             for (let name of required) {
                 const el = form.elements[name];
                 if (!el) {
                     console.warn(`Falta el elemento en el formulario: ${name}`);
-                    return false;
+                    continue;
                 }
                 const val = (el.type === 'checkbox') ? el.checked : (el.value || '').toString().trim();
                 if (!val) {
-                    console.warn(`Campo vacío o sin seleccionar: ${name}`);
-                    el.focus(); // Opcional: enfoca el campo faltante
-                    return false;
+                    faltantes.push(labels[name] || name);
                 }
             }
 
@@ -585,12 +783,38 @@
             const acepto = form.elements['acepto'];
             if (!acepto || !acepto.checked) {
                 console.warn('Debe aceptar el aviso de privacidad');
-                return false;
+                faltantes.push(labels['acepto']);
             }
 
             // Firma
             if (typeof signaturePad !== 'undefined' && signaturePad.isEmpty()) {
-                alert('Por favor, firma en el recuadro antes de continuar.');
+                faltantes.push(labels['firma']);
+            }
+
+            if (faltantes.length > 0) {
+                const lista = Array.from(new Set(faltantes)).join(', ');
+                mostrarMensajeInferior(`Faltan los siguientes campos: ${lista}.`, 3500, false, true);
+                return false;
+            }
+
+            const nombre = form.elements['nombre'] ? form.elements['nombre'].value : '';
+            const fechaNac = form.elements['fecha_nac'] ? form.elements['fecha_nac'].value : '';
+            const genero = form.elements['genero'] ? form.elements['genero'].value : '';
+            const nacionalidad = form.elements['nacionalidad'] ? form.elements['nacionalidad'].value : '';
+            const curp = form.elements['curp'] ? form.elements['curp'].value : '';
+            const rfc = form.elements['rfc'] ? form.elements['rfc'].value : '';
+
+            const errorCURP = validarCURPConDatos(curp, nombre, fechaNac, genero, nacionalidad);
+            if (errorCURP) {
+                mostrarMensajeInferior(errorCURP, 3500, false, true);
+                if (form.elements['curp']) form.elements['curp'].focus();
+                return false;
+            }
+
+            const errorRFC = validarRFCConDatos(rfc, nombre, fechaNac);
+            if (errorRFC) {
+                mostrarMensajeInferior(errorRFC, 3500, false, true);
+                if (form.elements['rfc']) form.elements['rfc'].focus();
                 return false;
             }
 
