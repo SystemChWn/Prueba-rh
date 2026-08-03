@@ -448,7 +448,22 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            x: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: '#fff' } },
+                            x: {
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    stepSize: 10,
+                                    color: '#fff',
+                                    callback: function(value) {
+                                        return value;
+                                    }
+                                },
+                                grid: {
+                                    color: function(context) {
+                                        return Number(context.tick.value) === 80 ? '#facc15' : '#333';
+                                    }
+                                }
+                            },
                             y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
                         },
                         plugins: { legend: { display: false } }
