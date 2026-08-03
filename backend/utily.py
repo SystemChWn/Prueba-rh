@@ -1,5 +1,6 @@
 import os
 import re
+import tempfile
 import traceback
 import mimetypes
 import psycopg2
@@ -20,8 +21,25 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
     return response
 
-CHEONG_WOON_DOCS_DIR = r"\\192.168.1.15\RH - System\DOCUMENTOS\CHEONG WOON"
-KRONOS_DOCS_DIR = r"\\192.168.1.15\RH - System\DOCUMENTOS\KRONOS"
+DEFAULT_DOCS_ROOT = os.getenv(
+    "EMPLOYEE_DOCS_ROOT",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),
+)
+
+
+def obtener_directorio_empresa(empresa):
+    configured_root = app.config.get("UPLOAD_ROOT") or DEFAULT_DOCS_ROOT
+    texto = (empresa or '').strip().upper()
+    if 'KRONOS' in texto:
+        override = os.getenv("KRONOS_DOCS_DIR")
+        if override:
+            return asegurar_directorio(os.path.abspath(override))
+        return asegurar_directorio(os.path.abspath(os.path.join(configured_root, "KRONOS")))
+
+    override = os.getenv("CHEONG_WOON_DOCS_DIR")
+    if override:
+        return asegurar_directorio(os.path.abspath(override))
+    return asegurar_directorio(os.path.abspath(os.path.join(configured_root, "CHEONG_WOON")))
 
 DOC_FILENAME_KEYS = {
     'ine': 'INE',
@@ -40,8 +58,8 @@ DOC_FILENAME_KEYS = {
 def normalizar_empresa(empresa):
     texto = (empresa or '').strip().upper()
     if 'KRONOS' in texto:
-        return 'KRONOS', KRONOS_DOCS_DIR
-    return 'CHEONG WOON', CHEONG_WOON_DOCS_DIR
+        return 'KRONOS', obtener_directorio_empresa(texto)
+    return 'CHEONG WOON', obtener_directorio_empresa(texto)
 
 
 def limpiar_fragmento(texto):
@@ -69,20 +87,45 @@ def construir_nombre_documento(curp, empresa, doc_key, original_filename):
     return f"{curp_texto}-{empresa_texto}-{doc_texto}{extension}"
 
 
-def obtener_directorio_empresa(empresa):
-    _, base_dir = normalizar_empresa(empresa)
-    return base_dir
-
-
 def asegurar_directorio(directorio):
-    os.makedirs(directorio, exist_ok=True)
-    return directorio
+    directorio = os.path.abspath(directorio)
+    try:
+        os.makedirs(directorio, exist_ok=True)
+        app.config["UPLOAD_ROOT"] = os.path.dirname(directorio)
+        return directorio
+    except OSError:
+        fallback_candidates = []
+        env_candidates = [os.getenv("EMPLOYEE_DOCS_ROOT"), os.getenv("TMPDIR"), os.getenv("TEMP"), os.getenv("TMP")]
+        for value in env_candidates:
+            if value:
+                fallback_candidates.append(os.path.abspath(value))
+        fallback_candidates.append(os.path.abspath(os.path.join(tempfile.gettempdir(), "prueba-rh-uploads")))
+
+        for candidate in fallback_candidates:
+            try:
+                os.makedirs(candidate, exist_ok=True)
+                if directorio != candidate:
+                    subdir = os.path.basename(directorio)
+                    if subdir and subdir.lower() != "uploads":
+                        fallback_dir = os.path.join(candidate, subdir)
+                        os.makedirs(fallback_dir, exist_ok=True)
+                        app.config["UPLOAD_ROOT"] = candidate
+                        return fallback_dir
+                app.config["UPLOAD_ROOT"] = candidate
+                return candidate
+            except OSError:
+                continue
+
+        fallback_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads"))
+        os.makedirs(fallback_dir, exist_ok=True)
+        app.config["UPLOAD_ROOT"] = os.path.dirname(fallback_dir)
+        return fallback_dir
 
 
 def buscar_documentos(curp, empresa):
     curp_texto = limpiar_fragmento(curp)
     empresa_texto = limpiar_fragmento(normalizar_empresa(empresa)[0])
-    base_dir = obtener_directorio_empresa(empresa)
+    base_dir = asegurar_directorio(obtener_directorio_empresa(empresa))
     if not os.path.isdir(base_dir):
         return {}
 
@@ -646,7 +689,7 @@ def subir_archivo_empleado():
         return ("ERROR: doc_key inválido", 400)
 
     empresa_normalizada, directorio = normalizar_empresa(empresa)
-    asegurar_directorio(directorio)
+    directorio = asegurar_directorio(directorio)
 
     file_name = construir_nombre_documento(curp, empresa_normalizada, doc_key, archivo.filename)
     file_path = os.path.join(directorio, file_name)
@@ -673,6 +716,7 @@ def eliminar_archivo_empleado():
         return ("ERROR: doc_key inválido", 400)
 
     empresa_normalizada, directorio = normalizar_empresa(empresa)
+    directorio = asegurar_directorio(directorio)
     if doc_key == 'fotografia':
         prefijo = f"{limpiar_fragmento(curp)}_FOTOGRAFIA"
         for existing_file in os.listdir(directorio) if os.path.isdir(directorio) else []:
@@ -700,6 +744,7 @@ def eliminar_archivo_empleado():
 @app.route('/api/documentos/<empresa>/<path:file_name>', methods=['GET'])
 def servir_documento_empleado(empresa, file_name):
     empresa_normalizada, directorio = normalizar_empresa(empresa)
+    directorio = asegurar_directorio(directorio)
     if not os.path.isdir(directorio):
         return ("ERROR: Directorio no disponible", 404)
 

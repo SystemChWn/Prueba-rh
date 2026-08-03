@@ -983,10 +983,8 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_URL = '';
+        const API_BASES = [''];
 
         function getFallbackRegistroId() {
             try {
@@ -1521,6 +1519,9 @@
                     previewUrl: resultado.previewUrl || '',
                     fileType: file.type,
                 };
+                if (docKey === 'fotografia' && resultado && resultado.previewUrl) {
+                    setPhotoPreviewFromUrl(resultado.previewUrl, { persist: true });
+                }
                 hydrateDocumentButtons(docKey);
                 saveLocalProfile();
                 return resultado;

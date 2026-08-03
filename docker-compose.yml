@@ -16,9 +16,13 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: .env
+    environment:
+      EMPLOYEE_DOCS_ROOT: /app/uploads
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./backend/uploads:/app/uploads
     ports:
       - "8001:8000"
 
