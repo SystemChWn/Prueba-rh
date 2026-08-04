@@ -18,6 +18,7 @@ services:
     env_file: .env
     environment:
       EMPLOYEE_DOCS_ROOT: /app/uploads
+      DB_WRITE_LOCK: ${DB_WRITE_LOCK:-1}
     depends_on:
       postgres:
         condition: service_healthy
