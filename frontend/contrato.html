@@ -319,20 +319,13 @@
     </div>
     <script src="data-manager.js"></script>
     <script>
-        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
         const urlParams = new URLSearchParams(window.location.search);
         const idEmpleado = urlParams.get('id') || urlParams.get('registro_id') || localStorage.getItem('ultimoRegistroId') || '';
 
         function buildEmpleadoEndpoint(idValue) {
             const encodedId = encodeURIComponent(idValue);
             const bases = [
-                `/api/obtener-empleado/${encodedId}`,
-                `http://${currentHost || 'localhost'}:8000/api/obtener-empleado/${encodedId}`,
-                `http://${currentHost || 'localhost'}:8001/api/obtener-empleado/${encodedId}`,
-                `http://localhost:8000/api/obtener-empleado/${encodedId}`,
-                `http://127.0.0.1:8000/api/obtener-empleado/${encodedId}`,
-                `http://localhost:8001/api/obtener-empleado/${encodedId}`,
-                `http://127.0.0.1:8001/api/obtener-empleado/${encodedId}`
+                `http://100.111.35.87:3001/api/obtener-empleado/${encodedId}`
             ];
             return bases.filter((value, index, arr) => arr.indexOf(value) === index);
         }

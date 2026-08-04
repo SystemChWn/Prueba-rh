@@ -1017,10 +1017,7 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = ['http://100.111.35.87:3001'];
         const DOC_KEYS = ['ine', 'comprobante_domicilio', 'acta_nacimiento', 'curp_doc', 'rfc_doc', 'nss_doc', 'comprobante_estudios', 'infonavit_doc', 'carta_autorizacion', 'contrato_firmado'];
 
         function getFallbackRegistroId() {
@@ -1758,7 +1755,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
             try {
                 await cargarCatalogoCP();
-                const { respuesta, texto } = await getConFallback(`/obtener-empleado/${encodeURIComponent(registroId)}`);
+                const { respuesta, texto } = await getConFallback(`/api/obtener-empleado/${encodeURIComponent(registroId)}`);
                 if (!respuesta.ok) {
                     statusBox.className = 'error-box';
                     statusBox.textContent = texto || 'No se pudo cargar el expediente.';
@@ -1825,7 +1822,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             };
 
             try {
-                const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, payload);
+                const { respuesta, texto } = await postConFallback(`/api/actualizar-empleado/${encodeURIComponent(registroId)}`, payload);
                 if (!respuesta.ok) {
                     alert(`No se pudieron guardar los cambios: ${texto || 'Sin detalle'}`);
                     return;
@@ -1890,7 +1887,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 photoInput.disabled = true;
 
                 try {
-                    const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, {
+                    const { respuesta, texto } = await postConFallback(`/api/actualizar-empleado/${encodeURIComponent(registroId)}`, {
                         fotografia_base64: dataUrl,
                     });
                     if (!respuesta.ok) {

@@ -370,15 +370,7 @@
             var editingEventId = null;
             var chartIngresosAnual = null;
 
-            const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
-            const PORT = '8000';
-            const API_BASES = [];
-            if (currentHost) {
-                API_BASES.push(`http://${currentHost}:${PORT}`);
-            }
-            if (['localhost', '127.0.0.1'].includes(currentHost)) {
-                API_BASES.unshift('http://localhost:8000');
-            }
+            const API_BASES = ['http://100.111.35.87:3001'];
 
             function getVisibleYear() {
                 if (calendar && calendar.view && calendar.view.currentStart) {
@@ -389,7 +381,7 @@
 
             async function getConFallback(endpoint) {
                 var ultimoErrorRed = null;
-                var bases = [''].concat(API_BASES || []);
+                var bases = API_BASES || [];
                 for (var i = 0; i < bases.length; i += 1) {
                     var baseUrl = bases[i];
                     try {
@@ -405,7 +397,7 @@
 
             async function postConFallback(endpoint, body) {
                 var ultimoErrorRed = null;
-                var bases = [''].concat(API_BASES || []);
+                var bases = API_BASES || [];
                 for (var i = 0; i < bases.length; i += 1) {
                     var baseUrl = bases[i];
                     try {
@@ -425,7 +417,7 @@
 
             async function getJsonConFallback(endpoint, fallbackData) {
                 var ultimoErrorRed = null;
-                var bases = [''].concat(API_BASES || []);
+                var bases = API_BASES || [];
                 for (var i = 0; i < bases.length; i += 1) {
                     var baseUrl = bases[i];
                     try {

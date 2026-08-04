@@ -163,7 +163,7 @@
                 <p id="fecha-actual" style="color: #888; font-size: 0.9rem; margin-top: 5px;"></p>
             </div>
             
-            <form id="registroForm" action="/guardar-registro" method="POST">
+            <form id="registroForm" action="/api/guardar-registro" method="POST">
 
                 <h3>DATOS PERSONALES</h3>
                 <!-- Nombre Completo -->
@@ -503,7 +503,7 @@
 
             try {
                 // 4. Enviar los datos del registro al backend con el sistema de fallback
-                const { respuesta, texto } = await postConFallback('/guardar-registro', formData);
+                const { respuesta, texto } = await postConFallback('/api/guardar-registro', formData);
 
                 if (respuesta.ok && (texto.startsWith('OK') || texto.includes('éxito'))) {
                     // 5. Si se guardó con éxito, abrir la ventana de encuesta de reclutamiento
@@ -516,10 +516,7 @@
             }
         }
 
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = ['http://100.111.35.87:3001'];
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
@@ -870,7 +867,7 @@
             encuestaForm.append('detalle', detalle);
 
             try {
-                const { respuesta, texto } = await postConFallback('/guardar-encuesta', encuestaForm);
+                const { respuesta, texto } = await postConFallback('/api/guardar-encuesta', encuestaForm);
 
                 if (respuesta.ok && texto.startsWith('OK')) {
                     if (window.actualizarVistas) window.actualizarVistas();

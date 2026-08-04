@@ -300,13 +300,7 @@
     </div>
 
     <script>
-        const API_PORT = '8001';
-        const HOSTNAME = window.location.hostname || '';
-        const API_BASES = [];
-        if (HOSTNAME) {
-            API_BASES.push(`http://${HOSTNAME}:${API_PORT}`);
-        }
-        API_BASES.push('http://localhost:8001');
+        const API_BASES = ['http://100.111.35.87:3001/api'];
 
         function parseNombreCompleto(nombreCompleto) {
             const palabras = nombreCompleto.trim().split(/\s+/).filter(Boolean);
