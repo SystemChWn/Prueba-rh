@@ -516,7 +516,12 @@
             }
         }
 
-        const API_BASES = ['http://100.111.35.87:3001'];
+        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
+        const SERVER_IP = currentHost || 'localhost';
+        const PORT = '8000';
+        const API_URL = `http://${SERVER_IP}:${PORT}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id');
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
