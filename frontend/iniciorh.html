@@ -17,6 +17,27 @@
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
         
         .dashboard-calendar { padding: 20px; display: flex; gap: 20px; height: 570px; }
+        .agenda-header {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: transparent;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .agenda-create-btn {
+            width: 100%;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
         #calendar { flex: 2; background: #2c2c2c; padding: 15px; border-radius: 8px; }
         #agenda { flex: 1; background: #2c2c2c; padding: 15px; border-radius: 8px; overflow-y: auto; }
 
@@ -307,11 +328,14 @@
     <main class="dashboard-calendar">
         <div id='calendar'></div>
         <div id='agenda'>
-            <h3>Agenda del Mes</h3>
+            <div class="agenda-header">
+                <h3>Agenda del Mes</h3>
+                <button type="button" id="btn-abrir-evento" class="agenda-create-btn">Crear nuevo evento</button>
+            </div>
             <div id="lista-eventos"></div>
-            <div id="evento-personalizado" class="evento-crear">
+            <div id="evento-personalizado" class="evento-crear" style="display:none;">
                 <h3>Programar actividad</h3>
-                <button type="button" id="btn-abrir-evento">Crear nuevo evento</button>
+                <button type="button" id="btn-abrir-evento-old" style="display:none;">Crear nuevo evento</button>
             </div>
             <div id="modal-evento" class="modal-overlay">
                 <div class="modal-panel">
@@ -708,7 +732,7 @@
             function getTipoColor(tipo) {
                 return {
                     festividad: { background: '#2e8b57', border: '#1f6f42', text: '#fff' },
-                    cumpleanos: { background: '#ff9f43', border: '#d97706', text: '#fff' },
+                    cumpleanos: { background: '#bfefff', border: '#4db8ff', text: '#00283a' },
                     evento: { background: '#4f46e5', border: '#4338ca', text: '#fff' },
                     reunion: { background: '#8b5cf6', border: '#7c3aed', text: '#fff' }
                 }[tipo] || { background: '#ff8c00', border: '#ff8c00', text: '#000' };
