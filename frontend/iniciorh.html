@@ -68,8 +68,12 @@
         .fc { color: #fff; }
         .fc .fc-toolbar-title { text-transform: uppercase !important; }
         
+        #agenda { display: flex; flex-direction: column; }
+
         #lista-eventos {
-            min-height: 310px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
             border: 1px solid #444;
             border-radius: 8px;
             padding: 10px;
@@ -922,21 +926,26 @@
                     html += '<div class="evento-item">No hay eventos guardados para este mes.</div>';
                 } else {
                     html += eventosPersonalizados.map(function(evt) {
-                        var tipo = evt.tipo || EVENTO_TIPO_REUNION;
-                        var tipoLabel = getTipoLabel(evt);
-                        var colors = getTipoColor(tipo === EVENTO_TIPO_CUMPLEANOS ? 'cumpleanos' : tipo);
-                        var horario = evt.startTime && evt.endTime ? ' · ' + evt.startTime + ' - ' + evt.endTime : '';
-                        var asistentesHtml = renderizarAsistentes(evt.asistentes);
-                        var fechaEtiqueta = formatDayMonthLabel(evt.monthDay || evt.date || '');
-                        return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(255,255,255,0.04);">' +
-                            '<div><strong>' + escapeHtml(getDisplayEventTitle(evt)) + '</strong></div>' +
-                            '<div class="evento-meta">' + escapeHtml(tipoLabel) + ' · ' + escapeHtml(fechaEtiqueta) + horario + '</div>' +
-                            asistentesHtml +
-                            '<div style="margin-top:8px; display:flex; gap:6px;">' +
-                            '<button type="button" class="btn-secondary btn-small btn-editar-evento" data-event-id="' + evt.id + '">Editar</button>' +
-                            '<button type="button" class="btn-secondary btn-small btn-eliminar-evento" data-event-id="' + evt.id + '">Eliminar</button>' +
-                            '</div></div>';
-                    }).join('');
+                            var tipo = evt.tipo || EVENTO_TIPO_REUNION;
+                            var tipoLabel = getTipoLabel(evt);
+                            var colors = getTipoColor(tipo === EVENTO_TIPO_CUMPLEANOS ? 'cumpleanos' : tipo);
+                            var horario = evt.startTime && evt.endTime ? ' · ' + evt.startTime + ' - ' + evt.endTime : '';
+                            var asistentesHtml = renderizarAsistentes(evt.asistentes);
+                            var fechaEtiqueta = formatDayMonthLabel(evt.monthDay || evt.date || '');
+                            return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(255,255,255,0.04);">' +
+                                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+                                    '<div>' +
+                                        '<div style="font-weight:700;">' + escapeHtml(getDisplayEventTitle(evt)) + '</div>' +
+                                        '<div class="evento-meta">' + escapeHtml(tipoLabel) + ' · ' + escapeHtml(fechaEtiqueta) + horario + '</div>' +
+                                    '</div>' +
+                                    '<div style="display:flex; gap:6px; margin-left:8px;">' +
+                                        '<button type="button" class="btn-secondary btn-small btn-editar-evento" data-event-id="' + evt.id + '">Editar</button>' +
+                                        '<button type="button" class="btn-secondary btn-small btn-eliminar-evento" data-event-id="' + evt.id + '">Eliminar</button>' +
+                                    '</div>' +
+                                '</div>' +
+                                asistentesHtml +
+                            '</div>';
+                        }).join('');
                 }
 
                 listaEventosEl.innerHTML = html;
