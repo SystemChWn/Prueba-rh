@@ -805,17 +805,7 @@
 
             const nombre = form.elements['nombre'] ? form.elements['nombre'].value : '';
             const fechaNac = form.elements['fecha_nac'] ? form.elements['fecha_nac'].value : '';
-            const genero = form.elements['genero'] ? form.elements['genero'].value : '';
-            const nacionalidad = form.elements['nacionalidad'] ? form.elements['nacionalidad'].value : '';
-            const curp = form.elements['curp'] ? form.elements['curp'].value : '';
             const rfc = form.elements['rfc'] ? form.elements['rfc'].value : '';
-
-            const errorCURP = validarCURPConDatos(curp, nombre, fechaNac, genero, nacionalidad);
-            if (errorCURP) {
-                mostrarMensajeInferior(errorCURP, 3500, false, true);
-                if (form.elements['curp']) form.elements['curp'].focus();
-                return false;
-            }
 
             const errorRFC = validarRFCConDatos(rfc, nombre, fechaNac);
             if (errorRFC) {
