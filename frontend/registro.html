@@ -805,14 +805,6 @@
 
             const nombre = form.elements['nombre'] ? form.elements['nombre'].value : '';
             const fechaNac = form.elements['fecha_nac'] ? form.elements['fecha_nac'].value : '';
-            const rfc = form.elements['rfc'] ? form.elements['rfc'].value : '';
-
-            const errorRFC = validarRFCConDatos(rfc, nombre, fechaNac);
-            if (errorRFC) {
-                mostrarMensajeInferior(errorRFC, 3500, false, true);
-                if (form.elements['rfc']) form.elements['rfc'].focus();
-                return false;
-            }
 
             return true;
         }
