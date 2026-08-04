@@ -205,12 +205,26 @@
         }
 
         @media print {
+            @page {
+                size: auto;
+                margin: 0;
+            }
+
+            html,
             body {
                 background: none;
                 padding: 0;
+                margin: 0;
+                display: block;
             }
             .controls {
                 display: none;
+            }
+            .badge-container {
+                display: flex;
+                gap: 0;
+                margin: 0;
+                padding: 0;
             }
             .badge-card {
                 box-shadow: none;
