@@ -16,6 +16,24 @@ app = Flask(__name__)
 CORS(app)
 
 
+def is_db_write_locked():
+    return str(os.getenv("DB_WRITE_LOCK", "0")).strip() == "1"
+
+
+@app.before_request
+def enforce_db_write_lock():
+    if request.method == 'OPTIONS':
+        return None
+
+    if request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and is_db_write_locked():
+        return jsonify({
+            'error': 'DB_WRITE_LOCK is enabled. Write operations are blocked.',
+            'db_write_lock': '1',
+        }), 503
+
+    return None
+
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
