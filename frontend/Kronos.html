@@ -165,7 +165,7 @@
         const currentHost = window.location.hostname;
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla-empleados');
         const buscador = document.getElementById('buscador');
@@ -275,7 +275,7 @@
             cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">Cargando empleados...</td></tr>';
 
             try {
-                const { respuesta, texto } = await getConFallback('/obtener-empleados/KRONOS');
+                const { respuesta, texto } = await getConFallback('/api/obtener-empleados/KRONOS');
                 if (!respuesta.ok) {
                     cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">No se pudieron cargar empleados.</td></tr>';
                     alert(`Error al cargar empleados (${respuesta.status}): ${texto || 'Sin detalle'}`);
@@ -321,7 +321,7 @@
 
             btn.disabled = true;
             try {
-                const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, {
+                const { respuesta, texto } = await postConFallback(`/api/actualizar-empleado/${encodeURIComponent(registroId)}`, {
                     estatus: nuevo,
                 });
 

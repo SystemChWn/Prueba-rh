@@ -149,7 +149,7 @@
         const currentHost = window.location.hostname;
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
     const btnGuardarDatos = document.getElementById('btn-guardar-datos');
@@ -235,7 +235,7 @@
             cuerpo.innerHTML = '<tr><td colspan="9">Cargando candidatos...</td></tr>';
 
             try {
-                const { respuesta, texto } = await getConFallback('/obtener-pendientes');
+                const { respuesta, texto } = await getConFallback('/api/obtener-pendientes');
 
                 if (!respuesta.ok) {
                     alert(`Error al obtener pendientes (${respuesta.status}): ${texto || 'Sin detalle'}`);
@@ -342,7 +342,7 @@
                 };
 
                 try {
-                    const { respuesta, texto } = await postConFallback('/guardar-ingreso', payload);
+                    const { respuesta, texto } = await postConFallback('/api/guardar-ingreso', payload);
                     if (respuesta.ok && texto.startsWith('OK')) {
                         guardadas += 1;
                         tr.classList.add('fila-exito');

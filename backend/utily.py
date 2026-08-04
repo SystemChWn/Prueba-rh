@@ -23,6 +23,11 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
     return response
 
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok'}), 200
+
 DEFAULT_DOCS_ROOT = os.getenv(
     "EMPLOYEE_DOCS_ROOT",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),
@@ -416,6 +421,7 @@ def separar_ubicacion(valor):
 
 
 @app.route('/guardar-registro', methods=['POST'])
+@app.route('/api/guardar-registro', methods=['POST'])
 def guardar_registro():
     datos = request.form.to_dict()
     if not datos:
@@ -456,6 +462,7 @@ def guardar_registro():
 
 
 @app.route('/guardar-encuesta', methods=['POST'])
+@app.route('/api/guardar-encuesta', methods=['POST'])
 def guardar_encuesta():
     datos = request.form.to_dict()
     fuente = (datos.get('fuente') or '').strip()
@@ -499,6 +506,7 @@ def guardar_encuesta():
 
 
 @app.route('/obtener-pendientes', methods=['GET'])
+@app.route('/api/obtener-pendientes', methods=['GET'])
 def obtener_pendientes():
     try:
         with get_db_connection() as conn:
@@ -531,7 +539,9 @@ def obtener_pendientes():
 
 
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
+@app.route('/api/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/obtener-ingresos', methods=['GET'])
+@app.route('/api/obtener-ingresos', methods=['GET'])
 def obtener_ingresos(empresa=None):
     if empresa is None:
         empresa = request.args.get('empresa')
@@ -610,6 +620,7 @@ def obtener_empleado(registro_id):
 
 
 @app.route('/actualizar-empleado/<int:registro_id>', methods=['POST'])
+@app.route('/api/actualizar-empleado/<int:registro_id>', methods=['POST'])
 def actualizar_empleado(registro_id):
     payload = request.get_json(silent=True) or {}
 
@@ -1191,6 +1202,7 @@ def guardar_o_actualizar_ingreso(cur, payload):
 
 
 @app.route('/guardar-ingreso', methods=['POST'])
+@app.route('/api/guardar-ingreso', methods=['POST'])
 def guardar_ingreso():
     payload = request.get_json(silent=True) or {}
 
@@ -1220,6 +1232,7 @@ def guardar_ingreso():
 
 
 @app.route('/guardar-ingresos', methods=['POST'])
+@app.route('/api/guardar-ingresos', methods=['POST'])
 def guardar_ingresos():
     payload = request.get_json(silent=True) or []
 
