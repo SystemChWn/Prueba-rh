@@ -39,3 +39,4 @@ services:
 
 volumes:
   pgdata:
+    name: prueba-rh_pgdata
