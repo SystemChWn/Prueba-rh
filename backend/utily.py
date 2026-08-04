@@ -15,39 +15,6 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-WRITE_LOCK_ENV_NAME = "DB_WRITE_LOCK"
-
-
-def _is_env_true(value):
-    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
-
-
-def is_db_write_locked():
-    # Locked by default for safety: any missing/invalid value keeps writes blocked.
-    raw = os.getenv(WRITE_LOCK_ENV_NAME, '1')
-    if str(raw or '').strip() == '':
-        return True
-    return _is_env_true(raw)
-
-
-@app.before_request
-def enforce_db_write_lock():
-    if request.method == 'OPTIONS':
-        return None
-
-    if request.method not in {'POST', 'PUT', 'PATCH', 'DELETE'}:
-        return None
-
-    if not is_db_write_locked():
-        return None
-
-    return jsonify({
-        'ok': False,
-        'locked': True,
-        'message': 'La escritura en base de datos esta bloqueada por seguridad.',
-        'unlock_hint': "Para desbloquear, define DB_WRITE_LOCK=0 y reinicia el backend.",
-    }), 423
-
 
 @app.after_request
 def add_cors_headers(response):
