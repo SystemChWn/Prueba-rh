@@ -300,7 +300,10 @@
     </div>
 
     <script>
-        const API_BASES = ['http://100.111.35.87:3001/api'];
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
         function parseNombreCompleto(nombreCompleto) {
             const palabras = nombreCompleto.trim().split(/\s+/).filter(Boolean);
@@ -387,7 +390,7 @@
 
             if (registroId) {
                 try {
-                    const { response, text } = await fetchFromBackend(`/obtener-empleado/${encodeURIComponent(registroId)}`);
+                    const { response, text } = await fetchFromBackend(`/api/obtener-empleado/${encodeURIComponent(registroId)}`);
                     if (response.ok) {
                         const datos = JSON.parse(text || '{}');
                         await populateBadgeFields(datos);

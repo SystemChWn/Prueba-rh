@@ -162,7 +162,10 @@
 
     <script src="data-manager.js"></script>
     <script>
-        const API_BASES = ['http://100.111.35.87:3001'];
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla-empleados');
         const buscador = document.getElementById('buscador');

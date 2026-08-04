@@ -1017,7 +1017,10 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
-        const API_BASES = ['http://100.111.35.87:3001'];
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
         const DOC_KEYS = ['ine', 'comprobante_domicilio', 'acta_nacimiento', 'curp_doc', 'rfc_doc', 'nss_doc', 'comprobante_estudios', 'infonavit_doc', 'carta_autorizacion', 'contrato_firmado'];
 
         function getFallbackRegistroId() {

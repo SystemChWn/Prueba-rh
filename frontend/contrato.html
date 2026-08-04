@@ -319,14 +319,17 @@
     </div>
     <script src="data-manager.js"></script>
     <script>
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
         const urlParams = new URLSearchParams(window.location.search);
         const idEmpleado = urlParams.get('id') || urlParams.get('registro_id') || localStorage.getItem('ultimoRegistroId') || '';
 
         function buildEmpleadoEndpoint(idValue) {
             const encodedId = encodeURIComponent(idValue);
-            const bases = [
-                `http://100.111.35.87:3001/api/obtener-empleado/${encodedId}`
-            ];
+            const bases = API_BASES.map((baseUrl) => `${baseUrl}/api/obtener-empleado/${encodedId}`);
             return bases.filter((value, index, arr) => arr.indexOf(value) === index);
         }
 
