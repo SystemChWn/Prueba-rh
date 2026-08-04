@@ -388,8 +388,9 @@
 
             async function getConFallback(endpoint) {
                 var ultimoErrorRed = null;
-                for (var i = 0; i < API_BASES.length; i += 1) {
-                    var baseUrl = API_BASES[i];
+                var bases = [''].concat(API_BASES || []);
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
                     try {
                         var respuesta = await fetch(baseUrl + endpoint);
                         var texto = await respuesta.text();
@@ -399,6 +400,26 @@
                     }
                 }
                 throw new Error('No se pudo conectar con el servidor (' + API_BASES.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            async function postConFallback(endpoint, body) {
+                var ultimoErrorRed = null;
+                var bases = [''].concat(API_BASES || []);
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
+                    try {
+                        var respuesta = await fetch(baseUrl + endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body || {}),
+                        });
+                        var texto = await respuesta.text();
+                        return { respuesta: respuesta, texto: texto };
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                throw new Error('No se pudo conectar con el servidor (' + bases.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
             }
 
             async function getJsonConFallback(endpoint, fallbackData) {
@@ -478,7 +499,7 @@
                 crearGraficaIngresosAnual(datos);
             }
 
-            var EVENTOS_PERSONALIZADOS_KEY = 'rh_eventos_personalizados_v1';
+            var eventosCompartidosCache = [];
             var EVENTO_TIPO_CUMPLEANOS = 'cumpleanos';
             var EVENTO_TIPO_EVENTO = 'evento';
             var EVENTO_TIPO_REUNION = 'reunion';
@@ -566,12 +587,49 @@
                 }
             }
 
-            function loadCustomEvents() {
-                return safeParseJSON(localStorage.getItem(EVENTOS_PERSONALIZADOS_KEY));
+            function normalizarEventoCompartido(evt) {
+                if (!evt || typeof evt !== 'object') return null;
+                var id = String(evt.id || '').trim();
+                var monthDay = String(evt.monthDay || evt.month_day || evt.date || '').trim();
+                if (!id || !/^\d{2}-\d{2}$/.test(monthDay)) return null;
+
+                return {
+                    id: id,
+                    title: String(evt.title || '').trim(),
+                    monthDay: monthDay,
+                    startTime: String(evt.startTime || evt.start_time || '').trim(),
+                    endTime: String(evt.endTime || evt.end_time || '').trim(),
+                    asistentes: String(evt.asistentes || '').trim(),
+                    tipo: String(evt.tipo || EVENTO_TIPO_REUNION).trim().toLowerCase() || EVENTO_TIPO_REUNION,
+                    descripcion: String(evt.descripcion || '').trim(),
+                };
             }
 
-            function saveCustomEvents(events) {
-                localStorage.setItem(EVENTOS_PERSONALIZADOS_KEY, JSON.stringify(events || []));
+            function loadCustomEvents() {
+                return Array.isArray(eventosCompartidosCache) ? eventosCompartidosCache.slice() : [];
+            }
+
+            async function syncCustomEventsFromServer() {
+                var payload = await getJsonConFallback('/api/shared-events', { eventos: [] });
+                var lista = Array.isArray(payload && payload.eventos) ? payload.eventos : [];
+                eventosCompartidosCache = lista.map(normalizarEventoCompartido).filter(Boolean);
+                return loadCustomEvents();
+            }
+
+            async function saveCustomEvents(events) {
+                var normalizados = (Array.isArray(events) ? events : []).map(normalizarEventoCompartido).filter(Boolean);
+                var { respuesta, texto } = await postConFallback('/api/shared-events', { eventos: normalizados });
+                if (!respuesta.ok) {
+                    throw new Error(texto || 'No se pudieron guardar los eventos compartidos.');
+                }
+                var payload = {};
+                try {
+                    payload = JSON.parse(texto || '{}');
+                } catch (_) {
+                    payload = {};
+                }
+                var lista = Array.isArray(payload && payload.eventos) ? payload.eventos : normalizados;
+                eventosCompartidosCache = lista.map(normalizarEventoCompartido).filter(Boolean);
             }
 
             function escapeHtml(value) {
@@ -664,7 +722,7 @@
                 var eventos = loadCustomEvents().filter(function(evt) {
                     return !!evt;
                 });
-                saveCustomEvents(eventos);
+                eventosCompartidosCache = eventos;
                 return eventos;
             }
 
@@ -757,7 +815,7 @@
                 return true;
             }
 
-            function saveEventoFromForm() {
+            async function saveEventoFromForm() {
                 var tipo = getSelectedEventType();
                 var titulo = document.getElementById('evento-titulo').value.trim();
                 var dia = document.getElementById('evento-dia').value;
@@ -795,18 +853,18 @@
                     });
                 }
 
-                saveCustomEvents(eventos);
+                await saveCustomEvents(eventos);
                 cerrarModalEvento();
                 resetModalEvento();
                 refreshCalendar();
             }
 
-            function eliminarEventoActual() {
+            async function eliminarEventoActual() {
                 if (!editingEventId) return;
                 var eventos = cleanExpiredCustomEvents().filter(function(evt) {
                     return evt.id !== editingEventId;
                 });
-                saveCustomEvents(eventos);
+                await saveCustomEvents(eventos);
                 cerrarModalEvento();
                 resetModalEvento();
                 refreshCalendar();
@@ -880,7 +938,9 @@
                 listaEventosEl.querySelectorAll('.btn-eliminar-evento').forEach(function(button) {
                     button.addEventListener('click', function() {
                         var eventId = this.dataset.eventId;
-                        eliminarEvento(eventId);
+                        eliminarEvento(eventId).catch(function(error) {
+                            alert('Error al eliminar evento: ' + error.message);
+                        });
                     });
                 });
             }
@@ -907,11 +967,11 @@
                 abrirModalEvento();
             }
 
-            function eliminarEvento(eventId) {
+            async function eliminarEvento(eventId) {
                 var eventos = cleanExpiredCustomEvents().filter(function(evt) {
                     return evt.id !== eventId;
                 });
-                saveCustomEvents(eventos);
+                await saveCustomEvents(eventos);
                 refreshCalendar();
             }
 
@@ -1036,7 +1096,14 @@
                 actualizarAgenda(calendar.view.currentStart);
             }
 
-            refreshCalendar();
+            syncCustomEventsFromServer()
+                .then(function() {
+                    refreshCalendar();
+                })
+                .catch(function(error) {
+                    console.error('Error sincronizando eventos compartidos', error);
+                    refreshCalendar();
+                });
             cargarGraficaIngresosAnual().catch(function(error) {
                 console.error('Error cargando grafica anual de ingresos', error);
             });
@@ -1065,11 +1132,15 @@
 
             document.getElementById('btn-confirmar-evento').addEventListener('click', function() {
                 if (!validarEventoForm()) return;
-                saveEventoFromForm();
+                saveEventoFromForm().catch(function(error) {
+                    alert('Error al guardar evento: ' + error.message);
+                });
             });
             document.getElementById('btn-eliminar-evento').addEventListener('click', function() {
                 if (confirm('¿Deseas eliminar este evento?')) {
-                    eliminarEventoActual();
+                    eliminarEventoActual().catch(function(error) {
+                        alert('Error al eliminar evento: ' + error.message);
+                    });
                 }
             });
 

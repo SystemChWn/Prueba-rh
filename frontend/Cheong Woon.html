@@ -187,7 +187,7 @@
                 nombre_completo: local.nombre_completo || local.nombre || emp.nombre || '',
                 no_empleado: local.no_empleado || emp.no_empleado || '',
                 fecha_ingreso: local.fecha_ingreso || local.fecha_registro || emp.fecha_ingreso || emp.fecha_registro || '',
-                estatus: String((local && local.estatus) || emp.estatus || 'ACTIVO').toUpperCase(),
+                    estatus: String(emp.estatus || (local && local.estatus) || 'ACTIVO').toUpperCase(),
             };
         }
 
@@ -208,6 +208,24 @@
             }
             throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
+        
+            async function postConFallback(endpoint, body) {
+                let ultimoErrorRed = null;
+                for (const baseUrl of API_BASES) {
+                    try {
+                        const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body || {}),
+                        });
+                        const texto = await respuesta.text();
+                        return { respuesta, texto };
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            }
 
         function renderFila(emp) {
             const displayEmp = getEmpleadoConLocal(emp);
@@ -280,7 +298,7 @@
             }
         }
 
-        function toggleEstatus(btn) {
+        async function toggleEstatus(btn) {
             const current = (btn.innerText || '').trim().toUpperCase();
             const nuevo = current === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
             const identidad = {
@@ -288,11 +306,34 @@
                 registro_id: btn.dataset.registroId || '',
                 nombre: btn.dataset.nombre || '',
             };
-            if (window.DataManager) {
-                window.DataManager.updateEmpleadoByIdentity(identidad, { estatus: nuevo });
-                window.actualizarVistas && window.actualizarVistas();
+
+            const registroId = String(btn.dataset.registroId || '').trim();
+            if (!registroId) {
+                alert('No se pudo identificar el empleado para actualizar estatus.');
+                return;
             }
-            renderTabla();
+
+            btn.disabled = true;
+            try {
+                const { respuesta, texto } = await postConFallback(`/actualizar-empleado/${encodeURIComponent(registroId)}`, {
+                    estatus: nuevo,
+                });
+
+                if (!respuesta.ok) {
+                    throw new Error(texto || 'No se pudo actualizar el estatus.');
+                }
+
+                if (window.DataManager) {
+                    window.DataManager.updateEmpleadoByIdentity(identidad, { estatus: nuevo });
+                    window.actualizarVistas && window.actualizarVistas();
+                }
+
+                await cargarEmpleadosCheongWoon();
+            } catch (error) {
+                alert('Error al actualizar estatus: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         filterEstatus.addEventListener('change', () => {
@@ -308,7 +349,7 @@
         cuerpo.addEventListener('click', (event) => {
             const btn = event.target.closest('.btn-estatus');
             if (!btn) return;
-            toggleEstatus(btn);
+                        toggleEstatus(btn);
         });
 
         document.addEventListener('DOMContentLoaded', () => {

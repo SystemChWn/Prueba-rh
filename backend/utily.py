@@ -542,6 +542,7 @@ def obtener_ingresos(empresa=None):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS estatus VARCHAR(20) DEFAULT 'ACTIVO'")
                 cur.execute(
                     """
                     SELECT column_name
@@ -566,7 +567,8 @@ def obtener_ingresos(empresa=None):
                            ingresos_puesto.nombre_candidato,
                            ingresos_puesto.no_empleado,
                            ingresos_puesto.empresa
-                         , {fecha_select} AS fecha_ingreso
+                        , {fecha_select} AS fecha_ingreso
+                        , COALESCE(NULLIF(UPPER(TRIM(r.estatus)), ''), 'ACTIVO') AS estatus
                     FROM ingresos_puesto
                     LEFT JOIN registro r ON r.id = ingresos_puesto.registro_id
                     WHERE UPPER(REPLACE(ingresos_puesto.empresa, ' ', '_')) = %s
@@ -583,7 +585,7 @@ def obtener_ingresos(empresa=None):
                 'no_empleado': row[2],
                 'empresa': row[3],
                 'fecha_ingreso': row[4].strftime('%Y-%m-%d') if row[4] else None,
-                'estatus': 'ACTIVO',
+                'estatus': row[5] or 'ACTIVO',
             }
             for row in rows
         ]
@@ -618,6 +620,7 @@ def actualizar_empleado(registro_id):
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS estatus VARCHAR(20) DEFAULT 'ACTIVO'")
                 cols_registro = obtener_columnas(cur, 'registro')
                 cols_ingresos = obtener_columnas(cur, 'ingresos_puesto')
 
@@ -653,6 +656,7 @@ def actualizar_empleado(registro_id):
                     'parentesco_emergencia': payload.get('emergencia_parentesco'),
                     'telefono_emergencia': payload.get('emergencia_telefono'),
                     'fotografia_base64': payload.get('fotografia_base64'),
+                    'estatus': payload.get('estatus'),
                 }
 
                 if fecha_col:
@@ -742,6 +746,143 @@ def actualizar_empleado(registro_id):
             if getattr(e.diag, 'column_name', None):
                 print(f"Columna: {e.diag.column_name}")
         print(f"Payload recibido en /actualizar-empleado: {payload}")
+        return (f"ERROR: {str(e)}", 500)
+
+
+def asegurar_tabla_eventos_compartidos(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS agenda_eventos_compartidos (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            month_day VARCHAR(5) NOT NULL,
+            start_time VARCHAR(5),
+            end_time VARCHAR(5),
+            asistentes TEXT,
+            tipo VARCHAR(20) NOT NULL DEFAULT 'reunion',
+            descripcion TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def normalizar_evento_compartido(payload):
+    evento_id = str((payload or {}).get('id') or '').strip()
+    title = str((payload or {}).get('title') or '').strip()
+    month_day = str((payload or {}).get('monthDay') or (payload or {}).get('month_day') or '').strip()
+    start_time = str((payload or {}).get('startTime') or (payload or {}).get('start_time') or '').strip()
+    end_time = str((payload or {}).get('endTime') or (payload or {}).get('end_time') or '').strip()
+    asistentes = str((payload or {}).get('asistentes') or '').strip()
+    tipo = str((payload or {}).get('tipo') or 'reunion').strip().lower() or 'reunion'
+    descripcion = str((payload or {}).get('descripcion') or '').strip()
+
+    if not evento_id:
+        raise ValueError('El id del evento es obligatorio.')
+    if not title:
+        raise ValueError('El titulo del evento es obligatorio.')
+    if not re.match(r'^\d{2}-\d{2}$', month_day):
+        raise ValueError('monthDay debe tener formato DD-MM.')
+    if start_time and not re.match(r'^\d{2}:\d{2}$', start_time):
+        raise ValueError('startTime debe tener formato HH:MM.')
+    if end_time and not re.match(r'^\d{2}:\d{2}$', end_time):
+        raise ValueError('endTime debe tener formato HH:MM.')
+
+    if tipo not in {'cumpleanos', 'evento', 'reunion'}:
+        tipo = 'reunion'
+
+    return {
+        'id': evento_id,
+        'title': title,
+        'month_day': month_day,
+        'start_time': start_time,
+        'end_time': end_time,
+        'asistentes': asistentes,
+        'tipo': tipo,
+        'descripcion': descripcion,
+    }
+
+
+def listar_eventos_compartidos(cur):
+    asegurar_tabla_eventos_compartidos(cur)
+    cur.execute(
+        """
+        SELECT id, title, month_day, start_time, end_time, asistentes, tipo, descripcion
+        FROM agenda_eventos_compartidos
+        ORDER BY month_day ASC, COALESCE(start_time, ''), id ASC
+        """
+    )
+    rows = cur.fetchall()
+    return [
+        {
+            'id': row[0],
+            'title': row[1],
+            'monthDay': row[2],
+            'startTime': row[3] or '',
+            'endTime': row[4] or '',
+            'asistentes': row[5] or '',
+            'tipo': row[6] or 'reunion',
+            'descripcion': row[7] or '',
+        }
+        for row in rows
+    ]
+
+
+@app.route('/api/shared-events', methods=['GET'])
+def obtener_eventos_compartidos():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                eventos = listar_eventos_compartidos(cur)
+        return jsonify({'eventos': eventos}), 200
+    except Exception as e:
+        print(f"Error en /api/shared-events GET: {e}")
+        traceback.print_exc()
+        return jsonify({'eventos': [], 'error': str(e)}), 500
+
+
+@app.route('/api/shared-events', methods=['POST'])
+def guardar_eventos_compartidos():
+    payload = request.get_json(silent=True) or {}
+    eventos_input = payload.get('eventos')
+    if not isinstance(eventos_input, list):
+        return ('ERROR: Debes enviar un arreglo en eventos.', 400)
+
+    try:
+        normalizados = [normalizar_evento_compartido(item) for item in eventos_input]
+    except ValueError as error_validacion:
+        return (f'ERROR: {str(error_validacion)}', 400)
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_eventos_compartidos(cur)
+                cur.execute("DELETE FROM agenda_eventos_compartidos")
+                for evt in normalizados:
+                    cur.execute(
+                        """
+                        INSERT INTO agenda_eventos_compartidos
+                        (id, title, month_day, start_time, end_time, asistentes, tipo, descripcion, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        """,
+                        (
+                            evt['id'],
+                            evt['title'],
+                            evt['month_day'],
+                            evt['start_time'],
+                            evt['end_time'],
+                            evt['asistentes'],
+                            evt['tipo'],
+                            evt['descripcion'],
+                        ),
+                    )
+                conn.commit()
+
+                eventos = listar_eventos_compartidos(cur)
+        return jsonify({'ok': True, 'eventos': eventos}), 200
+    except Exception as e:
+        print(f"Error en /api/shared-events POST: {e}")
+        traceback.print_exc()
         return (f"ERROR: {str(e)}", 500)
 
 
