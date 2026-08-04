@@ -516,12 +516,10 @@
             }
         }
 
-        const currentHost = typeof window.location.hostname === 'string' ? window.location.hostname.trim() : '';
-        const SERVER_IP = currentHost || 'localhost';
-        const PORT = '8000';
-        const API_URL = `http://${SERVER_IP}:${PORT}`;
-        const urlParams = new URLSearchParams(window.location.search);
-        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id');
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
