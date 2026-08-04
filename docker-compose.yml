@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DB_WRITE_LOCK: "0"
+      DB_WRITE_LOCK: "1"
       EMPLOYEE_DOCS_ROOT: /app/uploads
     depends_on:
       postgres:
