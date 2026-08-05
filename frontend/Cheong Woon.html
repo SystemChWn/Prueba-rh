@@ -4,528 +4,222 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listado de Personal: CWM</title>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <style>
-
-/* Eliminar la barra de desplazamiento visualmente */
-        ::-webkit-scrollbar {
-            display: none;
-        }
-        
-        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
-        .branding { display: flex; align-items: center; gap: 10px; }
-        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
-        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
- 
-/* SECCIONES DE ENCABEZADO */
-        .main-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #1e1e1e;
-            border-bottom: 2px solid #444;
-        }
-
-/* CENTRAR MENU DE OPCIONES */
-        .header-section {
-            flex: 1; 
-            display: flex;
-            align-items: center;
-        }
-
-        .left { justify-content: flex-start; }  /* Logo a la izquierda */
-        .center { justify-content: center; }    /* Menú al centro */
-        .right { justify-content: flex-end; }   /* Botón a la derecha */
-
-        /* SEPARACION DE MENU DE OPCIONES */
-        .nav-links {
-            gap: 40px; 
-        }
-
-/* Botón Cerrar Sesión */
-        .btn-logout {
-            text-decoration: none;
-            color: #ff4b4b;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #ff4b4b;
-            padding: 5px 12px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .btn-logout:hover { background: #ff4b4b; color: white; }
-
-/* FILTROS*/
-        .filtros-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #333;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            margin-bottom: 25px;
-        }
-
-        /* Estilo común para todos los inputs */
-        .filtro-input {
-            background: #121212;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-
-        /* Efecto al hacer clic (focus) */
-        .filtro-input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
-        }
-
-        /* Etiquetas de fecha */
-        .filtro-label {
-            font-size: 0.85rem;
-            margin-right: 8px;
-            font-weight: bold;
-        }
-
-        .btn-nombre {
-            color: #ffffff;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-nombre:hover {
-            text-decoration: underline;
-        }
+        ::-webkit-scrollbar{ display:none }
+        body{ margin:0;font-family:Arial,helvetica,sans-serif;background:#121212;color:#fff }
+        header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#1e1e1e;border-bottom:2px solid #444}
+        .branding{display:flex;align-items:center;gap:10px}
+        .main-header{display:flex;gap:12px;align-items:center;padding:12px}
+        .filtro-input{padding:6px;border-radius:6px;border:1px solid #333;background:#0f172a;color:#fff}
+        table{width:100%;border-collapse:collapse;background:#1e1e1e;border-radius:8px}
+        th,td{padding:12px;border-bottom:1px solid #2a2a2a}
+        .btn-nombre{background:#2563eb;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
     </style>
 </head>
 <body>
-    <header>
-        <div class="branding">
-            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
-            <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
+<header>
+    <div class="branding">
+        <img class="logo" src="/logo.png" alt="logo" style="width:120px;height:40px;object-fit:contain">
+        <h1 style="font-size:18px;margin:0">Cheong Woon - Personal</h1>
+    </div>
+    <div>
+        <button id="btn-descargar-gafettes" class="btn-nombre">Descargar Gafettes</button>
+    </div>
+</header>
+<main style="padding:18px">
+    <div class="main-header">
+        <div>
+            <label class="filtro-label">DE: <input id="fecha-desde" class="filtro-input" type="date"></label>
+            <label class="filtro-label" style="margin-left:12px">A: <input id="fecha-hasta" class="filtro-input" type="date"></label>
         </div>
-        <nav class="nav-links">
-            <a href="iniciorh.html">Inicio</a>
-            <a href="Ingreso.html">Ingresos</a>
-            <a href="Cheong Woon.html" class="active">Cheong Woon</a>
-            <a href="Kronos.html">Kronos</a>
-        </nav>
-        <div class="header-right">
-            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+            <label>Estatus: <select id="filter-estatus" class="filtro-input"><option value="TODOS">Todos</option><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option></select></label>
+            <input id="buscador" class="filtro-input" placeholder="🔍 Buscar empleado..." style="width:300px">
         </div>
-    </header>
-    <main style="padding: 20px;">
-        <div class="filtros-container">
-            <div>
-                <span class="filtro-label">DE:</span>
-                <input type="date" class="filtro-input">
-                <span class="filtro-label" style="margin-left: 15px;">A:</span>
-                <input type="date" class="filtro-input">
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:48px"></th>
+                <th>Nombre Completo</th>
+                <th>No. Empleado</th>
+                <th>Fecha Ingreso</th>
+                <th>Estatus</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-empleados">
+            <tr><td colspan="5" style="text-align:center;padding:18px">Cargando empleados...</td></tr>
+        </tbody>
+    </table>
+</main>
+
+<script src="data-manager.js"></script>
+<script>
+// Minimal, self-contained page script using DataManager when available
+let empleadosCache = [];
+const cuerpo = document.getElementById('cuerpo-tabla-empleados');
+const filterEstatus = document.getElementById('filter-estatus');
+const buscador = document.getElementById('buscador');
+const btnDescargarGafettes = document.getElementById('btn-descargar-gafettes');
+let statusFilter = 'TODOS';
+let searchQuery = '';
+
+function getEmpleadoConLocal(emp){
+    return emp || {};
+}
+
+function renderFila(emp){
+    const display = getEmpleadoConLocal(emp);
+    const color = (display.estatus || '').toUpperCase() === 'ACTIVO' ? '#10b981' : '#ef4444';
+    return `
+    <tr>
+        <td style="text-align:center"><input type="checkbox" class="checkbox-gafete" data-registro-id="${String(display.registro_id || '')}" data-nombre="${(display.nombre || '').replace(/"/g,'&quot;')}" data-no-empleado="${String(display.registro_id||'')}"></td>
+        <td>${(display.nombre_completo || display.nombre || '')}</td>
+        <td style="text-align:center">${display.registro_id || ''}</td>
+        <td style="text-align:center">${display.fecha_ingreso || '-'}</td>
+        <td style="text-align:center"><button class="btn-estatus" data-registro-id="${String(display.registro_id||'')}" data-curp="${String(display.curp||'')}" data-nombre="${(display.nombre||'').replace(/"/g,'&quot;')}" style="background:${color};color:#fff;border:none;padding:6px 8px;border-radius:6px">${(display.estatus||'').toUpperCase()}</button></td>
+    </tr>`;
+}
+
+function matchesSearch(emp){
+    const t = ((emp.nombre || '') + ' ' + (emp.registro_id || '')).toLowerCase();
+    return t.includes(searchQuery);
+}
+
+function renderTabla(){
+    const visibles = empleadosCache.filter(e => {
+        if (statusFilter === 'ACTIVOS' && (e.estatus||'').toUpperCase()!=='ACTIVO') return false;
+        if (statusFilter === 'INACTIVOS' && (e.estatus||'').toUpperCase()!=='INACTIVO') return false;
+        return matchesSearch(e);
+    });
+    if (!visibles.length){
+        cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px">No hay empleados que coincidan con el filtro.</td></tr>';
+        return;
+    }
+    cuerpo.innerHTML = visibles.map(renderFila).join('');
+}
+
+async function cargarEmpleadosCheongWoon(){
+    cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px">Cargando empleados...</td></tr>';
+    try{
+        const res = await fetch('/api/obtener-empleados/CHEONG_WOON');
+        const txt = await res.text();
+        if (!res.ok) throw new Error(txt || res.statusText);
+        const datos = JSON.parse(txt||'[]');
+        empleadosCache = Array.isArray(datos)?datos:[];
+        if (window.DataManager && Array.isArray(empleadosCache)){
+            window.DataManager.upsertMany(empleadosCache.map(emp=>({
+                registro_id: emp.registro_id,
+                curp: emp.curp||'', nombre: emp.nombre||'', nombre_completo: emp.nombre||'', empresa:'CHEONG WOON', puesto: emp.puesto||'', estatus: emp.estatus||'ACTIVO', fecha_ingreso: emp.fecha_ingreso||''
+            })));
+        }
+        renderTabla();
+    }catch(err){
+        cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px">No se pudieron cargar empleados.</td></tr>';
+        console.error(err);
+        alert('Error al cargar empleados: '+err.message);
+    }
+}
+
+async function toggleEstatus(btn){
+    const registroId = String(btn.dataset.registroId||'').trim();
+    if(!registroId){ alert('Registro no identificado'); return; }
+    const nuevo = ((btn.innerText||'').trim().toUpperCase()==='ACTIVO')? 'INACTIVO':'ACTIVO';
+    btn.disabled = true;
+    try{
+        const res = await fetch(`/api/actualizar-empleado/${encodeURIComponent(registroId)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estatus:nuevo})});
+        if(!res.ok) throw new Error(await res.text());
+        if(window.DataManager) window.DataManager.updateEmpleadoByIdentity({registro_id:registroId},{estatus:nuevo});
+        await cargarEmpleadosCheongWoon();
+    }catch(e){ alert('Error al actualizar estatus: '+e.message); }
+    finally{ btn.disabled=false; }
+}
+
+document.addEventListener('click', (ev)=>{
+    const btn = ev.target.closest('.btn-estatus'); if(!btn) return; toggleEstatus(btn);
+});
+
+function obtenerEmpleadosSeleccionados(){
+    const out = [];
+    document.querySelectorAll('.checkbox-gafete:checked').forEach(i=>{
+        out.push({ registro_id: i.dataset.registroId, nombre: i.dataset.nombre, no_empleado: i.dataset.noEmpleado });
+    });
+    return out;
+}
+
+function crearHojaGafetes(empleados){
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    const detalles = empleados.map(sel=>{
+        const full = empleadosCache.find(e=>String(e.registro_id||'')===String(sel.registro_id||'')) || {};
+        return { registro_id: sel.registro_id || full.registro_id || '', nombre_completo: full.nombre_completo || full.nombre || sel.nombre || '', area: full.area || '' };
+    });
+    const styleBlock = `
+    <style>
+    :root{--badge-width:62mm;--badge-height:87mm;--primary-blue:#2563eb}
+    html,body{margin:0;padding:0;background:#fff;color:#000}
+    .sheet{width:100%;height:100vh;display:flex;align-items:center;justify-content:center}
+    .page{width:8.5in;height:11in;box-sizing:border-box;padding:0;margin:0}
+    .grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12mm;align-items:center;justify-items:center;height:100%;padding:18mm}
+    .badge-card{width:var(--badge-width);height:var(--badge-height);box-sizing:border-box;background:#fff;border:2px dashed #94a3b8;overflow:hidden;position:relative}
+    .badge-inner{padding:8mm;font-family:Arial,Helvetica,sans-serif}
+    .badge-title{font-weight:800;color:var(--primary-blue);font-size:14pt}
+    .badge-name{font-weight:800;font-size:12pt;margin-top:6mm}
+    .badge-no{font-size:10pt;margin-top:3mm}
+    .rotated{transform:rotate(90deg);transform-origin:center}
+    @media print{ .sheet{height:100vh} .page{page-break-after:always} }
+    </style>`;
+
+    let badgesHtml = '';
+    detalles.slice(0,4).forEach(emp=>{
+        badgesHtml += `
+        <div class="badge-card rotated">
+            <div class="badge-inner">
+                <div class="badge-title">GAFETE</div>
+                <div class="badge-name">${escapeHtml(emp.nombre_completo)}</div>
+                <div class="badge-no">No. Empleado: ${escapeHtml(emp.registro_id || '')}</div>
+                <div style="position:absolute;bottom:8mm;left:8mm;font-size:9pt;color:#334155">${escapeHtml(emp.area)}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span class="filtro-label">Estatus:</span>
-                <select id="filter-estatus" class="filtro-input" style="width: 180px; cursor: pointer;">
-                    <option value="TODOS">Todos</option>
-                    <option value="ACTIVOS">Activos</option>
-                    <option value="INACTIVOS">Inactivos</option>
-                </select>
-            </div>
-            <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar empleado..." style="width: 350px;">
-        </div>
-        
-        <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
-            <thead>
-                <tr style="border-bottom: 2px solid #444;">
-                    <th style="padding: 12px; text-align: left;">Nombre Completo</th>
-                    <th style="padding: 12px; text-align: center; width: 180px;">
-                        <button id="btn-descargar-gafettes" class="btn-nombre" style="width:100%; max-width:160px; background:#2563eb; color:#fff; border-radius:6px; padding:8px 10px;">Descargar Gafettes</button>
-                    </th>
-                    <th style="padding: 12px;">No. Empleado</th>
-                    <th style="padding: 12px;">Fecha Ingreso</th>
-                    <th style="padding: 12px;">Estatus</th>
-                </tr>
-            </thead>
-            <tbody id="cuerpo-tabla-empleados">
-                <tr>
-                    <td colspan="5" style="padding: 12px; text-align: center;">Cargando empleados...</td>
-                </tr>
-            </tbody>
-        </table>
-    </main>
-    <script src="data-manager.js"></script>
-    <script>
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        </div>`;
+    });
 
-        const cuerpo = document.getElementById('cuerpo-tabla-empleados');
-        const buscador = document.getElementById('buscador');
-        const filterEstatus = document.getElementById('filter-estatus');
-        const btnDescargarGafettes = document.getElementById('btn-descargar-gafettes');
-        let empleadosCache = [];
-        let statusFilter = 'TODOS';
-        let searchQuery = '';
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Gafettes</title>${styleBlock}</head><body><div class="sheet"><div class="page"><div class="grid">${badgesHtml}</div></div></div></body></html>`;
+    return Promise.resolve(html);
+}
 
-        function getEmpleadoConLocal(emp) {
-            const localByCurp = (window.DataManager && emp.curp) ? window.DataManager.getByCurp(emp.curp) : null;
-            const localById = (window.DataManager && !localByCurp && emp.registro_id)
-                ? window.DataManager.getEmpleados().find((it) => String(it.registro_id || '') === String(emp.registro_id || ''))
-                : null;
-            const local = localByCurp || localById || {};
-            return {
-                ...emp,
-                ...local,
-                nombre: local.nombre_completo || local.nombre || emp.nombre || '',
-                nombre_completo: local.nombre_completo || local.nombre || emp.nombre || '',
-                no_empleado: local.no_empleado || emp.no_empleado || '',
-                fecha_ingreso: local.fecha_ingreso || local.fecha_registro || emp.fecha_ingreso || emp.fecha_registro || '',
-                    estatus: String(emp.estatus || (local && local.estatus) || 'ACTIVO').toUpperCase(),
-            };
-        }
-
-        function getEstatusSincronizado(emp) {
-            return getEmpleadoConLocal(emp).estatus;
-        }
-
-        async function getConFallback(endpoint) {
-            let ultimoErrorRed = null;
-            for (const baseUrl of API_BASES) {
-                try {
-                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
-                    const texto = await respuesta.text();
-                    return { respuesta, texto };
-                } catch (errorRed) {
-                    ultimoErrorRed = errorRed;
-                }
-            }
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
-        }
-        
-            async function postConFallback(endpoint, body) {
-                let ultimoErrorRed = null;
-                for (const baseUrl of API_BASES) {
-                    try {
-                        const respuesta = await fetch(`${baseUrl}${endpoint}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(body || {}),
-                        });
-                        const texto = await respuesta.text();
-                        return { respuesta, texto };
-                    } catch (errorRed) {
-                        ultimoErrorRed = errorRed;
-                    }
-                }
-                throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
-            }
-
-        function renderFila(emp) {
-            const displayEmp = getEmpleadoConLocal(emp);
-            const estatus = displayEmp.estatus;
-            const color = estatus === 'ACTIVO' ? '#28a745' : '#dc3545';
-            const linkEmpleado = `empleado.html?registro_id=${encodeURIComponent(displayEmp.registro_id || '')}&nombre=${encodeURIComponent(displayEmp.nombre || '')}`;
-            return `
-                <tr>
-                    <td style="padding: 12px;"><a class="btn-nombre" href="${linkEmpleado}">${displayEmp.nombre || ''}</a></td>
-                    <td style="padding: 12px; text-align: center;"><input type="checkbox" class="checkbox-gafete" data-registro-id="${String(displayEmp.registro_id || '').replace(/"/g, '&quot;')}" data-nombre="${(displayEmp.nombre || '').replace(/"/g, '&quot;')}" data-no-empleado="${String(displayEmp.no_empleado || '').replace(/"/g, '&quot;')}" /></td>
-                    <td style="padding: 12px; text-align: center;">${displayEmp.no_empleado || ''}</td>
-                    <td style="padding: 12px; text-align: center;">${displayEmp.fecha_ingreso || '-'}</td>
-                    <td style="padding: 12px; text-align: center;">
-                        <button class="btn-estatus" data-registro-id="${String(displayEmp.registro_id || '').replace(/"/g, '&quot;')}" data-curp="${String(displayEmp.curp || '').replace(/"/g, '&quot;')}" data-nombre="${(displayEmp.nombre || '').replace(/"/g, '&quot;')}" style="background: ${color}; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; opacity: 1;">${estatus}</button>
-                    </td>
-                </tr>
-            `;
-        }
-
-        function matchesSearch(emp) {
-            const displayEmp = getEmpleadoConLocal(emp);
-            const text = `${displayEmp.nombre || ''} ${displayEmp.no_empleado || ''}`.toLowerCase();
-            return text.includes(searchQuery);
-        }
-
-        function renderTabla() {
-            const visibles = empleadosCache.map(getEmpleadoConLocal).filter((emp) => {
-                const estatus = emp.estatus;
-                if (statusFilter === 'ACTIVOS' && estatus !== 'ACTIVO') return false;
-                if (statusFilter === 'INACTIVOS' && estatus !== 'INACTIVO') return false;
-                return matchesSearch(emp);
-            });
-
-            if (!visibles.length) {
-                cuerpo.innerHTML = '<tr><td colspan="5" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
-                return;
-            }
-
-            cuerpo.innerHTML = visibles.map(renderFila).join('');
-        }
-
-        async function cargarEmpleadosCheongWoon() {
-            cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">Cargando empleados...</td></tr>';
-
-            try {
-                const { respuesta, texto } = await getConFallback('/api/obtener-empleados/CHEONG_WOON');
-                if (!respuesta.ok) {
-                    cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">No se pudieron cargar empleados.</td></tr>';
-                    alert(`Error al cargar empleados (${respuesta.status}): ${texto || 'Sin detalle'}`);
-                    return;
-                }
-
-                const empleados = JSON.parse(texto || '[]');
-                empleadosCache = Array.isArray(empleados) ? empleados : [];
-                if (window.DataManager && Array.isArray(empleadosCache)) {
-                    window.DataManager.upsertMany(empleadosCache.map((emp) => ({
-                        registro_id: emp.registro_id,
-                        curp: emp.curp || '',
-                        nombre: emp.nombre || '',
-                        nombre_completo: emp.nombre || '',
-                        empresa: 'CHEONG WOON',
-                        puesto: emp.puesto || '',
-                        estatus: emp.estatus || 'ACTIVO',
-                        fecha_ingreso: emp.fecha_ingreso || '',
-                    })));
-                }
-                renderTabla();
-            } catch (error) {
-                cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">No se pudieron cargar empleados.</td></tr>';
-                alert('Error de conexión al cargar empleados: ' + error.message);
-            }
-        }
-
-        async function toggleEstatus(btn) {
-            const current = (btn.innerText || '').trim().toUpperCase();
-            const nuevo = current === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-            const identidad = {
-                curp: btn.dataset.curp || '',
-                registro_id: btn.dataset.registroId || '',
-                nombre: btn.dataset.nombre || '',
-            };
-
-            const registroId = String(btn.dataset.registroId || '').trim();
-            if (!registroId) {
-                alert('No se pudo identificar el empleado para actualizar estatus.');
-                return;
-            }
-
-            btn.disabled = true;
-            try {
-                const { respuesta, texto } = await postConFallback(`/api/actualizar-empleado/${encodeURIComponent(registroId)}`, {
-                    estatus: nuevo,
-                });
-
-                if (!respuesta.ok) {
-                    throw new Error(texto || 'No se pudo actualizar el estatus.');
-                }
-
-                if (window.DataManager) {
-                    window.DataManager.updateEmpleadoByIdentity(identidad, { estatus: nuevo });
-                    window.actualizarVistas && window.actualizarVistas();
-                }
-
-                await cargarEmpleadosCheongWoon();
-            } catch (error) {
-                alert('Error al actualizar estatus: ' + error.message);
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        function obtenerEmpleadosSeleccionados() {
-            const seleccionados = [];
-            document.querySelectorAll('.checkbox-gafete:checked').forEach((input) => {
-                seleccionados.push({
-                    registro_id: input.dataset.registroId || '',
-                    nombre: input.dataset.nombre || '',
-                    no_empleado: input.dataset.noEmpleado || '',
-                });
-            });
-            return seleccionados;
-        }
-
-        function crearHojaGafetes(empleados) {
-            // Use gafette.html measurements: 62mm x 87mm per badge
-            const pxPerMm = 96 / 25.4; // 96dpi assumption (screen)
-            const badgeW = Math.round(62 * pxPerMm); // width in px
-            const badgeH = Math.round(87 * pxPerMm); // height in px
-
-            // Page size A4-like / Letter: keep 8.5x11in at 96dpi
-            const pageWidth = Math.round(8.5 * 96);
-            const pageHeight = Math.round(11 * 96);
-
-            const cols = 2;
-            const rows = 2;
-            const gap = Math.round(12 * pxPerMm / 3.7795); // small gap (~12 px)
-            const margin = Math.round(8 * pxPerMm / 3.7795) || 24;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = pageWidth;
-            canvas.height = pageHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, pageWidth, pageHeight);
-
-            // Prepare logo images used in gafette.html to draw on badge
-            const logoUrl = 'https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800';
-            const cornerUrl = 'https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800';
-
-            const imgs = {};
-            function loadImg(url) {
-                return new Promise((resolve) => {
-                    const i = new Image();
-                    i.crossOrigin = 'anonymous';
-                    i.onload = () => resolve(i);
-                    i.onerror = () => resolve(null);
-                    i.src = url;
-                });
-            }
-
-            return Promise.all([loadImg(logoUrl), loadImg(cornerUrl)]).then(([logoImg, cornerImg]) => {
-                // Draw up to 4 badges
-                empleados.slice(0, 4).forEach((emp, index) => {
-                    const pageIdx = 0;
-                    const col = index % cols;
-                    const row = Math.floor(index / cols);
-
-                    // When rotating 90deg, badge occupies badgeH x badgeW
-                    const cardW = badgeH;
-                    const cardH = badgeW;
-
-                    // compute top-left for placement with margins and gap
-                    const totalW = cols * cardW + (cols - 1) * gap;
-                    const totalH = rows * cardH + (rows - 1) * gap;
-                    const startX = Math.round((pageWidth - totalW) / 2);
-                    const startY = Math.round((pageHeight - totalH) / 2);
-
-                    const x = startX + col * (cardW + gap);
-                    const y = startY + row * (cardH + gap);
-
-                    ctx.save();
-                    // Move to center of target area and rotate 90deg
-                    ctx.translate(x + cardW / 2, y + cardH / 2);
-                    ctx.rotate(90 * Math.PI / 180);
-                    // After rotation, draw rectangle of size (cardH x cardW)
-                    ctx.translate(-cardH / 2, -cardW / 2);
-
-                    // Background of badge (use light color similar to gafette front)
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, cardH, cardW);
-
-                    // Optional corner shape
-                    if (cornerImg) {
-                        const cw = Math.min(cardH * 0.22, 120);
-                        ctx.drawImage(cornerImg, 4, 4, cw, (cw * cornerImg.height) / Math.max(1, cornerImg.width));
-                    }
-
-                    // Draw main logo near top
-                    if (logoImg) {
-                        const logoW = Math.min(cardH * 0.7, 220);
-                        const logoX = (cardH - logoW) / 2;
-                        ctx.drawImage(logoImg, logoX, 16, logoW, (logoW * logoImg.height) / Math.max(1, logoImg.width));
-                    }
-
-                    // Text: GAFETE label + name + employee number (use similar fonts/sizes)
-                    ctx.fillStyle = '#0f172a';
-                    ctx.font = 'bold 18px Arial';
-                    ctx.fillText('GAFETE', 16, cardW - cardW * 0.8);
-                    ctx.font = 'bold 16px Arial';
-                    ctx.fillText(emp.nombre || '', 16, cardW - cardW * 0.72);
-                    ctx.font = '14px Arial';
-                    ctx.fillText('No. Empleado: ' + (emp.no_empleado || ''), 16, cardW - cardW * 0.66);
-
-                    // border
-                    ctx.strokeStyle = '#333';
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(0, 0, cardH, cardW);
-
-                    ctx.restore();
-                });
-
-                return canvas.toDataURL('image/png');
-            });
-        }
-
-        async function descargarGafettes() {
-            const seleccionados = obtenerEmpleadosSeleccionados();
-            if (!seleccionados.length) {
-                alert('Selecciona al menos un empleado para descargar los gafetes.');
-                return;
-            }
-
-            // Chunk in pages of 4
-            const chunks = [];
-            for (let i = 0; i < seleccionados.length; i += 4) {
-                chunks.push(seleccionados.slice(i, i + 4));
-            }
-
-            try {
-                const pages = await Promise.all(chunks.map((c) => crearHojaGafetes(c)));
-
-                // Open new window with all pages as full-size images and trigger print
-                const win = window.open('', '_blank');
-                if (!win) {
-                    // Fallback: download first page
-                    const enlace = document.createElement('a');
-                    enlace.href = pages[0];
-                    enlace.download = 'gafettes-page-1.png';
-                    enlace.click();
-                    return;
-                }
-
-                const html = ['<!doctype html><html><head><title>Gafettes</title><style>html,body{margin:0;padding:0;} .page{width:100%;height:100vh;display:flex;align-items:center;justify-content:center;page-break-after:always;} img{max-width:100%;max-height:100%;}</style></head><body>'];
-                pages.forEach((dataUri, idx) => {
-                    html.push('<div class="page"><img src="' + dataUri + '" alt="page' + (idx + 1) + '"/></div>');
-                });
-                html.push('</body></html>');
-
-                win.document.write(html.join(''));
-                win.document.close();
-                // Give the window a moment to render images
-                setTimeout(() => {
-                    try { win.focus(); win.print(); } catch (e) { console.warn('Print failed', e); }
-                }, 600);
-
-            } catch (error) {
-                alert('Error generando gafetes: ' + error.message);
-            }
-        }
-
-        filterEstatus.addEventListener('change', () => {
-            statusFilter = filterEstatus.value || 'TODOS';
-            renderTabla();
+async function descargarGafettes(){
+    const seleccionados = obtenerEmpleadosSeleccionados();
+    if(!seleccionados.length){ alert('Selecciona al menos un empleado'); return; }
+    const chunks = [];
+    for(let i=0;i<seleccionados.length;i+=4) chunks.push(seleccionados.slice(i,i+4));
+    try{
+        const pages = await Promise.all(chunks.map(c=>crearHojaGafetes(c)));
+        const styleMatch = pages[0].match(/<style>[\s\S]*?<\/style>/i);
+        const styleHtml = styleMatch? styleMatch[0] : '<style>html,body{margin:0;padding:0}</style>';
+        const grids = pages.map(p=>{ const m = p.match(/<div class="grid">([\s\S]*?)<\/div>/i); return m? m[0] : ''; }).filter(Boolean);
+        const win = window.open('','_blank');
+        if(!win){ alert('Permite popups para imprimir/descargar'); return; }
+        const parts = ['<!doctype html><html><head><meta charset="utf-8"><title>Gafettes</title>', styleHtml, '</head><body>'];
+        grids.forEach(gridHtml=>{
+            const inner = gridHtml.replace(/^<div class="grid">/i,'').replace(/<\/div>$/i,'');
+            parts.push('<div class="page"><div class="grid">', inner, '</div></div>');
         });
+        parts.push('</body></html>');
+        win.document.write(parts.join(''));
+        win.document.close();
+        setTimeout(()=>{ try{ win.focus(); win.print(); }catch(e){console.warn(e);} },600);
+    }catch(e){ alert('Error generando gafetes: '+e.message); }
+}
 
-        buscador.addEventListener('keyup', function() {
-            searchQuery = String(this.value || '').trim().toLowerCase();
-            renderTabla();
-        });
+filterEstatus.addEventListener('change', ()=>{ statusFilter = filterEstatus.value||'TODOS'; renderTabla(); });
+buscador.addEventListener('keyup', function(){ searchQuery = String(this.value||'').trim().toLowerCase(); renderTabla(); });
 
-        cuerpo.addEventListener('click', (event) => {
-            const btn = event.target.closest('.btn-estatus');
-            if (!btn) return;
-            toggleEstatus(btn);
-        });
+btnDescargarGafettes && btnDescargarGafettes.addEventListener('click', descargarGafettes);
 
-        if (btnDescargarGafettes) {
-            btnDescargarGafettes.addEventListener('click', descargarGafettes);
-        }
+// Initialize
+document.addEventListener('DOMContentLoaded', ()=>{ cargarEmpleadosCheongWoon(); if(window.DataManager) window.DataManager.subscribeVistas(cargarEmpleadosCheongWoon); });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarEmpleadosCheongWoon();
-            if (window.DataManager) {
-                window.DataManager.subscribeVistas(cargarEmpleadosCheongWoon);
-            }
-        });
-    </script>
+</script>
 </body>
 </html>
