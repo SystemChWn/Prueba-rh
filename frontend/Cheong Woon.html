@@ -149,7 +149,7 @@
                 <tr style="border-bottom: 2px solid #444;">
                     <th style="padding: 12px; text-align: left;">Nombre Completo</th>
                     <th style="padding: 12px; text-align: center; width: 180px;">
-                        <button id="btn-descargar-gafettes" class="btn-nombre" style="width:100%; max-width:160px;">Descargar Gafettes</button>
+                        <button id="btn-descargar-gafettes" class="btn-nombre" style="width:100%; max-width:160px; background:#2563eb; color:#fff; border-radius:6px; padding:8px 10px;">Descargar Gafettes</button>
                     </th>
                     <th style="padding: 12px;">No. Empleado</th>
                     <th style="padding: 12px;">Fecha Ingreso</th>
@@ -354,15 +354,20 @@
         }
 
         function crearHojaGafetes(empleados) {
-            const pageWidth = 816; // 8.5in x 96dpi
-            const pageHeight = 1056; // 11in x 96dpi
-            const colCount = 2;
-            const rowCount = 2;
-            const gap = 20;
-            const margin = 24;
-            const cardWidth = Math.floor((pageWidth - margin * 2 - gap) / colCount);
-            const cardHeight = Math.floor((pageHeight - margin * 2 - gap) / rowCount);
-            const scale = 0.9;
+            // Use gafette.html measurements: 62mm x 87mm per badge
+            const pxPerMm = 96 / 25.4; // 96dpi assumption (screen)
+            const badgeW = Math.round(62 * pxPerMm); // width in px
+            const badgeH = Math.round(87 * pxPerMm); // height in px
+
+            // Page size A4-like / Letter: keep 8.5x11in at 96dpi
+            const pageWidth = Math.round(8.5 * 96);
+            const pageHeight = Math.round(11 * 96);
+
+            const cols = 2;
+            const rows = 2;
+            const gap = Math.round(12 * pxPerMm / 3.7795); // small gap (~12 px)
+            const margin = Math.round(8 * pxPerMm / 3.7795) || 24;
+
             const canvas = document.createElement('canvas');
             canvas.width = pageWidth;
             canvas.height = pageHeight;
@@ -370,51 +375,129 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, pageWidth, pageHeight);
 
-            ctx.save();
-            ctx.translate(margin, margin);
+            // Prepare logo images used in gafette.html to draw on badge
+            const logoUrl = 'https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800';
+            const cornerUrl = 'https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800';
 
-            empleados.slice(0, 4).forEach((emp, index) => {
-                const col = index % colCount;
-                const row = Math.floor(index / colCount);
-                const x = col * (cardWidth + gap);
-                const y = row * (cardHeight + gap);
-                const cardW = cardWidth;
-                const cardH = cardHeight;
-                ctx.save();
-                ctx.translate(x + cardW / 2, y + cardH / 2);
-                ctx.rotate(90 * Math.PI / 180);
-                ctx.translate(-cardH / 2, -cardW / 2);
-                ctx.fillStyle = '#f7f9fb';
-                ctx.fillRect(0, 0, cardH, cardW);
-                ctx.strokeStyle = '#333';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(0, 0, cardH, cardW);
-                ctx.fillStyle = '#000';
-                ctx.font = 'bold 18px Arial';
-                ctx.fillText('GAFETE', 16, 28);
-                ctx.font = 'bold 16px Arial';
-                ctx.fillText(emp.nombre || '', 16, 60);
-                ctx.font = '14px Arial';
-                ctx.fillText('No. Empleado: ' + (emp.no_empleado || ''), 16, 90);
-                ctx.restore();
+            const imgs = {};
+            function loadImg(url) {
+                return new Promise((resolve) => {
+                    const i = new Image();
+                    i.crossOrigin = 'anonymous';
+                    i.onload = () => resolve(i);
+                    i.onerror = () => resolve(null);
+                    i.src = url;
+                });
+            }
+
+            return Promise.all([loadImg(logoUrl), loadImg(cornerUrl)]).then(([logoImg, cornerImg]) => {
+                // Draw up to 4 badges
+                empleados.slice(0, 4).forEach((emp, index) => {
+                    const pageIdx = 0;
+                    const col = index % cols;
+                    const row = Math.floor(index / cols);
+
+                    // When rotating 90deg, badge occupies badgeH x badgeW
+                    const cardW = badgeH;
+                    const cardH = badgeW;
+
+                    // compute top-left for placement with margins and gap
+                    const totalW = cols * cardW + (cols - 1) * gap;
+                    const totalH = rows * cardH + (rows - 1) * gap;
+                    const startX = Math.round((pageWidth - totalW) / 2);
+                    const startY = Math.round((pageHeight - totalH) / 2);
+
+                    const x = startX + col * (cardW + gap);
+                    const y = startY + row * (cardH + gap);
+
+                    ctx.save();
+                    // Move to center of target area and rotate 90deg
+                    ctx.translate(x + cardW / 2, y + cardH / 2);
+                    ctx.rotate(90 * Math.PI / 180);
+                    // After rotation, draw rectangle of size (cardH x cardW)
+                    ctx.translate(-cardH / 2, -cardW / 2);
+
+                    // Background of badge (use light color similar to gafette front)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, cardH, cardW);
+
+                    // Optional corner shape
+                    if (cornerImg) {
+                        const cw = Math.min(cardH * 0.22, 120);
+                        ctx.drawImage(cornerImg, 4, 4, cw, (cw * cornerImg.height) / Math.max(1, cornerImg.width));
+                    }
+
+                    // Draw main logo near top
+                    if (logoImg) {
+                        const logoW = Math.min(cardH * 0.7, 220);
+                        const logoX = (cardH - logoW) / 2;
+                        ctx.drawImage(logoImg, logoX, 16, logoW, (logoW * logoImg.height) / Math.max(1, logoImg.width));
+                    }
+
+                    // Text: GAFETE label + name + employee number (use similar fonts/sizes)
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = 'bold 18px Arial';
+                    ctx.fillText('GAFETE', 16, cardW - cardW * 0.8);
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText(emp.nombre || '', 16, cardW - cardW * 0.72);
+                    ctx.font = '14px Arial';
+                    ctx.fillText('No. Empleado: ' + (emp.no_empleado || ''), 16, cardW - cardW * 0.66);
+
+                    // border
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(0, 0, cardH, cardW);
+
+                    ctx.restore();
+                });
+
+                return canvas.toDataURL('image/png');
             });
-
-            ctx.restore();
-            return canvas.toDataURL('image/png');
         }
 
-        function descargarGafettes() {
+        async function descargarGafettes() {
             const seleccionados = obtenerEmpleadosSeleccionados();
             if (!seleccionados.length) {
                 alert('Selecciona al menos un empleado para descargar los gafetes.');
                 return;
             }
 
-            const dataUri = crearHojaGafetes(seleccionados);
-            const enlace = document.createElement('a');
-            enlace.href = dataUri;
-            enlace.download = 'gafettes.png';
-            enlace.click();
+            // Chunk in pages of 4
+            const chunks = [];
+            for (let i = 0; i < seleccionados.length; i += 4) {
+                chunks.push(seleccionados.slice(i, i + 4));
+            }
+
+            try {
+                const pages = await Promise.all(chunks.map((c) => crearHojaGafetes(c)));
+
+                // Open new window with all pages as full-size images and trigger print
+                const win = window.open('', '_blank');
+                if (!win) {
+                    // Fallback: download first page
+                    const enlace = document.createElement('a');
+                    enlace.href = pages[0];
+                    enlace.download = 'gafettes-page-1.png';
+                    enlace.click();
+                    return;
+                }
+
+                const html = ['<!doctype html><html><head><title>Gafettes</title><style>html,body{margin:0;padding:0;} .page{width:100%;height:100vh;display:flex;align-items:center;justify-content:center;page-break-after:always;} img{max-width:100%;max-height:100%;}</style></head><body>'];
+                pages.forEach((dataUri, idx) => {
+                    html.push('<div class="page"><img src="' + dataUri + '" alt="page' + (idx + 1) + '"/></div>');
+                });
+                html.push('</body></html>');
+
+                win.document.write(html.join(''));
+                win.document.close();
+                // Give the window a moment to render images
+                setTimeout(() => {
+                    try { win.focus(); win.print(); } catch (e) { console.warn('Print failed', e); }
+                }, 600);
+
+            } catch (error) {
+                alert('Error generando gafetes: ' + error.message);
+            }
         }
 
         filterEstatus.addEventListener('change', () => {
