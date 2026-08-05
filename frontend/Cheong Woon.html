@@ -141,13 +141,16 @@
                     <option value="INACTIVOS">Inactivos</option>
                 </select>
             </div>
-            <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar por nombre o # empleado..." style="width: 350px;">
+            <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar empleado..." style="width: 350px;">
         </div>
         
         <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
             <thead>
                 <tr style="border-bottom: 2px solid #444;">
                     <th style="padding: 12px; text-align: left;">Nombre Completo</th>
+                    <th style="padding: 12px; text-align: center; width: 180px;">
+                        <button id="btn-descargar-gafettes" class="btn-nombre" style="width:100%; max-width:160px;">Descargar Gafettes</button>
+                    </th>
                     <th style="padding: 12px;">No. Empleado</th>
                     <th style="padding: 12px;">Fecha Ingreso</th>
                     <th style="padding: 12px;">Estatus</th>
@@ -155,7 +158,7 @@
             </thead>
             <tbody id="cuerpo-tabla-empleados">
                 <tr>
-                    <td colspan="4" style="padding: 12px; text-align: center;">Cargando empleados...</td>
+                    <td colspan="5" style="padding: 12px; text-align: center;">Cargando empleados...</td>
                 </tr>
             </tbody>
         </table>
@@ -170,6 +173,7 @@
         const cuerpo = document.getElementById('cuerpo-tabla-empleados');
         const buscador = document.getElementById('buscador');
         const filterEstatus = document.getElementById('filter-estatus');
+        const btnDescargarGafettes = document.getElementById('btn-descargar-gafettes');
         let empleadosCache = [];
         let statusFilter = 'TODOS';
         let searchQuery = '';
@@ -235,6 +239,7 @@
             return `
                 <tr>
                     <td style="padding: 12px;"><a class="btn-nombre" href="${linkEmpleado}">${displayEmp.nombre || ''}</a></td>
+                    <td style="padding: 12px; text-align: center;"><input type="checkbox" class="checkbox-gafete" data-registro-id="${String(displayEmp.registro_id || '').replace(/"/g, '&quot;')}" data-nombre="${(displayEmp.nombre || '').replace(/"/g, '&quot;')}" data-no-empleado="${String(displayEmp.no_empleado || '').replace(/"/g, '&quot;')}" /></td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.no_empleado || ''}</td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.fecha_ingreso || '-'}</td>
                     <td style="padding: 12px; text-align: center;">
@@ -259,7 +264,7 @@
             });
 
             if (!visibles.length) {
-                cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
+                cuerpo.innerHTML = '<tr><td colspan="5" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
                 return;
             }
 
@@ -336,6 +341,82 @@
             }
         }
 
+        function obtenerEmpleadosSeleccionados() {
+            const seleccionados = [];
+            document.querySelectorAll('.checkbox-gafete:checked').forEach((input) => {
+                seleccionados.push({
+                    registro_id: input.dataset.registroId || '',
+                    nombre: input.dataset.nombre || '',
+                    no_empleado: input.dataset.noEmpleado || '',
+                });
+            });
+            return seleccionados;
+        }
+
+        function crearHojaGafetes(empleados) {
+            const pageWidth = 816; // 8.5in x 96dpi
+            const pageHeight = 1056; // 11in x 96dpi
+            const colCount = 2;
+            const rowCount = 2;
+            const gap = 20;
+            const margin = 24;
+            const cardWidth = Math.floor((pageWidth - margin * 2 - gap) / colCount);
+            const cardHeight = Math.floor((pageHeight - margin * 2 - gap) / rowCount);
+            const scale = 0.9;
+            const canvas = document.createElement('canvas');
+            canvas.width = pageWidth;
+            canvas.height = pageHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, pageWidth, pageHeight);
+
+            ctx.save();
+            ctx.translate(margin, margin);
+
+            empleados.slice(0, 4).forEach((emp, index) => {
+                const col = index % colCount;
+                const row = Math.floor(index / colCount);
+                const x = col * (cardWidth + gap);
+                const y = row * (cardHeight + gap);
+                const cardW = cardWidth;
+                const cardH = cardHeight;
+                ctx.save();
+                ctx.translate(x + cardW / 2, y + cardH / 2);
+                ctx.rotate(90 * Math.PI / 180);
+                ctx.translate(-cardH / 2, -cardW / 2);
+                ctx.fillStyle = '#f7f9fb';
+                ctx.fillRect(0, 0, cardH, cardW);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, cardH, cardW);
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 18px Arial';
+                ctx.fillText('GAFETE', 16, 28);
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(emp.nombre || '', 16, 60);
+                ctx.font = '14px Arial';
+                ctx.fillText('No. Empleado: ' + (emp.no_empleado || ''), 16, 90);
+                ctx.restore();
+            });
+
+            ctx.restore();
+            return canvas.toDataURL('image/png');
+        }
+
+        function descargarGafettes() {
+            const seleccionados = obtenerEmpleadosSeleccionados();
+            if (!seleccionados.length) {
+                alert('Selecciona al menos un empleado para descargar los gafetes.');
+                return;
+            }
+
+            const dataUri = crearHojaGafetes(seleccionados);
+            const enlace = document.createElement('a');
+            enlace.href = dataUri;
+            enlace.download = 'gafettes.png';
+            enlace.click();
+        }
+
         filterEstatus.addEventListener('change', () => {
             statusFilter = filterEstatus.value || 'TODOS';
             renderTabla();
@@ -349,8 +430,12 @@
         cuerpo.addEventListener('click', (event) => {
             const btn = event.target.closest('.btn-estatus');
             if (!btn) return;
-                        toggleEstatus(btn);
+            toggleEstatus(btn);
         });
+
+        if (btnDescargarGafettes) {
+            btnDescargarGafettes.addEventListener('click', descargarGafettes);
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             cargarEmpleadosCheongWoon();
