@@ -83,7 +83,11 @@
         <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
             <thead>
                 <tr style="border-bottom: 2px solid #444;">
+                    <th style="padding: 12px; width: 50px; text-align: center;">✓</th>
                     <th style="padding: 12px; text-align: left;">Nombre Completo</th>
+                    <th style="padding: 12px; min-width: 180px; text-align: center;">
+                        <button id="btn-descargar-gafette" style="background: #007bff; color: white; border: none; border-radius: 6px; padding: 7px 12px; cursor: pointer; font-weight: 600;">Descargar gafette</button>
+                    </th>
                     <th style="padding: 12px;">No. Empleado</th>
                     <th style="padding: 12px;">Fecha Ingreso</th>
                     <th style="padding: 12px;">Estatus</th>
@@ -91,7 +95,7 @@
             </thead>
             <tbody id="cuerpo-tabla-empleados">
                 <tr>
-                    <td colspan="4" style="padding: 12px; text-align: center;">Cargando empleados...</td>
+                    <td colspan="6" style="padding: 12px; text-align: center;">Cargando empleados...</td>
                 </tr>
             </tbody>
         </table>
@@ -110,6 +114,7 @@
         let empleadosCache = [];
         let statusFilter = 'TODOS';
         let searchQuery = '';
+        let selectedRegistroIds = new Set();
 
         function getEmpleadoConLocal(emp) {
             const localByCurp = (window.DataManager && emp.curp) ? window.DataManager.getByCurp(emp.curp) : null;
@@ -143,11 +148,23 @@
             });
 
             if (!visibles.length) {
-                cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
+                cuerpo.innerHTML = '<tr><td colspan="6" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
                 return;
             }
 
             cuerpo.innerHTML = visibles.map(renderFila).join('');
+
+            document.querySelectorAll('.seleccion-gafete').forEach((checkbox) => {
+                checkbox.checked = selectedRegistroIds.has(checkbox.value);
+                checkbox.addEventListener('change', () => {
+                    const id = checkbox.value;
+                    if (checkbox.checked) {
+                        selectedRegistroIds.add(id);
+                    } else {
+                        selectedRegistroIds.delete(id);
+                    }
+                });
+            });
         }
 
         function getEstatusSincronizado(emp) {
@@ -196,9 +213,12 @@
             const estatus = displayEmp.estatus;
             const color = estatus === 'ACTIVO' ? '#28a745' : '#dc3545';
             const linkEmpleado = `empleado.html?registro_id=${encodeURIComponent(displayEmp.registro_id || '')}&nombre=${encodeURIComponent(displayEmp.nombre || '')}`;
+            const registroId = String(displayEmp.registro_id || '');
             return `
                 <tr>
+                    <td style="padding: 12px; text-align: center;"><input class="seleccion-gafete" type="checkbox" value="${registroId}" /></td>
                     <td style="padding: 12px;"><a class="btn-nombre" href="${linkEmpleado}">${displayEmp.nombre || ''}</a></td>
+                    <td style="padding: 12px; text-align: center;"></td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.no_empleado || ''}</td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.fecha_ingreso || '-'}</td>
                     <td style="padding: 12px; text-align: center;">
@@ -208,8 +228,38 @@
             `;
         }
 
+        function getSeleccionadosParaGafete() {
+            const idsSeleccionados = new Set([...selectedRegistroIds].filter(Boolean));
+            return empleadosCache
+                .map(getEmpleadoConLocal)
+                .filter((emp) => idsSeleccionados.has(String(emp.registro_id || '')));
+        }
+
+        function descargarGafette() {
+            const seleccionados = getSeleccionadosParaGafete();
+            if (!seleccionados.length) {
+                alert('Selecciona al menos una persona para generar gafetes.');
+                return;
+            }
+
+            const datosParaGafetes = seleccionados.map((emp) => ({
+                nombre_completo: emp.nombre_completo || emp.nombre || '',
+                nss: emp.nss || emp.imss || '',
+                curp: emp.curp || '',
+                area: emp.area || emp.puesto || '',
+                nombre_emergencia: emp.nombre_emergencia || '',
+                telefono_emergencia: emp.telefono_emergencia || emp.num_emergencias || '',
+                fecha_ingreso: emp.fecha_ingreso || '',
+                fotografia_base64: emp.fotografia_base64 || '',
+                no_empleado: emp.no_empleado || '',
+            }));
+
+            localStorage.setItem('gafeteBatchData', JSON.stringify(datosParaGafetes));
+            window.open('maingafette.html?batch=1', '_blank');
+        }
+
         async function cargarEmpleadosCheongWoon() {
-            cuerpo.innerHTML = '<tr><td colspan="4" style="padding: 12px; text-align: center;">Cargando empleados...</td></tr>';
+            cuerpo.innerHTML = '<tr><td colspan="6" style="padding: 12px; text-align: center;">Cargando empleados...</td></tr>';
 
             try {
                 const { respuesta, texto } = await getConFallback('/api/obtener-empleados/CHEONG_WOON');
@@ -296,6 +346,11 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            const btnDescargarGafette = document.getElementById('btn-descargar-gafette');
+            if (btnDescargarGafette) {
+                btnDescargarGafette.addEventListener('click', descargarGafette);
+            }
+
             cargarEmpleadosCheongWoon();
             if (window.DataManager) {
                 window.DataManager.subscribeVistas(cargarEmpleadosCheongWoon);
