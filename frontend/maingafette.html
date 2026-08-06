@@ -237,21 +237,29 @@
                 margin: 0;
                 display: block;
             }
+
             .controls {
-                display: none;
+                display: none !important;
             }
+
             .page {
                 box-shadow: none;
                 margin: 0;
                 width: 21.59cm;
                 height: 27.94cm;
-                padding: 10mm;
+                padding: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                page-break-after: always;
-                break-after: page;
-                break-inside: avoid;
+                page-break-after: auto !important;
+                break-after: auto !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                overflow: visible;
+            }
+
+            .page + .page {
+                margin-top: 0;
             }
 
             .badge-container {
@@ -263,6 +271,11 @@
                 align-content: center;
                 margin: 0;
                 padding: 0;
+            }
+
+            .badge-card {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
     </style>
