@@ -25,17 +25,17 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 12mm 0 0;
+            display: block;
             color: #1e293b;
         }
 
         .controls {
-            margin-bottom: 20px;
+            width: 21.59cm;
+            max-width: calc(100vw - 24px);
+            margin: 0 auto 6mm;
             background: white;
             padding: 12px 24px;
             border-radius: 8px;
@@ -43,6 +43,8 @@
             display: flex;
             gap: 15px;
             align-items: center;
+            justify-content: flex-end;
+            box-sizing: border-box;
         }
 
         button {
@@ -189,10 +191,10 @@
 /*============================================================================*/
         .page {
             background: white;
-            width: 21.6cm;
-            height: 27.9cm;
-            padding: 10mm;
-            margin: 10mm auto;
+            width: 21.59cm;
+            height: 27.94cm;
+            padding: 0;
+            margin: 0 auto 12mm;
             box-sizing: border-box;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -201,8 +203,8 @@
             color: #1a202c;
             overflow: hidden;
             display: flex;
-            align-items: center;    /* Centrado vertical en la hoja */
-            justify-content: center; /* Centrado horizontal en la hoja */
+            align-items: center;
+            justify-content: center;
         }
 
         .badge-container {
@@ -256,6 +258,11 @@
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
                 overflow: visible;
+            }
+
+            body {
+                padding: 0;
+                background: white;
             }
 
             .page + .page {
