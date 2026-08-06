@@ -380,6 +380,14 @@
             </div>
         </div>
     </main>
+    <section class="dashboard-ingresos">
+        <div class="ingresos-card">
+            <h3>Comparativa Anual de Ingresos</h3>
+            <div class="ingresos-chart-wrap">
+                <canvas id="grafica12MesesInicio"></canvas>
+            </div>
+        </div>
+    </section>
     <script src="data-manager.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -388,6 +396,7 @@
             var currentYear = new Date().getFullYear();
             var empleadosCalendario = [];
             var editingEventId = null;
+            var chartIngresosAnual = null;
 
             const currentHost = window.location.hostname;
             const PORT = '8001';
@@ -456,6 +465,62 @@
                     return fallbackData;
                 }
                 throw new Error('No se pudo conectar con el servidor (' + bases.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            function crearGraficaIngresosAnual(datosAnuales) {
+                var canvas = document.getElementById('grafica12MesesInicio');
+                if (!canvas) return;
+
+                var ctx = canvas.getContext('2d');
+                var mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+                if (chartIngresosAnual) {
+                    chartIngresosAnual.destroy();
+                }
+
+                chartIngresosAnual = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: mesesLabels,
+                        datasets: [{
+                            label: 'Ingresos Totales',
+                            data: Array.isArray(datosAnuales) ? datosAnuales : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: '#C5CCD4'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    stepSize: 10,
+                                    color: '#fff',
+                                    callback: function(value) {
+                                        return value;
+                                    }
+                                },
+                                grid: {
+                                    color: function(context) {
+                                        return Number(context.tick.value) === 80 ? '#facc15' : '#333';
+                                    }
+                                }
+                            },
+                            y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            async function cargarGraficaIngresosAnual() {
+                var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                var endpoint = '/api/datos-grafica?periodo=12meses&tz=' + encodeURIComponent(tz);
+                var datos = await getJsonConFallback(endpoint, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+                crearGraficaIngresosAnual(datos);
             }
 
             var eventosCompartidosCache = [];
