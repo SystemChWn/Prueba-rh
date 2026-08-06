@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gafette - CWN</title>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --dark-blue: #1d4ed8;
+            --badge-width: 62mm;   
+            --badge-height: 87mm;
+
+/* ==========================================================
+        PANEL DE CONTROL PARA MOVER ELEMENTOS:
+========================================================== */
+            --shape-top: 0mm;
+            --shape-left: 0mm;
+            --shape-width: 28mm;
+
+            --logo-top: 5.5mm;
+            --logo-left: 8mm;
+            --logo-width: 43mm;
+            }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #1e293b;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--dark-blue);
+        }
+
+        .badge-card {
+            width: var(--badge-width);
+            height: var(--badge-height);
+            background: white;
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            box-sizing: border-box;
+            border: 2px dashed #94a3b8;
+        }
+
+/* FRENTE DEL GAFETE */
+        .top-shape-container {
+            position: absolute;
+            top: var(--shape-top);
+            left: var(--shape-left);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .top-shape-container img {
+            width: var(--shape-width);
+            height: auto;
+            display: block;
+        }
+
+        .logo-container-custom {
+            position: absolute;
+            top: var(--logo-top);
+            left: var(--logo-left);
+            z-index: 3;
+        }
+
+        .logo-container-custom img {
+            width: var(--logo-width);
+            height: auto;
+            display: block;
+        }
+
+        .front-content {
+            padding: 26mm 4mm 4mm 4mm;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .photo-box {
+            width: 25mm;
+            height: 27mm;
+            background: #f8fafc;
+            margin: 0 auto 4mm auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9pt;
+            color: #64748b;
+        }
+
+        .employee-info {
+            margin-bottom: 4mm;
+        }
+
+        .field-line {
+            font-weight: bold;
+            margin-bottom: 2.5mm;
+            color: #0f172a;
+            padding-bottom: 1mm;
+        }
+
+/* REVERSO DEL GAFETE */
+        .back-side .bottom-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20mm;
+            background: linear-gradient(135deg, #3b82f6, #1e4ed8);
+            border-top-left-radius: 40% 30%;
+            border-top-right-radius: 40% 30%;
+            z-index: 1;
+        }
+
+        .back-content {
+            padding: 10mm 4mm 18mm 4mm;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .back-fields {
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        .back-field-item {
+            margin-bottom: 3mm;
+            padding-bottom: 1mm;
+        }
+
+        .back-logo-container {
+            position: absolute;
+            bottom: 10mm;
+            left: 0;
+            width: 95%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+        }
+
+        .back-logo-container img {
+            width: 47mm;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+/*============================================================================*/
+        .page {
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 10mm;
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.35;
+            color: #1a202c;
+            overflow: hidden;
+            display: flex;
+            align-items: center;    /* Centrado vertical en la hoja */
+            justify-content: center; /* Centrado horizontal en la hoja */
+        }
+
+        .badge-container {
+            display: grid;
+            /* 4 columnas: 2 pares arriba y 2 pares abajo */
+            grid-template-columns: repeat(4, var(--badge-width));
+            grid-template-rows: repeat(2, var(--badge-height));
+            gap: 0mm 0mm; /* Separación vertical y horizontal base */
+            justify-content: center;
+            align-content: center;
+            width: 100%;
+            box-sizing: border-box;
+            transform: rotate(-90deg);
+        }
+
+
+        /* Clase para separar visualmente entre cada par independiente */
+        .badge-pair-separator {
+            margin-right: 6mm; /* Espacio extra que separa el Par 1 del Par 2 */
+        }
+
+        @media print {
+            @page {
+                size: letter;
+                margin: 0;
+            }
+
+            html,
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }
+            .controls {
+                display: none;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                height: 27.94cm;
+                padding: 10mm;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                page-break-after: always;
+                break-after: page;
+                break-inside: avoid;
+            }
+
+            .badge-container {
+                display: grid;
+                grid-template-columns: repeat(4, var(--badge-width));
+                grid-template-rows: repeat(2, var(--badge-height));
+                gap: 4mm 3mm;
+                justify-content: center;
+                align-content: center;
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button id="btn-regresar">Regresar</button>
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="page">
+        <div class="badge-container">
+            <!-- === FILA SUPERIOR === -->
+            
+            <!-- Gaette 1: Frente -->
+            <div class="badge-card front-side">
+                <div class="top-shape-container">
+                    <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
+                </div>
+                <div class="logo-container-custom">
+                    <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                </div>
+                <div class="front-content">
+                    <div style="margin-top: -6mm;">
+                        <div class="photo-box">
+                            <img class="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                            <span class="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
+                        </div>
+                        <div style="text-align: center; font-size: 10pt; font-weight: bold; margin-bottom: 2mm; color: #1e3a8a;">
+                            <span class="employee-first-name"></span><br>
+                            <span class="employee-last-name"></span>
+                        </div>
+                    </div>
+                    <div style="font-size: 10pt; font-weight: bold; margin-bottom: 1mm; color: #1e3a8a;" class="employee-info">
+                        <div class="field-line">IMSS: <span class="employee-nss"></span></div>
+                        <div class="field-line">CURP: <span class="employee-curp"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reverso -->
+            <div class="badge-card back-side badge-pair-separator">
+                <div class="back-content">
+                    <div class="back-fields">
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-fecha-ingreso"></span> </div>
+                    </div>
+                    <div class="back-logo-container">
+                        <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                    </div>
+                    <div class="back-bg-container">
+                        <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gafette 2: Frente -->
+            <div class="badge-card front-side">
+                <div class="top-shape-container">
+                    <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
+                </div>
+                <div class="logo-container-custom">
+                    <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                </div>
+                <div class="front-content">
+                    <div style="margin-top: -6mm;">
+                        <div class="photo-box">
+                            <img class="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                            <span class="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
+                        </div>
+                        <div style="text-align: center; font-size: 10pt; font-weight: bold; margin-bottom: 2mm; color: #1e3a8a;">
+                            <span class="employee-first-name"></span><br>
+                            <span class="employee-last-name"></span>
+                        </div>
+                    </div>
+                    <div style="font-size: 10pt; font-weight: bold; margin-bottom: 1mm; color: #1e3a8a;" class="employee-info">
+                        <div class="field-line">IMSS: <span class="employee-nss"></span></div>
+                        <div class="field-line">CURP: <span class="employee-curp"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reverso -->
+            <div class="badge-card back-side">
+                <div class="back-content">
+                    <div class="back-fields">
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-fecha-ingreso"></span> </div>
+                    </div>
+                    <div class="back-logo-container">
+                        <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                    </div>
+                    <div class="back-bg-container">
+                        <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- === FILA INFERIOR  === -->
+            
+            <!-- Gafette 3: Frente -->
+            <div class="badge-card front-side">
+                <div class="top-shape-container">
+                    <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
+                </div>
+                <div class="logo-container-custom">
+                    <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                </div>
+                <div class="front-content">
+                    <div style="margin-top: -6mm;">
+                        <div class="photo-box">
+                            <img class="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                            <span class="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
+                        </div>
+                        <div style="text-align: center; font-size: 10pt; font-weight: bold; margin-bottom: 2mm; color: #1e3a8a;">
+                            <span class="employee-first-name"></span><br>
+                            <span class="employee-last-name"></span>
+                        </div>
+                    </div>
+                    <div style="font-size: 10pt; font-weight: bold; margin-bottom: 1mm; color: #1e3a8a;" class="employee-info">
+                        <div class="field-line">IMSS: <span class="employee-nss"></span></div>
+                        <div class="field-line">CURP: <span class="employee-curp"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reverso -->
+            <div class="badge-card back-side badge-pair-separator">
+                <div class="back-content">
+                    <div class="back-fields">
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-fecha-ingreso"></span> </div>
+                    </div>
+                    <div class="back-logo-container">
+                        <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                    </div>
+                    <div class="back-bg-container">
+                        <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gafette 4: Frente -->
+            <div class="badge-card front-side">
+                <div class="top-shape-container">
+                    <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
+                </div>
+                <div class="logo-container-custom">
+                    <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                </div>
+                <div class="front-content">
+                    <div style="margin-top: -6mm;">
+                        <div class="photo-box">
+                            <img class="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                            <span class="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
+                        </div>
+                        <div style="text-align: center; font-size: 10pt; font-weight: bold; margin-bottom: 2mm; color: #1e3a8a;">
+                            <span class="employee-first-name"></span><br>
+                            <span class="employee-last-name"></span>
+                        </div>
+                    </div>
+                    <div style="font-size: 10pt; font-weight: bold; margin-bottom: 1mm; color: #1e3a8a;" class="employee-info">
+                        <div class="field-line">IMSS: <span class="employee-nss"></span></div>
+                        <div class="field-line">CURP: <span class="employee-curp"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reverso -->
+            <div class="badge-card back-side">
+                <div class="back-content">
+                    <div class="back-fields">
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-fecha-ingreso"></span> </div>
+                    </div>
+                    <div class="back-logo-container">
+                        <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
+                    </div>
+                    <div class="back-bg-container">
+                        <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <script>
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+        function parseNombreCompleto(nombreCompleto) {
+            const palabras = nombreCompleto.trim().split(/\s+/).filter(Boolean);
+            if (palabras.length === 0) {
+                return { firstName: '', lastName: '' };
+            }
+            const lastName = palabras.slice(-2).join(' ');
+            const firstName = palabras.slice(0, -2).join(' ');
+            return {
+                firstName: firstName || palabras[0],
+                lastName: lastName,
+            };
+        }
+
+        async function fetchFromBackend(endpoint) {
+            let lastError = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const response = await fetch(`${baseUrl}${endpoint}`);
+                    const text = await response.text();
+                    return { response, text };
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw new Error(`No se pudo conectar con el servidor: ${lastError ? lastError.message : 'error desconocido'}`);
+        }
+
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        async function populateBadgeFields(datos) {
+            const nombre = parseNombreCompleto(datos.nombre_completo || '');
+            
+            // Como ahora hay múltiples tarjetas, usamos querySelectorAll para rellenar todas las ocurrencias a la vez
+            document.querySelectorAll('.employee-first-name').forEach(el => el.textContent = (nombre.firstName || '').toUpperCase());
+            document.querySelectorAll('.employee-last-name').forEach(el => el.textContent = (nombre.lastName || '').toUpperCase());
+            document.querySelectorAll('.employee-nss').forEach(el => el.textContent = datos.nss || '');
+            document.querySelectorAll('.employee-curp').forEach(el => el.textContent = (datos.curp || '').toUpperCase());
+            document.querySelectorAll('.employee-area').forEach(el => el.textContent = (datos.area || '').toUpperCase());
+            document.querySelectorAll('.employee-contact-name').forEach(el => el.textContent = (datos.nombre_emergencia || '').toUpperCase());
+            document.querySelectorAll('.employee-contact-phone').forEach(el => el.textContent = datos.telefono_emergencia || datos.num_emergencias || '');
+            document.querySelectorAll('.employee-fecha-ingreso').forEach(el => el.textContent = datos.fecha_ingreso || '');
+
+            const savedPhoto = String(datos.fotografia_base64 || '').trim();
+
+            document.querySelectorAll('.badge-card').forEach(card => {
+                const photoEl = card.querySelector('.employee-photo');
+                const photoLabel = card.querySelector('.photo-box-label');
+                if (savedPhoto && photoEl) {
+                    photoEl.src = savedPhoto;
+                    photoEl.style.display = 'block';
+                    if (photoLabel) photoLabel.style.display = 'none';
+                } else if (photoEl) {
+                    photoEl.style.display = 'none';
+                    if (photoLabel) photoLabel.style.display = 'grid';
+                }
+            });
+        }
+
+        async function loadGafeteData() {
+            const registroId = getQueryParam('registro_id');
+            const returnUrl = getQueryParam('return_url');
+            const fromTab = getQueryParam('from_tab');
+            let localLoaded = false;
+
+            if (returnUrl) {
+                localStorage.setItem('gafeteReturnUrl', returnUrl);
+            }
+            if (fromTab) {
+                localStorage.setItem('empleadoActiveTab', fromTab);
+            }
+
+            const datosRaw = localStorage.getItem('gafeteData');
+            if (datosRaw) {
+                try {
+                    const datosLocales = JSON.parse(datosRaw);
+                    await populateBadgeFields(datosLocales);
+                    localLoaded = true;
+                } catch (_) {}
+            }
+
+            if (registroId) {
+                try {
+                    const { response, text } = await fetchFromBackend(`/api/obtener-empleado/${encodeURIComponent(registroId)}`);
+                    if (response.ok) {
+                        const datos = JSON.parse(text || '{}');
+                        await populateBadgeFields(datos);
+                        return;
+                    }
+                    if (localLoaded) return;
+                } catch (error) {
+                    if (localLoaded) return;
+                }
+            }
+            if (localLoaded) return;
+        }
+
+        function navigateBackToEmpleado() {
+            const returnUrl = getQueryParam('return_url') || localStorage.getItem('gafeteReturnUrl');
+            localStorage.removeItem('gafeteReturnUrl');
+            localStorage.removeItem('gafeteData');
+            if (returnUrl) {
+                window.location.href = returnUrl;
+                return;
+            }
+            window.location.href = 'empleado.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGafeteData();
+            const regresarBtn = document.getElementById('btn-regresar');
+            if (regresarBtn) {
+                regresarBtn.addEventListener('click', navigateBackToEmpleado);
+            }
+        });
+    </script>
+</body>
+</html>
