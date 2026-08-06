@@ -151,6 +151,26 @@
     <main>
         <div style="padding: 20px; color: #cfcfcf;">Bienvenido al sistema.</div>
     </main>
-
 </body>
+<script>
+        document.addEventListener("DOMContentLoaded", async () => {
+        const mesActual = new Date().getMonth() + 1;
+        const selectMes = document.getElementById('selectMes');
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+        async function fetchDatosGrafica(params) {
+            for (const baseUrl of API_BASES) {
+                try {
+                    const response = await fetch(`${baseUrl}/api/datos-grafica?${params}`);
+                    if (!response.ok) continue;
+                    return await response.json();
+                } catch (_) {
+                }
+            }
+            return [0, 0, 0, 0, 0, 0];
+        }
+</script>
 </html>
