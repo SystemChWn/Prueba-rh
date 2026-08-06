@@ -185,7 +185,6 @@
                 <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
             </div>
         </section>
-
     </div>
     </main>
 
@@ -225,20 +224,25 @@
         document.addEventListener("DOMContentLoaded", async () => {
             const mesActual = new Date().getMonth() + 1;
             const selectMes = document.getElementById('selectMes');
-            const currentHost = window.location.hostname;
-            const PORT = '8001';
-            const API_URL = `http://${currentHost}:${PORT}`;
-            const API_BASES = [API_URL, `http://localhost:${PORT}`];
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
 
             async function fetchDatosGrafica(params) {
-                for (const baseUrl of API_BASES) {
+                const candidates = [
+                    `/api/datos-grafica?${params}`,
+                    `${window.location.origin}/api/datos-grafica?${params}`,
+                    `http://localhost:8001/api/datos-grafica?${params}`
+                ];
+
+                for (const url of candidates) {
                     try {
-                        const response = await fetch(`${baseUrl}/api/datos-grafica?${params}`);
-                        if (!response.ok) continue;
-                        return await response.json();
+                        const response = await fetch(url, { cache: 'no-store' });
+                        if (response.ok) {
+                            return await response.json();
+                        }
                     } catch (_) {
                     }
                 }
+
                 return [0, 0, 0, 0, 0, 0];
             }
 
@@ -247,19 +251,16 @@
             }
 
             try {
-                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
-                    const datosMesInicial = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`);
+                const datosMesInicial = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`);
                 crearGraficaPastel('graficaPastelMes', datosMesInicial);
 
                 if (selectMes) {
                     selectMes.addEventListener('change', async (e) => {
                         const mesSeleccionado = e.target.value;
-                        const tzChange = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
-                        const nuevosDatosMes = await fetchDatosGrafica(`periodo=mes&mes=${mesSeleccionado}&tz=${encodeURIComponent(tzChange)}`);
+                        const nuevosDatosMes = await fetchDatosGrafica(`periodo=mes&mes=${mesSeleccionado}&tz=${encodeURIComponent(tz)}`);
                         crearGraficaPastel('graficaPastelMes', nuevosDatosMes);
                     });
                 }
-
             } catch (error) {
                 console.error("Error cargando datos de las gráficas", error);
             }
