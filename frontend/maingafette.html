@@ -509,80 +509,19 @@
             return params.get(name);
         }
 
-        function createFrontCardMarkup(index) {
-            return `
-                <div class="badge-card front-side" data-employee-index="${index}">
-                    <div class="top-shape-container">
-                        <img src="https://lh3.googleusercontent.com/d/1rQQFLxlSgFKWOzq0EYLFUi-ubbEA5EAr=s800" alt="Esquina superior">
-                    </div>
-                    <div class="logo-container-custom">
-                        <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
-                    </div>
-                    <div class="front-content">
-                        <div style="margin-top: -6mm;">
-                            <div class="photo-box">
-                                <img class="employee-photo" alt="Foto del empleado" style="width:100%;height:100%;object-fit:cover;display:none;" />
-                                <span class="photo-box-label" style="display:grid;place-items:center;width:100%;height:100%;color:#64748b;">FOTO</span>
-                            </div>
-                            <div style="text-align: center; font-size: 10pt; font-weight: bold; margin-bottom: 2mm; color: #1e3a8a;">
-                                <span class="employee-first-name"></span><br>
-                                <span class="employee-last-name"></span>
-                            </div>
-                        </div>
-                        <div style="font-size: 10pt; font-weight: bold; margin-bottom: 1mm; color: #1e3a8a;" class="employee-info">
-                            <div class="field-line">IMSS: <span class="employee-nss"></span></div>
-                            <div class="field-line">CURP: <span class="employee-curp"></span></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createBackCardMarkup(index) {
-            const separatorClass = index === 1 || index === 3 ? ' badge-pair-separator' : '';
-            return `
-                <div class="badge-card back-side${separatorClass}" data-employee-index="${index}">
-                    <div class="back-content">
-                        <div class="back-fields">
-                            <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
-                            <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"><span class="employee-area"></span></div>
-                            <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
-                            <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"><span class="employee-contact-name"></span></div>
-                            <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
-                            <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">FECHA DE INGRESO</div>
-                            <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"><span class="employee-fecha-ingreso"></span></div>
-                        </div>
-                        <div class="back-logo-container">
-                            <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl=s800">
-                        </div>
-                        <div class="back-bg-container">
-                            <img src="https://lh3.googleusercontent.com/d/1Kmb3RHdiThvTf0GPQKT96iZrudYrVsSq=s800" style="position: absolute; bottom: 0; left: 0; width: 100%; height: auto; z-index: 1;">
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function buildPageMarkup(employeesForPage) {
-            const safeEmployees = Array.isArray(employeesForPage) ? employeesForPage : [];
-            const cardMarkup = [];
-            for (let index = 0; index < 4; index += 1) {
-                const empleado = safeEmployees[index];
-                if (empleado) {
-                    cardMarkup.push(createFrontCardMarkup(index));
-                    cardMarkup.push(createBackCardMarkup(index));
-                } else {
-                    cardMarkup.push(`<div class="badge-card front-side" data-employee-index="${index}" style="display:none;"></div>`);
-                    cardMarkup.push(`<div class="badge-card back-side" data-employee-index="${index}" style="display:none;"></div>`);
-                }
+        function getPagePairs(pageElement) {
+            const cards = Array.from(pageElement.querySelectorAll('.badge-card'));
+            const pairs = [];
+            for (let index = 0; index < cards.length; index += 2) {
+                pairs.push(cards.slice(index, index + 2));
             }
-            return `<div class="badge-container">${cardMarkup.join('')}</div>`;
+            return pairs;
         }
 
-        function applyEmployeeToPage(pageElement, datos, employeeIndex) {
+        function applyEmployeeToPair(pairCards, datos) {
             const nombre = parseNombreCompleto(datos.nombre_completo || datos.nombre || '');
-            const cards = Array.from(pageElement.querySelectorAll(`.badge-card[data-employee-index="${employeeIndex}"]`));
-            cards.forEach((card) => {
+            pairCards.forEach((card) => {
+                card.style.display = '';
                 card.querySelectorAll('.employee-first-name').forEach((el) => {
                     el.textContent = (nombre.firstName || '').toUpperCase();
                 });
@@ -635,24 +574,28 @@
             }
 
             if (!pageGroups.length) {
-                primaryPage.querySelector('.badge-container').innerHTML = buildPageMarkup([]);
-                return;
+                pageGroups.push([]);
             }
 
-            primaryPage.querySelector('.badge-container').innerHTML = buildPageMarkup(pageGroups[0]);
-            pageGroups[0].forEach((empleado, employeeIndex) => {
-                applyEmployeeToPage(primaryPage, empleado, employeeIndex);
-            });
+            const pages = [primaryPage];
+            pageGroups.forEach((group, groupIndex) => {
+                const page = groupIndex === 0 ? primaryPage : (() => {
+                    const extraPage = primaryPage.cloneNode(true);
+                    extraPage.classList.add('page-extra');
+                    primaryPage.insertAdjacentElement('afterend', extraPage);
+                    return extraPage;
+                })();
 
-            let currentPage = primaryPage;
-            pageGroups.slice(1).forEach((group) => {
-                const extraPage = document.createElement('div');
-                extraPage.className = 'page page-extra';
-                extraPage.innerHTML = buildPageMarkup(group);
-                currentPage.insertAdjacentElement('afterend', extraPage);
-                currentPage = extraPage;
-                group.forEach((empleado, employeeIndex) => {
-                    applyEmployeeToPage(extraPage, empleado, employeeIndex);
+                const pairs = getPagePairs(page);
+                pairs.forEach((pairCards, pairIndex) => {
+                    const employee = group[pairIndex];
+                    if (employee) {
+                        applyEmployeeToPair(pairCards, employee);
+                    } else {
+                        pairCards.forEach((card) => {
+                            card.style.display = 'none';
+                        });
+                    }
                 });
             });
         }
