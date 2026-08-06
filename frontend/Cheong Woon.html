@@ -83,7 +83,6 @@
         <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
             <thead>
                 <tr style="border-bottom: 2px solid #444;">
-                    <th style="padding: 12px; width: 50px; text-align: center;">✓</th>
                     <th style="padding: 12px; text-align: left;">Nombre Completo</th>
                     <th style="padding: 12px; min-width: 180px; text-align: center;">
                         <button id="btn-descargar-gafette" style="background: #007bff; color: white; border: none; border-radius: 6px; padding: 7px 12px; cursor: pointer; font-weight: 600;">Descargar gafette</button>
@@ -148,7 +147,7 @@
             });
 
             if (!visibles.length) {
-                cuerpo.innerHTML = '<tr><td colspan="6" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
+                cuerpo.innerHTML = '<tr><td colspan="5" style="padding: 12px; text-align: center;">No hay empleados que coincidan con el filtro.</td></tr>';
                 return;
             }
 
@@ -216,9 +215,8 @@
             const registroId = String(displayEmp.registro_id || '');
             return `
                 <tr>
-                    <td style="padding: 12px; text-align: center;"><input class="seleccion-gafete" type="checkbox" value="${registroId}" /></td>
                     <td style="padding: 12px;"><a class="btn-nombre" href="${linkEmpleado}">${displayEmp.nombre || ''}</a></td>
-                    <td style="padding: 12px; text-align: center;"></td>
+                    <td style="padding: 12px; text-align: center;"><input class="seleccion-gafete" type="checkbox" value="${registroId}" /></td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.no_empleado || ''}</td>
                     <td style="padding: 12px; text-align: center;">${displayEmp.fecha_ingreso || '-'}</td>
                     <td style="padding: 12px; text-align: center;">
@@ -235,27 +233,55 @@
                 .filter((emp) => idsSeleccionados.has(String(emp.registro_id || '')));
         }
 
-        function descargarGafette() {
+        async function descargarGafette() {
             const seleccionados = getSeleccionadosParaGafete();
             if (!seleccionados.length) {
                 alert('Selecciona al menos una persona para generar gafetes.');
                 return;
             }
 
-            const datosParaGafetes = seleccionados.map((emp) => ({
-                nombre_completo: emp.nombre_completo || emp.nombre || '',
-                nss: emp.nss || emp.imss || '',
-                curp: emp.curp || '',
-                area: emp.area || emp.puesto || '',
-                nombre_emergencia: emp.nombre_emergencia || '',
-                telefono_emergencia: emp.telefono_emergencia || emp.num_emergencias || '',
-                fecha_ingreso: emp.fecha_ingreso || '',
-                fotografia_base64: emp.fotografia_base64 || '',
-                no_empleado: emp.no_empleado || '',
-            }));
+            const datosParaGafetes = [];
+            for (const emp of seleccionados) {
+                const registroId = String(emp.registro_id || '').trim();
+                let datosEmpleado = {
+                    nombre_completo: emp.nombre_completo || emp.nombre || '',
+                    nss: emp.nss || emp.imss || '',
+                    curp: emp.curp || '',
+                    area: emp.area || emp.puesto || '',
+                    nombre_emergencia: emp.nombre_emergencia || '',
+                    telefono_emergencia: emp.telefono_emergencia || emp.num_emergencias || '',
+                    fecha_ingreso: emp.fecha_ingreso || '',
+                    fotografia_base64: emp.fotografia_base64 || '',
+                    no_empleado: emp.no_empleado || '',
+                };
+
+                if (registroId) {
+                    try {
+                        const { respuesta, texto } = await getConFallback(`/api/obtener-empleado/${encodeURIComponent(registroId)}`);
+                        if (respuesta.ok) {
+                            const datosDetallados = JSON.parse(texto || '{}');
+                            datosEmpleado = {
+                                ...datosEmpleado,
+                                ...datosDetallados,
+                                nombre_completo: datosDetallados.nombre_completo || datosDetallados.nombre || datosEmpleado.nombre_completo,
+                                nss: datosDetallados.nss || datosDetallados.imss || datosEmpleado.nss,
+                                curp: datosDetallados.curp || datosEmpleado.curp,
+                                area: datosDetallados.area || datosDetallados.puesto || datosEmpleado.area,
+                                nombre_emergencia: datosDetallados.nombre_emergencia || datosEmpleado.nombre_emergencia,
+                                telefono_emergencia: datosDetallados.telefono_emergencia || datosDetallados.num_emergencias || datosEmpleado.telefono_emergencia,
+                                fecha_ingreso: datosDetallados.fecha_ingreso || datosEmpleado.fecha_ingreso,
+                                fotografia_base64: datosDetallados.fotografia_base64 || datosEmpleado.fotografia_base64,
+                            };
+                        }
+                    } catch (_) {}
+                }
+
+                datosParaGafetes.push(datosEmpleado);
+            }
 
             localStorage.setItem('gafeteBatchData', JSON.stringify(datosParaGafetes));
-            window.open('maingafette.html?batch=1', '_blank');
+            localStorage.setItem('gafeteReturnUrl', 'Cheong Woon.html');
+            window.open('maingafette.html?batch=1&return_url=Cheong%20Woon.html', '_blank');
         }
 
         async function cargarEmpleadosCheongWoon() {
