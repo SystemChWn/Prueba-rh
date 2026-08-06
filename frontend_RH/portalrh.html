@@ -97,19 +97,15 @@
     </main>
 
     <script src="config.js"></script>
-    <script src="../frontend_Reclu/config.js"></script>
     <script>
         function verificarAcceso() {
             const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
             const errorMsg = document.getElementById('mensajeError');
-            const configRh = window.APP_CONFIG && window.APP_CONFIG.portalRh ? window.APP_CONFIG.portalRh : {};
-            const configReclu = window.APP_CONFIG && window.APP_CONFIG.portalReclu ? window.APP_CONFIG.portalReclu : {};
+            const config = window.APP_CONFIG && window.APP_CONFIG.portalRh ? window.APP_CONFIG.portalRh : {};
 
-            if (u === configRh.usuario && p === configRh.password) {
+            if (u === config.usuario && p === config.password) {
                 window.location.href = "iniciorh.html";
-            } else if (u === configReclu.usuario && p === configReclu.password) {
-                window.location.href = "../frontend_Reclu/inicioreclu.html";
             } else {
                 errorMsg.style.display = 'block';
                 setTimeout(() => {

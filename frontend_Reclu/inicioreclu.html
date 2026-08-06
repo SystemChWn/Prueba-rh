@@ -144,39 +144,6 @@
             width: 100%;
         }
 
-        .login-container {
-            width: 400px;
-            margin: 80px auto;
-            padding: 40px;
-            background: #2c2c2c;
-            border-radius: 15px;
-            text-align: center;
-            border: 1px solid #444;
-        }
-
-        .login-container input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #3e3e3e;
-            border: 1px solid #555;
-            border-radius: 5px;
-            box-sizing: border-box;
-            color: white;
-        }
-
-        .login-container button {
-            width: 100%;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
         select {
             background: #3e3e3e;
             border: 1px solid #555;
@@ -194,28 +161,13 @@
             <h1 style="font-size: 1rem; margin: 0;">RECLUTAMIENTO</h1>
         </div>
         <nav class="nav-links">
-            <a href="../Principal/main.html">Inicio</a>
-            <a href="../Principal/registro.html">Registro</a>
-            <a href="../Principal/portalrh.html">PortalRH</a>
+            <a href="../frontend/main.html">Inicio</a>
+            <a href="../frontend/registro.html">Registro</a>
+            <a href="../frontend/portalrh.html">PortalRH</a>
         </nav>
     </header>
 
-    <div id="loginSection" class="login-container">
-        <span style='font-size: 60px;'>👔</span>
-        <h2 style="margin-top: 0; color: #fff;">ACCESO RECLUTAMIENTO</h2>
-
-        <form id="loginForm" autocomplete="off">
-            <input type="text" id="user" placeholder="Usuario" required>
-            <input type="password" id="pass" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
-        </form>
-
-        <div id="mensajeError" style="color: #ff4d4d; margin-top: 15px; font-size: 0.9rem; display: none; text-align: center;">
-            ⚠️ Usuario o contraseña incorrectos
-        </div>
-    </div>
-
-    <main id="contentArea" style="display: none;">
+    <main>
         <div class="dashboard-row">
             <section class="card card-dona">
                 <h3>Reclutamiento por Mes</h3>
@@ -347,64 +299,6 @@
             });
         }
 
-        function mostrarContenido(autorizado) {
-            const loginSection = document.getElementById('loginSection');
-            const contentArea = document.getElementById('contentArea');
-            const errorMsg = document.getElementById('mensajeError');
-
-            if (autorizado) {
-                if (loginSection) loginSection.style.display = 'none';
-                if (contentArea) contentArea.style.display = 'block';
-                if (errorMsg) errorMsg.style.display = 'none';
-                sessionStorage.setItem('recluAutorizado', 'true');
-            } else {
-                if (loginSection) loginSection.style.display = 'block';
-                if (contentArea) contentArea.style.display = 'none';
-            }
-        }
-
-        function verificarAcceso() {
-            const u = String(document.getElementById('user').value || '').trim();
-            const p = String(document.getElementById('pass').value || '').trim();
-            const errorMsg = document.getElementById('mensajeError');
-            const config = window.APP_CONFIG && window.APP_CONFIG.portalReclu ? window.APP_CONFIG.portalReclu : {};
-
-            if (u === config.usuario && p === config.password) {
-                mostrarContenido(true);
-                return true;
-            }
-
-            if (errorMsg) {
-                errorMsg.style.display = 'block';
-                setTimeout(() => {
-                    errorMsg.style.display = 'none';
-                }, 3000);
-            }
-            return false;
-        }
-
-        (function configurarLogin() {
-            const user = document.getElementById('user');
-            const pass = document.getElementById('pass');
-            const form = document.getElementById('loginForm');
-
-            function intentarIngresarConEnter(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    verificarAcceso();
-                }
-            }
-
-            if (user) user.addEventListener('keydown', intentarIngresarConEnter);
-            if (pass) pass.addEventListener('keydown', intentarIngresarConEnter);
-            if (form) {
-                form.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    verificarAcceso();
-                });
-            }
-        })();
-
         async function cargarDashboard() {
             const mesActual = new Date().getMonth() + 1;
             const selectMes = document.getElementById('selectMes');
@@ -461,14 +355,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const autorizado = sessionStorage.getItem('recluAutorizado') === 'true';
-
-            if (autorizado) {
-                mostrarContenido(true);
-                cargarDashboard();
-            } else {
-                mostrarContenido(false);
-            }
+            cargarDashboard();
         });
     </script>
 </body>
