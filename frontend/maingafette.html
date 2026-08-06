@@ -25,17 +25,17 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             margin: 0;
-            padding: 12mm 0 0;
-            display: block;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             color: #1e293b;
         }
 
         .controls {
-            width: 21.59cm;
-            max-width: calc(100vw - 24px);
-            margin: 0 auto 6mm;
+            margin-bottom: 20px;
             background: white;
             padding: 12px 24px;
             border-radius: 8px;
@@ -43,8 +43,6 @@
             display: flex;
             gap: 15px;
             align-items: center;
-            justify-content: flex-end;
-            box-sizing: border-box;
         }
 
         button {
@@ -191,10 +189,10 @@
 /*============================================================================*/
         .page {
             background: white;
-            width: 21.59cm;
-            height: 27.94cm;
-            padding: 0;
-            margin: 0 auto 12mm;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 10mm;
+            margin: 10mm auto;
             box-sizing: border-box;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -239,34 +237,21 @@
                 margin: 0;
                 display: block;
             }
-
             .controls {
-                display: none !important;
+                display: none;
             }
-
             .page {
                 box-shadow: none;
                 margin: 0;
                 width: 21.59cm;
                 height: 27.94cm;
-                padding: 0;
+                padding: 10mm;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                page-break-after: auto !important;
-                break-after: auto !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                overflow: visible;
-            }
-
-            body {
-                padding: 0;
-                background: white;
-            }
-
-            .page + .page {
-                margin-top: 0;
+                page-break-after: always;
+                break-after: page;
+                break-inside: avoid;
             }
 
             .badge-container {
@@ -278,11 +263,6 @@
                 align-content: center;
                 margin: 0;
                 padding: 0;
-            }
-
-            .badge-card {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
             }
         }
     </style>
