@@ -65,9 +65,9 @@
         <div class="filtros-container">
             <div>
                 <span class="filtro-label">DE:</span>
-                <input type="date" class="filtro-input">
+                <input type="date" id="filtro-fecha-desde" class="filtro-input">
                 <span class="filtro-label" style="margin-left: 15px;">A:</span>
-                <input type="date" class="filtro-input">
+                <input type="date" id="filtro-fecha-hasta" class="filtro-input">
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="filtro-label">Estatus:</span>
@@ -77,7 +77,10 @@
                     <option value="INACTIVOS">Inactivos</option>
                 </select>
             </div>
-            <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar por nombre o # empleado..." style="width: 350px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar por nombre o # empleado..." style="width: 350px;">
+                <button id="btn-limpiar-filtros" type="button" class="filtro-input" style="width: auto; cursor: pointer;">Limpiar filtros</button>
+            </div>
         </div>
         
         <table style="width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px;">
@@ -110,10 +113,98 @@
         const cuerpo = document.getElementById('cuerpo-tabla-empleados');
         const buscador = document.getElementById('buscador');
         const filterEstatus = document.getElementById('filter-estatus');
+        const fechaDesdeInput = document.getElementById('filtro-fecha-desde');
+        const fechaHastaInput = document.getElementById('filtro-fecha-hasta');
+        const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
         let empleadosCache = [];
         let statusFilter = 'TODOS';
         let searchQuery = '';
         let selectedRegistroIds = new Set();
+        const FILTER_STATE_KEY = 'cheongWoonFiltersState';
+
+        function parseFechaValor(valor) {
+            if (!valor) return null;
+            const texto = String(valor).trim();
+            if (!texto) return null;
+
+            const fechaDirecta = new Date(texto);
+            if (!Number.isNaN(fechaDirecta.getTime())) {
+                const fecha = new Date(fechaDirecta);
+                fecha.setHours(0, 0, 0, 0);
+                return fecha;
+            }
+
+            const variosFormatos = [
+                /^(\d{4})-(\d{2})-(\d{2})$/,
+                /^(\d{2})\/(\d{2})\/(\d{4})$/,
+                /^(\d{4})\/(\d{2})\/(\d{2})$/,
+            ];
+
+            for (const patron of variosFormatos) {
+                const match = texto.match(patron);
+                if (match) {
+                    const [, a, b, c] = match;
+                    const dia = Number(a.length === 4 ? c : a);
+                    const mes = Number(a.length === 4 ? b : b);
+                    const anio = Number(a.length === 4 ? a : c);
+                    const fecha = new Date(anio, mes - 1, dia);
+                    if (!Number.isNaN(fecha.getTime())) {
+                        fecha.setHours(0, 0, 0, 0);
+                        return fecha;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function matchesDateRange(emp) {
+            const fechaDesde = fechaDesdeInput ? parseFechaValor(fechaDesdeInput.value) : null;
+            const fechaHasta = fechaHastaInput ? parseFechaValor(fechaHastaInput.value) : null;
+            const fechaIngreso = parseFechaValor(emp.fecha_ingreso || emp.fecha_registro || '');
+
+            if (fechaDesde && (!fechaIngreso || fechaIngreso < fechaDesde)) return false;
+            if (fechaHasta && (!fechaIngreso || fechaIngreso > fechaHasta)) return false;
+            return true;
+        }
+
+        function saveFilterState() {
+            const state = {
+                fechaDesde: fechaDesdeInput ? fechaDesdeInput.value : '',
+                fechaHasta: fechaHastaInput ? fechaHastaInput.value : '',
+                estatus: filterEstatus ? filterEstatus.value : 'TODOS',
+                search: buscador ? buscador.value : '',
+                selectedIds: Array.from(selectedRegistroIds).filter(Boolean),
+            };
+            sessionStorage.setItem(FILTER_STATE_KEY, JSON.stringify(state));
+        }
+
+        function restoreFilterState() {
+            try {
+                const raw = sessionStorage.getItem(FILTER_STATE_KEY);
+                if (!raw) return;
+                const state = JSON.parse(raw);
+                if (fechaDesdeInput) fechaDesdeInput.value = state.fechaDesde || '';
+                if (fechaHastaInput) fechaHastaInput.value = state.fechaHasta || '';
+                if (filterEstatus) filterEstatus.value = state.estatus || 'TODOS';
+                if (buscador) buscador.value = state.search || '';
+                statusFilter = String(state.estatus || 'TODOS').toUpperCase();
+                searchQuery = String(state.search || '').trim().toLowerCase();
+                selectedRegistroIds = new Set((state.selectedIds || []).filter(Boolean));
+            } catch (_) {}
+        }
+
+        function clearFilters() {
+            if (fechaDesdeInput) fechaDesdeInput.value = '';
+            if (fechaHastaInput) fechaHastaInput.value = '';
+            if (filterEstatus) filterEstatus.value = 'TODOS';
+            if (buscador) buscador.value = '';
+            statusFilter = 'TODOS';
+            searchQuery = '';
+            selectedRegistroIds.clear();
+            saveFilterState();
+            renderTabla();
+        }
 
         function getEmpleadoConLocal(emp) {
             const localByCurp = (window.DataManager && emp.curp) ? window.DataManager.getByCurp(emp.curp) : null;
@@ -143,6 +234,7 @@
                 const estatus = emp.estatus;
                 if (statusFilter === 'ACTIVOS' && estatus !== 'ACTIVO') return false;
                 if (statusFilter === 'INACTIVOS' && estatus !== 'INACTIVO') return false;
+                if (!matchesDateRange(emp)) return false;
                 return matchesSearch(emp);
             });
 
@@ -162,8 +254,11 @@
                     } else {
                         selectedRegistroIds.delete(id);
                     }
+                    saveFilterState();
                 });
             });
+
+            saveFilterState();
         }
 
         function getEstatusSincronizado(emp) {
@@ -355,15 +450,43 @@
             }
         }
 
-        filterEstatus.addEventListener('change', () => {
-            statusFilter = filterEstatus.value || 'TODOS';
+        function actualizarFiltrosDesdeUI() {
+            statusFilter = (filterEstatus ? filterEstatus.value : 'TODOS') || 'TODOS';
+            searchQuery = String(buscador ? buscador.value : '').trim().toLowerCase();
             renderTabla();
-        });
+        }
 
-        buscador.addEventListener('keyup', function() {
-            searchQuery = String(this.value || '').trim().toLowerCase();
-            renderTabla();
-        });
+        if (filterEstatus) {
+            filterEstatus.addEventListener('change', () => {
+                actualizarFiltrosDesdeUI();
+                saveFilterState();
+            });
+        }
+
+        if (buscador) {
+            buscador.addEventListener('input', function() {
+                actualizarFiltrosDesdeUI();
+                saveFilterState();
+            });
+        }
+
+        if (fechaDesdeInput) {
+            fechaDesdeInput.addEventListener('change', () => {
+                renderTabla();
+                saveFilterState();
+            });
+        }
+
+        if (fechaHastaInput) {
+            fechaHastaInput.addEventListener('change', () => {
+                renderTabla();
+                saveFilterState();
+            });
+        }
+
+        if (btnLimpiarFiltros) {
+            btnLimpiarFiltros.addEventListener('click', clearFilters);
+        }
 
         cuerpo.addEventListener('click', (event) => {
             const btn = event.target.closest('.btn-estatus');
@@ -372,6 +495,8 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            restoreFilterState();
+
             const btnDescargarGafette = document.getElementById('btn-descargar-gafette');
             if (btnDescargarGafette) {
                 btnDescargarGafette.addEventListener('click', descargarGafette);
