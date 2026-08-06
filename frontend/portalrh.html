@@ -96,18 +96,19 @@
         </div>
     </main>
 
-    <script src="config.js"></script>
     <script>
         function verificarAcceso() {
-            const u = String(document.getElementById('user').value || '').trim();
+            const u = String(document.getElementById('user').value || '').trim().toUpperCase();
             const p = String(document.getElementById('pass').value || '').trim();
+            
             const errorMsg = document.getElementById('mensajeError');
-            const config = window.APP_CONFIG && window.APP_CONFIG.portalRh ? window.APP_CONFIG.portalRh : {};
 
-            if (u === config.usuario && p === config.password) {
+// USUARIO / CONTRASEÑA
+            if ((u === "RH" || u === "ADMIN") && p === "123") {
                 window.location.href = "iniciorh.html";
             } else {
                 errorMsg.style.display = 'block';
+                
                 setTimeout(() => {
                     errorMsg.style.display = 'none';
                 }, 3000);
