@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Interno RH</title>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
+        .branding { display: flex; align-items: center; gap: 10px; }
+        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
+        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        
+        .dashboard-calendar { padding: 20px; display: flex; gap: 20px; height: 570px; }
+        .agenda-header {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: transparent;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .agenda-create-btn {
+            width: 100%;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        #calendar { flex: 2; background: #2c2c2c; padding: 15px; border-radius: 8px; }
+        #agenda { flex: 1; background: #2c2c2c; padding: 15px; border-radius: 8px; overflow-y: auto; }
+
+        .dashboard-ingresos {
+            padding: 0 20px 20px;
+        }
+
+        .ingresos-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .ingresos-card h3 {
+            color: #fff;
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .ingresos-chart-wrap {
+            position: relative;
+            height: 420px;
+            width: 100%;
+        }
+        
+        .fc { color: #fff; }
+        .fc .fc-toolbar-title { text-transform: uppercase !important; }
+        
+        #agenda { display: flex; flex-direction: column; }
+
+        #lista-eventos {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .evento-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .cumple-emoji {
+            cursor: help;
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .cumple-pack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            max-width: 110px;
+            align-items: flex-start;
+        }
+
+        .cumple-pack .cumple-emoji {
+            display: inline-flex;
+            width: 14px;
+            height: 14px;
+            margin: 2px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cumple-tooltip {
+            white-space: pre-line;
+        }
+
+        .evento-crear {
+            margin-top: 18px;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 10px;
+            background: #171717;
+        }
+
+        .evento-crear h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .evento-crear button {
+            width: 100%;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .tipo-evento-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tipo-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #121212;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .tipo-option.active {
+            background: #007bff;
+            border-color: #4da3ff;
+            color: #fff;
+        }
+
+        .evento-meta {
+            font-size: 0.82rem;
+            color: #b7b7b7;
+            margin-top: 4px;
+        }
+
+        .evento-puntos {
+            margin: 6px 0 0 16px;
+            padding: 0;
+        }
+
+        .evento-puntos li {
+            margin-bottom: 4px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            background: rgba(0, 0, 0, 0.75);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-panel {
+            width: 420px;
+            max-width: 95%;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.35);
+        }
+
+        .modal-panel h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+
+        .modal-panel label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.92rem;
+        }
+
+        .modal-panel input,
+        .modal-panel textarea {
+            width: 100%;
+            padding: 10px;
+            background: #121212;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+
+        .modal-panel textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
+        .evento-item .btn-editar-evento {
+            margin-left: 8px;
+            opacity: 0.9;
+        }
+
+        .evento-item .btn-eliminar-evento {
+            margin-left: 8px;
+            opacity: 0.9;
+            background: #a00;
+            border-color: #a00;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        /* SECCIONES DE ENCABEZADO */
+        .main-header {
+            display: flex;
+            justify-content: space-between; /* Distribuye el espacio */
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+        /* CENTRAR MENU DE OPCIONES */
+        .header-section {
+            flex: 1; 
+            display: flex;
+            align-items: center;
+        }
+
+        .left { justify-content: flex-start; }
+        .center { justify-content: center; }
+        .right { justify-content: flex-end; }
+
+        /* SEPARACION DE MENU DE OPCIONES */
+        .nav-links {
+            gap: 40px; 
+        }
+
+        /* Botón Cerrar Sesión */
+        .btn-logout {
+            text-decoration: none;
+            color: #ff4b4b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #ff4b4b;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: #ff4b4b; color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="iniciorh.html" class="active">Inicio</a>
+            <a href="Ingreso.html">Ingresos</a>
+            <a href="Cheong Woon.html">Cheong Woon</a>
+            <a href="Kronos.html">Kronos</a>
+        </nav>
+        <div class="header-right">
+            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+        </div>
+    </header>
+    <main class="dashboard-calendar">
+        <div id='calendar'></div>
+        <div id='agenda'>
+            <div class="agenda-header">
+                <h3>Agenda del Mes</h3>
+                <button type="button" id="btn-abrir-evento" class="agenda-create-btn">Crear nuevo evento</button>
+            </div>
+            <div id="lista-eventos"></div>
+            <div id="evento-personalizado" class="evento-crear" style="display:none;">
+                <h3>Programar actividad</h3>
+                <button type="button" id="btn-abrir-evento-old" style="display:none;">Crear nuevo evento</button>
+            </div>
+            <div id="modal-evento" class="modal-overlay">
+                <div class="modal-panel">
+                    <h3>Crear evento</h3>
+                    <label>Tipo de evento</label>
+                    <div class="tipo-evento-options">
+                        <button type="button" class="tipo-option active" data-tipo="cumpleanos">Cumpleaños</button>
+                        <button type="button" class="tipo-option" data-tipo="evento">Evento</button>
+                        <button type="button" class="tipo-option" data-tipo="reunion">Reunión</button>
+                    </div>
+                    <label for="evento-titulo">Título</label>
+                    <input id="evento-titulo" type="text" placeholder="Nombre de la junta o evento">
+                    <label>Fecha</label>
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <select id="evento-dia" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                            <option value="">Día</option>
+                        </select>
+                        <select id="evento-mes" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                            <option value="">Mes</option>
+                        </select>
+                    </div>
+                    <div id="campos-hora-evento">
+                        <label for="evento-inicio">Hora inicial</label>
+                        <input id="evento-inicio" type="time">
+                        <label for="evento-fin">Hora final</label>
+                        <input id="evento-fin" type="time">
+                    </div>
+                    <div id="campo-asistentes">
+                        <label for="evento-asistentes">Quiénes ingresarán</label>
+                        <textarea id="evento-asistentes" placeholder="Agrega los nombres separados"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="btn-cancelar-evento">Cancelar</button>
+                        <button type="button" class="btn-secondary btn-small" id="btn-eliminar-evento" style="display:none;">Eliminar</button>
+                        <button type="button" class="btn-primary" id="btn-confirmar-evento">Confirmar evento</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="data-manager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var listaEventosEl = document.getElementById('lista-eventos');
+            var currentYear = new Date().getFullYear();
+            var empleadosCalendario = [];
+            var editingEventId = null;
+
+            const currentHost = window.location.hostname;
+            const PORT = '8001';
+            const API_URL = `http://${currentHost}:${PORT}`;
+            const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+            function getVisibleYear() {
+                if (calendar && calendar.view && calendar.view.currentStart) {
+                    return calendar.view.currentStart.getFullYear();
+                }
+                return new Date().getFullYear();
+            }
+
+            async function getConFallback(endpoint) {
+                var ultimoErrorRed = null;
+                var bases = API_BASES || [];
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
+                    try {
+                        var respuesta = await fetch(baseUrl + endpoint);
+                        var texto = await respuesta.text();
+                        return { respuesta: respuesta, texto: texto };
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                throw new Error('No se pudo conectar con el servidor (' + API_BASES.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            async function postConFallback(endpoint, body) {
+                var ultimoErrorRed = null;
+                var bases = API_BASES || [];
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
+                    try {
+                        var respuesta = await fetch(baseUrl + endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body || {}),
+                        });
+                        var texto = await respuesta.text();
+                        return { respuesta: respuesta, texto: texto };
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                throw new Error('No se pudo conectar con el servidor (' + bases.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            async function getJsonConFallback(endpoint, fallbackData) {
+                var ultimoErrorRed = null;
+                var bases = API_BASES || [];
+                for (var i = 0; i < bases.length; i += 1) {
+                    var baseUrl = bases[i];
+                    try {
+                        var respuesta = await fetch(baseUrl + endpoint);
+                        if (!respuesta.ok) {
+                            continue;
+                        }
+                        return await respuesta.json();
+                    } catch (errorRed) {
+                        ultimoErrorRed = errorRed;
+                    }
+                }
+                if (fallbackData !== undefined) {
+                    return fallbackData;
+                }
+                throw new Error('No se pudo conectar con el servidor (' + bases.join(' | ') + '): ' + (ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'));
+            }
+
+            var eventosCompartidosCache = [];
+            var EVENTO_TIPO_CUMPLEANOS = 'cumpleanos';
+            var EVENTO_TIPO_EVENTO = 'evento';
+            var EVENTO_TIPO_REUNION = 'reunion';
+
+            var MESES = [
+                { value: '01', label: 'Enero' },
+                { value: '02', label: 'Febrero' },
+                { value: '03', label: 'Marzo' },
+                { value: '04', label: 'Abril' },
+                { value: '05', label: 'Mayo' },
+                { value: '06', label: 'Junio' },
+                { value: '07', label: 'Julio' },
+                { value: '08', label: 'Agosto' },
+                { value: '09', label: 'Septiembre' },
+                { value: '10', label: 'Octubre' },
+                { value: '11', label: 'Noviembre' },
+                { value: '12', label: 'Diciembre' }
+            ];
+
+            function pad2(valor) {
+                return String(valor || '').padStart(2, '0');
+            }
+
+            function getDiaMesFromEventValue(valor) {
+                var texto = String(valor || '').trim();
+                var match = texto.match(/^(\d{2})-(\d{2})$/);
+                if (match) {
+                    return { dia: match[1], mes: match[2] };
+                }
+                match = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (match) {
+                    return { dia: match[3], mes: match[2] };
+                }
+                return { dia: '', mes: '' };
+            }
+
+            function buildEventMonthDay(dia, mes) {
+                var day = pad2(dia);
+                var month = pad2(mes);
+                return day && month ? day + '-' + month : '';
+            }
+
+            function formatDayMonthLabel(monthDay) {
+                var parts = String(monthDay || '').split('-');
+                if (parts.length !== 2) return '';
+                return parts[0] + '/' + parts[1];
+            }
+
+            function getEventDateForYear(monthDay, year) {
+                var parts = String(monthDay || '').split('-');
+                if (parts.length !== 2) return '';
+                return String(year || getVisibleYear()) + '-' + parts[1] + '-' + parts[0];
+            }
+
+            function fillDateSelectors() {
+                var diaSelect = document.getElementById('evento-dia');
+                var mesSelect = document.getElementById('evento-mes');
+                if (diaSelect && diaSelect.options.length === 1) {
+                    for (var d = 1; d <= 31; d += 1) {
+                        var optDia = document.createElement('option');
+                        optDia.value = pad2(d);
+                        optDia.textContent = pad2(d);
+                        diaSelect.appendChild(optDia);
+                    }
+                }
+                if (mesSelect && mesSelect.options.length === 1) {
+                    MESES.forEach(function(mes) {
+                        var optMes = document.createElement('option');
+                        optMes.value = mes.value;
+                        optMes.textContent = mes.label;
+                        mesSelect.appendChild(optMes);
+                    });
+                }
+            }
+
+            function safeParseJSON(value) {
+                if (value === null || value === undefined || value === '') {
+                    return [];
+                }
+                try {
+                    var parsed = JSON.parse(value);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function normalizarEventoCompartido(evt) {
+                if (!evt || typeof evt !== 'object') return null;
+                var id = String(evt.id || '').trim();
+                var monthDay = String(evt.monthDay || evt.month_day || evt.date || '').trim();
+                if (!id || !/^\d{2}-\d{2}$/.test(monthDay)) return null;
+
+                return {
+                    id: id,
+                    title: String(evt.title || '').trim(),
+                    monthDay: monthDay,
+                    startTime: String(evt.startTime || evt.start_time || '').trim(),
+                    endTime: String(evt.endTime || evt.end_time || '').trim(),
+                    asistentes: String(evt.asistentes || '').trim(),
+                    tipo: String(evt.tipo || EVENTO_TIPO_REUNION).trim().toLowerCase() || EVENTO_TIPO_REUNION,
+                    descripcion: String(evt.descripcion || '').trim(),
+                };
+            }
+
+            function loadCustomEvents() {
+                return Array.isArray(eventosCompartidosCache) ? eventosCompartidosCache.slice() : [];
+            }
+
+            async function syncCustomEventsFromServer() {
+                var payload = await getJsonConFallback('/api/shared-events', { eventos: [] });
+                var lista = Array.isArray(payload && payload.eventos) ? payload.eventos : [];
+                eventosCompartidosCache = lista.map(normalizarEventoCompartido).filter(Boolean);
+                return loadCustomEvents();
+            }
+
+            async function saveCustomEvents(events) {
+                var normalizados = (Array.isArray(events) ? events : []).map(normalizarEventoCompartido).filter(Boolean);
+                var { respuesta, texto } = await postConFallback('/api/shared-events', { eventos: normalizados });
+                if (!respuesta.ok) {
+                    throw new Error(texto || 'No se pudieron guardar los eventos compartidos.');
+                }
+                var payload = {};
+                try {
+                    payload = JSON.parse(texto || '{}');
+                } catch (_) {
+                    payload = {};
+                }
+                var lista = Array.isArray(payload && payload.eventos) ? payload.eventos : normalizados;
+                eventosCompartidosCache = lista.map(normalizarEventoCompartido).filter(Boolean);
+            }
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function getSelectedEventType() {
+                var selected = document.querySelector('.tipo-option.active');
+                return selected ? selected.getAttribute('data-tipo') : EVENTO_TIPO_REUNION;
+            }
+
+            function actualizarBotonesTipoEvento(tipoEvento) {
+                document.querySelectorAll('.tipo-option').forEach(function(button) {
+                    var isActive = button.getAttribute('data-tipo') === tipoEvento;
+                    button.classList.toggle('active', isActive);
+                });
+            }
+
+            function actualizarCamposTipoEvento(tipoEvento) {
+                var tipo = tipoEvento || getSelectedEventType();
+                var mostrarHoras = tipo === EVENTO_TIPO_EVENTO || tipo === EVENTO_TIPO_REUNION;
+                var mostrarAsistentes = tipo === EVENTO_TIPO_REUNION;
+                var camposHorasEl = document.getElementById('campos-hora-evento');
+                var campoAsistentesEl = document.getElementById('campo-asistentes');
+
+                actualizarBotonesTipoEvento(tipo);
+                if (camposHorasEl) {
+                    camposHorasEl.style.display = mostrarHoras ? 'block' : 'none';
+                }
+                if (campoAsistentesEl) {
+                    campoAsistentesEl.style.display = mostrarAsistentes ? 'block' : 'none';
+                }
+            }
+
+            function obtenerListaAsistentes(valor) {
+                return String(valor || '')
+                    .split(/\n|,/)
+                    .map(function(item) {
+                        return item.trim();
+                    })
+                    .filter(Boolean);
+            }
+
+            function renderizarAsistentes(asistentes) {
+                var lista = obtenerListaAsistentes(asistentes);
+                if (!lista.length) {
+                    return '';
+                }
+                var htmlItems = lista.map(function(item) {
+                    return '<li>' + escapeHtml(item) + '</li>';
+                }).join('');
+                return '<div class="evento-detalles"><strong>Participantes:</strong><ul class="evento-puntos">' + htmlItems + '</ul></div>';
+            }
+
+            function getDisplayEventTitle(evt) {
+                var title = String(evt.title || '').trim();
+                if (evt.tipo === EVENTO_TIPO_CUMPLEANOS) {
+                    var partes = title.split(/\s+/).filter(Boolean);
+                    if (partes.length >= 2) {
+                        return '🎂 ' + partes[0] + ' ' + partes[1];
+                    }
+                    return title ? '🎂 ' + title : '🎂 Cumpleaños';
+                }
+                return title || 'Evento';
+            }
+
+            function getTipoLabel(evt) {
+                return {
+                    cumpleanos: 'Cumpleaños',
+                    evento: 'Evento',
+                    reunion: 'Reunión'
+                }[evt.tipo || EVENTO_TIPO_REUNION] || 'Reunión';
+            }
+
+            function getTipoColor(tipo) {
+                return {
+                    festividad: { background: '#2e8b57', border: '#1f6f42', text: '#fff' },
+                    cumpleanos: { background: '#bfefff', border: '#4db8ff', text: '#00283a' },
+                    evento: { background: '#4f46e5', border: '#4338ca', text: '#fff' },
+                    reunion: { background: '#8b5cf6', border: '#7c3aed', text: '#fff' }
+                }[tipo] || { background: '#ff8c00', border: '#ff8c00', text: '#000' };
+            }
+
+            function cleanExpiredCustomEvents() {
+                var eventos = loadCustomEvents().filter(function(evt) {
+                    return !!evt;
+                });
+                eventosCompartidosCache = eventos;
+                return eventos;
+            }
+
+            function getCustomEvents(year) {
+                return cleanExpiredCustomEvents().filter(function(evt) {
+                    if (!evt) return false;
+                    var monthDay = evt.monthDay || evt.date || '';
+                    var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
+                    var start = new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.startTime || '00:00'));
+                    var end = isBirthday ? new Date(getEventDateForYear(monthDay, year) + 'T23:59:59') : new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.endTime || '23:59'));
+                    var targetYear = Number(year || getVisibleYear());
+                    var sameYear = start.getFullYear() === targetYear || end.getFullYear() === targetYear;
+                    return sameYear;
+                }).map(function(evt) {
+                    var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
+                    var tipo = isBirthday ? 'cumpleanos' : (evt.tipo || EVENTO_TIPO_REUNION);
+                    var monthDay = evt.monthDay || evt.date || '';
+                    var colors = getTipoColor(tipo);
+                    var fechaRender = getEventDateForYear(monthDay, year);
+                    return {
+                        id: evt.id,
+                        title: getDisplayEventTitle(evt),
+                        start: isBirthday ? fechaRender : fechaRender + 'T' + evt.startTime,
+                        end: isBirthday ? fechaRender : fechaRender + 'T' + evt.endTime,
+                        allDay: isBirthday,
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        textColor: colors.text,
+                        extendedProps: {
+                            asistentes: evt.asistantes || '',
+                            descripcion: evt.descripcion || '',
+                            tipo: tipo,
+                            monthDay: monthDay,
+                            isCustomEvent: true,
+                        }
+                    };
+                });
+            }
+
+            function abrirModalEvento() {
+                document.getElementById('modal-evento').style.display = 'flex';
+            }
+
+            function cerrarModalEvento() {
+                document.getElementById('modal-evento').style.display = 'none';
+            }
+
+            function resetModalEvento() {
+                editingEventId = null;
+                document.getElementById('evento-titulo').value = '';
+                document.getElementById('evento-dia').value = '';
+                document.getElementById('evento-mes').value = '';
+                document.getElementById('evento-inicio').value = '';
+                document.getElementById('evento-fin').value = '';
+                document.getElementById('evento-asistentes').value = '';
+                document.getElementById('btn-eliminar-evento').style.display = 'none';
+                document.querySelector('#modal-evento .modal-panel h3').innerText = 'Crear evento';
+                var tipoDefault = EVENTO_TIPO_REUNION;
+                actualizarCamposTipoEvento(tipoDefault);
+            }
+
+            function validarEventoForm() {
+                var tipo = getSelectedEventType();
+                var titulo = document.getElementById('evento-titulo').value.trim();
+                var dia = document.getElementById('evento-dia').value;
+                var mes = document.getElementById('evento-mes').value;
+                var inicio = document.getElementById('evento-inicio').value;
+                var fin = document.getElementById('evento-fin').value;
+
+                if (!titulo || !dia || !mes) {
+                    alert('Completa título, día y mes.');
+                    return false;
+                }
+
+                if (tipo !== EVENTO_TIPO_CUMPLEANOS) {
+                    if (!inicio || !fin) {
+                        alert('Completa hora inicial y hora final.');
+                        return false;
+                    }
+
+                    var baseDate = getEventDateForYear(buildEventMonthDay(dia, mes), getVisibleYear());
+                    var inicioDate = new Date(baseDate + 'T' + inicio);
+                    var finDate = new Date(baseDate + 'T' + fin);
+                    if (!inicioDate.getTime() || !finDate.getTime() || finDate <= inicioDate) {
+                        alert('La hora final debe ser posterior a la hora inicial.');
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            async function saveEventoFromForm() {
+                var tipo = getSelectedEventType();
+                var titulo = document.getElementById('evento-titulo').value.trim();
+                var dia = document.getElementById('evento-dia').value;
+                var mes = document.getElementById('evento-mes').value;
+                var monthDay = buildEventMonthDay(dia, mes);
+                var inicio = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-inicio').value;
+                var fin = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-fin').value;
+                var asistentes = tipo === EVENTO_TIPO_REUNION ? document.getElementById('evento-asistentes').value.trim() : '';
+                var eventos = cleanExpiredCustomEvents();
+
+                if (editingEventId) {
+                    eventos = eventos.map(function(evt) {
+                        if (evt.id !== editingEventId) return evt;
+                        return {
+                            id: editingEventId,
+                            title: titulo,
+                            monthDay: monthDay,
+                            startTime: inicio,
+                            endTime: fin,
+                            asistentes: asistentes,
+                            tipo: tipo,
+                            descripcion: 'Evento editado desde Agenda',
+                        };
+                    });
+                } else {
+                    eventos.push({
+                        id: 'evt-' + Date.now(),
+                        title: titulo,
+                        monthDay: monthDay,
+                        startTime: inicio,
+                        endTime: fin,
+                        asistentes: asistentes,
+                        tipo: tipo,
+                        descripcion: 'Evento creado desde Agenda',
+                    });
+                }
+
+                await saveCustomEvents(eventos);
+                cerrarModalEvento();
+                resetModalEvento();
+                refreshCalendar();
+            }
+
+            async function eliminarEventoActual() {
+                if (!editingEventId) return;
+                var eventos = cleanExpiredCustomEvents().filter(function(evt) {
+                    return evt.id !== editingEventId;
+                });
+                await saveCustomEvents(eventos);
+                cerrarModalEvento();
+                resetModalEvento();
+                refreshCalendar();
+            }
+
+            function mostrarEventosFestividades(fechaActual) {
+                var festividades = getFestividadesMes(fechaActual)
+                    .sort(function(a, b) {
+                        return Number(a.dia || 0) - Number(b.dia || 0);
+                    });
+
+                var html = '';
+
+                if (festividades.length) {
+                    html += festividades.map(function(item) {
+                        var colors = getTipoColor('festividad');
+                        return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(46,139,87,0.16);">' + item.dia + ' - ' + item.titulo + '</div>';
+                    }).join('');
+                } else {
+                    html += '<div class="evento-item">Sin festividades para este mes.</div>';
+                }
+
+                var eventosPersonalizados = cleanExpiredCustomEvents()
+                    .filter(function(evt) {
+                        var monthDay = evt.monthDay || evt.date || '';
+                        var fecha = new Date(getEventDateForYear(monthDay, fechaActual.getFullYear()) + 'T' + (evt.startTime || '00:00'));
+                        return fecha.getMonth() === fechaActual.getMonth();
+                    })
+                    .sort(function(a, b) {
+                        return String(a.monthDay || a.date || '').localeCompare(String(b.monthDay || b.date || '')) || (a.startTime || '').localeCompare(b.startTime || '');
+                    });
+
+                html += '<div class="evento-item" style="margin-top:12px; font-weight:700;">Eventos guardados</div>';
+                if (!eventosPersonalizados.length) {
+                    html += '<div class="evento-item">No hay eventos guardados para este mes.</div>';
+                } else {
+                    html += eventosPersonalizados.map(function(evt) {
+                            var tipo = evt.tipo || EVENTO_TIPO_REUNION;
+                            var tipoLabel = getTipoLabel(evt);
+                            var colors = getTipoColor(tipo === EVENTO_TIPO_CUMPLEANOS ? 'cumpleanos' : tipo);
+                            var horario = evt.startTime && evt.endTime ? ' · ' + evt.startTime + ' - ' + evt.endTime : '';
+                            var asistentesHtml = renderizarAsistentes(evt.asistentes);
+                            var fechaEtiqueta = formatDayMonthLabel(evt.monthDay || evt.date || '');
+                            return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(255,255,255,0.04);">' +
+                                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+                                    '<div>' +
+                                        '<div style="font-weight:700;">' + escapeHtml(getDisplayEventTitle(evt)) + '</div>' +
+                                        '<div class="evento-meta">' + escapeHtml(tipoLabel) + ' · ' + escapeHtml(fechaEtiqueta) + horario + '</div>' +
+                                    '</div>' +
+                                    '<div style="display:flex; gap:6px; margin-left:8px;">' +
+                                        '<button type="button" class="btn-secondary btn-small btn-editar-evento" data-event-id="' + evt.id + '">Editar</button>' +
+                                        '<button type="button" class="btn-secondary btn-small btn-eliminar-evento" data-event-id="' + evt.id + '">Eliminar</button>' +
+                                    '</div>' +
+                                '</div>' +
+                                asistentesHtml +
+                            '</div>';
+                        }).join('');
+                }
+
+                listaEventosEl.innerHTML = html;
+                attachAgendaButtons();
+            }
+
+            function limpiarEventosVencidos() {
+                cleanExpiredCustomEvents();
+            }
+
+            function attachAgendaButtons() {
+                listaEventosEl.querySelectorAll('.btn-editar-evento').forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        var eventId = this.dataset.eventId;
+                        editarEvento(eventId);
+                    });
+                });
+
+                listaEventosEl.querySelectorAll('.btn-eliminar-evento').forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        var eventId = this.dataset.eventId;
+                        eliminarEvento(eventId).catch(function(error) {
+                            alert('Error al eliminar evento: ' + error.message);
+                        });
+                    });
+                });
+            }
+
+            function editarEvento(eventId) {
+                var eventos = cleanExpiredCustomEvents();
+                var evento = eventos.find(function(evt) {
+                    return evt.id === eventId;
+                });
+                if (!evento) return;
+
+                editingEventId = eventId;
+                var tipo = evento.tipo || EVENTO_TIPO_REUNION;
+                actualizarCamposTipoEvento(tipo);
+                document.getElementById('evento-titulo').value = evento.title;
+                var fechaEdit = getDiaMesFromEventValue(evento.monthDay || evento.date || '');
+                document.getElementById('evento-dia').value = fechaEdit.dia;
+                document.getElementById('evento-mes').value = fechaEdit.mes;
+                document.getElementById('evento-inicio').value = evento.startTime || '';
+                document.getElementById('evento-fin').value = evento.endTime || '';
+                document.getElementById('evento-asistentes').value = evento.asistentes || '';
+                document.querySelector('#modal-evento .modal-panel h3').innerText = 'Editar evento';
+                document.getElementById('btn-eliminar-evento').style.display = 'inline-block';
+                abrirModalEvento();
+            }
+
+            async function eliminarEvento(eventId) {
+                var eventos = cleanExpiredCustomEvents().filter(function(evt) {
+                    return evt.id !== eventId;
+                });
+                await saveCustomEvents(eventos);
+                refreshCalendar();
+            }
+
+            function sortByFechaHora(items) {
+                return items.slice().sort(function(a, b) {
+                    var fechaA = String((a.extendedProps && a.extendedProps.fechaHora) || a.fechaHora || a.start || '');
+                    var fechaB = String((b.extendedProps && b.extendedProps.fechaHora) || b.fechaHora || b.start || '');
+                    return fechaA.localeCompare(fechaB);
+                });
+            }
+
+            function getFestividadesMes(fechaBase) {
+                var mes = fechaBase.getMonth();
+                return getFestividadesByYear(fechaBase.getFullYear())
+                    .map(function(evt) {
+                        var fecha = new Date(evt.start);
+                        if (!fecha.getTime() || fecha.getMonth() !== mes) return null;
+                        return {
+                            dia: fecha.getDate(),
+                            titulo: evt.title,
+                        };
+                    })
+                    .filter(Boolean);
+            }
+
+            function getCalendarEvents(year) {
+                var targetYear = Number(year || getVisibleYear());
+                return sortByFechaHora(getFestividadesByYear(targetYear).concat(getCustomEvents(targetYear)));
+            }
+
+            var festividadesBase = [
+                { title: 'Año Nuevo 💫', monthDay: '01-01' },
+                { title: 'Día de Reyes', monthDay: '01-06' },
+                { title: 'Día del Amor y la Amistad', monthDay: '02-14' },
+                { title: 'Día de la Bandera', monthDay: '02-24' },
+                { title: 'Día Internacional de la Mujer', monthDay: '03-08' },
+                { title: 'Natalicio de Benito Juárez', monthDay: '03-21' },
+                { title: 'Día del Niño', monthDay: '04-30' },
+                { title: 'Día del Trabajo', monthDay: '05-01' },
+                { title: 'Batalla de Puebla', monthDay: '05-05' },
+                { title: 'Día de las Madres', monthDay: '05-10' },
+                { title: 'Día del Maestro', monthDay: '05-15' },
+                { title: 'Día Mundial del Medio Ambiente', monthDay: '06-05' },
+                { title: 'Día Internacional de los Abuelos', monthDay: '08-30' },
+                { title: 'Niños Héroes', monthDay: '09-13' },
+                { title: 'Grito de Independencia', monthDay: '09-15' },
+                { title: 'Día de la Independencia', monthDay: '09-16' },
+                { title: 'Consumación de la Independencia', monthDay: '09-27' },
+                { title: 'Día Internacional del Café', monthDay: '10-01' },
+                { title: 'Día Mundial de la Salud Mental', monthDay: '10-10' },
+                { title: 'Día Mundial de la Alimentación', monthDay: '10-16' },
+                { title: 'Día Internacional de la Lucha contra el Cáncer de Mama', monthDay: '10-19' },
+                { title: 'Halloween', monthDay: '10-31' },
+                { title: 'Día de Muertos', monthDay: '11-02' },
+                { title: 'Día de la Revolución Mexicana', monthDay: '11-20' },
+                { title: 'Día Mundial de la Lucha contra el Sida', monthDay: '12-01' },
+                { title: 'Día de la Virgen de Guadalupe', monthDay: '12-12' },
+                { title: 'Nochebuena', monthDay: '12-24' },
+                { title: 'Navidad', monthDay: '12-25' },
+                { title: 'Día de los Santos Inocentes', monthDay: '12-28' },
+                { title: 'Fin de Año', monthDay: '12-31' }
+            ];
+
+            function getFestividadesByYear(year) {
+                var targetYear = Number(year || getVisibleYear());
+                return festividadesBase.map(function(item) {
+                    var start = targetYear + '-' + item.monthDay;
+                    var color = getTipoColor('festividad');
+                    return {
+                        title: item.title,
+                        start: start,
+                        fechaHora: start + 'T08:00:00',
+                        backgroundColor: color.background,
+                        borderColor: color.border,
+                        textColor: color.text,
+                        extendedProps: {
+                            tipo: 'festividad'
+                        }
+                    };
+                });
+            }
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                titleFormat: { month: 'long' }, 
+                headerToolbar: { 
+                    left: 'prev,next', 
+                    center: 'title', 
+                    right: 'today' 
+                },
+                customButtons: {
+                    today: {
+                        text: 'Hoy',
+                        click: function() { calendar.today(); }
+                    }
+                },
+                events: [],
+                eventClick: function(info) {
+                    if (!info.event.id || !info.event.extendedProps || !info.event.extendedProps.isCustomEvent) return;
+                    editarEvento(info.event.id);
+                },
+                // Detecta cuando cambia el mes en el calendario
+                datesSet: function(info) {
+                    var visibleYear = info.view.currentStart.getFullYear();
+                    calendar.removeAllEvents();
+                    getCalendarEvents(visibleYear).forEach(function(evt) {
+                        calendar.addEvent(evt);
+                    });
+                    actualizarAgenda(info.view.currentStart);
+                }
+            });
+
+            calendar.render();
+
+            function refreshCalendar() {
+                var visibleYear = getVisibleYear();
+                calendar.removeAllEvents();
+                getCalendarEvents(visibleYear).forEach(function(evt) {
+                    calendar.addEvent(evt);
+                });
+                actualizarAgenda(calendar.view.currentStart);
+            }
+
+            syncCustomEventsFromServer()
+                .then(function() {
+                    refreshCalendar();
+                })
+                .catch(function(error) {
+                    console.error('Error sincronizando eventos compartidos', error);
+                    refreshCalendar();
+                });
+            cargarGraficaIngresosAnual().catch(function(error) {
+                console.error('Error cargando grafica anual de ingresos', error);
+            });
+
+            if (window.DataManager) {
+                window.DataManager.subscribeVistas(function() {
+                    refreshCalendar();
+                });
+            }
+
+            document.querySelectorAll('.tipo-option').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    actualizarCamposTipoEvento(this.getAttribute('data-tipo'));
+                });
+            });
+
+            document.getElementById('btn-abrir-evento').addEventListener('click', function() {
+                resetModalEvento();
+                abrirModalEvento();
+            });
+
+            document.getElementById('btn-cancelar-evento').addEventListener('click', function() {
+                cerrarModalEvento();
+                resetModalEvento();
+            });
+
+            document.getElementById('btn-confirmar-evento').addEventListener('click', function() {
+                if (!validarEventoForm()) return;
+                saveEventoFromForm().catch(function(error) {
+                    alert('Error al guardar evento: ' + error.message);
+                });
+            });
+            document.getElementById('btn-eliminar-evento').addEventListener('click', function() {
+                if (confirm('¿Deseas eliminar este evento?')) {
+                    eliminarEventoActual().catch(function(error) {
+                        alert('Error al eliminar evento: ' + error.message);
+                    });
+                }
+            });
+
+            document.getElementById('modal-evento').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    cerrarModalEvento();
+                }
+            });
+
+            fillDateSelectors();
+
+            function actualizarAgenda(fechaActual) {
+                var nombreMes = fechaActual.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+                document.querySelector('#agenda h3').innerText = "AGENDA DE " + nombreMes;
+                mostrarEventosFestividades(fechaActual);
+            }
+        });
+
+    </script>
+</body>
+</html>

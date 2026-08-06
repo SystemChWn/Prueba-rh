@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignación de Empleados</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
+        .branding { display: flex; align-items: center; gap: 10px; }
+        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
+        .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background: #1e1e1e; border-radius: 12px; }
+        .table-container { overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; color: #fff; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        
+        select, input { 
+            background: #121212; color: #fff; border: 1px solid #444; 
+            padding: 5px; border-radius: 4px; width: 100%; box-sizing: border-box;
+        }
+
+                /* SECCIONES DE ENCABEZADO */
+        .main-header {
+            display: flex;
+            justify-content: space-between; /* Distribuye el espacio */
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+        /* CENTRAR MENU DE OPCIONES */
+        .header-section {
+            flex: 1; 
+            display: flex;
+            align-items: center;
+        }
+
+        .left { justify-content: flex-start; }
+        .center { justify-content: center; } 
+        .right { justify-content: flex-end; }
+
+/* SEPARACION DE MENU DE OPCIONES */
+        .nav-links {
+            gap: 40px; 
+        }
+
+        /* Botón Cerrar Sesión */
+        .btn-logout {
+            text-decoration: none;
+            color: #ff4b4b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #ff4b4b;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: #ff4b4b; color: white; }
+
+        .titulo-acciones {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-guardar {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-guardar:hover { background: #218838; }
+
+        .fila-error {
+            outline: 2px solid #ff4b4b;
+            background: rgba(255, 75, 75, 0.08);
+        }
+
+        .fila-exito {
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .mensaje-fila-error {
+            color: #ff7b7b;
+            font-size: 0.82rem;
+            margin-top: 4px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="iniciorh.html">Inicio</a>
+            <a href="Ingreso.html" class="active">Ingresos</a>
+            <a href="Cheong Woon.html">Cheong Woon</a>
+            <a href="Kronos.html">Kronos</a>
+        </nav>
+        <div class="header-right">
+            <a href="main.html" class="btn-logout">Cerrar Sesión</a>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            <div class="titulo-acciones">
+                <h3 style="margin: 0;">Asignación de Puesto</h3>
+                <button id="btn-guardar-datos" class="btn-guardar" type="button">Guardar Datos</button>
+            </div>
+            <div class="table-container">
+                <table id="tabla-ingresos">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #444;">
+                            <th>Nombre</th>
+                            <th>Empresa</th>
+                            <th>No. Empleado</th>
+                            <th>Personal</th>
+                            <th>Puesto</th>
+                            <th>Área</th>
+                            <th>Turno</th>
+                            <th>Salario</th>
+                            <th>Periodo de Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-tabla">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+        const cuerpo = document.getElementById('cuerpo-tabla');
+    const btnGuardarDatos = document.getElementById('btn-guardar-datos');
+
+        async function getConFallback(endpoint) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        async function postConFallback(endpoint, body) {
+            let ultimoErrorRed = null;
+
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    const texto = await respuesta.text();
+                    return { respuesta, texto };
+                } catch (errorRed) {
+                    ultimoErrorRed = errorRed;
+                }
+            }
+
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        function filaTemplate(candidato) {
+            return `
+                <tr data-id="${candidato.id}">
+                    <td>${candidato.nombre_completo || ''}</td>
+                    <td>
+                        <select class="campo-empresa" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="CHEONG WOON">CHEONG WOON</option>
+                            <option value="KRONOS">KRONOS</option>
+                        </select>
+                    </td>
+                    <td><input class="campo-no-empleado" type="text" required></td>
+                    <td>
+                        <select class="campo-personal" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="OPERATIVO">OPERATIVO</option>
+                            <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
+                        </select>
+                    </td>
+                    <td><input class="campo-puesto" type="text" required></td>
+                    <td><input class="campo-area" type="text" required></td>
+                    <td>
+                        <select class="campo-turno" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="DÍA">DÍA</option>
+                            <option value="NOCHE">NOCHE</option>
+                        </select>
+                    </td>
+                    <td><input class="campo-salario" type="text" required></td>
+                    <td>
+                        <select class="campo-pago" required>
+                            <option value="" selected>Selecciona la opcion</option>
+                            <option value="SEMANAL">SEMANAL</option>
+                            <option value="QUINCENAL">QUINCENAL</option>
+                            <option value="MENSUAL">MENSUAL</option>
+                        </select>
+                    </td>
+                </tr>
+            `;
+        }
+
+        async function cargarPendientes() {
+            cuerpo.innerHTML = '<tr><td colspan="9">Cargando candidatos...</td></tr>';
+
+            try {
+                const { respuesta, texto } = await getConFallback('/api/obtener-pendientes');
+
+                if (!respuesta.ok) {
+                    alert(`Error al obtener pendientes (${respuesta.status}): ${texto || 'Sin detalle'}`);
+                    cuerpo.innerHTML = '<tr><td colspan="9">No se pudieron cargar candidatos.</td></tr>';
+                    return;
+                }
+
+                const candidatos = JSON.parse(texto || '[]');
+                if (!Array.isArray(candidatos) || !candidatos.length) {
+                    cuerpo.innerHTML = '<tr><td colspan="9">No hay candidatos pendientes.</td></tr>';
+                    return;
+                }
+
+                cuerpo.innerHTML = candidatos.map(filaTemplate).join('');
+            } catch (error) {
+                alert('Error de conexión al cargar pendientes: ' + error.message);
+                cuerpo.innerHTML = '<tr><td colspan="9">No se pudieron cargar candidatos.</td></tr>';
+            }
+        }
+
+        function construirFilaPayload(tr) {
+            const nombre = tr.querySelector('td:first-child')?.textContent.trim() || '';
+            return {
+                registro_id: (tr.dataset.id || '').trim(),
+                nombre_candidato: nombre,
+                empresa: tr.querySelector('.campo-empresa')?.value.trim() || '',
+                no_empleado: tr.querySelector('.campo-no-empleado')?.value.trim() || '',
+                personal: tr.querySelector('.campo-personal')?.value.trim() || '',
+                puesto: tr.querySelector('.campo-puesto')?.value.trim() || '',
+                area: tr.querySelector('.campo-area')?.value.trim() || '',
+                turno: tr.querySelector('.campo-turno')?.value.trim() || '',
+                salario: tr.querySelector('.campo-salario')?.value.trim() || '',
+                pago: tr.querySelector('.campo-pago')?.value.trim() || '',
+            };
+        }
+
+        function limpiarEstadoFila(tr) {
+            tr.classList.remove('fila-error');
+            const marcaAnterior = tr.querySelector('.mensaje-fila-error');
+            if (marcaAnterior) {
+                marcaAnterior.remove();
+            }
+        }
+
+        function marcarErrorFila(tr, mensaje) {
+            tr.classList.add('fila-error');
+            const celdaNombre = tr.querySelector('td:first-child');
+            if (!celdaNombre) return;
+
+            const aviso = document.createElement('small');
+            aviso.className = 'mensaje-fila-error';
+            aviso.textContent = mensaje;
+            celdaNombre.appendChild(aviso);
+        }
+
+        function esFilaCompleta(fila) {
+            const campos = ['nombre_candidato', 'empresa', 'no_empleado', 'personal', 'puesto', 'area', 'turno', 'salario', 'pago', 'registro_id'];
+
+            for (const campo of campos) {
+                if (!String(fila[campo] || '').trim()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function guardarDatosCompletos() {
+            const filasHtml = Array.from(cuerpo.querySelectorAll('tr[data-id]'));
+            if (!filasHtml.length) {
+                alert('No hay filas para evaluar.');
+                return;
+            }
+
+            const filasCompletas = [];
+            filasHtml.forEach((tr) => {
+                limpiarEstadoFila(tr);
+                const fila = construirFilaPayload(tr);
+                if (esFilaCompleta(fila)) {
+                    filasCompletas.push({ ...fila, __tr: tr });
+                }
+            });
+
+            if (!filasCompletas.length) {
+                alert('No hay filas completas para guardar.');
+                return;
+            }
+
+            let guardadas = 0;
+            let conError = 0;
+
+            for (const fila of filasCompletas) {
+                const tr = fila.__tr;
+                const payload = {
+                    nombre_candidato: fila.nombre_candidato,
+                    empresa: fila.empresa,
+                    no_empleado: fila.no_empleado,
+                    personal: fila.personal,
+                    puesto: fila.puesto,
+                    area: fila.area,
+                    turno: fila.turno,
+                    salario: fila.salario,
+                    pago: fila.pago,
+                    registro_id: fila.registro_id,
+                };
+
+                try {
+                    const { respuesta, texto } = await postConFallback('/api/guardar-ingreso', payload);
+                    if (respuesta.ok && texto.startsWith('OK')) {
+                        guardadas += 1;
+                        tr.classList.add('fila-exito');
+                        setTimeout(() => tr.remove(), 320);
+                    } else {
+                        conError += 1;
+                        const detalle = texto || `HTTP ${respuesta.status}`;
+                        marcarErrorFila(tr, `No se pudo guardar: ${detalle}`);
+                    }
+                } catch (errorFila) {
+                    conError += 1;
+                    marcarErrorFila(tr, `Error de conexión: ${errorFila.message}`);
+                }
+            }
+
+            if (guardadas && !conError) {
+                alert(`Se guardaron ${guardadas} fila(s) correctamente.`);
+            } else if (guardadas && conError) {
+                alert(`Se guardaron ${guardadas} fila(s) y ${conError} quedaron marcadas con error.`);
+            } else {
+                alert('No se pudo guardar ninguna fila completa. Revisa las filas marcadas en rojo.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarPendientes();
+            btnGuardarDatos.addEventListener('click', guardarDatosCompletos);
+        });
+    </script>
+</body>
+</html>

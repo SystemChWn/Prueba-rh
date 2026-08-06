@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reclutamiento y Ingresos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #444;
+        }
+
+        .branding {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 100px;
+            height: 40px;
+            border-radius: 5px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #ddd;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+
+        .nav-links a.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+
+        main {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dashboard-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            min-width: 320px;
+        }
+
+        .card h3 {
+            color: #fff;
+            margin: 0 0 16px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+        }
+
+        .card-dona {
+            flex: 1 1 480px;
+            max-width: 560px;
+        }
+
+        .card-dona .filter-container {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .card-dona .chart-container-wrapper {
+            position: relative;
+            height: 340px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .card-dona .custom-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 15px;
+            justify-content: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.78rem;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .card-ingresos {
+            flex: 1 1 620px;
+            max-width: 760px;
+        }
+
+        .ingresos-chart-wrap {
+            position: relative;
+            height: 420px;
+            width: 100%;
+        }
+
+        .login-container {
+            width: 400px;
+            margin: 80px auto;
+            padding: 40px;
+            background: #2c2c2c;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #3e3e3e;
+            border: 1px solid #555;
+            border-radius: 5px;
+            box-sizing: border-box;
+            color: white;
+        }
+
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        select {
+            background: #3e3e3e;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="branding">
+            <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
+            <h1 style="font-size: 1rem; margin: 0;">RECLUTAMIENTO</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="../frontend/main.html">Inicio</a>
+            <a href="../frontend/registro.html">Registro</a>
+            <a href="../frontend/portalrh.html">PortalRH</a>
+        </nav>
+    </header>
+
+    <div id="loginSection" class="login-container">
+        <span style='font-size: 60px;'>👔</span>
+        <h2 style="margin-top: 0; color: #fff;">ACCESO RECLUTAMIENTO</h2>
+
+        <form id="loginForm" autocomplete="off">
+            <input type="text" id="user" placeholder="Usuario" required>
+            <input type="password" id="pass" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+
+        <div id="mensajeError" style="color: #ff4d4d; margin-top: 15px; font-size: 0.9rem; display: none; text-align: center;">
+            ⚠️ Usuario o contraseña incorrectos
+        </div>
+    </div>
+
+    <main id="contentArea" style="display: none;">
+        <div class="dashboard-row">
+            <section class="card card-dona">
+                <h3>Reclutamiento por Mes</h3>
+                <div class="filter-container">
+                    <select id="selectMes">
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-wrapper" style="width: 100%; height: 100%;">
+                        <canvas id="graficaPastelMes"></canvas>
+                    </div>
+                </div>
+
+                <div class="custom-legend">
+                    <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
+                </div>
+            </section>
+
+            <section class="card card-ingresos">
+                <h3>Comparativa Anual de Ingresos</h3>
+                <div class="ingresos-chart-wrap">
+                    <canvas id="grafica12MesesInicio"></canvas>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
+        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
+
+        let chartPastel = null;
+        let chartIngresosAnual = null;
+
+        function crearGraficaPastel(idCanvas, datos) {
+            const ctx = document.getElementById(idCanvas).getContext('2d');
+            if (chartPastel) chartPastel.destroy();
+
+            chartPastel = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsCategorias,
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: coloresCategorias,
+                        borderWidth: 2,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function crearGraficaIngresosAnual(datosAnuales) {
+            const canvas = document.getElementById('grafica12MesesInicio');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+            if (chartIngresosAnual) {
+                chartIngresosAnual.destroy();
+            }
+
+            chartIngresosAnual = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: mesesLabels,
+                    datasets: [{
+                        label: 'Ingresos Totales',
+                        data: Array.isArray(datosAnuales) ? datosAnuales : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#C5CCD4'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                stepSize: 10,
+                                color: '#fff',
+                                callback: function(value) {
+                                    return value;
+                                }
+                            },
+                            grid: {
+                                color: function(context) {
+                                    return Number(context.tick.value) === 80 ? '#facc15' : '#333';
+                                }
+                            }
+                        },
+                        y: {
+                            ticks: { font: { size: 11 }, color: '#fff' },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function mostrarContenido(autorizado) {
+            const loginSection = document.getElementById('loginSection');
+            const contentArea = document.getElementById('contentArea');
+            const errorMsg = document.getElementById('mensajeError');
+
+            if (autorizado) {
+                if (loginSection) loginSection.style.display = 'none';
+                if (contentArea) contentArea.style.display = 'block';
+                if (errorMsg) errorMsg.style.display = 'none';
+                sessionStorage.setItem('recluAutorizado', 'true');
+            } else {
+                if (loginSection) loginSection.style.display = 'block';
+                if (contentArea) contentArea.style.display = 'none';
+            }
+        }
+
+        function verificarAcceso() {
+            const u = String(document.getElementById('user').value || '').trim();
+            const p = String(document.getElementById('pass').value || '').trim();
+            const errorMsg = document.getElementById('mensajeError');
+            const config = window.APP_CONFIG && window.APP_CONFIG.portalReclu ? window.APP_CONFIG.portalReclu : {};
+
+            if (u === config.usuario && p === config.password) {
+                mostrarContenido(true);
+                return true;
+            }
+
+            if (errorMsg) {
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 3000);
+            }
+            return false;
+        }
+
+        (function configurarLogin() {
+            const user = document.getElementById('user');
+            const pass = document.getElementById('pass');
+            const form = document.getElementById('loginForm');
+
+            function intentarIngresarConEnter(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    verificarAcceso();
+                }
+            }
+
+            if (user) user.addEventListener('keydown', intentarIngresarConEnter);
+            if (pass) pass.addEventListener('keydown', intentarIngresarConEnter);
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    verificarAcceso();
+                });
+            }
+        })();
+
+        async function cargarDashboard() {
+            const mesActual = new Date().getMonth() + 1;
+            const selectMes = document.getElementById('selectMes');
+            const currentHost = window.location.hostname;
+            const PORT = '8001';
+            const API_URL = `http://${currentHost}:${PORT}`;
+            const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+            async function fetchDatosGrafica(params) {
+                for (const baseUrl of API_BASES) {
+                    try {
+                        const response = await fetch(`${baseUrl}/api/datos-grafica?${params}`);
+                        if (!response.ok) continue;
+                        return await response.json();
+                    } catch (_) {}
+                }
+                return [0, 0, 0, 0, 0, 0];
+            }
+
+            async function fetchJsonConFallback(endpoint, fallbackData) {
+                for (const baseUrl of API_BASES) {
+                    try {
+                        const response = await fetch(`${baseUrl}${endpoint}`);
+                        if (!response.ok) continue;
+                        return await response.json();
+                    } catch (_) {}
+                }
+                return fallbackData;
+            }
+
+            if (selectMes) {
+                selectMes.value = mesActual;
+            }
+
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                const datosMesInicial = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`);
+                crearGraficaPastel('graficaPastelMes', datosMesInicial);
+
+                const datosAnuales = await fetchJsonConFallback(`/api/datos-grafica?periodo=12meses&tz=${encodeURIComponent(tz)}`, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+                crearGraficaIngresosAnual(datosAnuales);
+
+                if (selectMes) {
+                    selectMes.addEventListener('change', async (e) => {
+                        const mesSeleccionado = e.target.value;
+                        const tzChange = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                        const nuevosDatosMes = await fetchDatosGrafica(`periodo=mes&mes=${mesSeleccionado}&tz=${encodeURIComponent(tzChange)}`);
+                        crearGraficaPastel('graficaPastelMes', nuevosDatosMes);
+                    });
+                }
+            } catch (error) {
+                console.error('Error cargando datos de las gráficas', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const autorizado = sessionStorage.getItem('recluAutorizado') === 'true';
+
+            if (autorizado) {
+                mostrarContenido(true);
+                cargarDashboard();
+            } else {
+                mostrarContenido(false);
+            }
+        });
+    </script>
+</body>
+</html>
