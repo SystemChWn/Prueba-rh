@@ -149,10 +149,79 @@
         </nav>
     </header>
     <main>
-        <div style="padding: 20px; color: #cfcfcf;">Bienvenido al sistema.</div>
+    <div class="dashboard-row">
+        <section class="card card-dona">
+            <h3>Reclutamiento por Mes</h3>
+            
+            <div class="filter-container">
+                <select id="selectMes">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+            </div>
+
+            <div class="chart-container-wrapper">
+                <div class="chart-wrapper" style="width: 100%; height: 100%;">
+                    <canvas id="graficaPastelMes"></canvas>
+                </div>
+            </div>
+
+            <div class="custom-legend">
+                <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
+                <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
+                <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
+            </div>
+        </section>
+
+    </div>
     </main>
-</body>
-<script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
+        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
+
+        let chartPastel = null;
+
+        function crearGraficaPastel(idCanvas, datos) {
+            const ctx = document.getElementById(idCanvas).getContext('2d');
+            if (chartPastel) chartPastel.destroy();
+
+            chartPastel = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsCategorias,
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: coloresCategorias,
+                        borderWidth: 2,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", async () => {
             const mesActual = new Date().getMonth() + 1;
             const selectMes = document.getElementById('selectMes');
@@ -172,8 +241,30 @@
                 }
                 return [0, 0, 0, 0, 0, 0];
             }
-        })
 
+            if (selectMes) {
+                selectMes.value = mesActual;
+            }
 
-</script>
-</html>
+            try {
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                    const datosMesInicial = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}&tz=${encodeURIComponent(tz)}`);
+                crearGraficaPastel('graficaPastelMes', datosMesInicial);
+
+                if (selectMes) {
+                    selectMes.addEventListener('change', async (e) => {
+                        const mesSeleccionado = e.target.value;
+                        const tzChange = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+                        const nuevosDatosMes = await fetchDatosGrafica(`periodo=mes&mes=${mesSeleccionado}&tz=${encodeURIComponent(tzChange)}`);
+                        crearGraficaPastel('graficaPastelMes', nuevosDatosMes);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error cargando datos de las gráficas", error);
+            }
+        });
+    </script>
+
+</body>
+</html
