@@ -96,7 +96,7 @@
         </div>
     </main>
 
-    <script src="config.js"></script>
+    <script src="../frontend_RH/config.js"></script>
     <script src="../frontend_Reclu/config.js"></script>
     <script>
         function verificarAcceso() {
@@ -107,7 +107,7 @@
             const configReclu = window.APP_CONFIG && window.APP_CONFIG.portalReclu ? window.APP_CONFIG.portalReclu : {};
 
             if (u === configRh.usuario && p === configRh.password) {
-                window.location.href = "iniciorh.html";
+                window.location.href = "../frontend_RH/iniciorh.html";
             } else if (u === configReclu.usuario && p === configReclu.password) {
                 window.location.href = "../frontend_Reclu/inicioreclu.html";
             } else {
