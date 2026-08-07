@@ -20,7 +20,7 @@
         
         #calendar { flex: 2; background: #2c2c2c; padding: 15px; border-radius: 8px; }
         
-        /* CONTENEDOR DERECHO PARA LOS 2 NUEVOS RECUADROS */
+        /* CONTENEDOR DERECHO NUEVOS RECUADROS */
         .side-panels-container {
             flex: 1;
             display: flex;
@@ -53,6 +53,48 @@
         
         .fc { color: #fff; }
         .fc .fc-toolbar-title { text-transform: uppercase !important; }
+
+/* Generador de enlaces de registro */
+        .form-group-link {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .form-group-link label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        .form-group-link input {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .btn-generate {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .btn-generate:hover { background-color: #0056b3; }
+        
+        .link-result-box {
+            display: none;
+            background: #1e1e1e;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #007bff;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: #4db8ff;
+        }
 
         /* SECCIONES DE ENCABEZADO */
         .main-header {
@@ -112,14 +154,24 @@
     <main class="dashboard-calendar">
         <div id='calendar'></div>
         
-        <!-- SECCIÓN REEMPLAZADA: 2 RECUADROS NUEVOS -->
         <div class="side-panels-container">
+            <!-- PANEL 1: Generador de enlace temporal para registro.html -->
             <div class="side-panel-card">
-                <h3>Panel 1</h3>
+                <h3>Generar Link de Registro</h3>
                 <div class="side-panel-content">
-                    <p>Espacio disponible para métricas, accesos directos o información relevante.</p>
+                    <div class="form-group-link">
+                        <label for="expiry-time">Disponible hasta:</label>
+                        <input type="datetime-local" id="expiry-time">
+                    </div>
+                    <button class="btn-generate" id="btn-generate-link">Generar Enlace Temporal</button>
+                    <div class="link-result-box" id="link-result-container">
+                        <span id="generated-link-text"></span>
+                        <button id="btn-copy-link" style="margin-top: 4px; background: #333; color: #fff; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.75rem; display: block;">Copiar Enlace</button>
+                    </div>
                 </div>
             </div>
+
+            <!-- PANEL 2: Notas o avisos adicionales -->
             <div class="side-panel-card">
                 <h3>Panel 2</h3>
                 <div class="side-panel-content">
@@ -131,199 +183,66 @@
 
     <script src="data-manager.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('calendar');
-            var currentYear = new Date().getFullYear();
-            var eventosCompartidosCache = [];
-            var EVENTO_TIPO_CUMPLEANOS = 'cumpleanos';
-            var EVENTO_TIPO_EVENTO = 'evento';
-            var EVENTO_TIPO_REUNION = 'reunion';
-
             const currentHost = window.location.hostname;
             const PORT = '8001';
             const API_URL = `http://${currentHost}:${PORT}`;
             const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
-            function getVisibleYear() {
-                if (calendar && calendar.view && calendar.view.currentStart) {
-                    return calendar.view.currentStart.getFullYear();
-                }
-                return new Date().getFullYear();
-            }
+            document.addEventListener('DOMContentLoaded', function() {
+                var calendarEl = document.getElementById('calendar');
 
-            async function getJsonConFallback(endpoint, fallbackData) {
-                var ultimoErrorRed = null;
-                var bases = API_BASES || [];
-                for (var i = 0; i < bases.length; i += 1) {
-                    var baseUrl = bases[i];
-                    try {
-                        var respuesta = await fetch(baseUrl + endpoint);
-                        if (!respuesta.ok) {
-                            continue;
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    locale: 'es',
+                    titleFormat: { month: 'long' }, 
+                    headerToolbar: { 
+                        left: 'prev,next', 
+                        center: 'title', 
+                        right: 'today' 
+                    },
+                    customButtons: {
+                        today: {
+                            text: 'Hoy',
+                            click: function() { calendar.today(); }
                         }
-                        return await respuesta.json();
-                    } catch (errorRed) {
-                        ultimoErrorRed = errorRed;
-                    }
-                }
-                if (fallbackData !== undefined) {
-                    return fallbackData;
-                }
-                throw new Error('No se pudo conectar con el servidor');
-            }
-
-            function normalizarEventoCompartido(evt) {
-                if (!evt || typeof evt !== 'object') return null;
-                var id = String(evt.id || '').trim();
-                var monthDay = String(evt.monthDay || evt.month_day || evt.date || '').trim();
-                if (!id || !/^\d{2}-\d{2}$/.test(monthDay)) return null;
-
-                return {
-                    id: id,
-                    title: String(evt.title || '').trim(),
-                    monthDay: monthDay,
-                    startTime: String(evt.startTime || evt.start_time || '').trim(),
-                    endTime: String(evt.endTime || evt.end_time || '').trim(),
-                    asistentes: String(evt.asistentes || '').trim(),
-                    tipo: String(evt.tipo || EVENTO_TIPO_REUNION).trim().toLowerCase() || EVENTO_TIPO_REUNION,
-                    descripcion: String(evt.descripcion || '').trim(),
-                };
-            }
-
-            function loadCustomEvents() {
-                return Array.isArray(eventosCompartidosCache) ? eventosCompartidosCache.slice() : [];
-            }
-
-            async function syncCustomEventsFromServer() {
-                var payload = await getJsonConFallback('/api/shared-events', { eventos: [] });
-                var lista = Array.isArray(payload && payload.eventos) ? payload.eventos : [];
-                eventosCompartidosCache = lista.map(normalizarEventoCompartido).filter(Boolean);
-                return loadCustomEvents();
-            }
-
-            function getEventDateForYear(monthDay, year) {
-                var parts = String(monthDay || '').split('-');
-                if (parts.length !== 2) return '';
-                return String(year || getVisibleYear()) + '-' + parts[1] + '-' + parts[0];
-            }
-
-            function getDisplayEventTitle(evt) {
-                var title = String(evt.title || '').trim();
-                if (evt.tipo === EVENTO_TIPO_CUMPLEANOS) {
-                    var partes = title.split(/\s+/).filter(Boolean);
-                    if (partes.length >= 2) {
-                        return '🎂 ' + partes[0] + ' ' + partes[1];
-                    }
-                    return title ? '🎂 ' + title : '🎂 Cumpleaños';
-                }
-                return title || 'Evento';
-            }
-
-            function getTipoColor(tipo) {
-                return {
-                    cumpleanos: { background: '#bfefff', border: '#4db8ff', text: '#00283a' },
-                    evento: { background: '#4f46e5', border: '#4338ca', text: '#fff' },
-                    reunion: { background: '#8b5cf6', border: '#7c3aed', text: '#fff' }
-                }[tipo] || { background: '#ff8c00', border: '#ff8c00', text: '#000' };
-            }
-
-            function cleanExpiredCustomEvents() {
-                var eventos = loadCustomEvents().filter(function(evt) {
-                    return !!evt;
+                    },
+                    events: []
                 });
-                eventosCompartidosCache = eventos;
-                return eventos;
-            }
 
-            function getCustomEvents(year) {
-                return cleanExpiredCustomEvents().filter(function(evt) {
-                    if (!evt) return false;
-                    var monthDay = evt.monthDay || evt.date || '';
-                    var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
-                    var start = new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.startTime || '00:00'));
-                    var end = isBirthday ? new Date(getEventDateForYear(monthDay, year) + 'T23:59:59') : new Date(getEventDateForYear(monthDay, year) + 'T' + (evt.endTime || '23:59'));
-                    var targetYear = Number(year || getVisibleYear());
-                    return start.getFullYear() === targetYear || end.getFullYear() === targetYear;
-                }).map(function(evt) {
-                    var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
-                    var tipo = isBirthday ? 'cumpleanos' : (evt.tipo || EVENTO_TIPO_REUNION);
-                    var monthDay = evt.monthDay || evt.date || '';
-                    var colors = getTipoColor(tipo);
-                    var fechaRender = getEventDateForYear(monthDay, year);
-                    return {
-                        id: evt.id,
-                        title: getDisplayEventTitle(evt),
-                        start: isBirthday ? fechaRender : fechaRender + 'T' + evt.startTime,
-                        end: isBirthday ? fechaRender : fechaRender + 'T' + evt.endTime,
-                        allDay: isBirthday,
-                        backgroundColor: colors.background,
-                        borderColor: colors.border,
-                        textColor: colors.text,
-                        extendedProps: {
-                            asistentes: evt.asistentes || '',
-                            descripcion: evt.descripcion || '',
-                            tipo: tipo,
-                            monthDay: monthDay,
-                            isCustomEvent: true,
-                        }
-                    };
-                });
-            }
-
-            function getCalendarEvents(year) {
-                var targetYear = Number(year || getVisibleYear());
-                return getCustomEvents(targetYear);
-            }
-
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'es',
-                titleFormat: { month: 'long' }, 
-                headerToolbar: { 
-                    left: 'prev,next', 
-                    center: 'title', 
-                    right: 'today' 
-                },
-                customButtons: {
-                    today: {
-                        text: 'Hoy',
-                        click: function() { calendar.today(); }
-                    }
-                },
-                events: [],
-                datesSet: function(info) {
-                    var visibleYear = info.view.currentStart.getFullYear();
-                    calendar.removeAllEvents();
-                    getCalendarEvents(visibleYear).forEach(function(evt) {
-                        calendar.addEvent(evt);
-                    });
-                }
+                calendar.render();
             });
+    </script>
+    <script>
+        // Lógica para generar el enlace con vigencia para registro.html
+        const btnGenerate = document.getElementById('btn-generate-link');
+        const inputExpiry = document.getElementById('expiry-time');
+        const resultContainer = document.getElementById('link-result-container');
+        const linkTextSpan = document.getElementById('generated-link-text');
+        const btnCopy = document.getElementById('btn-copy-link');
 
-            calendar.render();
-
-            function refreshCalendar() {
-                var visibleYear = getVisibleYear();
-                calendar.removeAllEvents();
-                getCalendarEvents(visibleYear).forEach(function(evt) {
-                    calendar.addEvent(evt);
-                });
+        btnGenerate.addEventListener('click', function() {
+            const expiryValue = inputExpiry.value;
+            if (!expiryValue) {
+                alert('Por favor selecciona una fecha y hora límite.');
+                return;
             }
 
-            syncCustomEventsFromServer()
-                .then(function() {
-                    refreshCalendar();
-                })
-                .catch(function(error) {
-                    console.error('Error sincronizando eventos compartidos', error);
-                    refreshCalendar();
-                });
+            // Creamos el enlace apuntando a registro.html e incorporando el parámetro de expiración (timestamp)
+            const expiryTimestamp = new Date(expiryValue).getTime();
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            const finalLink = `${baseUrl}registro.html?expires=${expiryTimestamp}`;
 
-            if (window.DataManager) {
-                window.DataManager.subscribeVistas(function() {
-                    refreshCalendar();
-                });
-            }
+            linkTextSpan.textContent = finalLink;
+            resultContainer.style.display = 'block';
+        });
+
+        btnCopy.addEventListener('click', function() {
+            const textToCopy = linkTextSpan.textContent;
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                alert('¡Enlace copiado al portapapeles!');
+            }).catch(function(err) {
+                console.error('Error al copiar: ', err);
+            });
         });
     </script>
 </body>
