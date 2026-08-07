@@ -58,7 +58,7 @@
         .form-group-link {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 20px;
         }
         .form-group-link label {
             font-size: 0.8rem;
@@ -68,10 +68,11 @@
             background: #1e1e1e;
             border: 1px solid #444;
             color: #fff;
-            padding: 5px 8px;
-            border-radius: 4px;
+            padding: 10px;
+            border-radius: 12px;
             font-size: 0.85rem;
             cursor: pointer;
+            width: 200px;
         }
         .btn-generate {
             background-color: #007bff;
@@ -184,7 +185,7 @@
             <div class="side-panel-card">
                 <h3>Panel 2</h3>
                 <div class="side-panel-content">
-                    <p>Espacio disponible para notas, avisos o contenido adicional.</p>
+                    <p>Agregar nueva vacante</p>
                 </div>
             </div>
         </div>
@@ -225,20 +226,16 @@
         const btnGenerate = document.getElementById('btn-generate-link');
         const selectMinutes = document.getElementById('expiry-minutes');
         
-        // Definimos la URL base que quieres que sea compartible
         const BASE_URL_COMPARTIBLE = 'http://100.111.35.87:3001/';
 
         btnGenerate.addEventListener('click', function() {
             const minutosSeleccionados = parseInt(selectMinutes.value);
             
-            // Calcula el tiempo límite
             const ahora = new Date();
             const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
 
-            // Construye el enlace usando la URL base fija
             const finalLink = `${BASE_URL_COMPARTIBLE}registro.html?expires=${tiempoLimite}`;
 
-            // Copia automáticamente al portapapeles
             navigator.clipboard.writeText(finalLink).then(function() {
                 alert('¡Enlace copiado al portapapeles!\n' + finalLink);
             }).catch(function(err) {
