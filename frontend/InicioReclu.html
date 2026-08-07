@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Interno RH</title>
+    <title>Control Interno Reclutamiento</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-
         body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
         .branding { display: flex; align-items: center; gap: 10px; }
@@ -15,6 +14,83 @@
         .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
+        /* NUEVOS RECUADROS SUPERIORES (4 MÉTRICAS) */
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 20px 20px 0 20px;
+        }
+
+        .metric-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-card h3 {
+            color: #aaa;
+            margin: 0 0 10px 0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 0;
+        }
+
+        /* DIVISIÓN DE LO QUE QUEDA DE LA PÁGINA EN 4 SECCIONES */
+        .grid-content-4 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .content-section {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 250px;
+        }
+
+        .content-section h3 {
+            color: #fff;
+            margin: 0 0 15px 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        /* GRÁFICA DE DONA */
+        .chart-container-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
+        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
+
+        .custom-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.75rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+
+/* COMPARATIVA DE INGRESOS */
         .dashboard-ingresos {
             padding: 20px;
         }
@@ -39,33 +115,7 @@
             width: 100%;
         }     
 
-        /* SECCIONES DE ENCABEZADO */
-        .main-header {
-            display: flex;
-            justify-content: space-between; /* Distribuye el espacio */
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #1e1e1e;
-            border-bottom: 2px solid #444;
-        }
-
-        /* CENTRAR MENU DE OPCIONES */
-        .header-section {
-            flex: 1; 
-            display: flex;
-            align-items: center;
-        }
-
-        .left { justify-content: flex-start; }
-        .center { justify-content: center; }
-        .right { justify-content: flex-end; }
-
-        /* SEPARACION DE MENU DE OPCIONES */
-        .nav-links {
-            gap: 40px; 
-        }
-
-        /* Botón Cerrar Sesión */
+/* Botón Cerrar Sesión */
         .btn-logout {
             text-decoration: none;
             color: #ff4b4b;
@@ -80,31 +130,160 @@
     </style>
 </head>
 <body>
-
     <header>
         <div class="branding">
             <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
             <h1 style="font-size: 1rem; margin: 0;">CW CONNECT</h1>
         </div>
         <nav class="nav-links">
-            <a href="iniciorh.html" class="active">Inicio</a>
-            <a href="ingreso.html">Ingresos</a>
-            <a href="cheong-woon.html">Cheong Woon</a>
-            <a href="kronos.html">Kronos</a>
+            <a href="InicioReclu.html" class="active">Inicio</a>
+            <a href="planeacion.html">Planeación</a>
+            <a href="postulaciones.html">Postulaciones</a>
         </nav>
         <div class="header-right">
             <a href="main.html" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
-    <section class="dashboard-ingresos">
-        <div class="ingresos-card">
-            <h3>Comparativa Anual de Ingresos</h3>
-            <div class="ingresos-chart-wrap">
-                <canvas id="grafica12MesesInicio"></canvas>
-            </div>
+
+    <!-- RECUADROS SUPERIORES -->
+    <div class="metrics-container">
+        <div class="metric-card">
+            <h3>Candidatos</h3>
+            <p class="metric-value" id="countCandidatos">0</p>
         </div>
-    </section>
+        <div class="metric-card">
+            <h3>Pendientes</h3>
+            <p class="metric-value" id="countPendientes">0</p>
+        </div>
+        <div class="metric-card">
+            <h3>Entrevista</h3>
+            <p class="metric-value" id="countEntrevista">0</p>
+        </div>
+        <div class="metric-card">
+            <h3>Evaluando</h3>
+            <p class="metric-value" id="countEvaluando">0</p>
+        </div>
+    </div>
+
+    <!-- SECCIONES -->
+    <main style="padding-top: 0;">
+        <div class="grid-content-4">
+            <!-- Sección 1: Gráfica de Reclutamiento por Mes -->
+            <section class="content-section">
+                <h3>Sección 1</h3>
+                <p style="color: #777; font-size: 0.9rem;">Vacantes Activas</p>
+            </section>
+
+            <!-- Sección 2 -->
+            <section class="content-section">
+                <h3>Reclutamiento por Mes</h3>
+                <div class="filter-container">
+                    <select id="selectMes">
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
+                </div>
+                <div class="chart-container-wrapper">
+                    <canvas id="graficaPastelMes"></canvas>
+                </div>
+                <div class="custom-legend">
+                    <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
+                </div>
+            </section>
+            <!-- Sección 3 -->
+            <section class="content-section">
+                <div class="ingresos-card">
+                    <h3>Comparativa Anual de Ingresos</h3>
+                    <div class="ingresos-chart-wrap">
+                    <canvas id="grafica12MesesInicio"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección 4 -->
+            <section class="content-section">
+                <h3>Sección 4</h3>
+                <p style="color: #777; font-size: 0.9rem;">Reclutadores</p>
+            </section>
+        </div>
+    </main>
     <script src="data-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
+        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
+        let chartPastel = null;
+
+        function crearGraficaPastel(idCanvas, datos) {
+            const ctx = document.getElementById(idCanvas).getContext('2d');
+            if (chartPastel) chartPastel.destroy();
+
+            chartPastel = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsCategorias,
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: coloresCategorias,
+                        borderWidth: 2,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        async function fetchDatosGrafica(params) {
+            const candidates = [
+                `/api/datos-grafica?${params}`,
+                `http://localhost:8001/api/datos-grafica?${params}`
+            ];
+
+            for (const url of candidates) {
+                try {
+                    const response = await fetch(url, { cache: 'no-store' });
+                    if (response.ok) return await response.json();
+                } catch (e) {}
+            }
+            return [0, 0, 0, 0, 0, 0];
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const selectMes = document.getElementById('selectMes');
+            const mesActual = new Date().getMonth() + 1;
+            if (selectMes) selectMes.value = mesActual;
+
+            const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
+            crearGraficaPastel('graficaPastelMes', datos);
+
+            if (selectMes) {
+                selectMes.addEventListener('change', async (e) => {
+                    const nuevosDatos = await fetchDatosGrafica(`periodo=mes&mes=${e.target.value}`);
+                    crearGraficaPastel('graficaPastelMes', nuevosDatos);
+                });
+            }
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var chartIngresosAnual = null;
@@ -140,44 +319,44 @@
                 if (!canvas) return;
 
                 var ctx = canvas.getContext('2d');
-                var mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                var mesesLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
                 if (chartIngresosAnual) {
                     chartIngresosAnual.destroy();
                 }
 
                 chartIngresosAnual = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'line',
                     data: {
                         labels: mesesLabels,
                         datasets: [{
                             label: 'Ingresos Totales',
                             data: Array.isArray(datosAnuales) ? datosAnuales : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            backgroundColor: '#C5CCD4'
+                            borderColor: '#ffffff',   // <--- Color de Linea
+                            backgroundColor: '#ffffff',   // <--- Color de Puntos
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            tension: 0.1
                         }]
                     },
                     options: {
-                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
                             x: {
-                                min: 0,
-                                max: 100,
-                                ticks: {
-                                    stepSize: 10,
-                                    color: '#fff',
-                                    callback: function(value) {
-                                        return value;
-                                    }
-                                },
-                                grid: {
-                                    color: function(context) {
-                                        return Number(context.tick.value) === 80 ? '#facc15' : '#333';
-                                    }
-                                }
+                                ticks: { color: '#fff', font: { size: 11 } },
+                                grid: { display: false }
                             },
-                            y: { ticks: { font: { size: 11 }, color: '#fff' }, grid: { display: false } }
+                            y: {
+                                beginAtZero: true,
+                                max: 100, //valor máximo
+                                ticks: { 
+                                    stepSize: 10,  // <---  10 en 10
+                                    color: '#fff' 
+                                },
+                                grid: { color: '#333' }
+                            }
                         },
                         plugins: { legend: { display: false } }
                     }
@@ -196,5 +375,6 @@
             });
         });
     </script>
+
 </body>
 </html>

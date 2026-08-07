@@ -96,23 +96,31 @@
         </div>
     </main>
 
+    <script src="config.js"></script>
     <script>
         function verificarAcceso() {
-            const u = String(document.getElementById('user').value || '').trim().toUpperCase();
+            const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
-            
             const errorMsg = document.getElementById('mensajeError');
 
-// USUARIO / CONTRASEÑA
-            if ((u === "RH" || u === "ADMIN") && p === "123") {
-                window.location.href = "iniciorh.html";
-            } else {
-                errorMsg.style.display = 'block';
-                
-                setTimeout(() => {
-                    errorMsg.style.display = 'none';
-                }, 3000);
+            const loginConfig = window.LOGIN_CONFIG || {};
+            const rhConfig = loginConfig.rh || {};
+            const reclutamientoConfig = loginConfig.reclutamiento || {};
+
+            if ((u === rhConfig.username || u.toUpperCase() === 'ADMIN') && p === rhConfig.password) {
+                window.location.href = rhConfig.redirect || 'iniciorh.html';
+                return;
             }
+
+            if (u === reclutamientoConfig.username && p === reclutamientoConfig.password) {
+                window.location.href = reclutamientoConfig.redirect || 'InicioReclu.html';
+                return;
+            }
+
+            errorMsg.style.display = 'block';
+            setTimeout(() => {
+                errorMsg.style.display = 'none';
+            }, 3000);
         }
 
         (function configurarLogin() {
