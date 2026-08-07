@@ -859,6 +859,23 @@
         }
 
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const expires = urlParams.get('expires');
+
+            if (expires) {
+                const ahora = new Date().getTime();
+                
+                // Si la hora actual es mayor a la hora de expiración, el enlace ya no es válido
+                if (ahora > parseInt(expires)) {
+                    alert('Este enlace de registro ha expirado.');
+                    // Redirige a una página de error o al inicio
+                    window.location.href = 'main.html'; 
+                }
+            }
+        });
+    </script>
 
 </body>
 </html>
