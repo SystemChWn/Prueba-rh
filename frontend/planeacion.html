@@ -222,21 +222,23 @@
     <script>
         const btnGenerate = document.getElementById('btn-generate-link');
         const selectMinutes = document.getElementById('expiry-minutes');
+        
+        // Definimos la URL base que quieres que sea compartible
+        const BASE_URL_COMPARTIBLE = 'http://100.111.35.87:3001/';
 
         btnGenerate.addEventListener('click', function() {
             const minutosSeleccionados = parseInt(selectMinutes.value);
             
-            // Calcula el tiempo límite sumando los minutos seleccionados a la hora actual
+            // Calcula el tiempo límite
             const ahora = new Date();
             const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
 
-            // Usa el origen actual de la ventana (ej. http://localhost:puerto o la IP/dominio del servidor)
-            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            const finalLink = `${baseUrl}registro.html?expires=${tiempoLimite}`;
+            // Construye el enlace usando la URL base fija
+            const finalLink = `${BASE_URL_COMPARTIBLE}registro.html?expires=${tiempoLimite}`;
 
-            // Copia automáticamente al portapapeles y avisa
+            // Copia automáticamente al portapapeles
             navigator.clipboard.writeText(finalLink).then(function() {
-                alert('¡Enlace temporal generado y copiado al portapapeles (' + minutosSeleccionados + ' min)!');
+                alert('¡Enlace copiado al portapapeles!\n' + finalLink);
             }).catch(function(err) {
                 console.error('Error al copiar: ', err);
             });
