@@ -64,13 +64,14 @@
             font-size: 0.8rem;
             color: #ccc;
         }
-        .form-group-link input {
+        .form-group-link select {
             background: #1e1e1e;
             border: 1px solid #444;
             color: #fff;
             padding: 5px 8px;
             border-radius: 4px;
             font-size: 0.85rem;
+            cursor: pointer;
         }
         .btn-generate {
             background-color: #007bff;
@@ -88,12 +89,13 @@
         .link-result-box {
             display: none;
             background: #1e1e1e;
-            padding: 6px;
+            padding: 8px;
             border-radius: 4px;
             border: 1px solid #007bff;
             word-break: break-all;
             font-size: 0.8rem;
             color: #4db8ff;
+            text-align: center;
         }
 
         /* SECCIONES DE ENCABEZADO */
@@ -160,13 +162,18 @@
                 <h3>Generar Link de Registro</h3>
                 <div class="side-panel-content">
                     <div class="form-group-link">
-                        <label for="expiry-time">Disponible hasta:</label>
-                        <input type="datetime-local" id="expiry-time">
+                        <label for="expiry-minutes">Tiempo límite de respuesta:</label>
+                        <select id="expiry-minutes">
+                            <option value="5">5 minutos</option>
+                            <option value="10">10 minutos</option>
+                            <option value="15">15 minutos</option>
+                            <option value="20">20 minutos</option>
+                        </select>
                     </div>
-                    <button class="btn-generate" id="btn-generate-link">Generar Enlace Temporal</button>
+                    <button class="btn-generate" id="btn-generate-link">Generar y Copiar Enlace</button>
                     <div class="link-result-box" id="link-result-container">
                         <span id="generated-link-text"></span>
-                        <button id="btn-copy-link" style="margin-top: 4px; background: #333; color: #fff; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.75rem; display: block;">Copiar Enlace</button>
+                        <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
                     </div>
                 </div>
             </div>
@@ -213,33 +220,23 @@
             });
     </script>
     <script>
-        // Lógica para generar el enlace con vigencia para registro.html
         const btnGenerate = document.getElementById('btn-generate-link');
-        const inputExpiry = document.getElementById('expiry-time');
-        const resultContainer = document.getElementById('link-result-container');
-        const linkTextSpan = document.getElementById('generated-link-text');
-        const btnCopy = document.getElementById('btn-copy-link');
+        const selectMinutes = document.getElementById('expiry-minutes');
 
         btnGenerate.addEventListener('click', function() {
-            const expiryValue = inputExpiry.value;
-            if (!expiryValue) {
-                alert('Por favor selecciona una fecha y hora límite.');
-                return;
-            }
+            const minutosSeleccionados = parseInt(selectMinutes.value);
+            
+            // Calcula el tiempo límite sumando los minutos seleccionados a la hora actual
+            const ahora = new Date();
+            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
 
-            // Creamos el enlace apuntando a registro.html e incorporando el parámetro de expiración (timestamp)
-            const expiryTimestamp = new Date(expiryValue).getTime();
+            // Usa el origen actual de la ventana (ej. http://localhost:puerto o la IP/dominio del servidor)
             const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            const finalLink = `${baseUrl}registro.html?expires=${expiryTimestamp}`;
+            const finalLink = `${baseUrl}registro.html?expires=${tiempoLimite}`;
 
-            linkTextSpan.textContent = finalLink;
-            resultContainer.style.display = 'block';
-        });
-
-        btnCopy.addEventListener('click', function() {
-            const textToCopy = linkTextSpan.textContent;
-            navigator.clipboard.writeText(textToCopy).then(function() {
-                alert('¡Enlace copiado al portapapeles!');
+            // Copia automáticamente al portapapeles y avisa
+            navigator.clipboard.writeText(finalLink).then(function() {
+                alert('¡Enlace temporal generado y copiado al portapapeles (' + minutosSeleccionados + ' min)!');
             }).catch(function(err) {
                 console.error('Error al copiar: ', err);
             });
