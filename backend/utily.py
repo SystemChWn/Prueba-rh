@@ -292,8 +292,12 @@ def obtener_ruta_documento(empresa, file_name):
 
 
 def get_db_connection():
+    host = os.getenv("POSTGRES_HOST")
+    if not host:
+        host = "postgres" if os.path.exists("/.dockerenv") else "localhost"
+
     return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST", "postgres"),
+        host=host,
         port=os.getenv("POSTGRES_PORT", "5432"),
         database=os.getenv("POSTGRES_DB", "rh-system"),
         user=os.getenv("POSTGRES_USER", "rh_app"),
@@ -443,9 +447,15 @@ def asegurar_tabla_personal_reclutamiento(cur):
         """
         CREATE TABLE IF NOT EXISTS personal_reclutamiento (
             id SERIAL PRIMARY KEY,
-            nombre VARCHAR(200) NOT NULL UNIQUE,
+            nombre VARCHAR(200) NOT NULL,
             fecha_registro DATE DEFAULT CURRENT_DATE
         )
+        """
+    )
+    cur.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS personal_reclutamiento_nombre_idx
+        ON personal_reclutamiento (LOWER(nombre))
         """
     )
 
@@ -490,19 +500,26 @@ def crear_reclutador():
             with conn.cursor() as cur:
                 asegurar_tabla_personal_reclutamiento(cur)
                 cur.execute(
-                    """
-                    INSERT INTO personal_reclutamiento (nombre, fecha_registro)
-                    VALUES (%s, CURRENT_DATE)
-                    ON CONFLICT (nombre) DO NOTHING
-                    RETURNING id, nombre
-                    """,
+                    "SELECT id, nombre FROM personal_reclutamiento WHERE LOWER(nombre) = LOWER(%s) LIMIT 1",
                     (nombre,),
                 )
-                row = cur.fetchone()
+                existing = cur.fetchone()
+                if existing:
+                    row = existing
+                else:
+                    cur.execute(
+                        """
+                        INSERT INTO personal_reclutamiento (nombre, fecha_registro)
+                        VALUES (%s, CURRENT_DATE)
+                        RETURNING id, nombre
+                        """,
+                        (nombre,),
+                    )
+                    row = cur.fetchone()
             conn.commit()
 
         if row:
-            return jsonify({'id': row[0], 'nombre': row[1]}), 201
+            return jsonify({'id': row[0], 'nombre': row[1], 'duplicado': existing is not None}), 201 if existing is None else 200
         return jsonify({'id': None, 'nombre': nombre, 'duplicado': True}), 200
     except Exception as e:
         print(f"Error al crear reclutador: {e}")

@@ -402,12 +402,29 @@
             });
         }
 
+        async function apiRequest(path, options = {}) {
+            const normalizedPath = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
+            const candidates = [normalizedPath, `http://localhost:8001${normalizedPath}`];
+
+            let lastError = null;
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(candidate, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('No se pudo contactar al backend');
+        }
+
         async function cargarRecruiters() {
             try {
-                const response = await fetch('/api/reclutadores');
-                if (!response.ok) {
-                    throw new Error('No se pudieron cargar los nombres');
-                }
+                const response = await apiRequest('/reclutadores');
                 const data = await response.json();
                 renderRecruiters(Array.isArray(data) ? data : []);
             } catch (error) {
@@ -422,15 +439,15 @@
             }
 
             try {
-                const response = await fetch('/api/reclutadores', {
+                const response = await apiRequest('/reclutadores', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre })
                 });
 
+                const responseData = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || 'No se pudo guardar');
+                    throw new Error(responseData.error || 'No se pudo guardar');
                 }
 
                 recruiterInput.value = '';
@@ -442,7 +459,7 @@
 
         async function eliminarRecruiter(id) {
             try {
-                const response = await fetch(`/api/reclutadores/${id}`, { method: 'DELETE' });
+                const response = await apiRequest(`/reclutadores/${id}`, { method: 'DELETE' });
                 if (!response.ok) {
                     throw new Error('No se pudo eliminar');
                 }
