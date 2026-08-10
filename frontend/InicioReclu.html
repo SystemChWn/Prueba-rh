@@ -19,107 +19,6 @@
         .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
-        /* NUEVOS RECUADROS SUPERIORES (4 MÉTRICAS) */
-        .metrics-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            padding: 20px 20px 0 20px;
-        }
-
-        .metric-card {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .metric-card h3 {
-            color: #aaa;
-            margin: 0 0 10px 0;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-
-        .metric-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #fff;
-            margin: 0;
-        }
-
-        /* DIVISIÓN DE LO QUE QUEDA DE LA PÁGINA EN 4 SECCIONES */
-        .grid-content-4 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            padding: 20px;
-        }
-
-        .content-section {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-            min-height: 250px;
-        }
-
-        .content-section h3 {
-            color: #fff;
-            margin: 0 0 15px 0;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-        }
-
-        /* GRÁFICA DE DONA */
-        .chart-container-wrapper {
-            position: relative;
-            height: 250px;
-            width: 100%;
-        }
-
-        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
-        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
-
-        .custom-legend {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #2a2a2a;
-            font-size: 0.75rem;
-        }
-
-        .legend-item { display: flex; align-items: center; gap: 8px; }
-        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
-
-/* COMPARATIVA DE INGRESOS */
-        .dashboard-ingresos {
-            padding: 20px;
-        }
-
-        .ingresos-card {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .ingresos-card h3 {
-            color: #fff;
-            margin: 0 0 12px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-        }
-
-        .ingresos-chart-wrap {
-            position: relative;
-            height: 420px;
-            width: 100%;
-        }     
-
 /* SECCIONES DE ENCABEZADO */
         .main-header {
             display: flex;
@@ -156,6 +55,198 @@
             transition: 0.3s;
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
+
+/* RECUADROS SUPERIORES */
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 20px 20px 0 20px;
+        }
+
+        .metric-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-card h3 {
+            color: #aaa;
+            margin: 0 0 10px 0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 0;
+        }
+
+/* DIVISIÓN DE LO QUE QUEDA DE LA PÁGINA EN 4 SECCIONES */
+        .grid-content-4 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .content-section {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 250px;
+        }
+
+        .content-section h3 {
+            color: #fff;
+            margin: 0 0 15px 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+/* SECCION 1 */
+
+
+/* SECCION 2 */
+        .chart-container-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
+        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
+
+        .custom-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.75rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+
+/* SECCION 3 */
+        .dashboard-ingresos {
+            padding: 20px;
+        }
+
+        .ingresos-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .ingresos-card h3 {
+            color: #fff;
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .ingresos-chart-wrap {
+            position: relative;
+            height: 420px;
+            width: 100%;
+        }     
+
+/* SECCION 4 */
+        .recruitment-section {
+            background: rgba(44, 44, 44, 0.85);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 40px;
+            border: 1px solid #444;
+        }
+
+        .recruitment-section h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .input-group input {
+            background: #3e3e3e;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 12px;
+            flex: 1;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .input-group button {
+            background: #007bff;
+            color: white;
+            height: 45px;   /* Altura botón */
+            width: 120px;   /* Ancho botón */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-group button:hover {
+            background: #0056b3;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #ffffff;
+            color: #0056b3;
+            padding: 8px 12px 8px 16px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            border: 1px solid #ccc;
+        }
+
+        .tag-close {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .tag-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #ff4d4d;
+        }
+
     </style>
 </head>
 <body>
@@ -167,7 +258,6 @@
         <nav class="nav-links">
             <a href="InicioReclu.html" class="active">Inicio</a>
             <a href="planeacion.html">Planeación</a>
-            <a href="postulaciones.html">Postulaciones</a>
         </nav>
         <div class="header-right">
             <a href="main.html" class="btn-logout">Cerrar Sesión</a>
@@ -197,10 +287,14 @@
     <!-- SECCIONES -->
     <main style="padding-top: 0;">
         <div class="grid-content-4">
-            <!-- Sección 1: Gráfica de Reclutamiento por Mes -->
+            <!-- Sección 1 -->
             <section class="content-section">
-                <h3>Sección 1</h3>
-                <p style="color: #777; font-size: 0.9rem;">Vacantes Activas</p>
+                <h3 style="margin-top: 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px;">Ingresos por Reclutador</h3>
+                
+                <!-- Contenedor para la gráfica de barras -->
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="reclutadorBarChart"></canvas>
+                </div>
             </section>
 
             <!-- Sección 2 -->
@@ -246,14 +340,72 @@
 
             <!-- Sección 4 -->
             <section class="content-section">
-                <h3>Sección 4</h3>
-                <p style="color: #777; font-size: 0.9rem;">Reclutadores</p>
+                <!-- Sección agregada para el personal de reclutamiento -->
+                <div class="recruitment-section">
+                    <h3>Personal de Reclutamiento Activo</h3>
+                    <div class="input-group">
+                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
+                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
+                    </div>
+                    <div class="tags-container" id="tagsContainer">
+                        <div class="tag-pill">
+                            <span>ana.fernanda.ibarra03@gmail.com</span>
+                            <button type="button" class="tag-close" onclick="this.parentElement.remove()">×</button>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
     </main>
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const ctxReclutador = document.getElementById('reclutadorBarChart').getContext('2d');
+        const reclutadorBarChart = new Chart(ctxReclutador, {
+            type: 'bar',
+            data: {
+                labels: [], // Aquí colocarás los nombres de los reclutadores
+                datasets: [{
+                    label: 'Ingresos',
+                    data: [], // Aquí colocarás los valores correspondientes
+                    backgroundColor: '#007bff',
+                    borderColor: '#0056b3',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#ccc'
+                        },
+                        grid: {
+                            color: '#444'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#ccc'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    <script>
+        // <--- SECCION 2 - GRAFICA DE DONA --->
         const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
         const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
         let chartPastel = null;
@@ -314,6 +466,7 @@
         });
     </script>
     <script>
+        // <--- SECCION 3 - GRAFICA DE INGRESOS --->
         document.addEventListener('DOMContentLoaded', function() {
             var chartIngresosAnual = null;
 
@@ -402,6 +555,43 @@
             cargarGraficaIngresosAnual().catch(function(error) {
                 console.error('Error cargando grafica anual de ingresos', error);
             });
+        });
+    </script>
+    <script>
+        // <--- SECCION 4 - PERSONAL DE RECLUTAMIENTO --->
+        const addBtn = document.getElementById('addRecruiterBtn');
+        const inputField = document.getElementById('recruiterInput');
+        const container = document.getElementById('tagsContainer');
+
+        addBtn.addEventListener('click', () => {
+            const text = inputField.value.trim();
+            if (text === "") return;
+
+            const pill = document.createElement('div');
+            pill.className = 'tag-pill';
+
+            const span = document.createElement('span');
+            span.textContent = text;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'tag-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = function() {
+                pill.remove();
+            };
+
+            pill.appendChild(span);
+            pill.appendChild(closeBtn);
+
+            container.appendChild(pill);
+            inputField.value = '';
+        });
+
+        inputField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addBtn.click();
+            }
         });
     </script>
 
