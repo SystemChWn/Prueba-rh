@@ -355,14 +355,40 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // RECUADROS SUPERIORES - 1
         const fechaActual = new Date();
         const opcionesMes = { month: 'long' };
         let nombreMes = fechaActual.toLocaleDateString('es-ES', opcionesMes);
         
-        // Opcional: poner la primera letra en mayúscula
         nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
         
         document.getElementById('mesActual').textContent = nombreMes;
+
+        // RECUADROS SUPERIORES - 2
+        function actualizarMejorReclutador() {
+            const guardados = localStorage.getItem('reclutadores');
+            const recruiters = guardados ? JSON.parse(guardados) : [];
+            const elementoValor = document.getElementById('countPendientes');
+
+            if (recruiters.length === 0) {
+                elementoValor.textContent = 'Sin registros';
+                return;
+            }
+
+            let mejorRecruiter = recruiters[0];
+            let maxIngresos = mejorRecruiter.ingresos || 0;
+
+            recruiters.forEach(r => {
+                const ingresosActuales = r.ingresos || 0;
+                if (ingresosActuales > maxIngresos) {
+                    maxIngresos = ingresosActuales;
+                    mejorRecruiter = r;
+                }
+            });
+            elementoValor.textContent = mejorRecruiter.nombre;
+        }
+
+        actualizarMejorReclutador();
     </script>
     <script>
         // <--- SECCION 1 - GRAFICA DE BARRAS --->
