@@ -365,121 +365,6 @@
         document.getElementById('mesActual').textContent = nombreMes;
     </script>
     <script>
-        const recruiterInput = document.getElementById('recruiterInput');
-        const addRecruiterBtn = document.getElementById('addRecruiterBtn');
-        const tagsContainer = document.getElementById('tagsContainer');
-
-        function renderRecruiters(recruiters) {
-            tagsContainer.innerHTML = '';
-
-            if (!recruiters.length) {
-                const emptyState = document.createElement('div');
-                emptyState.className = 'tag-pill';
-                emptyState.style.background = '#2d2d2d';
-                emptyState.style.color = '#fff';
-                emptyState.innerHTML = '<span>No hay nombres registrados</span>';
-                tagsContainer.appendChild(emptyState);
-                return;
-            }
-
-            recruiters.forEach((recruiter) => {
-                const pill = document.createElement('div');
-                pill.className = 'tag-pill';
-
-                const label = document.createElement('span');
-                label.textContent = recruiter.nombre;
-                pill.appendChild(label);
-
-                const closeBtn = document.createElement('button');
-                closeBtn.type = 'button';
-                closeBtn.className = 'tag-close';
-                closeBtn.setAttribute('aria-label', `Eliminar ${recruiter.nombre}`);
-                closeBtn.textContent = '×';
-                closeBtn.addEventListener('click', () => eliminarRecruiter(recruiter.id));
-                pill.appendChild(closeBtn);
-
-                tagsContainer.appendChild(pill);
-            });
-        }
-
-        async function apiRequest(path, options = {}) {
-            const normalizedPath = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
-            const candidates = [normalizedPath, `http://localhost:8001${normalizedPath}`];
-
-            let lastError = null;
-            for (const candidate of candidates) {
-                try {
-                    const response = await fetch(candidate, options);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response;
-                } catch (error) {
-                    lastError = error;
-                }
-            }
-
-            throw lastError || new Error('No se pudo contactar al backend');
-        }
-
-        async function cargarRecruiters() {
-            try {
-                const response = await apiRequest('/reclutadores');
-                const data = await response.json();
-                renderRecruiters(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        async function agregarRecruiter() {
-            const nombre = recruiterInput.value.trim();
-            if (!nombre) {
-                return;
-            }
-
-            try {
-                const response = await apiRequest('/reclutadores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre })
-                });
-
-                const responseData = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(responseData.error || 'No se pudo guardar');
-                }
-
-                recruiterInput.value = '';
-                await cargarRecruiters();
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        async function eliminarRecruiter(id) {
-            try {
-                const response = await apiRequest(`/reclutadores/${id}`, { method: 'DELETE' });
-                if (!response.ok) {
-                    throw new Error('No se pudo eliminar');
-                }
-                await cargarRecruiters();
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        addRecruiterBtn.addEventListener('click', agregarRecruiter);
-        recruiterInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                agregarRecruiter();
-            }
-        });
-
-        cargarRecruiters();
-    </script>
-    <script>
         // <--- SECCION 1 - GRAFICA DE BARRAS --->
         const ctxReclutador = document.getElementById('reclutadorBarChart').getContext('2d');
         const reclutadorBarChart = new Chart(ctxReclutador, {
@@ -680,40 +565,119 @@
     </script>
     <script>
         // <--- SECCION 4 - PERSONAL DE RECLUTAMIENTO --->
-        const addBtn = document.getElementById('addRecruiterBtn');
-        const inputField = document.getElementById('recruiterInput');
-        const container = document.getElementById('tagsContainer');
+        const recruiterInput = document.getElementById('recruiterInput');
+        const addRecruiterBtn = document.getElementById('addRecruiterBtn');
+        const tagsContainer = document.getElementById('tagsContainer');
 
-        addBtn.addEventListener('click', () => {
-            const text = inputField.value.trim();
-            if (text === "") return;
+        function renderRecruiters(recruiters) {
+            tagsContainer.innerHTML = '';
 
-            const pill = document.createElement('div');
-            pill.className = 'tag-pill';
+            if (!recruiters.length) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'tag-pill';
+                emptyState.style.background = '#2d2d2d';
+                emptyState.style.color = '#fff';
+                emptyState.innerHTML = '<span>No hay nombres registrados</span>';
+                tagsContainer.appendChild(emptyState);
+                return;
+            }
 
-            const span = document.createElement('span');
-            span.textContent = text;
+            recruiters.forEach((recruiter) => {
+                const pill = document.createElement('div');
+                pill.className = 'tag-pill';
 
-            const closeBtn = document.createElement('button');
-            closeBtn.type = 'button';
-            closeBtn.className = 'tag-close';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.onclick = function() {
-                pill.remove();
-            };
+                const label = document.createElement('span');
+                label.textContent = recruiter.nombre;
+                pill.appendChild(label);
 
-            pill.appendChild(span);
-            pill.appendChild(closeBtn);
+                const closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'tag-close';
+                closeBtn.setAttribute('aria-label', `Eliminar ${recruiter.nombre}`);
+                closeBtn.textContent = '×';
+                closeBtn.addEventListener('click', () => eliminarRecruiter(recruiter.id));
+                pill.appendChild(closeBtn);
 
-            container.appendChild(pill);
-            inputField.value = '';
-        });
+                tagsContainer.appendChild(pill);
+            });
+        }
 
-        inputField.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addBtn.click();
+        async function apiRequest(path, options = {}) {
+            const normalizedPath = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
+            const candidates = [normalizedPath, `http://localhost:8001${normalizedPath}`];
+
+            let lastError = null;
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(candidate, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('No se pudo contactar al backend');
+        }
+
+        async function cargarRecruiters() {
+            try {
+                const response = await apiRequest('/reclutadores');
+                const data = await response.json();
+                renderRecruiters(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function agregarRecruiter() {
+            const nombre = recruiterInput.value.trim();
+            if (!nombre) {
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/reclutadores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre })
+                });
+
+                const responseData = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(responseData.error || 'No se pudo guardar');
+                }
+
+                recruiterInput.value = '';
+                await cargarRecruiters();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function eliminarRecruiter(id) {
+            try {
+                const response = await apiRequest(`/reclutadores/${id}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    throw new Error('No se pudo eliminar');
+                }
+                await cargarRecruiters();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        addRecruiterBtn.addEventListener('click', agregarRecruiter);
+        recruiterInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                agregarRecruiter();
             }
         });
+
+        cargarRecruiters();
     </script>
 
 </body>
