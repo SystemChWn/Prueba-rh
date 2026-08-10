@@ -564,15 +564,28 @@
         });
     </script>
     <script>
-        // <--- SECCION 4 - PERSONAL DE RECLUTAMIENTO --->
+        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO (Con persistencia en localStorage) ---
         const recruiterInput = document.getElementById('recruiterInput');
         const addRecruiterBtn = document.getElementById('addRecruiterBtn');
         const tagsContainer = document.getElementById('tagsContainer');
 
-        function renderRecruiters(recruiters) {
+        // 1. Cargar los reclutadores guardados al iniciar la página
+        function obtenerReclutadores() {
+            const guardados = localStorage.getItem('reclutadores');
+            return guardados ? JSON.parse(guardados) : [];
+        }
+
+        // 2. Guardar la lista actual en el navegador
+        function guardarReclutadores(recruiters) {
+            localStorage.setItem('reclutadores', JSON.stringify(recruiters));
+        }
+
+        // 3. Renderizar los tags en la interfaz
+        function renderRecruiters() {
+            const recruiters = obtenerReclutadores();
             tagsContainer.innerHTML = '';
 
-            if (!recruiters.length) {
+            if (recruiters.length === 0) {
                 const emptyState = document.createElement('div');
                 emptyState.className = 'tag-pill';
                 emptyState.style.background = '#2d2d2d';
@@ -602,74 +615,37 @@
             });
         }
 
-        async function apiRequest(path, options = {}) {
-            const normalizedPath = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
-            const candidates = [normalizedPath, `http://localhost:8001${normalizedPath}`];
-
-            let lastError = null;
-            for (const candidate of candidates) {
-                try {
-                    const response = await fetch(candidate, options);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response;
-                } catch (error) {
-                    lastError = error;
-                }
-            }
-
-            throw lastError || new Error('No se pudo contactar al backend');
-        }
-
-        async function cargarRecruiters() {
-            try {
-                const response = await apiRequest('/reclutadores');
-                const data = await response.json();
-                renderRecruiters(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        async function agregarRecruiter() {
+        // 4. Agregar un nuevo reclutador
+        function agregarRecruiter() {
             const nombre = recruiterInput.value.trim();
-            if (!nombre) {
-                return;
-            }
+            if (!nombre) return;
 
-            try {
-                const response = await apiRequest('/reclutadores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre })
-                });
+            const recruiters = obtenerReclutadores();
+            
+            // Crear un nuevo objeto con un ID único basado en el tiempo actual
+            const nuevoRecruiter = {
+                id: Date.now(),
+                nombre: nombre
+            };
 
-                const responseData = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(responseData.error || 'No se pudo guardar');
-                }
+            recruiters.push(nuevoRecruiter);
+            guardarReclutadores(recruiters);
 
-                recruiterInput.value = '';
-                await cargarRecruiters();
-            } catch (error) {
-                console.error(error);
-            }
+            recruiterInput.value = '';
+            renderRecruiters();
         }
 
-        async function eliminarRecruiter(id) {
-            try {
-                const response = await apiRequest(`/reclutadores/${id}`, { method: 'DELETE' });
-                if (!response.ok) {
-                    throw new Error('No se pudo eliminar');
-                }
-                await cargarRecruiters();
-            } catch (error) {
-                console.error(error);
-            }
+        // 5. Eliminar un reclutador por su ID
+        function eliminarRecruiter(id) {
+            let recruiters = obtenerReclutadores();
+            recruiters = recruiters.filter(recruiter => recruiter.id !== id);
+            guardarReclutadores(recruiters);
+            renderRecruiters();
         }
 
+        // Event Listeners
         addRecruiterBtn.addEventListener('click', agregarRecruiter);
+        
         recruiterInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -677,8 +653,8 @@
             }
         });
 
-        cargarRecruiters();
+        // Inicializar la vista cargando los datos al abrir la página
+        renderRecruiters();
     </script>
-
 </body>
 </html>
