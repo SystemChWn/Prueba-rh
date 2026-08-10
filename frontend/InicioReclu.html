@@ -387,8 +387,23 @@
             });
             elementoValor.textContent = mejorRecruiter.nombre;
         }
-
         actualizarMejorReclutador();
+
+        // RECUADROS SUPERIORES - 4
+        function actualizarTotalIngresos() {
+            const guardados = localStorage.getItem('reclutadores');
+            const recruiters = guardados ? JSON.parse(guardados) : [];
+            const elementoTotal = document.getElementById('countEvaluando');
+
+            let totalIngresos = 0;
+            recruiters.forEach(r => {
+                const ingresos = Number(r.ingresos) || 0;
+                totalIngresos += ingresos;
+            });
+
+            elementoTotal.textContent = totalIngresos;
+        }
+        actualizarTotalIngresos();
     </script>
     <script>
         // <--- SECCION 1 - GRAFICA DE BARRAS --->
