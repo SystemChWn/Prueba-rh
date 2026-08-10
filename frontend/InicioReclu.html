@@ -381,34 +381,49 @@
                 }]
             },
             options: {
+                indexAxis: 'y', // Barras horizontales
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
-                    y: {
+                    x: {
                         beginAtZero: true,
                         ticks: {
-                            color: '#ccc'
+                            color: '#ccc',
+                            stepSize: 10 // Conteo de 10 en 10
                         },
-                        grid: {
-                            color: '#444'
-                        }
+                        grid: { color: '#444' }
                     },
-                    x: {
-                        ticks: {
-                            color: '#ccc'
-                        },
-                        grid: {
-                            display: false
-                        }
+                    y: {
+                        ticks: { color: '#ccc' },
+                        grid: { display: false }
                     }
                 }
             }
         });
+
+        // 2. Función independiente que solo conecta y actualiza la gráfica leyendo el localStorage
+        function actualizarGraficaReclutadores() {
+            // Lee los mismos datos que usa tu tabla
+            const guardados = localStorage.getItem('reclutadores');
+            const recruiters = guardados ? JSON.parse(guardados) : [];
+            
+            // Extrae los nombres para las etiquetas de la gráfica
+            const labels = recruiters.map(r => r.nombre);
+            
+            // Asigna el valor numérico para cada barra
+            const data = recruiters.map(() => 10); 
+
+            // Aplica los datos a Chart.js y redibuja
+            reclutadorBarChart.data.labels = labels;
+            reclutadorBarChart.data.datasets[0].data = data;
+            reclutadorBarChart.update();
+        }
+
+        // 3. Ejecutar al cargar la página para que muestre lo que ya esté guardado
+        actualizarGraficaReclutadores();
     </script>
     <script>
         // <--- SECCION 2 - GRAFICA DE DONA --->
