@@ -267,19 +267,19 @@
     <!-- RECUADROS SUPERIORES -->
     <div class="metrics-container">
         <div class="metric-card">
-            <h3>Candidatos</h3>
-            <p class="metric-value" id="countCandidatos">0</p>
+            <h3>Mes Actual</h3>
+            <p class="metric-value" id="mesActual">--</p>
         </div>
         <div class="metric-card">
-            <h3>Pendientes</h3>
+            <h3>Reclutador</h3>
             <p class="metric-value" id="countPendientes">0</p>
         </div>
         <div class="metric-card">
-            <h3>Entrevista</h3>
+            <h3>fuente</h3>
             <p class="metric-value" id="countEntrevista">0</p>
         </div>
         <div class="metric-card">
-            <h3>Evaluando</h3>
+            <h3>Ingresos</h3>
             <p class="metric-value" id="countEvaluando">0</p>
         </div>
     </div>
@@ -347,12 +347,7 @@
                         <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
                         <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
                     </div>
-                    <div class="tags-container" id="tagsContainer">
-                        <div class="tag-pill">
-                            <span>ana.fernanda.ibarra03@gmail.com</span>
-                            <button type="button" class="tag-close" onclick="this.parentElement.remove()">×</button>
-                        </div>
-                    </div>
+                    <div class="tags-container" id="tagsContainer"></div>
                 </div>
             </section>
         </div>
@@ -360,14 +355,123 @@
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const fechaActual = new Date();
+        const opcionesMes = { month: 'long' };
+        let nombreMes = fechaActual.toLocaleDateString('es-ES', opcionesMes);
+        
+        // Opcional: poner la primera letra en mayúscula
+        nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+        
+        document.getElementById('mesActual').textContent = nombreMes;
+    </script>
+    <script>
+        const recruiterInput = document.getElementById('recruiterInput');
+        const addRecruiterBtn = document.getElementById('addRecruiterBtn');
+        const tagsContainer = document.getElementById('tagsContainer');
+
+        function renderRecruiters(recruiters) {
+            tagsContainer.innerHTML = '';
+
+            if (!recruiters.length) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'tag-pill';
+                emptyState.style.background = '#2d2d2d';
+                emptyState.style.color = '#fff';
+                emptyState.innerHTML = '<span>No hay nombres registrados</span>';
+                tagsContainer.appendChild(emptyState);
+                return;
+            }
+
+            recruiters.forEach((recruiter) => {
+                const pill = document.createElement('div');
+                pill.className = 'tag-pill';
+
+                const label = document.createElement('span');
+                label.textContent = recruiter.nombre;
+                pill.appendChild(label);
+
+                const closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'tag-close';
+                closeBtn.setAttribute('aria-label', `Eliminar ${recruiter.nombre}`);
+                closeBtn.textContent = '×';
+                closeBtn.addEventListener('click', () => eliminarRecruiter(recruiter.id));
+                pill.appendChild(closeBtn);
+
+                tagsContainer.appendChild(pill);
+            });
+        }
+
+        async function cargarRecruiters() {
+            try {
+                const response = await fetch('/api/reclutadores');
+                if (!response.ok) {
+                    throw new Error('No se pudieron cargar los nombres');
+                }
+                const data = await response.json();
+                renderRecruiters(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function agregarRecruiter() {
+            const nombre = recruiterInput.value.trim();
+            if (!nombre) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/reclutadores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'No se pudo guardar');
+                }
+
+                recruiterInput.value = '';
+                await cargarRecruiters();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function eliminarRecruiter(id) {
+            try {
+                const response = await fetch(`/api/reclutadores/${id}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    throw new Error('No se pudo eliminar');
+                }
+                await cargarRecruiters();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        addRecruiterBtn.addEventListener('click', agregarRecruiter);
+        recruiterInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                agregarRecruiter();
+            }
+        });
+
+        cargarRecruiters();
+    </script>
+    <script>
+        // <--- SECCION 1 - GRAFICA DE BARRAS --->
         const ctxReclutador = document.getElementById('reclutadorBarChart').getContext('2d');
         const reclutadorBarChart = new Chart(ctxReclutador, {
             type: 'bar',
             data: {
-                labels: [], // Aquí colocarás los nombres de los reclutadores
+                labels: [],
                 datasets: [{
                     label: 'Ingresos',
-                    data: [], // Aquí colocarás los valores correspondientes
+                    data: [],
                     backgroundColor: '#007bff',
                     borderColor: '#0056b3',
                     borderWidth: 1,

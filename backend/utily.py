@@ -438,6 +438,92 @@ def separar_ubicacion(valor):
     )
 
 
+def asegurar_tabla_personal_reclutamiento(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+            id SERIAL PRIMARY KEY,
+            nombre VARCHAR(200) NOT NULL UNIQUE,
+            fecha_registro DATE DEFAULT CURRENT_DATE
+        )
+        """
+    )
+
+
+@app.route('/reclutadores', methods=['GET'])
+@app.route('/api/reclutadores', methods=['GET'])
+def obtener_reclutadores():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_personal_reclutamiento(cur)
+                cur.execute(
+                    "SELECT id, nombre FROM personal_reclutamiento ORDER BY id ASC"
+                )
+                rows = cur.fetchall()
+
+        data = [
+            {
+                'id': row[0],
+                'nombre': row[1],
+            }
+            for row in rows
+        ]
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error al obtener reclutadores: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/reclutadores', methods=['POST'])
+@app.route('/api/reclutadores', methods=['POST'])
+def crear_reclutador():
+    payload = request.get_json(silent=True) or request.form.to_dict(flat=True) or {}
+    nombre = (payload.get('nombre') if isinstance(payload, dict) else None) or ''
+    nombre = (nombre or '').strip()
+
+    if not nombre:
+        return jsonify({'error': 'El nombre es obligatorio'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_personal_reclutamiento(cur)
+                cur.execute(
+                    """
+                    INSERT INTO personal_reclutamiento (nombre, fecha_registro)
+                    VALUES (%s, CURRENT_DATE)
+                    ON CONFLICT (nombre) DO NOTHING
+                    RETURNING id, nombre
+                    """,
+                    (nombre,),
+                )
+                row = cur.fetchone()
+            conn.commit()
+
+        if row:
+            return jsonify({'id': row[0], 'nombre': row[1]}), 201
+        return jsonify({'id': None, 'nombre': nombre, 'duplicado': True}), 200
+    except Exception as e:
+        print(f"Error al crear reclutador: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/reclutadores/<int:reclutador_id>', methods=['DELETE'])
+@app.route('/api/reclutadores/<int:reclutador_id>', methods=['DELETE'])
+def eliminar_reclutador(reclutador_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_personal_reclutamiento(cur)
+                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
+            conn.commit()
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"Error al eliminar reclutador: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/guardar-registro', methods=['POST'])
 @app.route('/api/guardar-registro', methods=['POST'])
 def guardar_registro():

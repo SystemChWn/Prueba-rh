@@ -46,3 +46,9 @@ CREATE TABLE IF NOT EXISTS ingresos_puesto (
     pago                VARCHAR(50),
     registro_id         INTEGER REFERENCES registro(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+    id              SERIAL PRIMARY KEY,
+    nombre          VARCHAR(200) NOT NULL UNIQUE,
+    fecha_registro  DATE DEFAULT CURRENT_DATE
+);
