@@ -389,7 +389,8 @@
         }
         actualizarMejorReclutador();
         
-        // RECUADROS SUPERIORES - 2
+        // RECUADROS SUPERIORES - 3
+        // RECUADROS SUPERIORES - 4
         
     </script>
     <script>
@@ -415,15 +416,15 @@
                     legend: { display: false }
                 },
                 scales: {
-                    y: { // Eje vertical ahora controla los números
+                    y: { 
                         beginAtZero: true,
                         ticks: {
                             color: '#ccc',
-                            stepSize: 10 // Conteo de 10 en 10
+                            stepSize: 10 // Conteo de 10
                         },
                         grid: { color: '#444' }
                     },
-                    x: { // Eje horizontal ahora muestra los nombres
+                    x: { 
                         ticks: { color: '#ccc' },
                         grid: { display: false }
                     }
@@ -431,23 +432,18 @@
             }
         });
 
-        // 2. Función independiente que conecta la gráfica con el localStorage
         function actualizarGraficaReclutadores() {
             const guardados = localStorage.getItem('reclutadores');
             const recruiters = guardados ? JSON.parse(guardados) : [];
-            
-            // Nombres para la parte horizontal (eje X)
+
             const labels = recruiters.map(r => r.nombre);
-            
-            // Valores numéricos para la parte vertical (eje Y)
+        
             const data = recruiters.map(() => 10); 
 
             reclutadorBarChart.data.labels = labels;
             reclutadorBarChart.data.datasets[0].data = data;
             reclutadorBarChart.update();
         }
-
-        // 3. Ejecutar al cargar la página
         actualizarGraficaReclutadores();
     </script>
     <script>
@@ -580,7 +576,7 @@
                                 beginAtZero: true,
                                 max: 150, //valor máximo
                                 ticks: { 
-                                    stepSize: 10,  // <---  10 en 10
+                                    stepSize: 10,
                                     color: '#fff' 
                                 },
                                 grid: { color: '#333' }
@@ -609,18 +605,15 @@
         const addRecruiterBtn = document.getElementById('addRecruiterBtn');
         const tagsContainer = document.getElementById('tagsContainer');
 
-        // 1. Cargar los reclutadores guardados al iniciar la página
         function obtenerReclutadores() {
             const guardados = localStorage.getItem('reclutadores');
             return guardados ? JSON.parse(guardados) : [];
         }
 
-        // 2. Guardar la lista actual en el navegador
         function guardarReclutadores(recruiters) {
             localStorage.setItem('reclutadores', JSON.stringify(recruiters));
         }
 
-        // 3. Renderizar los tags en la interfaz
         function renderRecruiters() {
             const recruiters = obtenerReclutadores();
             tagsContainer.innerHTML = '';
@@ -655,14 +648,12 @@
             });
         }
 
-        // 4. Agregar un nuevo reclutador
         function agregarRecruiter() {
             const nombre = recruiterInput.value.trim();
             if (!nombre) return;
 
             const recruiters = obtenerReclutadores();
             
-            // Crear un nuevo objeto con un ID único basado en el tiempo actual
             const nuevoRecruiter = {
                 id: Date.now(),
                 nombre: nombre
@@ -675,7 +666,6 @@
             renderRecruiters();
         }
 
-        // 5. Eliminar un reclutador por su ID
         function eliminarRecruiter(id) {
             let recruiters = obtenerReclutadores();
             recruiters = recruiters.filter(recruiter => recruiter.id !== id);
@@ -683,7 +673,6 @@
             renderRecruiters();
         }
 
-        // Event Listeners
         addRecruiterBtn.addEventListener('click', agregarRecruiter);
         
         recruiterInput.addEventListener('keydown', (event) => {
@@ -693,7 +682,6 @@
             }
         });
 
-        // Inicializar la vista cargando los datos al abrir la página
         renderRecruiters();
     </script>
 </body>
