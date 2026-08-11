@@ -90,41 +90,9 @@
 
         .btn-guardar:hover { background: #218838; }
 
-        .btn-eliminar {
-            background: #d32f2f;
-            color: #fff;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-eliminar:hover { background: #b71c1c; }
-
-        .checkbox-seleccion {
-            width: 18px;
-            height: 18px;
-            accent-color: #28a745;
-            cursor: pointer;
-        }
-
-        .fila-error {
-            outline: 2px solid #ff4b4b;
-            background: rgba(255, 75, 75, 0.08);
-        }
-
-        .fila-exito {
-            opacity: 0;
-            transform: translateY(-4px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .mensaje-fila-error {
-            color: #ff7b7b;
-            font-size: 0.82rem;
-            margin-top: 4px;
-            display: block;
+        .btn-guardar:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -149,7 +117,6 @@
             <div class="titulo-acciones">
                 <h3 style="margin: 0;">Asignación de Puesto</h3>
                 <div class="acciones-botones">
-                    <button id="btn-eliminar-seleccionados" class="btn-eliminar" type="button">Eliminar seleccionados</button>
                     <button id="btn-guardar-datos" class="btn-guardar" type="button">Guardar Datos</button>
                 </div>
             </div>
@@ -157,9 +124,6 @@
                 <table id="tabla-ingresos">
                     <thead>
                         <tr style="border-bottom: 2px solid #444;">
-                            <th style="width: 40px;">
-                                <input id="select-all-pendientes" class="checkbox-seleccion" type="checkbox" aria-label="Seleccionar todos">
-                            </th>
                             <th>Nombre</th>
                             <th>Empresa</th>
                             <th>No. Empleado</th>
@@ -225,7 +189,6 @@
         function filaTemplate(candidato) {
             return `
                 <tr data-id="${candidato.id}">
-                    <td><input class="checkbox-seleccion fila-seleccionada" type="checkbox" data-id="${candidato.id}" aria-label="Seleccionar ${candidato.nombre_completo || 'empleado'}"></td>
                     <td>${candidato.nombre_completo || ''}</td>
                     <td>
                         <select class="campo-empresa" required>
@@ -305,38 +268,6 @@
             };
         }
 
-        function obtenerIdsSeleccionados() {
-            return Array.from(document.querySelectorAll('.fila-seleccionada:checked'))
-                .map((checkbox) => String(checkbox.dataset.id || '').trim())
-                .filter(Boolean);
-        }
-
-        function sincronizarSeleccionGeneral() {
-            const selectAll = document.getElementById('select-all-pendientes');
-            const checks = Array.from(document.querySelectorAll('.fila-seleccionada'));
-            if (!selectAll || !checks.length) return;
-            selectAll.checked = checks.length > 0 && checks.every((checkbox) => checkbox.checked);
-        }
-
-        function limpiarEstadoFila(tr) {
-            tr.classList.remove('fila-error');
-            const marcaAnterior = tr.querySelector('.mensaje-fila-error');
-            if (marcaAnterior) {
-                marcaAnterior.remove();
-            }
-        }
-
-        function marcarErrorFila(tr, mensaje) {
-            tr.classList.add('fila-error');
-            const celdaNombre = tr.querySelector('td:first-child');
-            if (!celdaNombre) return;
-
-            const aviso = document.createElement('small');
-            aviso.className = 'mensaje-fila-error';
-            aviso.textContent = mensaje;
-            celdaNombre.appendChild(aviso);
-        }
-
         function esFilaCompleta(fila) {
             const campos = ['nombre_candidato', 'empresa', 'no_empleado', 'personal', 'puesto', 'area', 'turno', 'salario', 'pago', 'registro_id'];
 
@@ -346,44 +277,6 @@
                 }
             }
             return true;
-        }
-
-        async function eliminarSeleccionados() {
-            const ids = obtenerIdsSeleccionados();
-            if (!ids.length) {
-                alert('Selecciona al menos un candidato para eliminar.');
-                return;
-            }
-
-            const confirmar = window.confirm(
-                `Esta acción eliminará permanentemente ${ids.length} candidato(s) de la base de datos. ¿Deseas continuar?`
-            );
-            if (!confirmar) return;
-
-            try {
-                const { respuesta, texto } = await postConFallback('/api/eliminar-pendientes', { registro_ids: ids });
-
-                if (!respuesta.ok) {
-                    alert(`No se pudieron eliminar permanentemente: ${texto || 'Error desconocido'}`);
-                    return;
-                }
-
-                ids.forEach((id) => {
-                    const fila = cuerpo.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
-                    if (fila) fila.remove();
-                });
-
-                const selectAll = document.getElementById('select-all-pendientes');
-                if (selectAll) selectAll.checked = false;
-
-                if (!cuerpo.querySelector('tr[data-id]')) {
-                    cuerpo.innerHTML = '<tr><td colspan="10">No hay candidatos pendientes.</td></tr>';
-                }
-
-                alert(`Se eliminaron permanentemente ${ids.length} candidato(s).`);
-            } catch (error) {
-                alert('Error de conexión al eliminar permanentemente: ' + error.message);
-            }
         }
 
         async function guardarDatosCompletos() {
@@ -454,25 +347,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             cargarPendientes();
             btnGuardarDatos.addEventListener('click', guardarDatosCompletos);
-
-            const btnEliminarSeleccionados = document.getElementById('btn-eliminar-seleccionados');
-            if (btnEliminarSeleccionados) {
-                btnEliminarSeleccionados.addEventListener('click', eliminarSeleccionados);
-            }
-
-            document.addEventListener('change', (event) => {
-                const selectAll = event.target && event.target.id === 'select-all-pendientes';
-                if (selectAll) {
-                    document.querySelectorAll('.fila-seleccionada').forEach((checkbox) => {
-                        checkbox.checked = event.target.checked;
-                    });
-                    return;
-                }
-
-                if (event.target && event.target.classList && event.target.classList.contains('fila-seleccionada')) {
-                    sincronizarSeleccionGeneral();
-                }
-            });
         });
     </script>
 </body>
