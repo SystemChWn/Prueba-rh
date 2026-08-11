@@ -1394,8 +1394,8 @@ def guardar_o_actualizar_ingreso(cur, payload):
     return ("OK", 200)
 
 
-@app.route('/eliminar-pendientes', methods=['POST'])
-@app.route('/api/eliminar-pendientes', methods=['POST'])
+@app.route('/eliminar-pendientes', methods=['POST', 'DELETE'])
+@app.route('/api/eliminar-pendientes', methods=['POST', 'DELETE'])
 def eliminar_pendientes():
     payload = request.get_json(silent=True) or {}
     registro_ids = payload.get('registro_ids') if isinstance(payload, dict) else None

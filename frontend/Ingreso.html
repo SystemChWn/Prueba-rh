@@ -356,14 +356,16 @@
                 return;
             }
 
-            const confirmar = window.confirm(`¿Deseas eliminar ${ids.length} candidato(s) seleccionado(s)?`);
+            const confirmar = window.confirm(
+                `Esta acción eliminará permanentemente ${ids.length} candidato(s) de la base de datos. ¿Deseas continuar?`
+            );
             if (!confirmar) return;
 
             try {
                 const { respuesta, texto } = await postConFallback('/api/eliminar-pendientes', { registro_ids: ids });
 
                 if (!respuesta.ok) {
-                    alert(`No se pudieron eliminar: ${texto || 'Error desconocido'}`);
+                    alert(`No se pudieron eliminar permanentemente: ${texto || 'Error desconocido'}`);
                     return;
                 }
 
@@ -379,9 +381,9 @@
                     cuerpo.innerHTML = '<tr><td colspan="10">No hay candidatos pendientes.</td></tr>';
                 }
 
-                alert(`Se eliminaron ${ids.length} candidato(s).`);
+                alert(`Se eliminaron permanentemente ${ids.length} candidato(s).`);
             } catch (error) {
-                alert('Error de conexión al eliminar seleccionados: ' + error.message);
+                alert('Error de conexión al eliminar permanentemente: ' + error.message);
             }
         }
 
