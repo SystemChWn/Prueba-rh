@@ -68,14 +68,6 @@
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .acciones-botones {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
         }
 
         .btn-guardar {
@@ -89,11 +81,6 @@
         }
 
         .btn-guardar:hover { background: #218838; }
-
-        .btn-guardar:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
 
         .fila-error {
             outline: 2px solid #ff4b4b;
@@ -134,9 +121,7 @@
         <div class="container">
             <div class="titulo-acciones">
                 <h3 style="margin: 0;">Asignación de Puesto</h3>
-                <div class="acciones-botones">
-                    <button id="btn-guardar-datos" class="btn-guardar" type="button">Guardar Datos</button>
-                </div>
+                <button id="btn-guardar-datos" class="btn-guardar" type="button">Guardar Datos</button>
             </div>
             <div class="table-container">
                 <table id="tabla-ingresos">
@@ -161,7 +146,10 @@
     </main>
 
     <script>
-        const API_BASES = [window.location.origin || '', ''];
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
     const btnGuardarDatos = document.getElementById('btn-guardar-datos');
@@ -171,8 +159,7 @@
 
             for (const baseUrl of API_BASES) {
                 try {
-                    const url = `${baseUrl}${endpoint}`;
-                    const respuesta = await fetch(url);
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
                     const texto = await respuesta.text();
                     return { respuesta, texto };
                 } catch (errorRed) {
@@ -180,7 +167,7 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.filter(Boolean).join(' | ') || 'mismo origen'}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         async function postConFallback(endpoint, body) {
@@ -188,8 +175,7 @@
 
             for (const baseUrl of API_BASES) {
                 try {
-                    const url = `${baseUrl}${endpoint}`;
-                    const respuesta = await fetch(url, {
+                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body),
@@ -201,7 +187,7 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.filter(Boolean).join(' | ') || 'mismo origen'}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         function filaTemplate(candidato) {
@@ -271,7 +257,7 @@
         }
 
         function construirFilaPayload(tr) {
-            const nombre = tr.querySelectorAll('td')[1]?.textContent.trim() || '';
+            const nombre = tr.querySelector('td:first-child')?.textContent.trim() || '';
             return {
                 registro_id: (tr.dataset.id || '').trim(),
                 nombre_candidato: nombre,
