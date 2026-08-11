@@ -80,7 +80,7 @@
         }
 
         .metric-value {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #fff;
             margin: 0;
@@ -272,7 +272,7 @@
         </div>
         <div class="metric-card">
             <h3>Top Mensual</h3>
-            <p class="metric-value" id="countPendientes">0</p>
+            <p class="metric-value" id="countPendientes">Esperando...</p>
         </div>
         <div class="metric-card">
             <h3>Fuente Destacada</h3>
@@ -370,7 +370,7 @@
             const elementoValor = document.getElementById('countPendientes');
 
             if (recruiters.length === 0) {
-                elementoValor.textContent = 'Sin registros';
+                elementoValor.textContent = 'Esperando...';
                 return;
             }
 
