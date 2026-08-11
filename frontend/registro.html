@@ -819,8 +819,57 @@
     </script>
     <script>
         //ENCUESTA RECLUTAMIENTO
+        window.reclutadoresDisponibles = [];
+
+        function poblarSelectReclutadores(selectEl, textoVacio) {
+            if (!selectEl) return;
+
+            selectEl.innerHTML = '';
+            const opcionDefault = document.createElement('option');
+            opcionDefault.value = '';
+            opcionDefault.textContent = textoVacio;
+            selectEl.appendChild(opcionDefault);
+
+            if (!window.reclutadoresDisponibles.length) {
+                const opcionVacia = document.createElement('option');
+                opcionVacia.value = '';
+                opcionVacia.textContent = 'No hay nombres disponibles';
+                opcionVacia.disabled = true;
+                selectEl.appendChild(opcionVacia);
+                return;
+            }
+
+            window.reclutadoresDisponibles.forEach((nombre) => {
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                selectEl.appendChild(option);
+            });
+        }
+
+        async function cargarReclutadoresSeleccionables() {
+            try {
+                const response = await fetch('/api/reclutadores');
+                if (!response.ok) {
+                    throw new Error('No se pudieron cargar los nombres');
+                }
+                const data = await response.json();
+                window.reclutadoresDisponibles = Array.isArray(data)
+                    ? data.map((item) => item.nombre).filter(Boolean)
+                    : [];
+
+                const selectActual = document.getElementById('nombre-reclutador');
+                if (selectActual) {
+                    poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
         function abrirEncuesta() {
             document.getElementById('modal-encuesta').style.display = 'flex';
+            cargarReclutadoresSeleccionables();
         }
 
         function mostrarCampos() {
@@ -840,7 +889,8 @@
                 `;
             } else if (fuente === "Facebook") {
                 div.innerHTML = `<label>¿Quién te atendió?</label>
-                                <input type="text" id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+                                <select id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;"></select>`;
+                poblarSelectReclutadores(document.getElementById('nombre-reclutador'), 'Selecciona un nombre');
             } else if (fuente === "Recomendación") {
                 div.innerHTML = `<label>Nombre del empleado que te recomendó:</label>
                                 <input type="text" id="nombre-empleado" placeholder="Nombre completo" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
@@ -854,9 +904,14 @@
 
             if (sub === "CW") {
                 detalle.innerHTML = `<label>Nombre de la persona de reclutamiento:</label>
-                                    <input type="text" id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+                                    <select id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;"></select>`;
+                poblarSelectReclutadores(document.getElementById('nombre-reclutador'), 'Selecciona un nombre');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarReclutadoresSeleccionables();
+        });
 
     </script>
     <script>
