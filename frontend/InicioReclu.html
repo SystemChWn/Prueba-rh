@@ -407,10 +407,9 @@
                 }
 
                 const indexMax = datos.indexOf(maximo);
-                // labelsCategorias ya existe en tu script original, por lo que la reconoce sin problema
                 const fuenteGanadora = labelsCategorias[indexMax];
 
-                elemento.textContent = `${fuenteGanadora} (${maximo})`;
+                elemento.textContent = fuenteGanadora;
             }
 
             // Ejecutar al iniciar
