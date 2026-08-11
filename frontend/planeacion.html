@@ -174,7 +174,6 @@
                     </div>
                     <button class="btn-generate" id="btn-generate-link">Generar y Copiar Enlace</button>
                     <div class="link-result-box" id="link-result-container">
-                        <span id="generated-link-text"></span>
                         <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
                     </div>
                 </div>
@@ -225,7 +224,6 @@
         const btnGenerate = document.getElementById('btn-generate-link');
         const selectMinutes = document.getElementById('expiry-minutes');
         const linkContainer = document.getElementById('link-result-container');
-        const linkText = document.getElementById('generated-link-text');
 
         const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
 
@@ -255,11 +253,9 @@
 
             try {
                 await copiarTexto(finalLink);
-                linkText.textContent = finalLink;
                 linkContainer.style.display = 'block';
             } catch (err) {
                 console.error('Error al copiar: ', err);
-                linkText.textContent = finalLink;
                 linkContainer.style.display = 'block';
             }
         });

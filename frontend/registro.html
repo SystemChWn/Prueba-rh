@@ -848,23 +848,32 @@
         }
 
         async function cargarReclutadoresSeleccionables() {
-            try {
-                const response = await fetch('/api/reclutadores');
-                if (!response.ok) {
-                    throw new Error('No se pudieron cargar los nombres');
-                }
-                const data = await response.json();
-                window.reclutadoresDisponibles = Array.isArray(data)
-                    ? data.map((item) => item.nombre).filter(Boolean)
-                    : [];
+            const urls = ['/api/reclutadores', 'http://localhost:8001/api/reclutadores'];
+            let ultimoError = null;
 
-                const selectActual = document.getElementById('nombre-reclutador');
-                if (selectActual) {
-                    poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error('No se pudieron cargar los nombres');
+                    }
+
+                    const data = await response.json();
+                    window.reclutadoresDisponibles = Array.isArray(data)
+                        ? data.map((item) => item.nombre).filter(Boolean)
+                        : [];
+
+                    const selectActual = document.getElementById('nombre-reclutador');
+                    if (selectActual) {
+                        poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+                    }
+                    return;
+                } catch (error) {
+                    ultimoError = error;
                 }
-            } catch (error) {
-                console.error(error);
             }
+
+            console.error('No se pudieron cargar reclutadores:', ultimoError);
         }
 
         function abrirEncuesta() {
