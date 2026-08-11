@@ -1398,7 +1398,12 @@ def guardar_o_actualizar_ingreso(cur, payload):
 @app.route('/api/eliminar-pendientes', methods=['POST', 'DELETE'])
 def eliminar_pendientes():
     payload = request.get_json(silent=True) or {}
-    registro_ids = payload.get('registro_ids') if isinstance(payload, dict) else None
+    if isinstance(payload, dict):
+        registro_ids = payload.get('registro_ids')
+    elif isinstance(payload, list):
+        registro_ids = payload
+    else:
+        registro_ids = None
 
     if not isinstance(registro_ids, list) or not registro_ids:
         return ("ERROR: Debes enviar al menos un registro_id", 400)
@@ -1412,15 +1417,15 @@ def eliminar_pendientes():
         except (TypeError, ValueError):
             continue
 
+    ids_limpios = sorted(set(ids_limpios))
     if not ids_limpios:
         return ("ERROR: No hay IDs válidos para eliminar", 400)
 
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                for registro_id in sorted(set(ids_limpios)):
-                    cur.execute("DELETE FROM ingresos_puesto WHERE registro_id = %s", (registro_id,))
-                    cur.execute("DELETE FROM registro WHERE id = %s", (registro_id,))
+                cur.execute("DELETE FROM ingresos_puesto WHERE registro_id = ANY(%s)", (ids_limpios,))
+                cur.execute("DELETE FROM registro WHERE id = ANY(%s)", (ids_limpios,))
             conn.commit()
         return ("OK", 200)
     except Exception as e:
