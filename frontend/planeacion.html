@@ -224,22 +224,44 @@
     <script>
         const btnGenerate = document.getElementById('btn-generate-link');
         const selectMinutes = document.getElementById('expiry-minutes');
-        
-        const BASE_URL_COMPARTIBLE = 'http://100.111.35.87:3001/registro.html'; // Cambia esto según tu dominio y puerto
+        const linkContainer = document.getElementById('link-result-container');
+        const linkText = document.getElementById('generated-link-text');
 
-        btnGenerate.addEventListener('click', function() {
-            const minutosSeleccionados = parseInt(selectMinutes.value);
-            
+        const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
+
+        async function copiarTexto(texto) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(texto);
+                return;
+            }
+
+            const helper = document.createElement('textarea');
+            helper.value = texto;
+            helper.setAttribute('readonly', '');
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            helper.style.left = '-9999px';
+            document.body.appendChild(helper);
+            helper.select();
+            document.execCommand('copy');
+            document.body.removeChild(helper);
+        }
+
+        btnGenerate.addEventListener('click', async function() {
+            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
             const ahora = new Date();
             const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
+            const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?expires=${tiempoLimite}`;
 
-            const finalLink = `${BASE_URL_COMPARTIBLE}registro.html?expires=${tiempoLimite}`;
-
-            navigator.clipboard.writeText(finalLink).then(function() {
-                alert('¡Enlace copiado al portapapeles!\n' + finalLink);
-            }).catch(function(err) {
+            try {
+                await copiarTexto(finalLink);
+                linkText.textContent = finalLink;
+                linkContainer.style.display = 'block';
+            } catch (err) {
                 console.error('Error al copiar: ', err);
-            });
+                linkText.textContent = finalLink;
+                linkContainer.style.display = 'block';
+            }
         });
     </script>
 </body>
