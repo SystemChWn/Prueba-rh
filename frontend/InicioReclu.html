@@ -402,7 +402,7 @@
 
                 const maximo = Math.max(...datos);
                 if (maximo === 0) {
-                    elemento.textContent = '0';
+                    elemento.textContent = 'Esperando...';
                     return;
                 }
 
@@ -412,10 +412,8 @@
                 elemento.textContent = fuenteGanadora;
             }
 
-            // Ejecutar al iniciar
             setTimeout(sincronizarFuenteDestacada, 500);
 
-            // Escuchar si cambian el mes en el selector
             const selectMes = document.getElementById('selectMes');
             if (selectMes) {
                 selectMes.addEventListener('change', () => {
@@ -425,6 +423,23 @@
         });
 
         // RECUADROS SUPERIORES - 4
+        function actualizarIngresosTotales() {
+            const guardados = localStorage.getItem('reclutadores');
+            const recruiters = guardados ? JSON.parse(guardados) : [];
+
+            // Suma el total de los ingresos de todos los reclutadores
+            // (Asegúrate de cambiar 'r.ingresos' por el nombre exacto de la propiedad en tu localStorage si es distinta)
+            const totalIngresos = recruiters.reduce((acumulador, r) => acumulador + (Number(r.ingresos) || 0), 0);
+
+            // Muestra el total en el recuadro
+            const elementoContador = document.getElementById('countEvaluando');
+            if (elementoContador) {
+                elementoContador.textContent = totalIngresos;
+            }
+        }
+
+        // Ejecutar la función al cargar
+        actualizarIngresosTotales();
         
     </script>
     <script>
