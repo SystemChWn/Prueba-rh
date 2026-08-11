@@ -818,6 +818,29 @@
         //ENCUESTA RECLUTAMIENTO
         window.reclutadoresDisponibles = [];
 
+        function leerReclutadoresLocales() {
+            try {
+                const guardados = localStorage.getItem('reclutadores');
+                if (!guardados) return [];
+                const datos = JSON.parse(guardados);
+                if (!Array.isArray(datos)) return [];
+                return datos
+                    .map((item) => String(item?.nombre || '').trim())
+                    .filter(Boolean);
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function guardarReclutadoresLocales(nombres) {
+            try {
+                const lista = (nombres || []).map((nombre) => String(nombre).trim()).filter(Boolean);
+                localStorage.setItem('reclutadores', JSON.stringify(lista.map((nombre) => ({ nombre }))));
+            } catch (error) {
+                console.warn('No se pudieron guardar reclutadores locales:', error);
+            }
+        }
+
         function poblarSelectReclutadores(selectEl, textoVacio) {
             if (!selectEl) return;
 
@@ -842,6 +865,13 @@
                 option.textContent = nombre;
                 selectEl.appendChild(option);
             });
+
+            if (selectEl.id === 'nombre-reclutador') {
+                const valorPrevio = selectEl.getAttribute('data-valor-previo');
+                if (valorPrevio) {
+                    selectEl.value = valorPrevio;
+                }
+            }
         }
 
         function obtenerUrlsApi() {
@@ -857,25 +887,46 @@
         }
 
         async function cargarReclutadoresSeleccionables() {
+            const locales = leerReclutadoresLocales();
+            if (locales.length) {
+                window.reclutadoresDisponibles = locales;
+                const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
+                selects.forEach((selectActual) => {
+                    const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
+                    selectActual.setAttribute('data-valor-previo', valorPrevio);
+                    poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+                });
+            }
+
             const urls = obtenerUrlsApi();
             let ultimoError = null;
 
             for (const url of urls) {
                 try {
-                    const response = await fetch(url);
+                    const response = await fetch(url, { cache: 'no-store' });
                     if (!response.ok) {
                         throw new Error('No se pudieron cargar los nombres');
                     }
 
                     const data = await response.json();
-                    window.reclutadoresDisponibles = Array.isArray(data)
-                        ? data.map((item) => item.nombre).filter(Boolean)
+                    const nombresApi = Array.isArray(data)
+                        ? data.map((item) => item?.nombre).filter(Boolean)
                         : [];
 
-                    const selectActual = document.getElementById('nombre-reclutador');
-                    if (selectActual) {
-                        poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+                    if (nombresApi.length) {
+                        window.reclutadoresDisponibles = nombresApi;
+                        guardarReclutadoresLocales(nombresApi);
+                    } else if (!locales.length) {
+                        window.reclutadoresDisponibles = [];
                     }
+
+                    const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
+                    selects.forEach((selectActual) => {
+                        const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
+                        selectActual.setAttribute('data-valor-previo', valorPrevio);
+                        poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+                    });
+
                     return true;
                 } catch (error) {
                     ultimoError = error;
@@ -887,7 +938,10 @@
         }
 
         async function abrirEncuesta() {
-            document.getElementById('modal-encuesta').style.display = 'flex';
+            const modal = document.getElementById('modal-encuesta');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
             await cargarReclutadoresSeleccionables();
         }
 
