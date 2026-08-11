@@ -425,57 +425,93 @@
         
     </script>
     <script>
-        // <--- SECCION 1 - GRAFICA DE BARRAS --->
+        // <--- SECCION 1 - GRAFICA DE LINEAS DE INGRESOS POR RECLUTADOR --->
         const ctxReclutador = document.getElementById('reclutadorBarChart').getContext('2d');
-        const reclutadorBarChart = new Chart(ctxReclutador, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Ingresos',
-                    data: [],
-                    backgroundColor: '#007bff',
-                    borderColor: '#0056b3',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        ticks: {
-                            color: '#ccc',
-                            stepSize: 10 // Conteo de 10
+        let reclutadorBarChart = null;
+
+        function crearGraficaReclutadores(datos) {
+            const labels = (datos || []).map(item => item.nombre || '');
+            const valores = (datos || []).map(item => Number(item.total || 0));
+
+            if (reclutadorBarChart) {
+                reclutadorBarChart.destroy();
+            }
+
+            reclutadorBarChart = new Chart(ctxReclutador, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ingresos del mes',
+                            data: valores,
+                            borderColor: '#4db8ff',
+                            backgroundColor: 'rgba(77, 184, 255, 0.25)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            tension: 0.2,
+                            fill: false
                         },
-                        grid: { color: '#444' }
+                        {
+                            label: 'Meta 100',
+                            data: labels.length ? Array(labels.length).fill(100) : [],
+                            borderColor: '#ff4b4b',
+                            borderDash: [6, 6],
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
                     },
-                    x: { 
-                        ticks: { color: '#ccc' },
-                        grid: { display: false }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#ccc',
+                                stepSize: 10
+                            },
+                            grid: { color: '#444' }
+                        },
+                        x: {
+                            ticks: { color: '#ccc' },
+                            grid: { display: false }
+                        }
                     }
                 }
+            });
+        }
+
+        async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
+            try {
+                const response = await fetch(`/api/datos-grafica?periodo=reclutadores&mes=${mes}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('No se pudo cargar la gráfica');
+                const datos = await response.json();
+                crearGraficaReclutadores(Array.isArray(datos) ? datos : []);
+            } catch (error) {
+                console.error('Error cargando ingresos por reclutador:', error);
+                crearGraficaReclutadores([]);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectMes = document.getElementById('selectMes');
+            const mesInicial = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
+            actualizarGraficaReclutadores(mesInicial);
+
+            if (selectMes) {
+                selectMes.addEventListener('change', (event) => {
+                    actualizarGraficaReclutadores(Number(event.target.value));
+                });
             }
         });
-
-        function actualizarGraficaReclutadores() {
-            const guardados = localStorage.getItem('reclutadores');
-            const recruiters = guardados ? JSON.parse(guardados) : [];
-
-            const labels = recruiters.map(r => r.nombre);
-        
-            const data = recruiters.map(() => 10); 
-
-            reclutadorBarChart.data.labels = labels;
-            reclutadorBarChart.data.datasets[0].data = data;
-            reclutadorBarChart.update();
-        }
-        actualizarGraficaReclutadores();
     </script>
     <script>
         // <--- SECCION 2 - GRAFICA DE DONA --->

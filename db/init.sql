@@ -28,9 +28,12 @@ CREATE TABLE IF NOT EXISTS registro (
 );
 
 CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
-    id              SERIAL PRIMARY KEY,
-    fuente          VARCHAR(50),
-    fecha_registro  DATE DEFAULT CURRENT_DATE
+    id                  SERIAL PRIMARY KEY,
+    fuente              VARCHAR(50),
+    fecha_registro      DATE DEFAULT CURRENT_DATE,
+    nombre_reclutador   VARCHAR(200),
+    nombre_empleado     VARCHAR(200),
+    detalle             TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ingresos_puesto (

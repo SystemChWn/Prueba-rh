@@ -493,6 +493,12 @@ def asegurar_tabla_personal_reclutamiento(cur):
     )
 
 
+def asegurar_columnas_encuesta_reclutamiento(cur):
+    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(200)")
+    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS nombre_empleado VARCHAR(200)")
+    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS detalle TEXT")
+
+
 @app.route('/reclutadores', methods=['GET'])
 @app.route('/api/reclutadores', methods=['GET'])
 def obtener_reclutadores():
@@ -632,6 +638,9 @@ def guardar_encuesta():
     datos = request.form.to_dict()
     fuente = (datos.get('fuente') or '').strip()
     sub_fuente = (datos.get('sub_fuente') or '').strip()
+    nombre_reclutador = (datos.get('nombre_reclutador') or '').strip()
+    nombre_empleado = (datos.get('nombre_empleado') or '').strip()
+    detalle = (datos.get('detalle') or '').strip()
 
     def normalizar_fuente(fuente_raw, sub_raw):
         f = (fuente_raw or '').strip().upper()
@@ -659,9 +668,28 @@ def guardar_encuesta():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                asegurar_tabla_personal_reclutamiento(cur)
+                asegurar_columnas_encuesta_reclutamiento(cur)
+
+                if nombre_reclutador:
+                    cur.execute(
+                        """
+                        INSERT INTO personal_reclutamiento (nombre)
+                        SELECT %s
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM personal_reclutamiento WHERE LOWER(nombre) = LOWER(%s)
+                        )
+                        """,
+                        (nombre_reclutador, nombre_reclutador)
+                    )
+
                 cur.execute(
-                    "INSERT INTO encuesta_reclutamiento (fuente, fecha_registro) VALUES (%s, now())",
-                    (fuente_norm,)
+                    """
+                    INSERT INTO encuesta_reclutamiento (
+                        fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle
+                    ) VALUES (%s, now(), %s, %s, %s)
+                    """,
+                    (fuente_norm, nombre_reclutador, nombre_empleado, detalle)
                 )
             conn.commit()
         return ("OK", 200)
@@ -1568,6 +1596,29 @@ def api_datos_grafica():
                     datos_ordenados = [int(resultados.get(label, 0)) for label in labels_orden]
 
                     return jsonify(datos_ordenados)
+
+                elif periodo == 'reclutadores':
+                    mes = int(request.args.get('mes', '1'))
+                    query = """
+                        SELECT pr.nombre, COALESCE(COUNT(er.id), 0) AS total
+                        FROM personal_reclutamiento pr
+                        LEFT JOIN encuesta_reclutamiento er
+                            ON LOWER(TRIM(COALESCE(er.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
+                           AND EXTRACT(MONTH FROM timezone(%s, er.fecha_registro)) = %s
+                           AND EXTRACT(YEAR FROM timezone(%s, er.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
+                        GROUP BY pr.nombre
+                        ORDER BY pr.nombre
+                    """
+                    cur.execute(query, (tz, mes, tz, tz))
+                    filas = cur.fetchall()
+                    datos = [
+                        {
+                            'nombre': row[0],
+                            'total': int(row[1] or 0),
+                        }
+                        for row in filas
+                    ]
+                    return jsonify(datos)
 
                 elif periodo == '12meses':
                     query = """
