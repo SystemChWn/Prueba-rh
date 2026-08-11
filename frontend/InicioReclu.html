@@ -389,6 +389,21 @@
         actualizarMejorReclutador();
         
         // RECUADROS SUPERIORES - 3
+        function actualizarFuenteDestacada(datos) {
+            const elemento = document.getElementById('countEntrevista');
+            if (!elemento) return;
+
+            const maximo = Math.max(...datos);
+            if (maximo === 0) {
+                elemento.textContent = 'SIN DATOS';
+                return;
+            }
+
+            const indexMax = datos.indexOf(maximo);
+            const fuenteGanadora = labelsCategorias[indexMax];
+
+            elemento.textContent = `${fuenteGanadora} (${maximo})`;
+        }
         // RECUADROS SUPERIORES - 4
         
     </script>
