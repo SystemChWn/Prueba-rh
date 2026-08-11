@@ -404,6 +404,18 @@
 
             elemento.textContent = `${fuenteGanadora} (${maximo})`;
         }
+
+        // Al cargar la página:
+        const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
+        crearGraficaPastel('graficaPastelMes', datos);
+        actualizarFuenteDestacada(datos); // <-- AQUÍ ACTUALIZAS EL RECUADRO
+
+        // Al cambiar el mes:
+        selectMes.addEventListener('change', async (e) => {
+            const nuevosDatos = await fetchDatosGrafica(`periodo=mes&mes=${e.target.value}`);
+            crearGraficaPastel('graficaPastelMes', nuevosDatos);
+            actualizarFuenteDestacada(nuevosDatos); // <-- AQUÍ TAMBIÉN
+        });
         // RECUADROS SUPERIORES - 4
         
     </script>
