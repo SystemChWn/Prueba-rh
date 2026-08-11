@@ -505,17 +505,14 @@
             }
         }
 
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = [window.location.origin, ''];
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
 
             for (const baseUrl of API_BASES) {
                 try {
-                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                    const respuesta = await fetch(`${(baseUrl || '')}${endpoint}`, {
                         method: 'POST',
                         body
                     });
@@ -848,22 +845,14 @@
         }
 
         function obtenerUrlsApi() {
-            const origin = window.location.origin;
-            const host = window.location.hostname;
-            const port = window.location.port;
             const candidates = [];
+            const origin = window.location.origin;
 
             if (origin) {
                 candidates.push(`${origin}/api/reclutadores`);
             }
 
-            if (host) {
-                candidates.push(`http://${host}:8001/api/reclutadores`);
-            }
-
-            candidates.push('http://localhost:8001/api/reclutadores');
             candidates.push('/api/reclutadores');
-
             return Array.from(new Set(candidates));
         }
 

@@ -510,7 +510,7 @@
         async function fetchDatosGrafica(params) {
             const candidates = [
                 `/api/datos-grafica?${params}`,
-                `http://localhost:8001/api/datos-grafica?${params}`
+                `${window.location.origin}/api/datos-grafica?${params}`
             ];
 
             for (const url of candidates) {
@@ -543,10 +543,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             var chartIngresosAnual = null;
 
-            const currentHost = window.location.hostname;
-            const PORT = '8001';
-            const API_URL = `http://${currentHost}:${PORT}`;
-            const API_BASES = [API_URL, `http://localhost:${PORT}`];
+            const API_BASES = [window.location.origin, ''];
 
             async function getJsonConFallback(endpoint, fallbackData) {
                 var ultimoErrorRed = null;
@@ -554,7 +551,7 @@
                 for (var i = 0; i < bases.length; i += 1) {
                     var baseUrl = bases[i];
                     try {
-                        var respuesta = await fetch(baseUrl + endpoint);
+                        var respuesta = await fetch((baseUrl || '') + endpoint);
                         if (!respuesta.ok) {
                             continue;
                         }
@@ -631,22 +628,35 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO (Con persistencia en localStorage) ---
+        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO (Persistencia en base de datos) ---
         const recruiterInput = document.getElementById('recruiterInput');
         const addRecruiterBtn = document.getElementById('addRecruiterBtn');
         const tagsContainer = document.getElementById('tagsContainer');
 
-        function obtenerReclutadores() {
-            const guardados = localStorage.getItem('reclutadores');
-            return guardados ? JSON.parse(guardados) : [];
+        async function obtenerReclutadores() {
+            const urls = [
+                '/api/reclutadores',
+                `${window.location.origin}/api/reclutadores`
+            ];
+
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url, { cache: 'no-store' });
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    return Array.isArray(data) ? data : [];
+                } catch (error) {
+                    console.error('Error al cargar reclutadores:', error);
+                }
+            }
+
+            return [];
         }
 
-        function guardarReclutadores(recruiters) {
-            localStorage.setItem('reclutadores', JSON.stringify(recruiters));
-        }
+        async function renderRecruiters() {
+            if (!tagsContainer) return;
 
-        function renderRecruiters() {
-            const recruiters = obtenerReclutadores();
+            const recruiters = await obtenerReclutadores();
             tagsContainer.innerHTML = '';
 
             if (recruiters.length === 0) {
@@ -679,39 +689,53 @@
             });
         }
 
-        function agregarRecruiter() {
+        async function agregarRecruiter() {
+            if (!recruiterInput) return;
+
             const nombre = recruiterInput.value.trim();
             if (!nombre) return;
 
-            const recruiters = obtenerReclutadores();
-            
-            const nuevoRecruiter = {
-                id: Date.now(),
-                nombre: nombre
-            };
+            try {
+                const response = await fetch('/api/reclutadores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre })
+                });
 
-            recruiters.push(nuevoRecruiter);
-            guardarReclutadores(recruiters);
-
-            recruiterInput.value = '';
-            renderRecruiters();
-        }
-
-        function eliminarRecruiter(id) {
-            let recruiters = obtenerReclutadores();
-            recruiters = recruiters.filter(recruiter => recruiter.id !== id);
-            guardarReclutadores(recruiters);
-            renderRecruiters();
-        }
-
-        addRecruiterBtn.addEventListener('click', agregarRecruiter);
-        
-        recruiterInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                agregarRecruiter();
+                if (response.ok) {
+                    recruiterInput.value = '';
+                    await renderRecruiters();
+                }
+            } catch (error) {
+                console.error('Error al agregar reclutador:', error);
             }
-        });
+        }
+
+        async function eliminarRecruiter(id) {
+            if (!id) return;
+
+            try {
+                const response = await fetch(`/api/reclutadores/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    await renderRecruiters();
+                }
+            } catch (error) {
+                console.error('Error al eliminar reclutador:', error);
+            }
+        }
+
+        if (addRecruiterBtn) {
+            addRecruiterBtn.addEventListener('click', agregarRecruiter);
+        }
+
+        if (recruiterInput) {
+            recruiterInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    agregarRecruiter();
+                }
+            });
+        }
 
         renderRecruiters();
     </script>
