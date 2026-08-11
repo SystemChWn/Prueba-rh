@@ -146,13 +146,10 @@
     </main>
 
     <script>
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = [window.location.origin || '', ''];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
-    const btnGuardarDatos = document.getElementById('btn-guardar-datos');
+        const btnGuardarDatos = document.getElementById('btn-guardar-datos');
 
         async function getConFallback(endpoint) {
             let ultimoErrorRed = null;
@@ -231,6 +228,17 @@
             `;
         }
 
+        function deduplicarCandidatosPendientes(candidatos) {
+            const vistos = new Map();
+            return (Array.isArray(candidatos) ? candidatos : []).filter((candidato) => {
+                const nombre = String(candidato?.nombre_completo || '').trim().toLowerCase();
+                if (!nombre) return false;
+                if (vistos.has(nombre)) return false;
+                vistos.set(nombre, true);
+                return true;
+            });
+        }
+
         async function cargarPendientes() {
             cuerpo.innerHTML = '<tr><td colspan="9">Cargando candidatos...</td></tr>';
 
@@ -243,7 +251,7 @@
                     return;
                 }
 
-                const candidatos = JSON.parse(texto || '[]');
+                const candidatos = deduplicarCandidatosPendientes(JSON.parse(texto || '[]'));
                 if (!Array.isArray(candidatos) || !candidatos.length) {
                     cuerpo.innerHTML = '<tr><td colspan="9">No hay candidatos pendientes.</td></tr>';
                     return;

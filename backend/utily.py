@@ -5,6 +5,7 @@ import base64
 import tempfile
 import traceback
 import mimetypes
+from datetime import datetime
 import psycopg2
 import openpyxl
 from flask import Flask, jsonify, request, send_from_directory, send_file
@@ -1421,6 +1422,34 @@ def api_datos_grafica():
                     datos_ordenados = [int(resultados.get(label, 0)) for label in labels_orden]
 
                     return jsonify(datos_ordenados)
+
+                elif periodo == 'reclutadores':
+                    mes = int(request.args.get('mes', str(datetime.now().month)))
+
+                    query = """
+                        SELECT
+                            p.nombre,
+                            COUNT(e.id) AS total
+                        FROM personal_reclutamiento p
+                        LEFT JOIN encuesta_reclutamiento e
+                          ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(p.nombre))
+                         AND EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
+                         AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
+                        GROUP BY p.nombre
+                        ORDER BY total DESC, p.nombre ASC
+                    """
+                    cur.execute(query, (tz, mes, tz, tz))
+                    filas = cur.fetchall()
+
+                    datos = [
+                        {
+                            'nombre': str(row[0]).strip(),
+                            'total': int(row[1] or 0),
+                        }
+                        for row in filas
+                        if str(row[0] or '').strip()
+                    ]
+                    return jsonify(datos)
 
                 elif periodo == '12meses':
                     query = """
