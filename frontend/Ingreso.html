@@ -179,10 +179,7 @@
     </main>
 
     <script>
-        const currentHost = window.location.hostname;
-        const PORT = '8001';
-        const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const API_BASES = [window.location.origin || '', ''];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
     const btnGuardarDatos = document.getElementById('btn-guardar-datos');
@@ -192,7 +189,8 @@
 
             for (const baseUrl of API_BASES) {
                 try {
-                    const respuesta = await fetch(`${baseUrl}${endpoint}`);
+                    const url = `${baseUrl}${endpoint}`;
+                    const respuesta = await fetch(url);
                     const texto = await respuesta.text();
                     return { respuesta, texto };
                 } catch (errorRed) {
@@ -200,7 +198,7 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.filter(Boolean).join(' | ') || 'mismo origen'}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         async function postConFallback(endpoint, body) {
@@ -208,7 +206,8 @@
 
             for (const baseUrl of API_BASES) {
                 try {
-                    const respuesta = await fetch(`${baseUrl}${endpoint}`, {
+                    const url = `${baseUrl}${endpoint}`;
+                    const respuesta = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body),
@@ -220,7 +219,7 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES.filter(Boolean).join(' | ') || 'mismo origen'}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         function filaTemplate(candidato) {
