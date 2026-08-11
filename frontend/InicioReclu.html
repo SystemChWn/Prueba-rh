@@ -389,33 +389,42 @@
         actualizarMejorReclutador();
         
         // RECUADROS SUPERIORES - 3
-        function actualizarFuenteDestacada(datos) {
-            const elemento = document.getElementById('countEntrevista');
-            if (!elemento) return;
+        document.addEventListener("DOMContentLoaded", () => {
+            async function sincronizarFuenteDestacada() {
+                const selectMes = document.getElementById('selectMes');
+                const mesActual = selectMes ? selectMes.value : (new Date().getMonth() + 1);
+                
+                // Hacemos la misma petición para obtener los datos del mes actual
+                const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
+                
+                const elemento = document.getElementById('countEntrevista');
+                if (!elemento) return;
 
-            const maximo = Math.max(...datos);
-            if (maximo === 0) {
-                elemento.textContent = 'SIN DATOS';
-                return;
+                const maximo = Math.max(...datos);
+                if (maximo === 0) {
+                    elemento.textContent = '0';
+                    return;
+                }
+
+                const indexMax = datos.indexOf(maximo);
+                // labelsCategorias ya existe en tu script original, por lo que la reconoce sin problema
+                const fuenteGanadora = labelsCategorias[indexMax];
+
+                elemento.textContent = `${fuenteGanadora} (${maximo})`;
             }
 
-            const indexMax = datos.indexOf(maximo);
-            const fuenteGanadora = labelsCategorias[indexMax];
+            // Ejecutar al iniciar
+            setTimeout(sincronizarFuenteDestacada, 500);
 
-            elemento.textContent = `${fuenteGanadora} (${maximo})`;
-        }
-
-        // Al cargar la página:
-        const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
-        crearGraficaPastel('graficaPastelMes', datos);
-        actualizarFuenteDestacada(datos); // <-- AQUÍ ACTUALIZAS EL RECUADRO
-
-        // Al cambiar el mes:
-        selectMes.addEventListener('change', async (e) => {
-            const nuevosDatos = await fetchDatosGrafica(`periodo=mes&mes=${e.target.value}`);
-            crearGraficaPastel('graficaPastelMes', nuevosDatos);
-            actualizarFuenteDestacada(nuevosDatos); // <-- AQUÍ TAMBIÉN
+            // Escuchar si cambian el mes en el selector
+            const selectMes = document.getElementById('selectMes');
+            if (selectMes) {
+                selectMes.addEventListener('change', () => {
+                    setTimeout(sincronizarFuenteDestacada, 300);
+                });
+            }
         });
+
         // RECUADROS SUPERIORES - 4
         
     </script>
