@@ -628,12 +628,28 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO (Persistencia en base de datos) ---
-        const recruiterInput = document.getElementById('recruiterInput');
-        const addRecruiterBtn = document.getElementById('addRecruiterBtn');
-        const tagsContainer = document.getElementById('tagsContainer');
+        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO ---
+        let recruiterInput = null;
+        let addRecruiterBtn = null;
+        let tagsContainer = null;
+
+        function leerReclutadoresLocales() {
+            try {
+                const guardados = localStorage.getItem('reclutadores');
+                if (!guardados) return [];
+                const datos = JSON.parse(guardados);
+                return Array.isArray(datos) ? datos : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function guardarReclutadoresLocales(recruiters) {
+            localStorage.setItem('reclutadores', JSON.stringify(recruiters));
+        }
 
         async function obtenerReclutadores() {
+            const locales = leerReclutadoresLocales();
             const urls = [
                 '/api/reclutadores',
                 `${window.location.origin}/api/reclutadores`
@@ -644,19 +660,21 @@
                     const response = await fetch(url, { cache: 'no-store' });
                     if (!response.ok) continue;
                     const data = await response.json();
-                    return Array.isArray(data) ? data : [];
+                    if (Array.isArray(data) && data.length) {
+                        guardarReclutadoresLocales(data);
+                        return data;
+                    }
                 } catch (error) {
-                    console.error('Error al cargar reclutadores:', error);
+                    console.warn('No se pudo cargar desde la API, usando respaldo local:', error);
                 }
             }
 
-            return [];
+            return locales;
         }
 
-        async function renderRecruiters() {
+        function renderRecruiters(recruiters = []) {
             if (!tagsContainer) return;
 
-            const recruiters = await obtenerReclutadores();
             tagsContainer.innerHTML = '';
 
             if (recruiters.length === 0) {
@@ -689,11 +707,26 @@
             });
         }
 
+        async function cargarYRenderizarRecruiters() {
+            const recruiters = await obtenerReclutadores();
+            renderRecruiters(recruiters);
+        }
+
         async function agregarRecruiter() {
             if (!recruiterInput) return;
 
             const nombre = recruiterInput.value.trim();
             if (!nombre) return;
+
+            const recruiters = leerReclutadoresLocales();
+            const yaExiste = recruiters.some((item) => String(item.nombre || '').trim().toLowerCase() === nombre.toLowerCase());
+            if (!yaExiste) {
+                recruiters.push({ id: Date.now(), nombre });
+                guardarReclutadoresLocales(recruiters);
+            }
+
+            renderRecruiters(recruiters);
+            recruiterInput.value = '';
 
             try {
                 const response = await fetch('/api/reclutadores', {
@@ -703,41 +736,50 @@
                 });
 
                 if (response.ok) {
-                    recruiterInput.value = '';
-                    await renderRecruiters();
+                    await cargarYRenderizarRecruiters();
                 }
             } catch (error) {
-                console.error('Error al agregar reclutador:', error);
+                console.warn('No se pudo sincronizar con la API, pero el nombre quedó guardado localmente:', error);
             }
         }
 
         async function eliminarRecruiter(id) {
             if (!id) return;
 
+            const recruiters = leerReclutadoresLocales().filter((recruiter) => recruiter.id !== id);
+            guardarReclutadoresLocales(recruiters);
+            renderRecruiters(recruiters);
+
             try {
                 const response = await fetch(`/api/reclutadores/${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    await renderRecruiters();
+                    await cargarYRenderizarRecruiters();
                 }
             } catch (error) {
-                console.error('Error al eliminar reclutador:', error);
+                console.warn('No se pudo eliminar en la API, pero se eliminó localmente:', error);
             }
         }
 
-        if (addRecruiterBtn) {
-            addRecruiterBtn.addEventListener('click', agregarRecruiter);
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            recruiterInput = document.getElementById('recruiterInput');
+            addRecruiterBtn = document.getElementById('addRecruiterBtn');
+            tagsContainer = document.getElementById('tagsContainer');
 
-        if (recruiterInput) {
-            recruiterInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    agregarRecruiter();
-                }
-            });
-        }
+            if (addRecruiterBtn) {
+                addRecruiterBtn.addEventListener('click', agregarRecruiter);
+            }
 
-        renderRecruiters();
+            if (recruiterInput) {
+                recruiterInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        agregarRecruiter();
+                    }
+                });
+            }
+
+            cargarYRenderizarRecruiters();
+        });
     </script>
 </body>
 </html>

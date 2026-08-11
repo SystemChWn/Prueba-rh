@@ -50,6 +50,37 @@ DEFAULT_DOCS_ROOT = os.getenv(
     "EMPLOYEE_DOCS_ROOT",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),
 )
+RECLUTADORES_FALLBACK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads", "reclutadores_fallback.json"))
+
+
+def cargar_reclutadores_fallback():
+    try:
+        if not os.path.exists(RECLUTADORES_FALLBACK_PATH):
+            return []
+        with open(RECLUTADORES_FALLBACK_PATH, "r", encoding="utf-8") as handle:
+            datos = json.load(handle)
+        if not isinstance(datos, list):
+            return []
+        return [
+            {
+                "id": int(item.get("id", index + 1)),
+                "nombre": str(item.get("nombre", "")).strip(),
+            }
+            for index, item in enumerate(datos)
+            if str(item.get("nombre", "")).strip()
+        ]
+    except Exception as exc:
+        print(f"No se pudo leer el respaldo de reclutadores: {exc}")
+        return []
+
+
+def guardar_reclutadores_fallback(reclutadores):
+    try:
+        os.makedirs(os.path.dirname(RECLUTADORES_FALLBACK_PATH), exist_ok=True)
+        with open(RECLUTADORES_FALLBACK_PATH, "w", encoding="utf-8") as handle:
+            json.dump(reclutadores, handle, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        print(f"No se pudo escribir el respaldo de reclutadores: {exc}")
 
 
 def obtener_directorio_empresa(empresa):
@@ -302,6 +333,8 @@ def get_db_connection():
         database=os.getenv("POSTGRES_DB", "rh-system"),
         user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
+        connect_timeout=5,
+        options="-c client_encoding=UTF8",
     )
 
 
@@ -482,7 +515,8 @@ def obtener_reclutadores():
         return jsonify(data), 200
     except Exception as e:
         print(f"Error al obtener reclutadores: {e}")
-        return jsonify({'error': str(e)}), 500
+        data = cargar_reclutadores_fallback()
+        return jsonify(data), 200
 
 
 @app.route('/reclutadores', methods=['POST'])
@@ -523,7 +557,14 @@ def crear_reclutador():
         return jsonify({'id': None, 'nombre': nombre, 'duplicado': True}), 200
     except Exception as e:
         print(f"Error al crear reclutador: {e}")
-        return jsonify({'error': str(e)}), 500
+        reclutadores = cargar_reclutadores_fallback()
+        nombre_normal = nombre.strip()
+        existe = any(str(item.get('nombre', '')).strip().lower() == nombre_normal.lower() for item in reclutadores)
+        if not existe:
+            nuevo_id = max([int(item.get('id', 0)) for item in reclutadores], default=0) + 1
+            reclutadores.append({'id': nuevo_id, 'nombre': nombre_normal})
+            guardar_reclutadores_fallback(reclutadores)
+        return jsonify({'id': None, 'nombre': nombre_normal, 'duplicado': existe}), 200
 
 
 @app.route('/reclutadores/<int:reclutador_id>', methods=['DELETE'])
@@ -538,7 +579,10 @@ def eliminar_reclutador(reclutador_id):
         return jsonify({'ok': True}), 200
     except Exception as e:
         print(f"Error al eliminar reclutador: {e}")
-        return jsonify({'error': str(e)}), 500
+        reclutadores = cargar_reclutadores_fallback()
+        reclutadores = [item for item in reclutadores if int(item.get('id', 0)) != int(reclutador_id)]
+        guardar_reclutadores_fallback(reclutadores)
+        return jsonify({'ok': True}), 200
 
 
 @app.route('/guardar-registro', methods=['POST'])
