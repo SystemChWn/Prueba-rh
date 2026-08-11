@@ -1394,6 +1394,40 @@ def guardar_o_actualizar_ingreso(cur, payload):
     return ("OK", 200)
 
 
+@app.route('/eliminar-pendientes', methods=['POST'])
+@app.route('/api/eliminar-pendientes', methods=['POST'])
+def eliminar_pendientes():
+    payload = request.get_json(silent=True) or {}
+    registro_ids = payload.get('registro_ids') if isinstance(payload, dict) else None
+
+    if not isinstance(registro_ids, list) or not registro_ids:
+        return ("ERROR: Debes enviar al menos un registro_id", 400)
+
+    ids_limpios = []
+    for item in registro_ids:
+        try:
+            id_val = int(item)
+            if id_val > 0:
+                ids_limpios.append(id_val)
+        except (TypeError, ValueError):
+            continue
+
+    if not ids_limpios:
+        return ("ERROR: No hay IDs válidos para eliminar", 400)
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                for registro_id in sorted(set(ids_limpios)):
+                    cur.execute("DELETE FROM ingresos_puesto WHERE registro_id = %s", (registro_id,))
+                    cur.execute("DELETE FROM registro WHERE id = %s", (registro_id,))
+            conn.commit()
+        return ("OK", 200)
+    except Exception as e:
+        print(f"Error al eliminar pendientes: {e}")
+        return (f"ERROR: {str(e)}", 500)
+
+
 @app.route('/guardar-ingreso', methods=['POST'])
 @app.route('/api/guardar-ingreso', methods=['POST'])
 def guardar_ingreso():
