@@ -50,37 +50,6 @@ DEFAULT_DOCS_ROOT = os.getenv(
     "EMPLOYEE_DOCS_ROOT",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),
 )
-RECLUTADORES_FALLBACK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads", "reclutadores_fallback.json"))
-
-
-def cargar_reclutadores_fallback():
-    try:
-        if not os.path.exists(RECLUTADORES_FALLBACK_PATH):
-            return []
-        with open(RECLUTADORES_FALLBACK_PATH, "r", encoding="utf-8") as handle:
-            datos = json.load(handle)
-        if not isinstance(datos, list):
-            return []
-        return [
-            {
-                "id": int(item.get("id", index + 1)),
-                "nombre": str(item.get("nombre", "")).strip(),
-            }
-            for index, item in enumerate(datos)
-            if str(item.get("nombre", "")).strip()
-        ]
-    except Exception as exc:
-        print(f"No se pudo leer el respaldo de reclutadores: {exc}")
-        return []
-
-
-def guardar_reclutadores_fallback(reclutadores):
-    try:
-        os.makedirs(os.path.dirname(RECLUTADORES_FALLBACK_PATH), exist_ok=True)
-        with open(RECLUTADORES_FALLBACK_PATH, "w", encoding="utf-8") as handle:
-            json.dump(reclutadores, handle, ensure_ascii=False, indent=2)
-    except Exception as exc:
-        print(f"No se pudo escribir el respaldo de reclutadores: {exc}")
 
 
 def obtener_directorio_empresa(empresa):
@@ -323,18 +292,12 @@ def obtener_ruta_documento(empresa, file_name):
 
 
 def get_db_connection():
-    host = os.getenv("POSTGRES_HOST")
-    if not host:
-        host = "postgres" if os.path.exists("/.dockerenv") else "localhost"
-
     return psycopg2.connect(
-        host=host,
+        host=os.getenv("POSTGRES_HOST", "postgres"),
         port=os.getenv("POSTGRES_PORT", "5432"),
         database=os.getenv("POSTGRES_DB", "rh-system"),
         user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
-        connect_timeout=5,
-        options="-c client_encoding=UTF8",
     )
 
 
@@ -475,122 +438,6 @@ def separar_ubicacion(valor):
     )
 
 
-def asegurar_tabla_personal_reclutamiento(cur):
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-            id SERIAL PRIMARY KEY,
-            nombre VARCHAR(200) NOT NULL,
-            fecha_registro DATE DEFAULT CURRENT_DATE
-        )
-        """
-    )
-    cur.execute(
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS personal_reclutamiento_nombre_idx
-        ON personal_reclutamiento (LOWER(nombre))
-        """
-    )
-
-
-def asegurar_columnas_encuesta_reclutamiento(cur):
-    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(200)")
-    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS nombre_empleado VARCHAR(200)")
-    cur.execute("ALTER TABLE encuesta_reclutamiento ADD COLUMN IF NOT EXISTS detalle TEXT")
-
-
-@app.route('/reclutadores', methods=['GET'])
-@app.route('/api/reclutadores', methods=['GET'])
-def obtener_reclutadores():
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                cur.execute(
-                    "SELECT id, nombre FROM personal_reclutamiento ORDER BY id ASC"
-                )
-                rows = cur.fetchall()
-
-        data = [
-            {
-                'id': row[0],
-                'nombre': row[1],
-            }
-            for row in rows
-        ]
-        return jsonify(data), 200
-    except Exception as e:
-        print(f"Error al obtener reclutadores: {e}")
-        data = cargar_reclutadores_fallback()
-        return jsonify(data), 200
-
-
-@app.route('/reclutadores', methods=['POST'])
-@app.route('/api/reclutadores', methods=['POST'])
-def crear_reclutador():
-    payload = request.get_json(silent=True) or request.form.to_dict(flat=True) or {}
-    nombre = (payload.get('nombre') if isinstance(payload, dict) else None) or ''
-    nombre = (nombre or '').strip()
-
-    if not nombre:
-        return jsonify({'error': 'El nombre es obligatorio'}), 400
-
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                cur.execute(
-                    "SELECT id, nombre FROM personal_reclutamiento WHERE LOWER(nombre) = LOWER(%s) LIMIT 1",
-                    (nombre,),
-                )
-                existing = cur.fetchone()
-                if existing:
-                    row = existing
-                else:
-                    cur.execute(
-                        """
-                        INSERT INTO personal_reclutamiento (nombre, fecha_registro)
-                        VALUES (%s, CURRENT_DATE)
-                        RETURNING id, nombre
-                        """,
-                        (nombre,),
-                    )
-                    row = cur.fetchone()
-            conn.commit()
-
-        if row:
-            return jsonify({'id': row[0], 'nombre': row[1], 'duplicado': existing is not None}), 201 if existing is None else 200
-        return jsonify({'id': None, 'nombre': nombre, 'duplicado': True}), 200
-    except Exception as e:
-        print(f"Error al crear reclutador: {e}")
-        reclutadores = cargar_reclutadores_fallback()
-        nombre_normal = nombre.strip()
-        existe = any(str(item.get('nombre', '')).strip().lower() == nombre_normal.lower() for item in reclutadores)
-        if not existe:
-            nuevo_id = max([int(item.get('id', 0)) for item in reclutadores], default=0) + 1
-            reclutadores.append({'id': nuevo_id, 'nombre': nombre_normal})
-            guardar_reclutadores_fallback(reclutadores)
-        return jsonify({'id': None, 'nombre': nombre_normal, 'duplicado': existe}), 200
-
-
-@app.route('/reclutadores/<int:reclutador_id>', methods=['DELETE'])
-@app.route('/api/reclutadores/<int:reclutador_id>', methods=['DELETE'])
-def eliminar_reclutador(reclutador_id):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
-            conn.commit()
-        return jsonify({'ok': True}), 200
-    except Exception as e:
-        print(f"Error al eliminar reclutador: {e}")
-        reclutadores = cargar_reclutadores_fallback()
-        reclutadores = [item for item in reclutadores if int(item.get('id', 0)) != int(reclutador_id)]
-        guardar_reclutadores_fallback(reclutadores)
-        return jsonify({'ok': True}), 200
-
-
 @app.route('/guardar-registro', methods=['POST'])
 @app.route('/api/guardar-registro', methods=['POST'])
 def guardar_registro():
@@ -638,9 +485,6 @@ def guardar_encuesta():
     datos = request.form.to_dict()
     fuente = (datos.get('fuente') or '').strip()
     sub_fuente = (datos.get('sub_fuente') or '').strip()
-    nombre_reclutador = (datos.get('nombre_reclutador') or '').strip()
-    nombre_empleado = (datos.get('nombre_empleado') or '').strip()
-    detalle = (datos.get('detalle') or '').strip()
 
     def normalizar_fuente(fuente_raw, sub_raw):
         f = (fuente_raw or '').strip().upper()
@@ -668,28 +512,9 @@ def guardar_encuesta():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                asegurar_columnas_encuesta_reclutamiento(cur)
-
-                if nombre_reclutador:
-                    cur.execute(
-                        """
-                        INSERT INTO personal_reclutamiento (nombre)
-                        SELECT %s
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM personal_reclutamiento WHERE LOWER(nombre) = LOWER(%s)
-                        )
-                        """,
-                        (nombre_reclutador, nombre_reclutador)
-                    )
-
                 cur.execute(
-                    """
-                    INSERT INTO encuesta_reclutamiento (
-                        fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle
-                    ) VALUES (%s, now(), %s, %s, %s)
-                    """,
-                    (fuente_norm, nombre_reclutador, nombre_empleado, detalle)
+                    "INSERT INTO encuesta_reclutamiento (fuente, fecha_registro) VALUES (%s, now())",
+                    (fuente_norm,)
                 )
             conn.commit()
         return ("OK", 200)
@@ -1394,45 +1219,6 @@ def guardar_o_actualizar_ingreso(cur, payload):
     return ("OK", 200)
 
 
-@app.route('/eliminar-pendientes', methods=['POST', 'DELETE'])
-@app.route('/api/eliminar-pendientes', methods=['POST', 'DELETE'])
-def eliminar_pendientes():
-    payload = request.get_json(silent=True) or {}
-    if isinstance(payload, dict):
-        registro_ids = payload.get('registro_ids')
-    elif isinstance(payload, list):
-        registro_ids = payload
-    else:
-        registro_ids = None
-
-    if not isinstance(registro_ids, list) or not registro_ids:
-        return ("ERROR: Debes enviar al menos un registro_id", 400)
-
-    ids_limpios = []
-    for item in registro_ids:
-        try:
-            id_val = int(item)
-            if id_val > 0:
-                ids_limpios.append(id_val)
-        except (TypeError, ValueError):
-            continue
-
-    ids_limpios = sorted(set(ids_limpios))
-    if not ids_limpios:
-        return ("ERROR: No hay IDs válidos para eliminar", 400)
-
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM ingresos_puesto WHERE registro_id = ANY(%s)", (ids_limpios,))
-                cur.execute("DELETE FROM registro WHERE id = ANY(%s)", (ids_limpios,))
-            conn.commit()
-        return ("OK", 200)
-    except Exception as e:
-        print(f"Error al eliminar pendientes: {e}")
-        return (f"ERROR: {str(e)}", 500)
-
-
 @app.route('/guardar-ingreso', methods=['POST'])
 @app.route('/api/guardar-ingreso', methods=['POST'])
 def guardar_ingreso():
@@ -1635,29 +1421,6 @@ def api_datos_grafica():
                     datos_ordenados = [int(resultados.get(label, 0)) for label in labels_orden]
 
                     return jsonify(datos_ordenados)
-
-                elif periodo == 'reclutadores':
-                    mes = int(request.args.get('mes', '1'))
-                    query = """
-                        SELECT pr.nombre, COALESCE(COUNT(er.id), 0) AS total
-                        FROM personal_reclutamiento pr
-                        LEFT JOIN encuesta_reclutamiento er
-                            ON LOWER(TRIM(COALESCE(er.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
-                           AND EXTRACT(MONTH FROM timezone(%s, er.fecha_registro)) = %s
-                           AND EXTRACT(YEAR FROM timezone(%s, er.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
-                        GROUP BY pr.nombre
-                        ORDER BY pr.nombre
-                    """
-                    cur.execute(query, (tz, mes, tz, tz))
-                    filas = cur.fetchall()
-                    datos = [
-                        {
-                            'nombre': row[0],
-                            'total': int(row[1] or 0),
-                        }
-                        for row in filas
-                    ]
-                    return jsonify(datos)
 
                 elif periodo == '12meses':
                     query = """
