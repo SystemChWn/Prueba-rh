@@ -489,16 +489,50 @@
             });
         }
 
+        function obtenerDatosReclutadoresParaGrafica() {
+            return leerReclutadoresLocales()
+                .map((reclutador) => ({
+                    nombre: reclutador.nombre,
+                    total: Number(reclutador.ingresos || 0),
+                }))
+                .filter((item) => item.nombre);
+        }
+
         async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
+            const datosLocales = obtenerDatosReclutadoresParaGrafica();
+
             try {
                 const response = await fetch(`/api/datos-grafica?periodo=reclutadores&mes=${mes}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error('No se pudo cargar la gráfica');
                 const datos = await response.json();
-                crearGraficaReclutadores(Array.isArray(datos) ? datos : []);
+
+                if (Array.isArray(datos) && datos.length) {
+                    const datosApi = datos
+                        .map((item) => ({
+                            nombre: String(item?.nombre || '').trim(),
+                            total: Number(item?.total || 0),
+                        }))
+                        .filter((item) => item.nombre);
+
+                    if (datosApi.length) {
+                        const datosCombinados = datosApi.map((item) => ({ ...item }));
+                        datosLocales.forEach((item) => {
+                            const coincide = datosCombinados.find((dato) => dato.nombre.toLowerCase() === item.nombre.toLowerCase());
+                            if (coincide) {
+                                coincide.total = Math.max(coincide.total || 0, item.total || 0);
+                            } else {
+                                datosCombinados.push(item);
+                            }
+                        });
+                        crearGraficaReclutadores(datosCombinados);
+                        return;
+                    }
+                }
             } catch (error) {
                 console.error('Error cargando ingresos por reclutador:', error);
-                crearGraficaReclutadores([]);
             }
+
+            crearGraficaReclutadores(datosLocales);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -669,19 +703,40 @@
         let addRecruiterBtn = null;
         let tagsContainer = null;
 
+        function normalizarReclutador(item, fallbackId = null) {
+            if (typeof item === 'string') {
+                const nombre = item.trim();
+                return nombre ? { id: fallbackId || Date.now(), nombre, ingresos: 0 } : null;
+            }
+
+            const nombre = String(item?.nombre || '').trim();
+            if (!nombre) return null;
+
+            return {
+                id: item?.id || fallbackId || Date.now(),
+                nombre,
+                ingresos: Number(item?.ingresos || 0),
+            };
+        }
+
         function leerReclutadoresLocales() {
             try {
                 const guardados = localStorage.getItem('reclutadores');
                 if (!guardados) return [];
                 const datos = JSON.parse(guardados);
-                return Array.isArray(datos) ? datos : [];
+                return Array.isArray(datos)
+                    ? datos.map((item) => normalizarReclutador(item, Date.now())).filter(Boolean)
+                    : [];
             } catch (error) {
                 return [];
             }
         }
 
         function guardarReclutadoresLocales(recruiters) {
-            localStorage.setItem('reclutadores', JSON.stringify(recruiters));
+            const lista = (recruiters || [])
+                .map((item) => normalizarReclutador(item, Date.now()))
+                .filter(Boolean);
+            localStorage.setItem('reclutadores', JSON.stringify(lista));
         }
 
         async function obtenerReclutadores() {
@@ -757,7 +812,7 @@
             const recruiters = leerReclutadoresLocales();
             const yaExiste = recruiters.some((item) => String(item.nombre || '').trim().toLowerCase() === nombre.toLowerCase());
             if (!yaExiste) {
-                recruiters.push({ id: Date.now(), nombre });
+                recruiters.push({ id: Date.now(), nombre, ingresos: 0 });
                 guardarReclutadoresLocales(recruiters);
             }
 

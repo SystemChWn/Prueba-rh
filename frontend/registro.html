@@ -742,6 +742,8 @@
                 detalle = `Reclutador CW: ${nombreReclutador}`;
             }
 
+            sincronizarReclutadorLocal(nombreReclutador);
+
             const encuestaForm = new FormData();
             encuestaForm.append('curp', registro.curp || '');
             encuestaForm.append('fuente', fuenteParaEnviar || '');
@@ -825,7 +827,21 @@
                 const datos = JSON.parse(guardados);
                 if (!Array.isArray(datos)) return [];
                 return datos
-                    .map((item) => String(item?.nombre || '').trim())
+                    .map((item) => {
+                        if (typeof item === 'string') {
+                            const nombre = item.trim();
+                            return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
+                        }
+
+                        const nombre = String(item?.nombre || '').trim();
+                        if (!nombre) return null;
+
+                        return {
+                            id: item?.id || Date.now(),
+                            nombre,
+                            ingresos: Number(item?.ingresos || 0),
+                        };
+                    })
                     .filter(Boolean);
             } catch (error) {
                 return [];
@@ -834,11 +850,48 @@
 
         function guardarReclutadoresLocales(nombres) {
             try {
-                const lista = (nombres || []).map((nombre) => String(nombre).trim()).filter(Boolean);
-                localStorage.setItem('reclutadores', JSON.stringify(lista.map((nombre) => ({ nombre }))));
+                const lista = (nombres || [])
+                    .map((item) => {
+                        if (typeof item === 'string') {
+                            const nombre = item.trim();
+                            return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
+                        }
+
+                        const nombre = String(item?.nombre || '').trim();
+                        if (!nombre) return null;
+
+                        return {
+                            id: item?.id || Date.now(),
+                            nombre,
+                            ingresos: Number(item?.ingresos || 0),
+                        };
+                    })
+                    .filter(Boolean);
+                localStorage.setItem('reclutadores', JSON.stringify(lista));
             } catch (error) {
                 console.warn('No se pudieron guardar reclutadores locales:', error);
             }
+        }
+
+        function sincronizarReclutadorLocal(nombre) {
+            const nombreNormal = String(nombre || '').trim();
+            if (!nombreNormal) return;
+
+            const reclutadores = leerReclutadoresLocales();
+            const index = reclutadores.findIndex((item) => String(item?.nombre || '').trim().toLowerCase() === nombreNormal.toLowerCase());
+
+            if (index >= 0) {
+                reclutadores[index] = {
+                    ...reclutadores[index],
+                    nombre: nombreNormal,
+                    ingresos: Number(reclutadores[index]?.ingresos || 0) + 1,
+                };
+            } else {
+                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1 });
+            }
+
+            guardarReclutadoresLocales(reclutadores);
+            window.reclutadoresDisponibles = reclutadores;
         }
 
         function poblarSelectReclutadores(selectEl, textoVacio) {
@@ -859,7 +912,10 @@
                 return;
             }
 
-            window.reclutadoresDisponibles.forEach((nombre) => {
+            window.reclutadoresDisponibles.forEach((entry) => {
+                const nombre = typeof entry === 'string' ? entry : (entry?.nombre || '');
+                if (!nombre) return;
+
                 const option = document.createElement('option');
                 option.value = nombre;
                 option.textContent = nombre;
@@ -910,12 +966,25 @@
 
                     const data = await response.json();
                     const nombresApi = Array.isArray(data)
-                        ? data.map((item) => item?.nombre).filter(Boolean)
+                        ? data.map((item) => ({
+                            id: item?.id || Date.now(),
+                            nombre: String(item?.nombre || '').trim(),
+                            ingresos: Number(item?.ingresos || 0),
+                        })).filter((item) => item.nombre)
                         : [];
 
                     if (nombresApi.length) {
-                        window.reclutadoresDisponibles = nombresApi;
-                        guardarReclutadoresLocales(nombresApi);
+                        const reclutadoresCombinados = [...leerReclutadoresLocales(), ...nombresApi];
+                        const mapa = new Map();
+                        reclutadoresCombinados.forEach((item) => {
+                            const key = String(item?.nombre || '').trim().toLowerCase();
+                            if (!key) return;
+                            if (!mapa.has(key)) {
+                                mapa.set(key, item);
+                            }
+                        });
+                        window.reclutadoresDisponibles = Array.from(mapa.values());
+                        guardarReclutadoresLocales(window.reclutadoresDisponibles);
                     } else if (!locales.length) {
                         window.reclutadoresDisponibles = [];
                     }
