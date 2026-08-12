@@ -86,7 +86,7 @@
             margin: 0;
         }
 
-/* DIVISIÓN DE LO QUE QUEDA DE LA PÁGINA EN 4 SECCIONES */
+/* DIVISIÓN EN 4 SECCIONES */
         .grid-content-4 {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -108,6 +108,34 @@
             font-size: 0.9rem;
             text-transform: uppercase;
         }
+
+    /* SECCION DIVIDIDA */
+    .content-section.split-section {
+        display: grid;
+        grid-template-rows: repeat(2, 1fr); /* Parte la celda exactamente a la mitad horizontalmente */
+        gap: 15px; /* Espacio separador entre los dos recuadros */
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+
+    /* Cada uno de los dos recuadros independientes */
+    .sub-box {
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Contenedor de tags con scroll interno por si la lista crece */
+    .sub-box .tags-container {
+        overflow-y: auto;
+        flex-grow: 1;
+    }
 
 /* SECCION 1 */
 
@@ -160,13 +188,12 @@
             width: 100%;
         }     
 
-/* SECCION 4 */
+/* SECCION 4 1/2 */
+        /* Mitad de arriba - Personal de Reclutamiento */
         .recruitment-section {
-            background: rgba(44, 44, 44, 0.85);
             padding: 20px;
-            border-radius: 10px;
-            margin-top: 40px;
-            border: 1px solid #444;
+            margin-top: -5px;
+            margin-bottom: 500px;
         }
 
         .recruitment-section h3 {
@@ -229,6 +256,7 @@
             background: none;
             border: none;
             color: #333;
+            cursor: pointer;
             font-size: 1.2rem;
             cursor: pointer;
             margin-left: 10px;
@@ -247,6 +275,53 @@
             color: #ff4d4d;
         }
 
+/* SECCION 4 2/2 */
+        /* Generador de enlaces de registro */
+        .form-group-link {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group-link label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        .form-group-link select {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 200px;
+        }
+        .btn-generate {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-generate:hover { background-color: #0056b3; }
+        
+        .link-result-box {
+            display: none;
+            background: #1e1e1e;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #007bff;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: #4db8ff;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -297,6 +372,47 @@
             </section>
 
             <!-- Sección 2 -->
+            <section class="content-section split-section">
+                <!-- MITAD SUPERIOR: Personal de Reclutamiento Activo -->
+                <div class="sub-box">
+                    <h3>Personal de Reclutamiento Activo</h3>
+                    <div class="input-group">
+                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
+                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
+                    </div>
+                </div>
+
+                <!-- MITAD INFERIOR: Generador de enlace temporal -->
+                <div class="sub-box">
+                    <h3>Generar Link de Registro</h3>
+                    <div class="side-panel-content">
+                        <div class="form-group-link">
+                            <label for="expiry-minutes">Tiempo límite de respuesta:</label>
+                            <select id="expiry-minutes">
+                                <option value="5">5 minutos</option>
+                                <option value="10">10 minutos</option>
+                                <option value="15">15 minutos</option>
+                                <option value="20">20 minutos</option>
+                            </select>
+                        </div>
+                        <button class="btn-generate" id="btn-generate-link">Generar y Copiar Enlace</button>
+                        <div class="link-result-box" id="link-result-container">
+                            <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Sección 3 -->
+            <section class="content-section">
+                <div class="ingresos-card">
+                    <h3>Comparativa Anual de Ingresos</h3>
+                    <div class="ingresos-chart-wrap">
+                    <canvas id="grafica12MesesInicio"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección 4 -->
             <section class="content-section">
                 <h3>Medios de Reclutamiento</h3>
                 <div class="filter-container">
@@ -325,27 +441,6 @@
                     <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
                     <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
                     <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
-                </div>
-            </section>
-            <!-- Sección 3 -->
-            <section class="content-section">
-                <div class="ingresos-card">
-                    <h3>Comparativa Anual de Ingresos</h3>
-                    <div class="ingresos-chart-wrap">
-                    <canvas id="grafica12MesesInicio"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Sección 4 -->
-            <section class="content-section">
-                <div class="recruitment-section">
-                    <h3>Personal de Reclutamiento Activo</h3>
-                    <div class="input-group">
-                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
-                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
-                    </div>
-                    <div class="tags-container" id="tagsContainer"></div>
                 </div>
             </section>
         </div>
@@ -698,7 +793,7 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 4 - PERSONAL DE RECLUTAMIENTO ---
+        // --- SECCIÓN 4 1/2 - PERSONAL DE RECLUTAMIENTO ---
         let recruiterInput = null;
         let addRecruiterBtn = null;
         let tagsContainer = null;
@@ -870,6 +965,47 @@
             }
 
             cargarYRenderizarRecruiters();
+        });
+    </script>
+    <script>
+        // --- SECCIÓN 4 2/2 - GENERAR LINK ---
+        const btnGenerate = document.getElementById('btn-generate-link');
+        const selectMinutes = document.getElementById('expiry-minutes');
+        const linkContainer = document.getElementById('link-result-container');
+
+        const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
+
+        async function copiarTexto(texto) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(texto);
+                return;
+            }
+
+            const helper = document.createElement('textarea');
+            helper.value = texto;
+            helper.setAttribute('readonly', '');
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            helper.style.left = '-9999px';
+            document.body.appendChild(helper);
+            helper.select();
+            document.execCommand('copy');
+            document.body.removeChild(helper);
+        }
+
+        btnGenerate.addEventListener('click', async function() {
+            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
+            const ahora = new Date();
+            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
+            const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?expires=${tiempoLimite}`;
+
+            try {
+                await copiarTexto(finalLink);
+                linkContainer.style.display = 'block';
+            } catch (err) {
+                console.error('Error al copiar: ', err);
+                linkContainer.style.display = 'block';
+            }
         });
     </script>
 </body>

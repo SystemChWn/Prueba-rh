@@ -54,53 +54,6 @@
         .fc { color: #fff; }
         .fc .fc-toolbar-title { text-transform: uppercase !important; }
 
-/* Generador de enlaces de registro */
-        .form-group-link {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .form-group-link label {
-            font-size: 0.8rem;
-            color: #ccc;
-        }
-        .form-group-link select {
-            background: #1e1e1e;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            width: 200px;
-        }
-        .btn-generate {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-            margin-top: 20px;
-        }
-
-        .btn-generate:hover { background-color: #0056b3; }
-        
-        .link-result-box {
-            display: none;
-            background: #1e1e1e;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #007bff;
-            word-break: break-all;
-            font-size: 0.8rem;
-            color: #4db8ff;
-            text-align: center;
-        }
-
         /* SECCIONES DE ENCABEZADO */
         .main-header {
             display: flex;
@@ -159,26 +112,6 @@
         <div id='calendar'></div>
         
         <div class="side-panels-container">
-            <!-- PANEL 1: Generador de enlace temporal para registro.html -->
-            <div class="side-panel-card">
-                <h3>Generar Link de Registro</h3>
-                <div class="side-panel-content">
-                    <div class="form-group-link">
-                        <label for="expiry-minutes">Tiempo límite de respuesta:</label>
-                        <select id="expiry-minutes">
-                            <option value="5">5 minutos</option>
-                            <option value="10">10 minutos</option>
-                            <option value="15">15 minutos</option>
-                            <option value="20">20 minutos</option>
-                        </select>
-                    </div>
-                    <button class="btn-generate" id="btn-generate-link">Generar y Copiar Enlace</button>
-                    <div class="link-result-box" id="link-result-container">
-                        <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- PANEL 2: Notas o avisos adicionales -->
             <div class="side-panel-card">
                 <h3>Panel 2</h3>
@@ -214,46 +147,6 @@
 
                 calendar.render();
             });
-    </script>
-    <script>
-        const btnGenerate = document.getElementById('btn-generate-link');
-        const selectMinutes = document.getElementById('expiry-minutes');
-        const linkContainer = document.getElementById('link-result-container');
-
-        const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
-
-        async function copiarTexto(texto) {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(texto);
-                return;
-            }
-
-            const helper = document.createElement('textarea');
-            helper.value = texto;
-            helper.setAttribute('readonly', '');
-            helper.style.position = 'fixed';
-            helper.style.opacity = '0';
-            helper.style.left = '-9999px';
-            document.body.appendChild(helper);
-            helper.select();
-            document.execCommand('copy');
-            document.body.removeChild(helper);
-        }
-
-        btnGenerate.addEventListener('click', async function() {
-            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
-            const ahora = new Date();
-            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
-            const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?expires=${tiempoLimite}`;
-
-            try {
-                await copiarTexto(finalLink);
-                linkContainer.style.display = 'block';
-            } catch (err) {
-                console.error('Error al copiar: ', err);
-                linkContainer.style.display = 'block';
-            }
-        });
     </script>
 </body>
 </html>
