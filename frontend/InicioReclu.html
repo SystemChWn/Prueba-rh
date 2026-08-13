@@ -735,8 +735,9 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO CON BD ---
+        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO (LOCAL STORAGE, como el calendario) ---
         const MAX_RECLUTADORES = 10;
+        const STORAGE_KEY = 'reclutamiento_personal_local';
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -744,99 +745,99 @@
         const modalRecruiterInput = document.getElementById('modalRecruiterInput');
         const modalTeamSelect = document.getElementById('modalTeamSelect');
         const teamsContainer = document.getElementById('teamsContainer');
-        
+
         let teamsExistentes = new Set(['Team 1', 'Team 2']);
 
-        async function cargarReclutadoresDelServidor() {
+        function leerReclutadores() {
             try {
-                const response = await fetch('/api/personal-reclutamiento');
-                if (!response.ok) return;
-                
-                const reclutadores = await response.json();
-                const reclutadoresLimitados = Array.isArray(reclutadores) ? reclutadores.slice(0, MAX_RECLUTADORES) : [];
-                
-                teamsContainer.innerHTML = '';
-                teamsExistentes.clear();
-                
-                const porTeam = {};
-                reclutadoresLimitados.forEach(r => {
-                    const team = r.team || 'Team 1';
-                    if (!porTeam[team]) {
-                        porTeam[team] = [];
-                    }
-                    porTeam[team].push(r);
-                    teamsExistentes.add(team);
-                });
-                
-                if (teamsExistentes.size === 0) {
-                    teamsExistentes.add('Team 1');
-                    teamsExistentes.add('Team 2');
-                }
-                
-                Array.from(teamsExistentes).sort().forEach(team => {
-                    const miembros = porTeam[team] || [];
-                    crearColumnaTeam(team, miembros);
-                });
-                
-                actualizarSelectorTeams();
+                const raw = localStorage.getItem(STORAGE_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed.slice(0, MAX_RECLUTADORES) : [];
             } catch (error) {
-                console.error('Error cargando reclutadores:', error);
-                ['Team 1', 'Team 2'].forEach(team => {
-                    crearColumnaTeam(team, []);
-                });
+                console.error('Error leyendo reclutadores desde localStorage:', error);
+                return [];
             }
+        }
+
+        function guardarReclutadores(reclutadores) {
+            const lista = Array.isArray(reclutadores) ? reclutadores.slice(0, MAX_RECLUTADORES) : [];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+        }
+
+        function renderReclutadores() {
+            const reclutadores = leerReclutadores();
+            teamsContainer.innerHTML = '';
+            teamsExistentes.clear();
+
+            const porTeam = {};
+            reclutadores.forEach((reclutador) => {
+                const team = reclutador.team || 'Team 1';
+                if (!porTeam[team]) {
+                    porTeam[team] = [];
+                }
+                porTeam[team].push(reclutador);
+                teamsExistentes.add(team);
+            });
+
+            if (teamsExistentes.size === 0) {
+                teamsExistentes.add('Team 1');
+                teamsExistentes.add('Team 2');
+            }
+
+            Array.from(teamsExistentes).sort().forEach((team) => {
+                crearColumnaTeam(team, porTeam[team] || []);
+            });
+
+            actualizarSelectorTeams();
         }
 
         function crearColumnaTeam(team, miembros = []) {
             const columna = document.createElement('div');
             columna.className = 'team-column';
             columna.dataset.team = team;
-            columna.style.cssText = "flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;";
-            
+            columna.style.cssText = 'flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;';
+
             columna.innerHTML = `
                 <div style="font-weight: bold; margin-bottom: 10px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 6px;">
                     <span>${team}</span>
                 </div>
                 <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
             `;
-            
+
             teamsContainer.appendChild(columna);
-            
+
             const listaMiembros = columna.querySelector('.team-members-list');
-            miembros.forEach(miembro => {
-                agregarMiembroAlUI(listaMiembros, miembro.nombre, miembro.id, team);
+            miembros.forEach((miembro) => {
+                agregarMiembroAlUI(listaMiembros, miembro.nombre, miembro.id);
             });
         }
 
-        function agregarMiembroAlUI(listaMiembros, nombre, id, team) {
+        function agregarMiembroAlUI(listaMiembros, nombre, id) {
             const item = document.createElement('div');
-            item.style.cssText = "background: #383838; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #28a745;";
-            item.dataset.id = id;
+            item.style.cssText = 'background: #383838; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #28a745;';
+            item.dataset.id = String(id);
             item.innerHTML = `
                 <span>${nombre}</span>
                 <button type="button" class="btn-remover-miembro" style="background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 0.9rem;" title="Eliminar miembro">×</button>
             `;
-            
-            item.querySelector('.btn-remover-miembro').addEventListener('click', async () => {
-                if (id) {
-                    try {
-                        await fetch(`/api/personal-reclutamiento/${id}`, { method: 'DELETE' });
-                        await cargarReclutadoresDelServidor();
-                    } catch (error) {
-                        console.error('Error eliminando reclutador:', error);
-                    }
-                }
+
+            item.querySelector('.btn-remover-miembro').addEventListener('click', () => {
+                const reclutadores = leerReclutadores().filter((elemento) => String(elemento.id) !== String(id));
+                guardarReclutadores(reclutadores);
+                renderReclutadores();
             });
-            
+
             listaMiembros.appendChild(item);
         }
 
         function actualizarSelectorTeams() {
-            Array.from(modalTeamSelect.options).forEach(opt => {
-                if (opt.value !== 'agregar_nuevo') opt.remove();
+            Array.from(modalTeamSelect.options).forEach((option) => {
+                if (option.value !== 'agregar_nuevo') {
+                    option.remove();
+                }
             });
-            
-            Array.from(teamsExistentes).sort().forEach(team => {
+
+            Array.from(teamsExistentes).sort().forEach((team) => {
                 const option = document.createElement('option');
                 option.value = team;
                 option.textContent = team;
@@ -855,25 +856,27 @@
         });
 
         modalTeamSelect.addEventListener('change', function() {
-            if (this.value === 'agregar_nuevo') {
-                const nuevoTeamNombre = prompt('Nombre del nuevo Team:', `Team ${teamsExistentes.size + 1}`);
-                if (nuevoTeamNombre && nuevoTeamNombre.trim()) {
-                    const teamTrim = nuevoTeamNombre.trim();
-                    if (!teamsExistentes.has(teamTrim)) {
-                        teamsExistentes.add(teamTrim);
-                        actualizarSelectorTeams();
-                        modalTeamSelect.value = teamTrim;
-                    } else {
-                        alert('Este Team ya existe');
-                        modalTeamSelect.value = '';
-                    }
-                } else {
-                    modalTeamSelect.value = '';
-                }
+            if (this.value !== 'agregar_nuevo') return;
+
+            const nuevoTeam = prompt('Nombre del nuevo Team:', `Team ${teamsExistentes.size + 1}`);
+            if (!nuevoTeam || !nuevoTeam.trim()) {
+                this.value = '';
+                return;
             }
+
+            const teamTrim = nuevoTeam.trim();
+            if (teamsExistentes.has(teamTrim)) {
+                alert('Este Team ya existe');
+                this.value = '';
+                return;
+            }
+
+            teamsExistentes.add(teamTrim);
+            actualizarSelectorTeams();
+            this.value = teamTrim;
         });
 
-        saveRecruiterBtn.addEventListener('click', async function() {
+        saveRecruiterBtn.addEventListener('click', function() {
             const nombre = modalRecruiterInput.value.trim();
             const teamSeleccionado = modalTeamSelect.value;
 
@@ -882,45 +885,32 @@
                 return;
             }
 
-            try {
-                const response = await fetch('/api/personal-reclutamiento', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nombre: nombre,
-                        team: teamSeleccionado
-                    })
-                });
-
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.error('Respuesta no JSON:', text);
-                    alert('El servidor respondió incorrectamente.');
-                    return;
-                }
-
-                if (response.status === 201) {
-                    modal.style.display = 'none';
-                    modalRecruiterInput.value = '';
-                    await cargarReclutadoresDelServidor();
-                    return;
-                }
-
-                if (response.status === 409) {
-                    alert('Este reclutador ya existe');
-                    return;
-                }
-
-                const errorData = await response.json().catch(() => ({ error: 'No se pudo guardar' }));
-                alert(errorData.error || 'No se pudo guardar');
-            } catch (error) {
-                console.error('Error guardando reclutador:', error);
-                alert('Error al guardar: ' + error.message);
+            const reclutadores = leerReclutadores();
+            if (reclutadores.length >= MAX_RECLUTADORES) {
+                alert('Solo puedes guardar hasta 10 personas de reclutamiento.');
+                return;
             }
+
+            const yaExiste = reclutadores.some((elemento) => String(elemento.nombre).trim().toLowerCase() === nombre.toLowerCase());
+            if (yaExiste) {
+                alert('Este reclutador ya existe');
+                return;
+            }
+
+            reclutadores.push({
+                id: Date.now(),
+                nombre: nombre,
+                team: teamSeleccionado,
+                fecha_registro: new Date().toISOString().slice(0, 10)
+            });
+
+            guardarReclutadores(reclutadores);
+            modal.style.display = 'none';
+            modalRecruiterInput.value = '';
+            renderReclutadores();
         });
 
-        document.addEventListener('DOMContentLoaded', cargarReclutadoresDelServidor);
+        document.addEventListener('DOMContentLoaded', renderReclutadores);
     </script>
     <script>
         // <--- SECCION 3 - GRAFICA DE INGRESOS --->
