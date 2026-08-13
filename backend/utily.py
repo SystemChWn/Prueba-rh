@@ -1,3 +1,4 @@
+
 import os
 import re
 import json
@@ -1691,6 +1692,8 @@ def obtener_nombres_reclutadores():
         traceback.print_exc()
         return jsonify([]), 500
 
+for rule in app.url_map.iter_rules():
+    print(f"{rule.endpoint}: {rule.rule}")
 #-----------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
