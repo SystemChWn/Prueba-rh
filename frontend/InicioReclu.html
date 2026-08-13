@@ -469,7 +469,9 @@
                             <select id="modalTeamSelect" style="width: 100%; padding: 8px; background: #3e3e3e; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box;">
                                 <option value="Team 1">Team 1</option>
                                 <option value="Team 2">Team 2</option>
-                                <option value="agregar_nuevo" style="font-weight: bold; color: #80bdff;">+ Agregar Team</option>
+                                <option value="Team 3">Team 3</option>
+                                <option value="Team 4">Team 4</option>
+                                <option value="Team 5">Team 5</option>
                             </select>
                         </div>
 
@@ -737,6 +739,9 @@
     <script>
         // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO (LOCAL STORAGE, como el calendario) ---
         const MAX_RECLUTADORES = 10;
+        const MAX_PERSONAS_POR_EQUIPO = 3;
+        const MAX_TEAMS = 5;
+        const DEFAULT_TEAMS = ['Team 1', 'Team 2'];
         const STORAGE_KEY = 'reclutamiento_personal_local';
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
@@ -746,7 +751,7 @@
         const modalTeamSelect = document.getElementById('modalTeamSelect');
         const teamsContainer = document.getElementById('teamsContainer');
 
-        let teamsExistentes = new Set(['Team 1', 'Team 2']);
+        let teamsExistentes = new Set(DEFAULT_TEAMS);
 
         function leerReclutadores() {
             try {
@@ -764,10 +769,22 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
         }
 
+        function getAvailableTeams() {
+            const setTeams = new Set(DEFAULT_TEAMS);
+            const reclutadores = leerReclutadores();
+            reclutadores.forEach((reclutador) => {
+                const team = String(reclutador.team || '').trim();
+                if (team) {
+                    setTeams.add(team);
+                }
+            });
+            return Array.from(setTeams).slice(0, MAX_TEAMS);
+        }
+
         function renderReclutadores() {
             const reclutadores = leerReclutadores();
             teamsContainer.innerHTML = '';
-            teamsExistentes.clear();
+            teamsExistentes = new Set(getAvailableTeams());
 
             const porTeam = {};
             reclutadores.forEach((reclutador) => {
@@ -776,13 +793,7 @@
                     porTeam[team] = [];
                 }
                 porTeam[team].push(reclutador);
-                teamsExistentes.add(team);
             });
-
-            if (teamsExistentes.size === 0) {
-                teamsExistentes.add('Team 1');
-                teamsExistentes.add('Team 2');
-            }
 
             Array.from(teamsExistentes).sort().forEach((team) => {
                 crearColumnaTeam(team, porTeam[team] || []);
@@ -831,23 +842,25 @@
         }
 
         function actualizarSelectorTeams() {
-            Array.from(modalTeamSelect.options).forEach((option) => {
-                if (option.value !== 'agregar_nuevo') {
-                    option.remove();
-                }
-            });
+            const availableTeams = getAvailableTeams();
+            Array.from(modalTeamSelect.options).forEach((option) => option.remove());
 
-            Array.from(teamsExistentes).sort().forEach((team) => {
+            availableTeams.forEach((team) => {
                 const option = document.createElement('option');
                 option.value = team;
                 option.textContent = team;
-                modalTeamSelect.insertBefore(option, modalTeamSelect.lastElementChild);
+                modalTeamSelect.appendChild(option);
             });
+
+            if (availableTeams.length > 0) {
+                modalTeamSelect.value = availableTeams[0];
+            }
         }
 
         openModalBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
             modalRecruiterInput.value = '';
+            modalTeamSelect.value = getAvailableTeams()[0] || 'Team 1';
             modalRecruiterInput.focus();
         });
 
@@ -855,32 +868,11 @@
             modal.style.display = 'none';
         });
 
-        modalTeamSelect.addEventListener('change', function() {
-            if (this.value !== 'agregar_nuevo') return;
-
-            const nuevoTeam = prompt('Nombre del nuevo Team:', `Team ${teamsExistentes.size + 1}`);
-            if (!nuevoTeam || !nuevoTeam.trim()) {
-                this.value = '';
-                return;
-            }
-
-            const teamTrim = nuevoTeam.trim();
-            if (teamsExistentes.has(teamTrim)) {
-                alert('Este Team ya existe');
-                this.value = '';
-                return;
-            }
-
-            teamsExistentes.add(teamTrim);
-            actualizarSelectorTeams();
-            this.value = teamTrim;
-        });
-
         saveRecruiterBtn.addEventListener('click', function() {
             const nombre = modalRecruiterInput.value.trim();
             const teamSeleccionado = modalTeamSelect.value;
 
-            if (!nombre || !teamSeleccionado || teamSeleccionado === 'agregar_nuevo') {
+            if (!nombre || !teamSeleccionado) {
                 alert('Por favor completa todos los campos.');
                 return;
             }
@@ -888,6 +880,12 @@
             const reclutadores = leerReclutadores();
             if (reclutadores.length >= MAX_RECLUTADORES) {
                 alert('Solo puedes guardar hasta 10 personas de reclutamiento.');
+                return;
+            }
+
+            const teamCount = reclutadores.filter((elemento) => elemento.team === teamSeleccionado).length;
+            if (teamCount >= MAX_PERSONAS_POR_EQUIPO) {
+                alert('Este equipo ya tiene 3 personas. Elige otro equipo o elimina a alguien.');
                 return;
             }
 
@@ -910,7 +908,10 @@
             renderReclutadores();
         });
 
-        document.addEventListener('DOMContentLoaded', renderReclutadores);
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarSelectorTeams();
+            renderReclutadores();
+        });
     </script>
     <script>
         // <--- SECCION 3 - GRAFICA DE INGRESOS --->
