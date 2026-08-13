@@ -486,16 +486,13 @@
                 return;
             }
 
-            // 3. Empaquetar todos los datos del formulario principal
             const form = document.getElementById('registroForm');
             const formData = new FormData(form);
 
             try {
-                // 4. Enviar los datos del registro al backend con el sistema de fallback
                 const { respuesta, texto } = await postConFallback('/api/guardar-registro', formData);
 
                 if (respuesta.ok && (texto.startsWith('OK') || texto.includes('éxito'))) {
-                    // 5. Si se guardó con éxito, abrir la ventana de encuesta de reclutamiento
                     abrirEncuesta();
                 } else {
                     mostrarMensajeInferior('Error al guardar el registro: ' + (texto || 'Sin detalle'), 3000, false, true);

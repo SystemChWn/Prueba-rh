@@ -109,87 +109,116 @@
             text-transform: uppercase;
         }
 
-    /* SECCION DIVIDIDA */
-    .content-section.split-section {
-        display: grid;
-        grid-template-rows: repeat(2, 1fr); /* Parte la celda exactamente a la mitad horizontalmente */
-        gap: 15px; /* Espacio separador entre los dos recuadros */
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        min-height: auto !important;
-    }
-
-    /* Cada uno de los dos recuadros independientes */
-    .sub-box {
-        background: #1e1e1e;
-        border: 1px solid #333;
-        border-radius: 12px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    /* Contenedor de tags con scroll interno por si la lista crece */
-    .sub-box .tags-container {
-        overflow-y: auto;
-        flex-grow: 1;
-    }
-
-/* SECCION 1 */
-
-
-/* SECCION 2 */
-        .chart-container-wrapper {
-            position: relative;
-            height: 250px;
-            width: 100%;
-        }
-
-        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
-        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
-
-        .custom-legend {
+        /* SECCION DIVIDIDA */
+        .content-section.split-section {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #2a2a2a;
-            font-size: 0.75rem;
+            grid-template-columns: repeat(2, 1fr); /* Parte la celda exactamente a la mitad horizontalmente */
+            gap: 15px; /* Espacio separador entre los dos recuadros */
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            min-height: auto !important;
         }
 
-        .legend-item { display: flex; align-items: center; gap: 8px; }
-        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
-
-/* SECCION 3 */
-        .dashboard-ingresos {
-            padding: 20px;
-        }
-
-        .ingresos-card {
+        /* Cada uno de los dos recuadros independientes */
+        .sub-box {
             background: #1e1e1e;
             border: 1px solid #333;
             border-radius: 12px;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: top;
         }
 
-        .ingresos-card h3 {
-            color: #fff;
-            margin: 0 0 12px;
+        /* Contenedor de tags con scroll interno por si la lista crece */
+        .sub-box .tags-container {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+/* SECCION 1 */
+
+
+/* SECCION 2 1/2 */
+        /* Número de Empleado Temporal */
+        .form-group-link {
+            margin-bottom: 1px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group-link label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .form-group-link .form-control {
+            background-color: #333;
+            color: #ffffff;
+            padding: 8px 10px;
             font-size: 0.9rem;
-            text-transform: uppercase;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
 
-        .ingresos-chart-wrap {
-            position: relative;
-            height: 420px;
-            width: 100%;
-        }     
+        .form-group-link .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
 
-/* SECCION 4 1/2 */
-        /* Mitad de arriba - Personal de Reclutamiento */
+        /* Generador de enlaces de registro */
+        .form-group-link {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group-link label {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        .form-group-link select {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 200px;
+        }
+        .btn-generate {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-generate:hover { background-color: #0056b3; }
+        
+        .link-result-box {
+            display: none;
+            background: #1e1e1e;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #007bff;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: #4db8ff;
+            text-align: center;
+        }
+
+/* SECCION 2 2/2 */
+        /* Personal de Reclutamiento */
         .recruitment-section {
             padding: 20px;
             margin-top: -5px;
@@ -267,7 +296,6 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            transition: background 0.2s;
         }
 
         .tag-close:hover {
@@ -275,53 +303,54 @@
             color: #ff4d4d;
         }
 
-/* SECCION 4 2/2 */
-        /* Generador de enlaces de registro */
-        .form-group-link {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .form-group-link label {
-            font-size: 0.8rem;
-            color: #ccc;
-        }
-        .form-group-link select {
-            background: #1e1e1e;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            width: 200px;
-        }
-        .btn-generate {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-            margin-top: 20px;
+/* SECCION 3 */
+        .dashboard-ingresos {
+            padding: 20px;
         }
 
-        .btn-generate:hover { background-color: #0056b3; }
-        
-        .link-result-box {
-            display: none;
+        .ingresos-card {
             background: #1e1e1e;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #007bff;
-            word-break: break-all;
-            font-size: 0.8rem;
-            color: #4db8ff;
-            text-align: center;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
         }
+
+        .ingresos-card h3 {
+            color: #fff;
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .ingresos-chart-wrap {
+            position: relative;
+            height: 420px;
+            width: 100%;
+        }     
+
+/* SECCION 4 */
+        .chart-container-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
+        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
+
+        .custom-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.75rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+
     </style>
 </head>
 <body>
@@ -375,17 +404,13 @@
             <section class="content-section split-section">
                 <!-- MITAD SUPERIOR: Personal de Reclutamiento Activo -->
                 <div class="sub-box">
-                    <h3>Personal de Reclutamiento Activo</h3>
-                    <div class="input-group">
-                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
-                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
-                    </div>
-                </div>
-
-                <!-- MITAD INFERIOR: Generador de enlace temporal -->
-                <div class="sub-box">
                     <h3>Generar Link de Registro</h3>
                     <div class="side-panel-content">
+                        <div class="form-group-link">
+                            <label for="temp-employee-id">Número de Empleado Temporal:</label>
+                            <input type="text" id="temp-employee-id" placeholder="Ingresa N°" class="form-control">
+                        </div>
+                        <br>
                         <div class="form-group-link">
                             <label for="expiry-minutes">Tiempo límite de respuesta:</label>
                             <select id="expiry-minutes">
@@ -399,6 +424,14 @@
                         <div class="link-result-box" id="link-result-container">
                             <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
                         </div>
+                    </div>
+                </div>
+                <!-- MITAD INFERIOR: Generador de enlace temporal -->
+                <div class="sub-box">
+                    <h3>Personal de Reclutamiento Activo</h3>
+                    <div class="input-group">
+                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
+                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
                     </div>
                 </div>
             </section>
