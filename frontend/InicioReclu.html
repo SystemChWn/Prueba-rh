@@ -661,26 +661,80 @@
             });
         }
 
+        function obtenerDatosIngresosLocales(mes) {
+            try {
+                const INGRESOS_KEY = 'ingresos_por_team_local';
+                const ingresos = localStorage.getItem(INGRESOS_KEY);
+                if (!ingresos) return [];
+
+                const ingresosArray = JSON.parse(ingresos);
+                if (!Array.isArray(ingresosArray)) return [];
+
+                const ahora = new Date();
+                const mesActual = mes || (ahora.getMonth() + 1);
+                const anioActual = ahora.getFullYear();
+
+                // Filtrar por mes y año
+                const ingresosDelMes = ingresosArray.filter((item) => {
+                    const fecha = new Date(item.fecha + 'T00:00:00');
+                    return fecha.getMonth() + 1 === mesActual && fecha.getFullYear() === anioActual;
+                });
+
+                // Contar ingresos por team
+                const conteo = {};
+                ingresosDelMes.forEach((item) => {
+                    const team = String(item.team || 'Sin Team').trim();
+                    conteo[team] = (conteo[team] || 0) + 1;
+                });
+
+                // Convertir a formato de datos para la gráfica
+                return Object.entries(conteo).map(([team, total]) => ({
+                    team: team,
+                    total: total
+                }));
+            } catch (error) {
+                console.error('Error leyendo ingresos locales:', error);
+                return [];
+            }
+        }
+
         async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+            let datos = [];
             
-            try {
-                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
-                    cache: 'no-store' 
-                });
-                if (!response.ok) throw new Error('No se pudo cargar la gráfica');
-                const datos = await response.json();
+            // Primero intentar obtener datos locales
+            const datosLocales = obtenerDatosIngresosLocales(mes);
+            if (datosLocales.length > 0) {
+                datos = datosLocales;
+            } else {
+                // Si no hay datos locales, intentar desde la API
+                try {
+                    const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
+                        cache: 'no-store' 
+                    });
+                    if (!response.ok) throw new Error('No se pudo cargar la gráfica');
+                    datos = await response.json();
 
-                if (Array.isArray(datos) && datos.length) {
-                    crearGraficaReclutadores(datos);
-                    return;
+                    if (!Array.isArray(datos)) {
+                        datos = [];
+                    }
+                } catch (error) {
+                    console.error('Error cargando ingresos por team:', error);
+                    datos = [];
                 }
-            } catch (error) {
-                console.error('Error cargando ingresos por team:', error);
             }
 
-            crearGraficaReclutadores([]);
+            crearGraficaReclutadores(datos);
         }
+
+        // Escuchar cambios en localStorage desde otras pestañas
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'ingresos_por_team_local') {
+                const selectMes = document.getElementById('selectMes');
+                const mesActual = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
+                actualizarGraficaReclutadores(mesActual);
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             const selectMes = document.getElementById('selectMes');

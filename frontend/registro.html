@@ -731,15 +731,24 @@
             }
 
             let detalle = '';
+            let teamReclutador = null;
+            
             if (fuente === 'Facebook') {
                 detalle = `Reclutador: ${nombreReclutador}`;
+                teamReclutador = obtenerTeamDelReclutador(nombreReclutador);
             } else if (fuente === 'Recomendación') {
                 detalle = `Empleado recomendó: ${nombreEmpleado}`;
             } else if (fuente === 'Agencia' && subFuente === 'CW') {
                 detalle = `Reclutador CW: ${nombreReclutador}`;
+                teamReclutador = obtenerTeamDelReclutador(nombreReclutador);
             }
 
             sincronizarReclutadorLocal(nombreReclutador);
+            
+            // Registrar el ingreso por team si se encontró un reclutador con team
+            if (teamReclutador) {
+                registrarIngresosPorTeam(teamReclutador, fuenteParaEnviar);
+            }
 
             const encuestaForm = new FormData();
             encuestaForm.append('curp', registro.curp || '');
@@ -861,6 +870,43 @@
                 localStorage.setItem('reclutadores', JSON.stringify(lista));
             } catch (error) {
                 console.warn('No se pudieron guardar reclutadores locales:', error);
+            }
+        }
+
+        function obtenerTeamDelReclutador(nombre) {
+            const nombreNormal = String(nombre || '').trim().toLowerCase();
+            if (!nombreNormal) return null;
+
+            const reclutadores = leerReclutadoresLocales();
+            const reclutador = reclutadores.find(
+                (item) => String(item?.nombre || '').trim().toLowerCase() === nombreNormal
+            );
+            return reclutador?.team || null;
+        }
+
+        function registrarIngresosPorTeam(team, fuente) {
+            if (!team || !fuente) return;
+
+            try {
+                const INGRESOS_KEY = 'ingresos_por_team_local';
+                let ingresos = localStorage.getItem(INGRESOS_KEY);
+                let ingresosArray = ingresos ? JSON.parse(ingresos) : [];
+
+                if (!Array.isArray(ingresosArray)) {
+                    ingresosArray = [];
+                }
+
+                const hoy = new Date().toISOString().split('T')[0];
+                ingresosArray.push({
+                    team: team,
+                    fuente: fuente,
+                    fecha: hoy,
+                    timestamp: Date.now()
+                });
+
+                localStorage.setItem(INGRESOS_KEY, JSON.stringify(ingresosArray));
+            } catch (error) {
+                console.warn('Error registrando ingresos por team:', error);
             }
         }
 
