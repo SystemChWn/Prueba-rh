@@ -1474,6 +1474,190 @@ def api_datos_grafica():
         traceback.print_exc()
         return jsonify([0] * 12), 500
 
+
+# ===== ENDPOINTS PARA PERSONAL DE RECLUTAMIENTO =====
+
+@app.route('/api/personal-reclutamiento', methods=['GET'])
+def obtener_reclutadores():
+    """Obtiene la lista de personal de reclutamiento con sus teams"""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, nombre, team, fecha_registro
+                    FROM personal_reclutamiento
+                    ORDER BY team ASC, nombre ASC
+                """)
+                rows = cur.fetchall()
+        
+        data = [
+            {
+                'id': row[0],
+                'nombre': row[1],
+                'team': row[2],
+                'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
+            }
+            for row in rows
+        ]
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error en /api/personal-reclutamiento GET: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/personal-reclutamiento', methods=['POST'])
+def guardar_reclutador():
+    """Guarda un nuevo personal de reclutamiento"""
+    payload = request.get_json(silent=True) or {}
+    
+    nombre = (payload.get('nombre') or '').strip()
+    team = (payload.get('team') or 'Team 1').strip()
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre es obligatorio'}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Verificar si ya existe
+                cur.execute("SELECT id FROM personal_reclutamiento WHERE nombre = %s", (nombre,))
+                if cur.fetchone():
+                    return jsonify({'error': 'Este reclutador ya existe'}), 409
+                
+                # Insertar nuevo
+                cur.execute("""
+                    INSERT INTO personal_reclutamiento (nombre, team, fecha_registro)
+                    VALUES (%s, %s, CURRENT_DATE)
+                    RETURNING id, nombre, team, fecha_registro
+                """, (nombre, team))
+                
+                row = cur.fetchone()
+                conn.commit()
+        
+        if row:
+            return jsonify({
+                'id': row[0],
+                'nombre': row[1],
+                'team': row[2],
+                'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
+            }), 201
+        return jsonify({'error': 'Error al guardar'}), 500
+    except Exception as e:
+        print(f"Error en /api/personal-reclutamiento POST: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/personal-reclutamiento/<int:reclutador_id>', methods=['DELETE'])
+def eliminar_reclutador(reclutador_id):
+    """Elimina un personal de reclutamiento"""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
+                conn.commit()
+        
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"Error en /api/personal-reclutamiento DELETE: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/personal-reclutamiento/<int:reclutador_id>', methods=['PUT'])
+def actualizar_reclutador(reclutador_id):
+    """Actualiza un personal de reclutamiento"""
+    payload = request.get_json(silent=True) or {}
+    
+    nombre = (payload.get('nombre') or '').strip()
+    team = (payload.get('team') or '').strip()
+    
+    if not nombre and not team:
+        return jsonify({'error': 'Debe proporcionar nombre o team'}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                updates = []
+                values = []
+                
+                if nombre:
+                    updates.append("nombre = %s")
+                    values.append(nombre)
+                if team:
+                    updates.append("team = %s")
+                    values.append(team)
+                
+                values.append(reclutador_id)
+                
+                cur.execute(
+                    f"UPDATE personal_reclutamiento SET {', '.join(updates)} WHERE id = %s RETURNING id, nombre, team",
+                    values
+                )
+                row = cur.fetchone()
+                conn.commit()
+        
+        if row:
+            return jsonify({
+                'id': row[0],
+                'nombre': row[1],
+                'team': row[2],
+            }), 200
+        return jsonify({'error': 'Reclutador no encontrado'}), 404
+    except Exception as e:
+        print(f"Error en /api/personal-reclutamiento PUT: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ingresos-por-team', methods=['GET'])
+def obtener_ingresos_por_team():
+    """Obtiene el count de ingresos agrupados por team"""
+    mes = int(request.args.get('mes', str(datetime.now().month)))
+    tz = request.args.get('tz', 'America/Mexico_City')
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT pr.team, COUNT(e.id) as total
+                    FROM personal_reclutamiento pr
+                    LEFT JOIN encuesta_reclutamiento e
+                      ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
+                     AND EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
+                     AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
+                    WHERE pr.team IS NOT NULL AND pr.team != ''
+                    GROUP BY pr.team
+                    ORDER BY total DESC, pr.team ASC
+                """, (tz, mes, tz, tz))
+                
+                rows = cur.fetchall()
+        
+        data = [
+            {
+                'team': row[0],
+                'total': int(row[1] or 0),
+            }
+            for row in rows
+        ]
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error en /api/ingresos-por-team: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reclutadores-nombres', methods=['GET'])
+def obtener_nombres_reclutadores():
+    """Obtiene solo los nombres de los reclutadores para los selectores"""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT nombre FROM personal_reclutamiento ORDER BY nombre ASC")
+                rows = cur.fetchall()
+        
+        nombres = [row[0] for row in rows if row[0]]
+        return jsonify(nombres), 200
+    except Exception as e:
+        print(f"Error en /api/reclutadores-nombres: {e}")
+        return jsonify([]), 500
+
 #-----------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))

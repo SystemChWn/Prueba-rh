@@ -932,10 +932,10 @@
             const origin = window.location.origin;
 
             if (origin) {
-                candidates.push(`${origin}/api/reclutadores`);
+                candidates.push(`${origin}/api/reclutadores-nombres`);
             }
 
-            candidates.push('/api/reclutadores');
+            candidates.push('/api/reclutadores-nombres');
             return Array.from(new Set(candidates));
         }
 
@@ -963,24 +963,28 @@
 
                     const data = await response.json();
                     const nombresApi = Array.isArray(data)
-                        ? data.map((item) => ({
-                            id: item?.id || Date.now(),
-                            nombre: String(item?.nombre || '').trim(),
-                            ingresos: Number(item?.ingresos || 0),
-                        })).filter((item) => item.nombre)
+                        ? data.map((nombre) => String(nombre || '').trim())
+                            .filter((nombre) => nombre)
                         : [];
 
                     if (nombresApi.length) {
-                        const reclutadoresCombinados = [...leerReclutadoresLocales(), ...nombresApi];
+                        const reclutadoresCombinados = [
+                            ...leerReclutadoresLocales().map(r => r.nombre),
+                            ...nombresApi
+                        ];
+                        // Eliminar duplicados
                         const mapa = new Map();
-                        reclutadoresCombinados.forEach((item) => {
-                            const key = String(item?.nombre || '').trim().toLowerCase();
-                            if (!key) return;
+                        reclutadoresCombinados.forEach((nombre) => {
+                            const key = nombre.toLowerCase();
                             if (!mapa.has(key)) {
-                                mapa.set(key, item);
+                                mapa.set(key, nombre);
                             }
                         });
-                        window.reclutadoresDisponibles = Array.from(mapa.values());
+                        window.reclutadoresDisponibles = Array.from(mapa.values()).map(nombre => ({
+                            id: Date.now(),
+                            nombre: nombre,
+                            ingresos: 0
+                        }));
                         guardarReclutadoresLocales(window.reclutadoresDisponibles);
                     } else if (!locales.length) {
                         window.reclutadoresDisponibles = [];

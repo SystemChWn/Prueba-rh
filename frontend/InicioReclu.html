@@ -392,7 +392,7 @@
         <div class="grid-content-4">
             <!-- Sección 1 -->
             <section class="content-section">
-                <h3 style="margin-top: 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px;">Ingresos por Reclutador</h3>
+                <h3 style="margin-top: 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px;">Ingresos por Team</h3>
                 
                 <div style="position: relative; height: 250px; width: 100%;">
                     <canvas id="reclutadorBarChart"></canvas>
@@ -536,29 +536,31 @@
         document.getElementById('mesActual').textContent = nombreMes;
 
         // RECUADROS SUPERIORES - 2
-        function actualizarMejorReclutador() {
-            const guardados = localStorage.getItem('reclutadores');
-            const recruiters = guardados ? JSON.parse(guardados) : [];
+        async function actualizarMejorTeam() {
             const elementoValor = document.getElementById('countPendientes');
-
-            if (recruiters.length === 0) {
-                elementoValor.textContent = 'Esperando...';
-                return;
-            }
-
-            let mejorRecruiter = recruiters[0];
-            let maxIngresos = mejorRecruiter.ingresos || 0;
-
-            recruiters.forEach(r => {
-                const ingresosActuales = r.ingresos || 0;
-                if (ingresosActuales > maxIngresos) {
-                    maxIngresos = ingresosActuales;
-                    mejorRecruiter = r;
+            const mes = new Date().getMonth() + 1;
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+            
+            try {
+                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
+                    cache: 'no-store' 
+                });
+                if (!response.ok) throw new Error('Error al cargar teams');
+                
+                const datos = await response.json();
+                if (Array.isArray(datos) && datos.length > 0) {
+                    // El primer elemento es el que tiene más ingresos (está ordenado DESC)
+                    const mejorTeam = datos[0];
+                    elementoValor.textContent = mejorTeam.team || 'Sin equipo';
+                } else {
+                    elementoValor.textContent = 'Esperando...';
                 }
-            });
-            elementoValor.textContent = mejorRecruiter.nombre;
+            } catch (error) {
+                console.error('Error actualizando mejor team:', error);
+                elementoValor.textContent = 'Esperando...';
+            }
         }
-        actualizarMejorReclutador();
+        actualizarMejorTeam();
         
         // RECUADROS SUPERIORES - 3
         document.addEventListener("DOMContentLoaded", () => {
@@ -598,12 +600,12 @@
         
     </script>
     <script>
-        // <--- SECCION 1 - GRAFICA DE LINEAS DE INGRESOS POR RECLUTADOR --->
+        // <--- SECCION 1 - GRAFICA DE INGRESOS POR TEAM --->
         const ctxReclutador = document.getElementById('reclutadorBarChart').getContext('2d');
         let reclutadorBarChart = null;
 
         function crearGraficaReclutadores(datos) {
-            const labels = (datos || []).map(item => item.nombre || '');
+            const labels = (datos || []).map(item => item.team || item.nombre || '');
             const valores = (datos || []).map(item => Number(item.total || 0));
 
             if (reclutadorBarChart) {
@@ -611,49 +613,44 @@
             }
 
             reclutadorBarChart = new Chart(ctxReclutador, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Ingresos del mes',
+                            label: 'Ingresos por Team',
                             data: valores,
-                            borderColor: '#4db8ff',
-                            backgroundColor: 'rgba(77, 184, 255, 0.25)',
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            tension: 0.2,
-                            fill: false
-                        },
-                        {
-                            label: 'Meta 100',
-                            data: labels.length ? Array(labels.length).fill(100) : [],
-                            borderColor: '#ff4b4b',
-                            borderDash: [6, 6],
-                            pointRadius: 0,
-                            pointHoverRadius: 0,
-                            fill: false
+                            backgroundColor: [
+                                '#4db8ff',
+                                '#28a745',
+                                '#ffc107',
+                                '#ff6b6b',
+                                '#17a2b8',
+                                '#6f42c1'
+                            ],
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            borderRadius: 4
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    indexAxis: 'y',
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: true, position: 'bottom' }
                     },
                     scales: {
-                        y: {
+                        x: {
                             beginAtZero: true,
-                            max: 100,
                             ticks: {
                                 color: '#ccc',
                                 stepSize: 10
                             },
                             grid: { color: '#444' }
                         },
-                        x: {
+                        y: {
                             ticks: { color: '#ccc' },
                             grid: { display: false }
                         }
@@ -662,50 +659,25 @@
             });
         }
 
-        function obtenerDatosReclutadoresParaGrafica() {
-            return leerReclutadoresLocales()
-                .map((reclutador) => ({
-                    nombre: reclutador.nombre,
-                    total: Number(reclutador.ingresos || 0),
-                }))
-                .filter((item) => item.nombre);
-        }
-
         async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
-            const datosLocales = obtenerDatosReclutadoresParaGrafica();
-
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
+            
             try {
-                const response = await fetch(`/api/datos-grafica?periodo=reclutadores&mes=${mes}`, { cache: 'no-store' });
+                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
+                    cache: 'no-store' 
+                });
                 if (!response.ok) throw new Error('No se pudo cargar la gráfica');
                 const datos = await response.json();
 
                 if (Array.isArray(datos) && datos.length) {
-                    const datosApi = datos
-                        .map((item) => ({
-                            nombre: String(item?.nombre || '').trim(),
-                            total: Number(item?.total || 0),
-                        }))
-                        .filter((item) => item.nombre);
-
-                    if (datosApi.length) {
-                        const datosCombinados = datosApi.map((item) => ({ ...item }));
-                        datosLocales.forEach((item) => {
-                            const coincide = datosCombinados.find((dato) => dato.nombre.toLowerCase() === item.nombre.toLowerCase());
-                            if (coincide) {
-                                coincide.total = Math.max(coincide.total || 0, item.total || 0);
-                            } else {
-                                datosCombinados.push(item);
-                            }
-                        });
-                        crearGraficaReclutadores(datosCombinados);
-                        return;
-                    }
+                    crearGraficaReclutadores(datos);
+                    return;
                 }
             } catch (error) {
-                console.error('Error cargando ingresos por reclutador:', error);
+                console.error('Error cargando ingresos por team:', error);
             }
 
-            crearGraficaReclutadores(datosLocales);
+            crearGraficaReclutadores([]);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -763,7 +735,7 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO ---
+        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO CON BD ---
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -772,7 +744,130 @@
         const modalTeamSelect = document.getElementById('modalTeamSelect');
         const teamsContainer = document.getElementById('teamsContainer');
         
-        let contadorTeams = 2; // Inicia con Team 1 y Team 2
+        let teamsExistentes = new Set(['Team 1', 'Team 2']);
+
+        // Cargar reclutadores de la BD al iniciar
+        async function cargarReclutadoresDelServidor() {
+            try {
+                const response = await fetch('/api/personal-reclutamiento');
+                if (!response.ok) return;
+                
+                const reclutadores = await response.json();
+                
+                // Limpiar contenedor
+                teamsContainer.innerHTML = '';
+                teamsExistentes.clear();
+                
+                // Agrupar por team
+                const porTeam = {};
+                reclutadores.forEach(r => {
+                    const team = r.team || 'Team 1';
+                    if (!porTeam[team]) {
+                        porTeam[team] = [];
+                    }
+                    porTeam[team].push(r);
+                    teamsExistentes.add(team);
+                });
+                
+                // Si no hay teams, agregar por defecto
+                if (teamsExistentes.size === 0) {
+                    teamsExistentes.add('Team 1');
+                    teamsExistentes.add('Team 2');
+                }
+                
+                // Crear columnas de teams
+                Array.from(teamsExistentes).sort().forEach(team => {
+                    const miembros = porTeam[team] || [];
+                    crearColumnaTeam(team, miembros);
+                });
+                
+                // Actualizar selector del modal
+                actualizarSelectorTeams();
+            } catch (error) {
+                console.error('Error cargando reclutadores:', error);
+                // Crear teams por defecto si falla
+                ['Team 1', 'Team 2'].forEach(team => {
+                    crearColumnaTeam(team, []);
+                });
+            }
+        }
+
+        function crearColumnaTeam(team, miembros = []) {
+            const columna = document.createElement('div');
+            columna.className = 'team-column';
+            columna.dataset.team = team;
+            columna.style.cssText = "flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;";
+            
+            columna.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                    <span>${team}</span>
+                    ${team !== 'Team 1' && team !== 'Team 2' ? `<button type="button" class="btn-eliminar-team" style="background: transparent; border: none; color: #ff4d4d; cursor: pointer; font-weight: bold; font-size: 1.1rem; padding: 0 4px;" title="Eliminar Team">×</button>` : ''}
+                </div>
+                <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
+            `;
+            
+            teamsContainer.appendChild(columna);
+            
+            // Agregar miembros
+            const listaMiembros = columna.querySelector('.team-members-list');
+            miembros.forEach(miembro => {
+                agregarMiembroAlUI(listaMiembros, miembro.nombre, miembro.id, team);
+            });
+            
+            // Botón eliminar team
+            const btnEliminarTeam = columna.querySelector('.btn-eliminar-team');
+            if (btnEliminarTeam) {
+                btnEliminarTeam.addEventListener('click', () => {
+                    columna.remove();
+                    teamsExistentes.delete(team);
+                    actualizarSelectorTeams();
+                });
+            }
+        }
+
+        function agregarMiembroAlUI(listaMiembros, nombre, id, team) {
+            const item = document.createElement('div');
+            item.style.cssText = "background: #383838; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #28a745;";
+            item.dataset.id = id;
+            item.innerHTML = `
+                <span>${nombre}</span>
+                <button type="button" class="btn-remover-miembro" style="background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 0.9rem;" title="Eliminar miembro">×</button>
+            `;
+            
+            item.querySelector('.btn-remover-miembro').addEventListener('click', async () => {
+                if (id) {
+                    // Eliminar del servidor
+                    try {
+                        await fetch(`/api/personal-reclutamiento/${id}`, { method: 'DELETE' });
+                    } catch (error) {
+                        console.error('Error eliminando reclutador:', error);
+                    }
+                }
+                item.remove();
+            });
+            
+            listaMiembros.appendChild(item);
+        }
+
+        function actualizarSelectorTeams() {
+            const opcionesActuales = [];
+            modalTeamSelect.querySelectorAll('option:not([value="agregar_nuevo"])').forEach(opt => {
+                opcionesActuales.push(opt.value);
+            });
+            
+            // Limpiar (mantener solo agregar_nuevo)
+            Array.from(modalTeamSelect.options).forEach(opt => {
+                if (opt.value !== 'agregar_nuevo') opt.remove();
+            });
+            
+            // Agregar teams existentes
+            Array.from(teamsExistentes).sort().forEach(team => {
+                const option = document.createElement('option');
+                option.value = team;
+                option.textContent = team;
+                modalTeamSelect.insertBefore(option, modalTeamSelect.lastElementChild);
+            });
+        }
 
         // Abrir Modal
         openModalBtn.addEventListener('click', () => {
@@ -789,83 +884,70 @@
         // Control de selección de equipos en el selector del Modal
         modalTeamSelect.addEventListener('change', function() {
             if (this.value === 'agregar_nuevo') {
-                contadorTeams++;
-                const nuevoTeamNombre = `Team ${contadorTeams}`;
-
-                // 1. Crear columna visual para el nuevo equipo
-                const nuevaColumna = document.createElement('div');
-                nuevaColumna.className = 'team-column';
-                nuevaColumna.dataset.team = nuevoTeamNombre;
-                nuevaColumna.style.cssText = "flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;";
-                
-                nuevaColumna.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
-                        <span>${nuevoTeamNombre}</span>
-                        <button type="button" class="btn-eliminar-team" style="background: transparent; border: none; color: #ff4d4d; cursor: pointer; font-weight: bold; font-size: 1.1rem; padding: 0 4px;" title="Eliminar Team">×</button>
-                    </div>
-                    <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
-                `;
-
-                teamsContainer.appendChild(nuevaColumna);
-
-                // 2. Agregar la opción al selector del modal (antes de "+ Agregar Team")
-                const nuevaOption = document.createElement('option');
-                nuevaOption.value = nuevoTeamNombre;
-                nuevaOption.textContent = nuevoTeamNombre;
-                modalTeamSelect.insertBefore(nuevaOption, modalTeamSelect.lastElementChild);
-
-                // 3. Seleccionar automáticamente el team recién creado
-                modalTeamSelect.value = nuevoTeamNombre;
-
-                // 4. Funcionalidad de la tachita para eliminar el team (a partir del Team 3)
-                nuevaColumna.querySelector('.btn-eliminar-team').addEventListener('click', function() {
-                    // Si se borra el team, devolvemos sus miembros al Team 1 o simplemente los eliminamos del DOM
-                    nuevaColumna.remove();
-                    // Remover la opción del select
-                    Array.from(modalTeamSelect.options).forEach(opt => {
-                        if (opt.value === nuevoTeamNombre) opt.remove();
-                    });
-                    modalTeamSelect.value = "Team 1";
-                });
+                const nuevoTeamNombre = prompt('Nombre del nuevo Team:', `Team ${teamsExistentes.size + 1}`);
+                if (nuevoTeamNombre && nuevoTeamNombre.trim()) {
+                    const teamTrim = nuevoTeamNombre.trim();
+                    if (!teamsExistentes.has(teamTrim)) {
+                        teamsExistentes.add(teamTrim);
+                        crearColumnaTeam(teamTrim, []);
+                        actualizarSelectorTeams();
+                        modalTeamSelect.value = teamTrim;
+                    } else {
+                        alert('Este Team ya existe');
+                        modalTeamSelect.value = '';
+                    }
+                } else {
+                    modalTeamSelect.value = '';
+                }
             }
         });
 
-        // Guardar Personal y mostrarlo dentro de su respectivo Team
-        saveRecruiterBtn.addEventListener('click', function() {
+        // Guardar Personal de Reclutamiento
+        saveRecruiterBtn.addEventListener('click', async function() {
             const nombre = modalRecruiterInput.value.trim();
             const teamSeleccionado = modalTeamSelect.value;
 
-            if (!nombre) {
-                alert('Por favor ingresa un nombre.');
+            if (!nombre || !teamSeleccionado || teamSeleccionado === 'agregar_nuevo') {
+                alert('Por favor completa todos los campos.');
                 return;
             }
 
-            // Buscar la columna del team correspondiente
-            const columnaTeam = teamsContainer.querySelector(`[data-team="${teamSeleccionado}"]`);
-            
-            if (columnaTeam) {
-                const listaMiembros = columnaTeam.querySelector('.team-members-list');
-                
-                // Crear el elemento visual del miembro activo
-                const itemMiembro = document.createElement('div');
-                itemMiembro.style.cssText = "background: #383838; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #28a745;";
-                itemMiembro.innerHTML = `
-                    <span>${nombre}</span>
-                    <button type="button" class="btn-remover-miembro" style="background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 0.9rem;" title="Eliminar miembro">×</button>
-                `;
-
-                // Botón para eliminar al miembro individual de la lista
-                itemMiembro.querySelector('.btn-remover-miembro').addEventListener('click', function() {
-                    itemMiembro.remove();
+            try {
+                const response = await fetch('/api/personal-reclutamiento', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        team: teamSeleccionado
+                    })
                 });
 
-                listaMiembros.appendChild(itemMiembro);
-                
-                // Cerrar modal y limpiar
-                modal.style.display = 'none';
-                modalRecruiterInput.value = '';
+                if (response.status === 201) {
+                    const data = await response.json();
+                    
+                    // Agregar al UI
+                    const columnaTeam = teamsContainer.querySelector(`[data-team="${teamSeleccionado}"]`);
+                    if (columnaTeam) {
+                        const listaMiembros = columnaTeam.querySelector('.team-members-list');
+                        agregarMiembroAlUI(listaMiembros, nombre, data.id, teamSeleccionado);
+                    }
+                    
+                    modal.style.display = 'none';
+                    modalRecruiterInput.value = '';
+                } else if (response.status === 409) {
+                    alert('Este reclutador ya existe');
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.error || 'No se pudo guardar'));
+                }
+            } catch (error) {
+                console.error('Error guardando reclutador:', error);
+                alert('Error al guardar: ' + error.message);
             }
         });
+
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', cargarReclutadoresDelServidor);
     </script>
     <script>
         // <--- SECCION 3 - GRAFICA DE INGRESOS --->

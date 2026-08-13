@@ -53,5 +53,6 @@ CREATE TABLE IF NOT EXISTS ingresos_puesto (
 CREATE TABLE IF NOT EXISTS personal_reclutamiento (
     id              SERIAL PRIMARY KEY,
     nombre          VARCHAR(200) NOT NULL UNIQUE,
+    team            VARCHAR(100) DEFAULT 'Team 1',
     fecha_registro  DATE DEFAULT CURRENT_DATE
 );
