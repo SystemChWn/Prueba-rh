@@ -740,8 +740,7 @@
         // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO (LOCAL STORAGE, como el calendario) ---
         const MAX_RECLUTADORES = 10;
         const MAX_PERSONAS_POR_EQUIPO = 3;
-        const MAX_TEAMS = 5;
-        const DEFAULT_TEAMS = ['Team 1', 'Team 2'];
+        const DEFAULT_TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5'];
         const STORAGE_KEY = 'reclutamiento_personal_local';
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
@@ -751,7 +750,14 @@
         const modalTeamSelect = document.getElementById('modalTeamSelect');
         const teamsContainer = document.getElementById('teamsContainer');
 
-        let teamsExistentes = new Set(DEFAULT_TEAMS);
+        let teamsExistentes = new Set(['Team 1', 'Team 2']);
+
+        function compareTeams(a, b) {
+            const numA = Number(String(a).match(/\d+/)?.[0] || 0);
+            const numB = Number(String(b).match(/\d+/)?.[0] || 0);
+            if (numA !== numB) return numA - numB;
+            return String(a).localeCompare(String(b));
+        }
 
         function leerReclutadores() {
             try {
@@ -769,7 +775,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
         }
 
-        function getAvailableTeams() {
+        function getAllTeamOptions() {
             const setTeams = new Set(DEFAULT_TEAMS);
             const reclutadores = leerReclutadores();
             reclutadores.forEach((reclutador) => {
@@ -778,13 +784,25 @@
                     setTeams.add(team);
                 }
             });
-            return Array.from(setTeams).slice(0, MAX_TEAMS);
+            return Array.from(setTeams).sort(compareTeams);
+        }
+
+        function getVisibleTeams() {
+            const reclutadores = leerReclutadores();
+            const setTeams = new Set(['Team 1', 'Team 2']);
+            reclutadores.forEach((reclutador) => {
+                const team = String(reclutador.team || '').trim();
+                if (team) {
+                    setTeams.add(team);
+                }
+            });
+            return Array.from(setTeams).sort(compareTeams);
         }
 
         function renderReclutadores() {
             const reclutadores = leerReclutadores();
             teamsContainer.innerHTML = '';
-            teamsExistentes = new Set(getAvailableTeams());
+            teamsExistentes = new Set(getVisibleTeams());
 
             const porTeam = {};
             reclutadores.forEach((reclutador) => {
@@ -795,7 +813,7 @@
                 porTeam[team].push(reclutador);
             });
 
-            Array.from(teamsExistentes).sort().forEach((team) => {
+            Array.from(teamsExistentes).sort(compareTeams).forEach((team) => {
                 crearColumnaTeam(team, porTeam[team] || []);
             });
 
@@ -809,11 +827,19 @@
             columna.style.cssText = 'flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;';
 
             columna.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 10px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
                     <span>${team}</span>
+                    <button type="button" class="team-remover" style="background: transparent; border: none; color: #ff8a8a; cursor: pointer; font-size: 0.9rem; line-height: 1;" title="Eliminar team">×</button>
                 </div>
                 <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
             `;
+
+            const teamDeleteButton = columna.querySelector('.team-remover');
+            teamDeleteButton.addEventListener('click', () => {
+                const reclutadores = leerReclutadores().filter((elemento) => elemento.team !== team);
+                guardarReclutadores(reclutadores);
+                renderReclutadores();
+            });
 
             teamsContainer.appendChild(columna);
 
@@ -842,7 +868,7 @@
         }
 
         function actualizarSelectorTeams() {
-            const availableTeams = getAvailableTeams();
+            const availableTeams = getAllTeamOptions();
             Array.from(modalTeamSelect.options).forEach((option) => option.remove());
 
             availableTeams.forEach((team) => {
@@ -860,7 +886,7 @@
         openModalBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
             modalRecruiterInput.value = '';
-            modalTeamSelect.value = getAvailableTeams()[0] || 'Team 1';
+            modalTeamSelect.value = getAllTeamOptions()[0] || 'Team 1';
             modalRecruiterInput.focus();
         });
 
