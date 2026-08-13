@@ -329,56 +329,27 @@
         }     
 
 /* SECCION 4 */
-        .chart-layout-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            margin-top: 15px;
-        }
-
-        /* Contenedor de la gráfica (se hace a un lado) */
         .chart-container-wrapper {
             position: relative;
-            height: 220px;
-            width: 50%; /* Ocupa la mitad izquierda */
+            height: 250px;
+            width: 100%;
         }
 
-        .filter-container { 
-            margin-bottom: 15px; 
-            display: flex; 
-            justify-content: flex-end; 
-        }
-        
-        select { 
-            background: #3e3e3e; 
-            border: 1px solid #555; 
-            color: #fff; 
-            padding: 8px; 
-            border-radius: 5px; 
-        }
+        .filter-container { margin-bottom: 15px; display: flex; justify-content: flex-end; }
+        select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 5px; }
 
-        /* Leyenda colocada en el recuadro de la derecha */
         .custom-legend {
-            display: flex;
+            display: grid;
             flex-direction: column;
-            gap: 10px;
-            width: 50%; /* Ocupa la mitad derecha */
-            font-size: 0.8rem;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-size: 0.75rem;
         }
 
-        .legend-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-        }
-        
-        .legend-color { 
-            width: 10px; 
-            height: 10px; 
-            border-radius: 50%; 
-            flex-shrink: 0;
-        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+
     </style>
 </head>
 <body>
@@ -485,25 +456,23 @@
                         <option value="5">Mayo</option>
                         <option value="6">Junio</option>
                         <option value="7">Julio</option>
-                        <option value="8" selected>Agosto</option>
+                        <option value="8">Agosto</option>
                         <option value="9">Septiembre</option>
                         <option value="10">Octubre</option>
                         <option value="11">Noviembre</option>
                         <option value="12">Diciembre</option>
                     </select>
                 </div>
-                <div class="chart-layout-wrapper">
-                    <div class="chart-container-wrapper">
-                        <canvas id="graficaPastelMes"></canvas>
-                    </div>
-                    <div class="custom-legend">
-                        <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
-                        <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
-                        <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
-                        <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
-                        <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
-                        <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
-                    </div>
+                <div class="chart-container-wrapper">
+                    <canvas id="graficaPastelMes"></canvas>
+                </div>
+                <div class="custom-legend">
+                    <div class="legend-item"><span class="legend-color" style="background: #7734EA;"></span> FACEBOOK</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #00A7EA;"></span> POSTEO</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #8AE800;"></span> VOLANTE</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FAF100;"></span> RECOMENDACION</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
                 </div>
             </section>
         </div>
