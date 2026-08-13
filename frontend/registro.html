@@ -816,30 +816,39 @@
     <script>
         //ENCUESTA RECLUTAMIENTO
         window.reclutadoresDisponibles = [];
+        const RECLUTAMIENTO_STORAGE_KEY = 'reclutamiento_personal_local';
+
+        function normalizarReclutador(item) {
+            if (typeof item === 'string') {
+                const nombre = item.trim();
+                return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
+            }
+
+            const nombre = String(item?.nombre || '').trim();
+            if (!nombre) return null;
+
+            return {
+                id: item?.id || Date.now(),
+                nombre,
+                ingresos: Number(item?.ingresos || 0),
+            };
+        }
 
         function leerReclutadoresLocales() {
             try {
-                const guardados = localStorage.getItem('reclutadores');
-                if (!guardados) return [];
-                const datos = JSON.parse(guardados);
-                if (!Array.isArray(datos)) return [];
-                return datos
-                    .map((item) => {
-                        if (typeof item === 'string') {
-                            const nombre = item.trim();
-                            return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
-                        }
+                const guardados = localStorage.getItem(RECLUTAMIENTO_STORAGE_KEY);
+                if (guardados) {
+                    const datos = JSON.parse(guardados);
+                    if (Array.isArray(datos)) {
+                        return datos.map(normalizarReclutador).filter(Boolean);
+                    }
+                }
 
-                        const nombre = String(item?.nombre || '').trim();
-                        if (!nombre) return null;
-
-                        return {
-                            id: item?.id || Date.now(),
-                            nombre,
-                            ingresos: Number(item?.ingresos || 0),
-                        };
-                    })
-                    .filter(Boolean);
+                const legacy = localStorage.getItem('reclutadores');
+                if (!legacy) return [];
+                const datosLegacy = JSON.parse(legacy);
+                if (!Array.isArray(datosLegacy)) return [];
+                return datosLegacy.map(normalizarReclutador).filter(Boolean);
             } catch (error) {
                 return [];
             }
@@ -847,23 +856,8 @@
 
         function guardarReclutadoresLocales(nombres) {
             try {
-                const lista = (nombres || [])
-                    .map((item) => {
-                        if (typeof item === 'string') {
-                            const nombre = item.trim();
-                            return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
-                        }
-
-                        const nombre = String(item?.nombre || '').trim();
-                        if (!nombre) return null;
-
-                        return {
-                            id: item?.id || Date.now(),
-                            nombre,
-                            ingresos: Number(item?.ingresos || 0),
-                        };
-                    })
-                    .filter(Boolean);
+                const lista = (nombres || []).map(normalizarReclutador).filter(Boolean);
+                localStorage.setItem(RECLUTAMIENTO_STORAGE_KEY, JSON.stringify(lista));
                 localStorage.setItem('reclutadores', JSON.stringify(lista));
             } catch (error) {
                 console.warn('No se pudieron guardar reclutadores locales:', error);
@@ -939,16 +933,22 @@
             return Array.from(new Set(candidates));
         }
 
+        function actualizarSelectsImportados() {
+            const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
+            selects.forEach((selectActual) => {
+                const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
+                selectActual.setAttribute('data-valor-previo', valorPrevio);
+                poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
+            });
+        }
+
         async function cargarReclutadoresSeleccionables() {
             const locales = leerReclutadoresLocales();
+            window.reclutadoresDisponibles = locales;
+            actualizarSelectsImportados();
+
             if (locales.length) {
-                window.reclutadoresDisponibles = locales;
-                const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
-                selects.forEach((selectActual) => {
-                    const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
-                    selectActual.setAttribute('data-valor-previo', valorPrevio);
-                    poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
-                });
+                return true;
             }
 
             const urls = obtenerUrlsApi();
@@ -968,35 +968,17 @@
                         : [];
 
                     if (nombresApi.length) {
-                        const reclutadoresCombinados = [
-                            ...leerReclutadoresLocales().map(r => r.nombre),
-                            ...nombresApi
-                        ];
-                        // Eliminar duplicados
-                        const mapa = new Map();
-                        reclutadoresCombinados.forEach((nombre) => {
-                            const key = nombre.toLowerCase();
-                            if (!mapa.has(key)) {
-                                mapa.set(key, nombre);
-                            }
-                        });
-                        window.reclutadoresDisponibles = Array.from(mapa.values()).map(nombre => ({
-                            id: Date.now(),
-                            nombre: nombre,
-                            ingresos: 0
+                        window.reclutadoresDisponibles = nombresApi.map((nombre) => ({
+                            id: Date.now() + Math.random(),
+                            nombre,
+                            ingresos: 0,
                         }));
                         guardarReclutadoresLocales(window.reclutadoresDisponibles);
-                    } else if (!locales.length) {
+                    } else {
                         window.reclutadoresDisponibles = [];
                     }
 
-                    const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
-                    selects.forEach((selectActual) => {
-                        const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
-                        selectActual.setAttribute('data-valor-previo', valorPrevio);
-                        poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
-                    });
-
+                    actualizarSelectsImportados();
                     return true;
                 } catch (error) {
                     ultimoError = error;
@@ -1014,6 +996,13 @@
             }
             await cargarReclutadoresSeleccionables();
         }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === RECLUTAMIENTO_STORAGE_KEY || event.key === 'reclutadores') {
+                window.reclutadoresDisponibles = leerReclutadoresLocales();
+                actualizarSelectsImportados();
+            }
+        });
 
         async function mostrarCampos() {
             const fuente = document.getElementById('fuente').value;
