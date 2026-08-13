@@ -736,6 +736,7 @@
     </script>
     <script>
         // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO CON BD ---
+        const MAX_RECLUTADORES = 10;
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -746,21 +747,19 @@
         
         let teamsExistentes = new Set(['Team 1', 'Team 2']);
 
-        // Cargar reclutadores de la BD al iniciar
         async function cargarReclutadoresDelServidor() {
             try {
                 const response = await fetch('/api/personal-reclutamiento');
                 if (!response.ok) return;
                 
                 const reclutadores = await response.json();
+                const reclutadoresLimitados = Array.isArray(reclutadores) ? reclutadores.slice(0, MAX_RECLUTADORES) : [];
                 
-                // Limpiar contenedor
                 teamsContainer.innerHTML = '';
                 teamsExistentes.clear();
                 
-                // Agrupar por team
                 const porTeam = {};
-                reclutadores.forEach(r => {
+                reclutadoresLimitados.forEach(r => {
                     const team = r.team || 'Team 1';
                     if (!porTeam[team]) {
                         porTeam[team] = [];
@@ -769,23 +768,19 @@
                     teamsExistentes.add(team);
                 });
                 
-                // Si no hay teams, agregar por defecto
                 if (teamsExistentes.size === 0) {
                     teamsExistentes.add('Team 1');
                     teamsExistentes.add('Team 2');
                 }
                 
-                // Crear columnas de teams
                 Array.from(teamsExistentes).sort().forEach(team => {
                     const miembros = porTeam[team] || [];
                     crearColumnaTeam(team, miembros);
                 });
                 
-                // Actualizar selector del modal
                 actualizarSelectorTeams();
             } catch (error) {
                 console.error('Error cargando reclutadores:', error);
-                // Crear teams por defecto si falla
                 ['Team 1', 'Team 2'].forEach(team => {
                     crearColumnaTeam(team, []);
                 });
@@ -799,30 +794,18 @@
             columna.style.cssText = "flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;";
             
             columna.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 6px;">
                     <span>${team}</span>
-                    ${team !== 'Team 1' && team !== 'Team 2' ? `<button type="button" class="btn-eliminar-team" style="background: transparent; border: none; color: #ff4d4d; cursor: pointer; font-weight: bold; font-size: 1.1rem; padding: 0 4px;" title="Eliminar Team">×</button>` : ''}
                 </div>
                 <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
             `;
             
             teamsContainer.appendChild(columna);
             
-            // Agregar miembros
             const listaMiembros = columna.querySelector('.team-members-list');
             miembros.forEach(miembro => {
                 agregarMiembroAlUI(listaMiembros, miembro.nombre, miembro.id, team);
             });
-            
-            // Botón eliminar team
-            const btnEliminarTeam = columna.querySelector('.btn-eliminar-team');
-            if (btnEliminarTeam) {
-                btnEliminarTeam.addEventListener('click', () => {
-                    columna.remove();
-                    teamsExistentes.delete(team);
-                    actualizarSelectorTeams();
-                });
-            }
         }
 
         function agregarMiembroAlUI(listaMiembros, nombre, id, team) {
@@ -836,31 +819,23 @@
             
             item.querySelector('.btn-remover-miembro').addEventListener('click', async () => {
                 if (id) {
-                    // Eliminar del servidor
                     try {
                         await fetch(`/api/personal-reclutamiento/${id}`, { method: 'DELETE' });
+                        await cargarReclutadoresDelServidor();
                     } catch (error) {
                         console.error('Error eliminando reclutador:', error);
                     }
                 }
-                item.remove();
             });
             
             listaMiembros.appendChild(item);
         }
 
         function actualizarSelectorTeams() {
-            const opcionesActuales = [];
-            modalTeamSelect.querySelectorAll('option:not([value="agregar_nuevo"])').forEach(opt => {
-                opcionesActuales.push(opt.value);
-            });
-            
-            // Limpiar (mantener solo agregar_nuevo)
             Array.from(modalTeamSelect.options).forEach(opt => {
                 if (opt.value !== 'agregar_nuevo') opt.remove();
             });
             
-            // Agregar teams existentes
             Array.from(teamsExistentes).sort().forEach(team => {
                 const option = document.createElement('option');
                 option.value = team;
@@ -869,19 +844,16 @@
             });
         }
 
-        // Abrir Modal
         openModalBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
             modalRecruiterInput.value = '';
             modalRecruiterInput.focus();
         });
 
-        // Cerrar Modal
         closeModalBtn.addEventListener('click', () => {
             modal.style.display = 'none';
         });
 
-        // Control de selección de equipos en el selector del Modal
         modalTeamSelect.addEventListener('change', function() {
             if (this.value === 'agregar_nuevo') {
                 const nuevoTeamNombre = prompt('Nombre del nuevo Team:', `Team ${teamsExistentes.size + 1}`);
@@ -889,7 +861,6 @@
                     const teamTrim = nuevoTeamNombre.trim();
                     if (!teamsExistentes.has(teamTrim)) {
                         teamsExistentes.add(teamTrim);
-                        crearColumnaTeam(teamTrim, []);
                         actualizarSelectorTeams();
                         modalTeamSelect.value = teamTrim;
                     } else {
@@ -902,7 +873,6 @@
             }
         });
 
-        // Guardar Personal de Reclutamiento
         saveRecruiterBtn.addEventListener('click', async function() {
             const nombre = modalRecruiterInput.value.trim();
             const teamSeleccionado = modalTeamSelect.value;
@@ -922,40 +892,34 @@
                     })
                 });
 
-                // Verificar que es JSON válido
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
                     console.error('Respuesta no JSON:', text);
-                    alert('Error: El servidor respondió incorrectamente. Verifica la consola.');
+                    alert('El servidor respondió incorrectamente.');
                     return;
                 }
 
                 if (response.status === 201) {
-                    const data = await response.json();
-                    
-                    // Agregar al UI
-                    const columnaTeam = teamsContainer.querySelector(`[data-team="${teamSeleccionado}"]`);
-                    if (columnaTeam) {
-                        const listaMiembros = columnaTeam.querySelector('.team-members-list');
-                        agregarMiembroAlUI(listaMiembros, nombre, data.id, teamSeleccionado);
-                    }
-                    
                     modal.style.display = 'none';
                     modalRecruiterInput.value = '';
-                } else if (response.status === 409) {
-                    alert('Este reclutador ya existe');
-                } else {
-                    const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-                    alert('Error: ' + (errorData.error || 'No se pudo guardar'));
+                    await cargarReclutadoresDelServidor();
+                    return;
                 }
+
+                if (response.status === 409) {
+                    alert('Este reclutador ya existe');
+                    return;
+                }
+
+                const errorData = await response.json().catch(() => ({ error: 'No se pudo guardar' }));
+                alert(errorData.error || 'No se pudo guardar');
             } catch (error) {
                 console.error('Error guardando reclutador:', error);
                 alert('Error al guardar: ' + error.message);
             }
         });
 
-        // Cargar al iniciar
         document.addEventListener('DOMContentLoaded', cargarReclutadoresDelServidor);
     </script>
     <script>

@@ -1478,6 +1478,9 @@ def api_datos_grafica():
 
 # ===== ENDPOINTS PARA PERSONAL DE RECLUTAMIENTO =====
 
+MAX_RECLUTADORES = 10
+
+
 @app.route('/api/personal-reclutamiento', methods=['GET'])
 def obtener_reclutadores():
     """Obtiene la lista de personal de reclutamiento con sus teams"""
@@ -1494,7 +1497,8 @@ def obtener_reclutadores():
                     SELECT id, nombre, team, fecha_registro
                     FROM personal_reclutamiento
                     ORDER BY team ASC, nombre ASC
-                """)
+                    LIMIT %s
+                """, (MAX_RECLUTADORES,))
                 rows = cur.fetchall()
         
         data = [
@@ -1533,6 +1537,14 @@ def guardar_reclutador():
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
+
+                cur.execute("SELECT COUNT(*) FROM personal_reclutamiento")
+                total_actual = cur.fetchone()[0] or 0
+                if total_actual >= MAX_RECLUTADORES:
+                    conn.rollback()
+                    return jsonify({
+                        'error': f'Solo puedes registrar hasta {MAX_RECLUTADORES} personas de reclutamiento.'
+                    }), 400
                 
                 # Verificar si ya existe
                 cur.execute("SELECT id FROM personal_reclutamiento WHERE nombre = %s", (nombre,))
