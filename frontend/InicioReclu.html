@@ -637,20 +637,20 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    indexAxis: 'y',
                     plugins: {
                         legend: { display: true, position: 'bottom' }
                     },
                     scales: {
-                        x: {
+                        y: {
                             beginAtZero: true,
+                            max: 150,
                             ticks: {
                                 color: '#ccc',
                                 stepSize: 10
                             },
                             grid: { color: '#444' }
                         },
-                        y: {
+                        x: {
                             ticks: { color: '#ccc' },
                             grid: { display: false }
                         }
@@ -922,6 +922,15 @@
                     })
                 });
 
+                // Verificar que es JSON válido
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Respuesta no JSON:', text);
+                    alert('Error: El servidor respondió incorrectamente. Verifica la consola.');
+                    return;
+                }
+
                 if (response.status === 201) {
                     const data = await response.json();
                     
@@ -937,8 +946,8 @@
                 } else if (response.status === 409) {
                     alert('Este reclutador ya existe');
                 } else {
-                    const error = await response.json();
-                    alert('Error: ' + (error.error || 'No se pudo guardar'));
+                    const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                    alert('Error: ' + (errorData.error || 'No se pudo guardar'));
                 }
             } catch (error) {
                 console.error('Error guardando reclutador:', error);

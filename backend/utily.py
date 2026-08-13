@@ -1483,6 +1483,12 @@ def obtener_reclutadores():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Asegurar que la columna team existe
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento 
+                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
+                """)
+                
                 cur.execute("""
                     SELECT id, nombre, team, fecha_registro
                     FROM personal_reclutamiento
@@ -1494,7 +1500,7 @@ def obtener_reclutadores():
             {
                 'id': row[0],
                 'nombre': row[1],
-                'team': row[2],
+                'team': row[2] or 'Team 1',
                 'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
             }
             for row in rows
@@ -1502,6 +1508,8 @@ def obtener_reclutadores():
         return jsonify(data), 200
     except Exception as e:
         print(f"Error en /api/personal-reclutamiento GET: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -1519,9 +1527,16 @@ def guardar_reclutador():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Asegurar que la columna team existe
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento 
+                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
+                """)
+                
                 # Verificar si ya existe
                 cur.execute("SELECT id FROM personal_reclutamiento WHERE nombre = %s", (nombre,))
                 if cur.fetchone():
+                    conn.commit()
                     return jsonify({'error': 'Este reclutador ya existe'}), 409
                 
                 # Insertar nuevo
@@ -1538,12 +1553,14 @@ def guardar_reclutador():
             return jsonify({
                 'id': row[0],
                 'nombre': row[1],
-                'team': row[2],
+                'team': row[2] or 'Team 1',
                 'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
             }), 201
         return jsonify({'error': 'Error al guardar'}), 500
     except Exception as e:
         print(f"Error en /api/personal-reclutamiento POST: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -1616,6 +1633,12 @@ def obtener_ingresos_por_team():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Asegurar que la columna team existe
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento 
+                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
+                """)
+                
                 cur.execute("""
                     SELECT pr.team, COUNT(e.id) as total
                     FROM personal_reclutamiento pr
@@ -1640,6 +1663,8 @@ def obtener_ingresos_por_team():
         return jsonify(data), 200
     except Exception as e:
         print(f"Error en /api/ingresos-por-team: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -1649,6 +1674,12 @@ def obtener_nombres_reclutadores():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Asegurar que la columna team existe
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento 
+                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
+                """)
+                
                 cur.execute("SELECT nombre FROM personal_reclutamiento ORDER BY nombre ASC")
                 rows = cur.fetchall()
         
@@ -1656,6 +1687,8 @@ def obtener_nombres_reclutadores():
         return jsonify(nombres), 200
     except Exception as e:
         print(f"Error en /api/reclutadores-nombres: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify([]), 500
 
 #-----------------------------------------------------------------------------------------------------------------
