@@ -387,7 +387,7 @@
         </div>
     </div>
 
-    <!-- SECCIONES -->
+    <!-- SECCIONES Visuales-->
     <main style="padding-top: 0;">
         <div class="grid-content-4">
             <!-- Sección 1 -->
@@ -428,9 +428,55 @@
                 <!-- MITAD INFERIOR: Generador de enlace temporal -->
                 <div class="sub-box">
                     <h3>Personal de Reclutamiento Activo</h3>
-                    <div class="input-group">
-                        <input type="text" id="recruiterInput" placeholder="Ingresa el nombre">
-                        <button type="button" id="addRecruiterBtn" style="width: auto; padding: 0 20px;">Agregar</button>
+                    
+                    <!-- Botón principal para abrir la ventana flotante -->
+                    <div style="margin-bottom: 15px;">
+                        <button type="button" id="openModalBtn" style="background: #007bff; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">+ Agregar Personal</button>
+                    </div>
+
+                    <!-- Contenedor inferior: Los recuadros de los Teams que se reparten dinámicamente -->
+                    <div id="teamsContainer" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                        <!-- Team 1 -->
+                        <div class="team-column" data-team="Team 1" style="flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;">
+                            <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                                <span>Team 1</span>
+                            </div>
+                            <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
+                        </div>
+
+                        <!-- Team 2 -->
+                        <div class="team-column" data-team="Team 2" style="flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;">
+                            <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                                <span>Team 2</span>
+                            </div>
+                            <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VENTANA FLOTANTE (MODAL) PARA AGREGAR PERSONAL -->
+                <div id="personalModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+                    <div style="background: #222; padding: 20px; border-radius: 8px; width: 320px; border: 1px solid #555; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 8px;">Nuevo Registro de Personal</h4>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Nombre:</label>
+                            <input type="text" id="modalRecruiterInput" placeholder="Ingresa el nombre" style="width: 100%; padding: 8px; background: #3e3e3e; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box;">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Team:</label>
+                            <select id="modalTeamSelect" style="width: 100%; padding: 8px; background: #3e3e3e; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box;">
+                                <option value="Team 1">Team 1</option>
+                                <option value="Team 2">Team 2</option>
+                                <option value="agregar_nuevo" style="font-weight: bold; color: #80bdff;">+ Agregar Team</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                            <button type="button" id="closeModalBtn" style="background: #555; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                            <button type="button" id="saveRecruiterBtn" style="background: #28a745; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -674,64 +720,150 @@
             }
         });
     </script>
+
     <script>
-        // <--- SECCION 2 - GRAFICA DE DONA --->
-        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
-        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
-        let chartPastel = null;
+        // --- SECCIÓN 2 1/2 - GENERAR LINK ---
+        const btnGenerate = document.getElementById('btn-generate-link');
+        const selectMinutes = document.getElementById('expiry-minutes');
+        const linkContainer = document.getElementById('link-result-container');
 
-        function crearGraficaPastel(idCanvas, datos) {
-            const ctx = document.getElementById(idCanvas).getContext('2d');
-            if (chartPastel) chartPastel.destroy();
+        const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
 
-            chartPastel = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labelsCategorias,
-                    datasets: [{
-                        data: datos,
-                        backgroundColor: coloresCategorias,
-                        borderWidth: 2,
-                        borderColor: '#1e1e1e'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        async function fetchDatosGrafica(params) {
-            const candidates = [
-                `/api/datos-grafica?${params}`,
-                `${window.location.origin}/api/datos-grafica?${params}`
-            ];
-
-            for (const url of candidates) {
-                try {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (response.ok) return await response.json();
-                } catch (e) {}
+        async function copiarTexto(texto) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(texto);
+                return;
             }
-            return [0, 0, 0, 0, 0, 0];
+
+            const helper = document.createElement('textarea');
+            helper.value = texto;
+            helper.setAttribute('readonly', '');
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            helper.style.left = '-9999px';
+            document.body.appendChild(helper);
+            helper.select();
+            document.execCommand('copy');
+            document.body.removeChild(helper);
         }
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            const selectMes = document.getElementById('selectMes');
-            const mesActual = new Date().getMonth() + 1;
-            if (selectMes) selectMes.value = mesActual;
+        btnGenerate.addEventListener('click', async function() {
+            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
+            const ahora = new Date();
+            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
+            const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?expires=${tiempoLimite}`;
 
-            const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
-            crearGraficaPastel('graficaPastelMes', datos);
+            try {
+                await copiarTexto(finalLink);
+                linkContainer.style.display = 'block';
+            } catch (err) {
+                console.error('Error al copiar: ', err);
+                linkContainer.style.display = 'block';
+            }
+        });
+    </script>
+    <script>
+        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO ---
+        const modal = document.getElementById('personalModal');
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveRecruiterBtn = document.getElementById('saveRecruiterBtn');
+        const modalRecruiterInput = document.getElementById('modalRecruiterInput');
+        const modalTeamSelect = document.getElementById('modalTeamSelect');
+        const teamsContainer = document.getElementById('teamsContainer');
+        
+        let contadorTeams = 2; // Inicia con Team 1 y Team 2
 
-            if (selectMes) {
-                selectMes.addEventListener('change', async (e) => {
-                    const nuevosDatos = await fetchDatosGrafica(`periodo=mes&mes=${e.target.value}`);
-                    crearGraficaPastel('graficaPastelMes', nuevosDatos);
+        // Abrir Modal
+        openModalBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+            modalRecruiterInput.value = '';
+            modalRecruiterInput.focus();
+        });
+
+        // Cerrar Modal
+        closeModalBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Control de selección de equipos en el selector del Modal
+        modalTeamSelect.addEventListener('change', function() {
+            if (this.value === 'agregar_nuevo') {
+                contadorTeams++;
+                const nuevoTeamNombre = `Team ${contadorTeams}`;
+
+                // 1. Crear columna visual para el nuevo equipo
+                const nuevaColumna = document.createElement('div');
+                nuevaColumna.className = 'team-column';
+                nuevaColumna.dataset.team = nuevoTeamNombre;
+                nuevaColumna.style.cssText = "flex: 1; min-width: 180px; background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;";
+                
+                nuevaColumna.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 6px;">
+                        <span>${nuevoTeamNombre}</span>
+                        <button type="button" class="btn-eliminar-team" style="background: transparent; border: none; color: #ff4d4d; cursor: pointer; font-weight: bold; font-size: 1.1rem; padding: 0 4px;" title="Eliminar Team">×</button>
+                    </div>
+                    <div class="team-members-list" style="font-size: 0.85rem; color: #ccc; min-height: 50px; display: flex; flex-direction: column; gap: 6px;"></div>
+                `;
+
+                teamsContainer.appendChild(nuevaColumna);
+
+                // 2. Agregar la opción al selector del modal (antes de "+ Agregar Team")
+                const nuevaOption = document.createElement('option');
+                nuevaOption.value = nuevoTeamNombre;
+                nuevaOption.textContent = nuevoTeamNombre;
+                modalTeamSelect.insertBefore(nuevaOption, modalTeamSelect.lastElementChild);
+
+                // 3. Seleccionar automáticamente el team recién creado
+                modalTeamSelect.value = nuevoTeamNombre;
+
+                // 4. Funcionalidad de la tachita para eliminar el team (a partir del Team 3)
+                nuevaColumna.querySelector('.btn-eliminar-team').addEventListener('click', function() {
+                    // Si se borra el team, devolvemos sus miembros al Team 1 o simplemente los eliminamos del DOM
+                    nuevaColumna.remove();
+                    // Remover la opción del select
+                    Array.from(modalTeamSelect.options).forEach(opt => {
+                        if (opt.value === nuevoTeamNombre) opt.remove();
+                    });
+                    modalTeamSelect.value = "Team 1";
                 });
+            }
+        });
+
+        // Guardar Personal y mostrarlo dentro de su respectivo Team
+        saveRecruiterBtn.addEventListener('click', function() {
+            const nombre = modalRecruiterInput.value.trim();
+            const teamSeleccionado = modalTeamSelect.value;
+
+            if (!nombre) {
+                alert('Por favor ingresa un nombre.');
+                return;
+            }
+
+            // Buscar la columna del team correspondiente
+            const columnaTeam = teamsContainer.querySelector(`[data-team="${teamSeleccionado}"]`);
+            
+            if (columnaTeam) {
+                const listaMiembros = columnaTeam.querySelector('.team-members-list');
+                
+                // Crear el elemento visual del miembro activo
+                const itemMiembro = document.createElement('div');
+                itemMiembro.style.cssText = "background: #383838; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #28a745;";
+                itemMiembro.innerHTML = `
+                    <span>${nombre}</span>
+                    <button type="button" class="btn-remover-miembro" style="background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 0.9rem;" title="Eliminar miembro">×</button>
+                `;
+
+                // Botón para eliminar al miembro individual de la lista
+                itemMiembro.querySelector('.btn-remover-miembro').addEventListener('click', function() {
+                    itemMiembro.remove();
+                });
+
+                listaMiembros.appendChild(itemMiembro);
+                
+                // Cerrar modal y limpiar
+                modal.style.display = 'none';
+                modalRecruiterInput.value = '';
             }
         });
     </script>
@@ -825,218 +957,63 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 4 1/2 - PERSONAL DE RECLUTAMIENTO ---
-        let recruiterInput = null;
-        let addRecruiterBtn = null;
-        let tagsContainer = null;
+        // <--- SECCION 4 - GRAFICA DE DONA --->
+        const coloresCategorias = ['#7734EA', '#00A7EA', '#8AE800', '#FAF100', '#FFAA00', '#FF0061'];
+        const labelsCategorias = ['FACEBOOK', 'POSTEO', 'VOLANTE', 'RECOMENDACION', 'RECLU CW', 'RECLU PURO'];
+        let chartPastel = null;
 
-        function normalizarReclutador(item, fallbackId = null) {
-            if (typeof item === 'string') {
-                const nombre = item.trim();
-                return nombre ? { id: fallbackId || Date.now(), nombre, ingresos: 0 } : null;
-            }
+        function crearGraficaPastel(idCanvas, datos) {
+            const ctx = document.getElementById(idCanvas).getContext('2d');
+            if (chartPastel) chartPastel.destroy();
 
-            const nombre = String(item?.nombre || '').trim();
-            if (!nombre) return null;
-
-            return {
-                id: item?.id || fallbackId || Date.now(),
-                nombre,
-                ingresos: Number(item?.ingresos || 0),
-            };
-        }
-
-        function leerReclutadoresLocales() {
-            try {
-                const guardados = localStorage.getItem('reclutadores');
-                if (!guardados) return [];
-                const datos = JSON.parse(guardados);
-                return Array.isArray(datos)
-                    ? datos.map((item) => normalizarReclutador(item, Date.now())).filter(Boolean)
-                    : [];
-            } catch (error) {
-                return [];
-            }
-        }
-
-        function guardarReclutadoresLocales(recruiters) {
-            const lista = (recruiters || [])
-                .map((item) => normalizarReclutador(item, Date.now()))
-                .filter(Boolean);
-            localStorage.setItem('reclutadores', JSON.stringify(lista));
-        }
-
-        async function obtenerReclutadores() {
-            const locales = leerReclutadoresLocales();
-            const urls = [
-                '/api/reclutadores',
-                `${window.location.origin}/api/reclutadores`
-            ];
-
-            for (const url of urls) {
-                try {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (!response.ok) continue;
-                    const data = await response.json();
-                    if (Array.isArray(data) && data.length) {
-                        guardarReclutadoresLocales(data);
-                        return data;
-                    }
-                } catch (error) {
-                    console.warn('No se pudo cargar desde la API, usando respaldo local:', error);
+            chartPastel = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsCategorias,
+                    datasets: [{
+                        data: datos,
+                        backgroundColor: coloresCategorias,
+                        borderWidth: 2,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { display: false } }
                 }
-            }
-
-            return locales;
-        }
-
-        function renderRecruiters(recruiters = []) {
-            if (!tagsContainer) return;
-
-            tagsContainer.innerHTML = '';
-
-            if (recruiters.length === 0) {
-                const emptyState = document.createElement('div');
-                emptyState.className = 'tag-pill';
-                emptyState.style.background = '#2d2d2d';
-                emptyState.style.color = '#fff';
-                emptyState.innerHTML = '<span>No hay nombres registrados</span>';
-                tagsContainer.appendChild(emptyState);
-                return;
-            }
-
-            recruiters.forEach((recruiter) => {
-                const pill = document.createElement('div');
-                pill.className = 'tag-pill';
-
-                const label = document.createElement('span');
-                label.textContent = recruiter.nombre;
-                pill.appendChild(label);
-
-                const closeBtn = document.createElement('button');
-                closeBtn.type = 'button';
-                closeBtn.className = 'tag-close';
-                closeBtn.setAttribute('aria-label', `Eliminar ${recruiter.nombre}`);
-                closeBtn.textContent = '×';
-                closeBtn.addEventListener('click', () => eliminarRecruiter(recruiter.id));
-                pill.appendChild(closeBtn);
-
-                tagsContainer.appendChild(pill);
             });
         }
 
-        async function cargarYRenderizarRecruiters() {
-            const recruiters = await obtenerReclutadores();
-            renderRecruiters(recruiters);
+        async function fetchDatosGrafica(params) {
+            const candidates = [
+                `/api/datos-grafica?${params}`,
+                `${window.location.origin}/api/datos-grafica?${params}`
+            ];
+
+            for (const url of candidates) {
+                try {
+                    const response = await fetch(url, { cache: 'no-store' });
+                    if (response.ok) return await response.json();
+                } catch (e) {}
+            }
+            return [0, 0, 0, 0, 0, 0];
         }
 
-        async function agregarRecruiter() {
-            if (!recruiterInput) return;
+        document.addEventListener("DOMContentLoaded", async () => {
+            const selectMes = document.getElementById('selectMes');
+            const mesActual = new Date().getMonth() + 1;
+            if (selectMes) selectMes.value = mesActual;
 
-            const nombre = recruiterInput.value.trim();
-            if (!nombre) return;
+            const datos = await fetchDatosGrafica(`periodo=mes&mes=${mesActual}`);
+            crearGraficaPastel('graficaPastelMes', datos);
 
-            const recruiters = leerReclutadoresLocales();
-            const yaExiste = recruiters.some((item) => String(item.nombre || '').trim().toLowerCase() === nombre.toLowerCase());
-            if (!yaExiste) {
-                recruiters.push({ id: Date.now(), nombre, ingresos: 0 });
-                guardarReclutadoresLocales(recruiters);
-            }
-
-            renderRecruiters(recruiters);
-            recruiterInput.value = '';
-
-            try {
-                const response = await fetch('/api/reclutadores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre })
+            if (selectMes) {
+                selectMes.addEventListener('change', async (e) => {
+                    const nuevosDatos = await fetchDatosGrafica(`periodo=mes&mes=${e.target.value}`);
+                    crearGraficaPastel('graficaPastelMes', nuevosDatos);
                 });
-
-                if (response.ok) {
-                    await cargarYRenderizarRecruiters();
-                }
-            } catch (error) {
-                console.warn('No se pudo sincronizar con la API, pero el nombre quedó guardado localmente:', error);
-            }
-        }
-
-        async function eliminarRecruiter(id) {
-            if (!id) return;
-
-            const recruiters = leerReclutadoresLocales().filter((recruiter) => recruiter.id !== id);
-            guardarReclutadoresLocales(recruiters);
-            renderRecruiters(recruiters);
-
-            try {
-                const response = await fetch(`/api/reclutadores/${id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    await cargarYRenderizarRecruiters();
-                }
-            } catch (error) {
-                console.warn('No se pudo eliminar en la API, pero se eliminó localmente:', error);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            recruiterInput = document.getElementById('recruiterInput');
-            addRecruiterBtn = document.getElementById('addRecruiterBtn');
-            tagsContainer = document.getElementById('tagsContainer');
-
-            if (addRecruiterBtn) {
-                addRecruiterBtn.addEventListener('click', agregarRecruiter);
-            }
-
-            if (recruiterInput) {
-                recruiterInput.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        agregarRecruiter();
-                    }
-                });
-            }
-
-            cargarYRenderizarRecruiters();
-        });
-    </script>
-    <script>
-        // --- SECCIÓN 4 2/2 - GENERAR LINK ---
-        const btnGenerate = document.getElementById('btn-generate-link');
-        const selectMinutes = document.getElementById('expiry-minutes');
-        const linkContainer = document.getElementById('link-result-container');
-
-        const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
-
-        async function copiarTexto(texto) {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(texto);
-                return;
-            }
-
-            const helper = document.createElement('textarea');
-            helper.value = texto;
-            helper.setAttribute('readonly', '');
-            helper.style.position = 'fixed';
-            helper.style.opacity = '0';
-            helper.style.left = '-9999px';
-            document.body.appendChild(helper);
-            helper.select();
-            document.execCommand('copy');
-            document.body.removeChild(helper);
-        }
-
-        btnGenerate.addEventListener('click', async function() {
-            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
-            const ahora = new Date();
-            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
-            const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?expires=${tiempoLimite}`;
-
-            try {
-                await copiarTexto(finalLink);
-                linkContainer.style.display = 'block';
-            } catch (err) {
-                console.error('Error al copiar: ', err);
-                linkContainer.style.display = 'block';
             }
         });
     </script>
