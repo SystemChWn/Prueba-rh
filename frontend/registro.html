@@ -1094,27 +1094,29 @@
 
     </script>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const tempId = urlParams.get('temp_id');
-        const expires = urlParams.get('expires');
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const expires = urlParams.get('expires');
+            const tempId = urlParams.get('temp_id');
+            const h4Element = document.getElementById('display-employee-id');
 
-        const h4Element = document.getElementById('display-employee-id');
+            if (expires) {
+                const ahora = new Date().getTime();
+                
+                if (ahora > parseInt(expires, 10)) {
+                    alert('Este enlace de registro ha expirado.');
+                    window.location.href = 'main.html'; 
+                    return; 
+                }
+            }
 
-        // 1. Validar si el enlace expiró
-        if (expires && Date.now() > parseInt(expires, 10)) {
-            h4Element.textContent = "ENLACE EXPIRADO";
-            h4Element.style.color = "red";
-        } 
-        // 2. Si existe un número, forzamos que aparezca con el prefijo "TEMP - "
-        else if (tempId) {
-            // Limpiamos por si acaso ya traía el texto repetido, para que no diga "TEMP - TEMP - 123"
-            const cleanId = tempId.replace(/^TEMP\s*-\s*/i, '');
-            
-            // Lo mostramos con el prefijo obligatorio
-            h4Element.textContent = `TEMP - ${cleanId}`;
-        } else {
-            h4Element.textContent = "ID NO DISPONIBLE";
-        }
+            if (tempId) {
+                const cleanId = tempId.replace(/^TEMP\s*-\s*/i, '');
+                h4Element.textContent = `TEMP - ${cleanId}`;
+            } else {
+                h4Element.textContent = "ID NO DISPONIBLE";
+            }
+        });
     </script>
 
 </body>
