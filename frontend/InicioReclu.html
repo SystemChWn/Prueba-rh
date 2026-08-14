@@ -750,7 +750,7 @@
         // --- SECCIÓN 2 1/2 - GENERAR LINK ---
         const btnGenerate = document.getElementById('btn-generate-link');
         const selectMinutes = document.getElementById('expiry-minutes');
-        const inputTempId = document.getElementById('temp-employee-id'); // <-- 1. Referencia al input del número de empleado
+        const inputTempId = document.getElementById('temp-employee-id');
         const linkContainer = document.getElementById('link-result-container');
 
         const BASE_URL_COMPARTIBLE = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
@@ -773,32 +773,29 @@
             document.body.removeChild(helper);
         }
 
-        // Variable para controlar el temporizador de la alerta
         let alertTimeout = null;
 
         btnGenerate.addEventListener('click', async function() {
-            // Validar que se haya ingresado el número de empleado
-            const tempEmployeeId = inputTempId.value.trim();
-            if (!tempEmployeeId) {
+            const rawId = inputTempId.value.trim();
+            if (!rawId) {
                 alert('Por favor, ingresa el número de empleado temporal.');
                 inputTempId.focus();
                 return;
             }
 
+            // <-- PREFIJO -->
+            const tempEmployeeId = `TEMP - ${rawId}`;
+
             const minutosSeleccionados = parseInt(selectMinutes.value, 10);
             const ahora = new Date();
             const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
             
-            // <-- 2. Se incluye el parámetro 'temp_id' junto con 'expires' en el enlace
             const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?temp_id=${encodeURIComponent(tempEmployeeId)}&expires=${tiempoLimite}`;
 
             try {
                 await copiarTexto(finalLink);
-                
-                // Mostrar la alerta
                 linkContainer.style.display = 'block';
 
-                // <-- 3. Limpiar cualquier temporizador previo y ocultar la alerta después de 2 segundos (2000 ms)
                 if (alertTimeout) clearTimeout(alertTimeout);
                 alertTimeout = setTimeout(() => {
                     linkContainer.style.display = 'none';

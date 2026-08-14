@@ -1094,26 +1094,21 @@
 
     </script>
     <script>
-        // 1. Obtener los parámetros de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const tempId = urlParams.get('temp_id');
         const expires = urlParams.get('expires');
 
-        // 2. Referencia al elemento H4
         const h4Element = document.getElementById('display-employee-id');
 
-        // 3. Lógica de validación de tiempo
         if (expires && Date.now() > parseInt(expires, 10)) {
             h4Element.textContent = "ENLACE EXPIRADO";
             h4Element.style.color = "red";
-        } 
-        // 4. Si el ID existe, lo ponemos en el H4; si no, ponemos un mensaje de error
-        else if (tempId) {
+        } else if (tempId) {
+            // Se muestra tal cual viene ('TEMP - 1234')
             h4Element.textContent = tempId;
         } else {
             h4Element.textContent = "ID NO DISPONIBLE";
         }
-
     </script>
 
 </body>
