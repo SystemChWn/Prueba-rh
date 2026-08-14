@@ -1100,12 +1100,18 @@
 
         const h4Element = document.getElementById('display-employee-id');
 
+        // 1. Validar si el enlace expiró
         if (expires && Date.now() > parseInt(expires, 10)) {
             h4Element.textContent = "ENLACE EXPIRADO";
             h4Element.style.color = "red";
-        } else if (tempId) {
-            // Se muestra tal cual viene ('TEMP - 1234')
-            h4Element.textContent = tempId;
+        } 
+        // 2. Si existe un número, forzamos que aparezca con el prefijo "TEMP - "
+        else if (tempId) {
+            // Limpiamos por si acaso ya traía el texto repetido, para que no diga "TEMP - TEMP - 123"
+            const cleanId = tempId.replace(/^TEMP\s*-\s*/i, '');
+            
+            // Lo mostramos con el prefijo obligatorio
+            h4Element.textContent = `TEMP - ${cleanId}`;
         } else {
             h4Element.textContent = "ID NO DISPONIBLE";
         }
