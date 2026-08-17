@@ -56,27 +56,49 @@
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
 
-/* RECUADROS SUPERIORES */
+/* RECUADROS SUPERIORES (BOTONES) */
         .metrics-container {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
             padding: 20px 20px 0 20px;
         }
 
         .metric-card {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
+            background-color: #333;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #007bff;
+            padding: 20px 20px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        /* Efecto al pasar el mouse por encima */
+        .metric-card:hover {
+            background: #007bff;
+            border-color: #007bff;
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+
+        /* Efecto al hacer clic */
+        .metric-card:active {
+            transform: translateY(0);
         }
 
         .metric-card h3 {
-            color: #aaa;
-            margin: 0 0 10px 0;
-            font-size: 0.8rem;
+            color: #007bff;
+            margin: 0; /* Quitamos márgenes sobrantes ya que es un botón simple */
+            font-size: 0.9rem;
             text-transform: uppercase;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        /* Cambia el color del texto al pasar el cursor */
+        .metric-card:hover h3 {
+            color: #fff;
         }
 
         .metric-value {
@@ -84,6 +106,313 @@
             font-weight: bold;
             color: #fff;
             margin: 0;
+        }
+
+/* ESTILOS DE LA VENTANA EMERGENTE (MODAL) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
+            backdrop-filter: blur(3px); /* Efecto difuminado elegante */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            color: #fff;
+            text-align: left;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            color: #aaa;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        /* Botón interno para cerrar el modal */
+        .close-modal {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .close-modal:hover {
+            background: #444;
+        }
+
+        /* CONTENEDOR DE DOS MITADES */
+        .half-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Divide el espacio exactamente en 2 partes iguales */
+            gap: 20px; /* Espacio entre los dos recuadros */
+            padding: 20px;
+        }
+
+        /* ESTILO DE CADA RECUADRO */
+        .half-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 25px;
+            color: #fff;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .half-card h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .half-card p {
+            color: #aaa;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+/* Recuadro Izquierdo*/
+        .half-card .fecha-hoy {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            margin-top: -5px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .asistencia-status-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .asistencia-status-table th {
+            color: #aaa;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .asistencia-status-table td {
+            padding: 12px 0;
+            border-bottom: 1px solid #252525;
+            color: #fff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge.registrada {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.4);
+        }
+
+        .badge.no-registrada {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.4);
+        }
+
+/* SECCION DIVIDIDA */
+        .content-section.split-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+
+        /* Estilo general de cada sub-recuadro */
+        .sub-box {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+        }
+
+        .sub-box h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
+        .sub-text {
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+
+        /* Elementos de formulario */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            background: #141414;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .filtros-fila {
+            display: flex;
+            gap: 15px; /* Espacio entre el primer filtro y el segundo */
+            width: 100%;
+            align-items: flex-end; /* Alinea las etiquetas correctamente */
+        }
+
+        /* Distribución de espacio (el segundo filtro puede ocupar un poco más si tiene dos fechas) */
+        .form-group.flex-1 {
+            flex: 1;
+        }
+
+        .form-group.flex-2 {
+            flex: 2;
+        }
+
+        /* Estilo para cuando la quincena o semana ponga dos inputs de fecha juntos en ese espacio */
+        .rango-fechas-fila {
+            display: flex;
+            gap: 10px;
+        }
+
+/* Contenedor de inputs en línea (para el envío automático) */
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+/* Botones */
+        .botones-accion {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: #fff;
+            flex: 1;
+        }
+        .btn-primary:hover { background: #0056b3; }
+
+        .btn-secondary {
+            background: #444;
+            color: #fff;
+        }
+        .btn-secondary:hover { background: #555; }
+
+        .btn-success {
+            background: #28a745;
+            color: #fff;
+        }
+        .btn-success:hover { background: #218838; }
+
+/* Lista de correos automáticos */
+        .tags-container {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .correo-list {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0 0 0;
+        }
+
+        .correo-item {
+            background: #141414;
+            border: 1px solid #282828;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-eliminar {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
     </style>
     </head>
@@ -104,27 +433,246 @@
             <a href="portalrh.html" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
-    <!-- RECUADROS SUPERIORES -->
-    <div class="metrics-container">
-        <div class="metric-card">
-            <h3>Mes Actual</h3>
-            <p class="metric-value" id="mesActual">--</p>
+    <main>
+        <!-- Contenedor de Botones -->
+        <div class="metrics-container">
+            <button class="metric-card" type="button" data-modal="modal-mes">
+                <h3>Acceso a Pagina</h3>
+            </button>
+            <button class="metric-card" type="button" data-modal="modal-top">
+                <h3>Justificaciones</h3>
+            </button>
+            <button class="metric-card" type="button" data-modal="modal-fuente">
+                <h3>Suspenciones</h3>
+            </button>
         </div>
-        <div class="metric-card">
-            <h3>Top Mensual</h3>
-            <p class="metric-value" id="countPendientes">Esperando...</p>
+
+        <!-- VENTANAS EMERGENTES (MODALES) -->
+        <div id="modal-mes" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Listas de Asistencias</h3>
+                <p>Aquí irá la información correspondiente al mes actual...</p>
+                <button class="close-modal" type="button">Cerrar</button>
+            </div>
         </div>
-        <div class="metric-card">
-            <h3>Fuente Destacada</h3>
-            <p class="metric-value" id="countEntrevista">0</p>
+
+        <div id="modal-top" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Top Mensual</h3>
+                <p>Aquí irá el listado o métricas del top mensual...</p>
+                <button class="close-modal" type="button">Cerrar</button>
+            </div>
         </div>
-        <div class="metric-card">
-            <h3>Ingresos del Mes</h3>
-            <p class="metric-value" id="countEvaluando">0</p>
+
+        <div id="modal-fuente" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Fuente Destacada</h3>
+                <p>Aquí irá la información de la fuente destacada...</p>
+                <button class="close-modal" type="button">Cerrar</button>
+            </div>
         </div>
-    </div>
+        <!-- Recuadro Izquierdo-->
+        <div class="half-container">
+            <div class="half-card">
+                <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
+                <p class="fecha-hoy"><span id="current-date">Lunes, 17 de agosto de 2026</span></p>
+                <br>
+                <div class="table-responsive">
+                    <table class="asistencia-status-table">
+                        <thead>
+                            <tr>
+                                <th>Responsable</th>
+                                <th>Departamento</th>
+                                <th>Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Ejemplo de fila 1 -->
+                            <tr>
+                                <td>Prueba</td>
+                                <td>Producción A</td>
+                                <td><span class="badge registrada">Registrada</span></td>
+                            </tr>
+                            <!-- Ejemplo de fila 2 -->
+                            <tr>
+                                <td>Carlos Gómez</td>
+                                <td>Almacén General</td>
+                                <td><span class="badge no-registrada">No registrada</span></td>
+                            </tr>
+                            <!-- Ejemplo de fila 1 -->
+                            <tr>
+                                <td>Prueba</td>
+                                <td>Producción A</td>
+                                <td><span class="badge registrada">Registrada</span></td>
+                            </tr>
+                            <!-- Ejemplo de fila 2 -->
+                            <tr>
+                                <td>Carlos Gómez</td>
+                                <td>Almacén General</td>
+                                <td><span class="badge no-registrada">No registrada</span></td>
+                            </tr>
+                            <!-- Ejemplo de fila 1 -->
+                            <tr>
+                                <td>Prueba</td>
+                                <td>Producción A</td>
+                                <td><span class="badge registrada">Registrada</span></td>
+                            </tr>
+                            <!-- Ejemplo de fila 2 -->
+                            <tr>
+                                <td>Carlos Gómez</td>
+                                <td>Almacén General</td>
+                                <td><span class="badge no-registrada">No registrada</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+<!-- Recuadro Derecho-->
+                <div class="content-section split-section">
+<!-- PRIMER RECUADRO: ENVÍO DE REPORTE MANUAL -->
+                <div class="sub-box">
+                    <h3>Envío de Reporte Manual</h3>
+                    
+                    <!-- CONTENEDOR EN UNA MISMA FILA PARA LOS FILTROS -->
+                    <div class="filtros-fila">
+                        <!-- 1er Filtro: Periodicidad -->
+                        <div class="form-group flex-1">
+                            <label for="periodicidad">Periodicidad:</label>
+                            <select id="periodicidad" class="form-control" onchange="cambiarFiltrosReporte()">
+                                <option value="mensual">Mensual</option>
+                                <option value="quincenal">Quincenal</option>
+                                <option value="semanal">Semanal</option>
+                            </select>
+                        </div>
+
+                        <!-- Contenedor dinámico al lado que cambia según la opción elegida -->
+                        <div id="filtro-dinamico" class="form-group flex-2">
+                            <label for="select-mes">Seleccionar Mes:</label>
+                            <select id="select-mes" class="form-control">
+                                <option>Enero</option>
+                                <option>Febrero</option>
+                                <option>Marzo</option>
+                                <option>Abril</option>
+                                <option>Mayo</option>
+                                <option>Junio</option>
+                                <option>Julio</option>
+                                <option>Agosto</option>
+                                <option>Septiembre</option>
+                                <option>Octubre</option>
+                                <option>Noviembre</option>
+                                <option>Diciembre</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Correo Normal (abajo de la fila de filtros) -->
+                    <div class="form-group">
+                        <label for="correo-manual">Correo Electrónico:</label>
+                        <input type="email" id="correo-manual" class="form-control" placeholder="ejemplo@correo.com">
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="botones-accion">
+                        <button type="button" class="btn btn-secondary">Vista Previa</button>
+                        <button type="button" class="btn btn-primary">Enviar Reporte</button>
+                    </div>
+                </div>
+
+<!-- SEGUNDO RECUADRO: ENVÍO AUTOMÁTICO -->
+                    <div class="sub-box">
+                        <h3>Envío Automático</h3>
+                        <p class="sub-text">Los correos enlistados aquí recibirán los reportes mensual, quincenal y semanal automáticamente.</p>
+
+                        <!-- Input para agregar correo -->
+                        <div class="form-group input-group">
+                            <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
+                            <button type="button" class="btn btn-success" onclick="agregarCorreoAuto()">Agregar</button>
+                        </div>
+
+                        <!-- Lista de Correos con opción de eliminar -->
+                        <div class="tags-container">
+                            <label>Destinatarios Automáticos:</label>
+                            <ul id="lista-correos-auto" class="correo-list">
+                                <!-- Ejemplo inicial de correo -->
+                                <li class="correo-item">
+                                    <span>supervisor@empresa.com</span>
+                                    <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">❌</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </main>
     <script src="data-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Seleccionamos todos los botones y modales
+        const buttons = document.querySelectorAll('.metric-card');
+        const modals = document.querySelectorAll('.modal-overlay');
+        const closeButtons = document.querySelectorAll('.close-modal');
+
+        // Abrir el modal correspondiente al hacer clic en un botón
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modalId = button.getAttribute('data-modal');
+                const targetModal = document.getElementById(modalId);
+                if (targetModal) {
+                    targetModal.style.display = 'flex';
+                }
+            });
+        });
+
+        // Cerrar el modal al hacer clic en el botón de cerrar
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal-overlay');
+                modal.style.display = 'none';
+            });
+        });
+
+        modals.forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    <script>
+        function cambiarFiltrosReporte() {
+            const periodicidad = document.getElementById('periodicidad').value;
+            const contenedor = document.getElementById('filtro-dinamico');
+
+            if (periodicidad === 'mensual') {
+                contenedor.innerHTML = `
+                    <label for="select-mes">Seleccionar Mes:</label>
+                    <select id="select-mes" class="form-control">
+                        <option value="2026-08">Agosto 2026</option>
+                        <option value="2026-07">Julio 2026</option>
+                        <option value="2026-06">Junio 2026</option>
+                    </select>
+                `;
+            } else if (periodicidad === 'quincenal') {
+                contenedor.innerHTML = `
+                    <label>Rango (Inicio y Fin):</label>
+                    <div class="rango-fechas-fila">
+                        <input type="date" class="form-control" id="q-inicio">
+                        <input type="date" class="form-control" id="q-fin">
+                    </div>
+                `;
+            } else if (periodicidad === 'semanal') {
+                contenedor.innerHTML = `
+                    <label>Rango (Inicio y Fin):</label>
+                    <div class="rango-fechas-fila">
+                        <input type="date" class="form-control" id="s-inicio">
+                        <input type="date" class="form-control" id="s-fin">
+                    </div>
+                `;
+            }
+        }
+    </script>
 </body>
 </html>
