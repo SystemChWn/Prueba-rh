@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Interno Reclutamiento</title>
+    <!-- Importar iconos para el ojito y elementos visuales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-/* Eliminar la barra de desplazamiento visualmente */
+        /* Eliminar la barra de desplazamiento visualmente */
         ::-webkit-scrollbar {
             display: none;
         }
@@ -19,7 +21,7 @@
         .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
 
-/* SECCIONES DE ENCABEZADO */
+        /* SECCIONES DE ENCABEZADO */
         .main-header {
             display: flex;
             justify-content: space-between;
@@ -56,7 +58,7 @@
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
 
-/* RECUADROS SUPERIORES (BOTONES) */
+        /* RECUADROS SUPERIORES (BOTONES) */
         .metrics-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -70,45 +72,36 @@
             font-weight: bold;
             font-size: 0.9rem;
             border: 1px solid #007bff;
-            padding: 20px 20px;
+            padding: 15px 15px;
             border-radius: 5px;
+            cursor: pointer;
             transition: 0.3s;
         }
 
-        /* Efecto al pasar el mouse por encima */
         .metric-card:hover {
             background: #007bff;
             border-color: #007bff;
-            transform: translateY(-2px); /* Pequeño efecto de elevación */
+            transform: translateY(-2px);
         }
 
-        /* Efecto al hacer clic */
         .metric-card:active {
             transform: translateY(0);
         }
 
         .metric-card h3 {
             color: #007bff;
-            margin: 0; /* Quitamos márgenes sobrantes ya que es un botón simple */
+            margin: 0;
             font-size: 0.9rem;
             text-transform: uppercase;
             font-weight: 600;
             transition: color 0.2s ease;
         }
 
-        /* Cambia el color del texto al pasar el cursor */
         .metric-card:hover h3 {
             color: #fff;
         }
 
-        .metric-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #fff;
-            margin: 0;
-        }
-
-/* ESTILOS DE LA VENTANA EMERGENTE (MODAL) */
+        /* ESTILOS DE LA VENTANA EMERGENTE (MODAL) */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -116,8 +109,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
-            backdrop-filter: blur(3px); /* Efecto difuminado elegante */
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -129,10 +122,11 @@
             border-radius: 12px;
             padding: 30px;
             width: 90%;
-            max-width: 450px;
+            max-width: 600px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             color: #fff;
             text-align: left;
+            position: relative;
         }
 
         .modal-content h3 {
@@ -148,6 +142,19 @@
             margin-bottom: 20px;
         }
 
+        /* Botón Tacha (✖) estilizado flotante o superior */
+        .close-modal-x {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 1.2rem;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+        }
+        .close-modal-x:hover { color: #fff; }
+
         /* Botón interno para cerrar el modal */
         .close-modal {
             background: #333;
@@ -159,20 +166,16 @@
             font-family: inherit;
             transition: background 0.2s;
         }
-
-        .close-modal:hover {
-            background: #444;
-        }
+        .close-modal:hover { background: #444; }
 
         /* CONTENEDOR DE DOS MITADES */
         .half-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Divide el espacio exactamente en 2 partes iguales */
-            gap: 20px; /* Espacio entre los dos recuadros */
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
             padding: 20px;
         }
 
-        /* ESTILO DE CADA RECUADRO */
         .half-card {
             background: #1e1e1e;
             border: 1px solid #333;
@@ -196,7 +199,6 @@
             font-size: 0.95rem;
         }
 
-/* Recuadro Izquierdo*/
         .half-card .fecha-hoy {
             color: #888;
             font-size: 0.85rem;
@@ -229,6 +231,40 @@
             color: #fff;
         }
 
+        /* Estilos para Inputs en Tablas y Cajas de Contraseña */
+        .form-control-table {
+            background: #141414;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-control-table:disabled {
+            background: transparent;
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .password-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        /* Ojito más cerca de la contraseña */
+        .password-box .toggle-password {
+            position: absolute;
+            right: 6px;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        .password-box .toggle-password:hover {
+            color: #fff;
+        }
+
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -250,7 +286,6 @@
             border: 1px solid rgba(220, 53, 69, 0.4);
         }
 
-/* SECCION DIVIDIDA */
         .content-section.split-section {
             display: grid;
             grid-template-columns: 1fr;
@@ -260,7 +295,6 @@
             padding: 0 !important;
         }
 
-        /* Estilo general de cada sub-recuadro */
         .sub-box {
             background: #1e1e1e;
             border: 1px solid #333;
@@ -287,7 +321,6 @@
             margin-bottom: 15px;
         }
 
-        /* Elementos de formulario */
         .form-group {
             margin-bottom: 15px;
         }
@@ -317,41 +350,29 @@
 
         .filtros-fila {
             display: flex;
-            gap: 15px; /* Espacio entre el primer filtro y el segundo */
+            gap: 15px;
             width: 100%;
-            align-items: flex-end; /* Alinea las etiquetas correctamente */
+            align-items: flex-end;
         }
 
-        /* Distribución de espacio (el segundo filtro puede ocupar un poco más si tiene dos fechas) */
-        .form-group.flex-1 {
-            flex: 1;
-        }
+        .form-group.flex-1 { flex: 1; }
+        .form-group.flex-2 { flex: 1; }
 
-        .form-group.flex-2 {
-            flex: 2;
-        }
-
-        /* Estilo para cuando la quincena o semana ponga dos inputs de fecha juntos en ese espacio */
         .rango-fechas-fila {
             display: flex;
             gap: 10px;
         }
 
-/* Contenedor de inputs en línea (para el envío automático) */
         .input-group {
             display: flex;
             gap: 10px;
         }
+        .input-group input { flex: 1; }
 
-        .input-group input {
-            flex: 1;
-        }
-
-/* Botones */
         .botones-accion {
             display: flex;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .btn {
@@ -364,26 +385,15 @@
             transition: background 0.2s;
         }
 
-        .btn-primary {
-            background: #007bff;
-            color: #fff;
-            flex: 1;
-        }
+        .btn-primary { background: #007bff; color: #fff; }
         .btn-primary:hover { background: #0056b3; }
 
-        .btn-secondary {
-            background: #444;
-            color: #fff;
-        }
+        .btn-secondary { background: #444; color: #fff; }
         .btn-secondary:hover { background: #555; }
 
-        .btn-success {
-            background: #28a745;
-            color: #fff;
-        }
+        .btn-success { background: #28a745; color: #fff; }
         .btn-success:hover { background: #218838; }
 
-/* Lista de correos automáticos */
         .tags-container {
             margin-top: 10px;
             max-height: 150px;
@@ -412,11 +422,26 @@
             background: transparent;
             border: none;
             cursor: pointer;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+        
+        .btn-texto {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
             font-size: 0.9rem;
+            padding: 0;
+        }
+        .btn-texto:hover {
+            text-decoration: underline;
+            color: #ffffff;
         }
     </style>
-    </head>
-    <body>
+</head>
+<body>
     <header>
         <div class="branding">
             <img src="https://lh3.googleusercontent.com/proxy/vBBsOcMFTiddXDoHaJBPaNiBJnJ9Xeohc6-T_ifx-YDkVsChrDNAsQiYxVFmEfPrhSxyMGdpJc3tdaonfxwSMRfcd6JMUfgW8ZyZQv_ZOzjFfXDIrM4xjMc" alt="Logo" class="logo">
@@ -433,6 +458,7 @@
             <a href="portalrh.html" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
+
     <main>
         <!-- Contenedor de Botones -->
         <div class="metrics-container">
@@ -447,31 +473,112 @@
             </button>
         </div>
 
-        <!-- VENTANAS EMERGENTES (MODALES) -->
+        <!-- VENTANAS EMERGENTES (ACCESO A PAGINA) -->
         <div id="modal-mes" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Listas de Asistencias</h3>
-                <p>Aquí irá la información correspondiente al mes actual...</p>
-                <button class="close-modal" type="button">Cerrar</button>
+            <div class="modal-content modal-ancho">
+                <!-- Cerrar -->
+                <button class="close-modal-x close-modal" type="button">✖</button>
+
+                <h3>Gestión de Usuarios y Contraseñas</h3>
+                <br>
+                <!-- Botón superior de Editar -->
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <button type="button" class="btn-texto" id="btn-editar-global" onclick="habilitarEdicionGlobal(this)">✐ Editar Todos</button>
+                </div>
+                <br>
+                <div class="table-responsive">
+                    <table class="asistencia-status-table" id="tabla-usuarios">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Contraseña</th>
+                                <th>Departamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="text" class="form-control-table" value="capturista_prod" disabled></td>
+                                <td>
+                                    <div class="password-box">
+                                        <input type="password" class="form-control-table password-input" value="A1b2c*" disabled>
+                                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-control-table select-depto" disabled>
+                                        <option value="Almacen">Almacén</option>
+                                        <option value="EPS">EPS</option>
+                                        <option value="Ensamble">Ensamble</option>
+                                        <option value="Calidad">Calidad</option>
+                                        <option value="Compras">Compras</option>
+                                        <option value="Embarques">Embarques</option>
+                                        <option value="Corte" selected>Corte</option>
+                                    </select>
+                                </td>
+                                <td style="text-align: center;">
+                                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;" title="Eliminar fila">✖</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="form-control-table" value="capturista_almacen" disabled></td>
+                                <td>
+                                    <div class="password-box">
+                                        <input type="password" class="form-control-table password-input" value="X9y8z#" disabled>
+                                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-control-table select-depto" disabled>
+                                        <option value="Almacen" selected>Almacén</option>
+                                        <option value="EPS">EPS</option>
+                                        <option value="Ensamble">Ensamble</option>
+                                        <option value="Calidad">Calidad</option>
+                                        <option value="Compras">Compras</option>
+                                        <option value="Embarques">Embarques</option>
+                                        <option value="Corte">Corte</option>
+                                    </select>
+                                </td>
+                                <td style="text-align: center;">
+                                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;" title="Eliminar fila">✖</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Botón de Agregar Usuario  -->
+                <div style="margin-top: 15px; text-align: right;">
+                    <button type="button" class="btn-texto" onclick="agregarFilaUsuario()">+ Agregar Usuario</button>
+                </div>
+
+                <!-- Botón de guardado  -->
+                <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
+                    <button type="button" class="btn btn-success" onclick="guardarCambiosUsuarios()">Guardar Cambios</button>
+                </div>
             </div>
         </div>
 
+        <!-- VENTANAS EMERGENTES (JUSTIFICACIONES) -->
         <div id="modal-top" class="modal-overlay">
             <div class="modal-content">
+                <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Top Mensual</h3>
                 <p>Aquí irá el listado o métricas del top mensual...</p>
                 <button class="close-modal" type="button">Cerrar</button>
             </div>
         </div>
 
+        <!-- VENTANAS EMERGENTES (SUSPENCIONES) -->
         <div id="modal-fuente" class="modal-overlay">
             <div class="modal-content">
+                <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Fuente Destacada</h3>
                 <p>Aquí irá la información de la fuente destacada...</p>
                 <button class="close-modal" type="button">Cerrar</button>
             </div>
         </div>
-        <!-- Recuadro Izquierdo-->
+
+        <!-- Recuadro Izquierdo -->
         <div class="half-container">
             <div class="half-card">
                 <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
@@ -487,37 +594,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Ejemplo de fila 1 -->
                             <tr>
                                 <td>Prueba</td>
                                 <td>Producción A</td>
                                 <td><span class="badge registrada">Registrada</span></td>
                             </tr>
-                            <!-- Ejemplo de fila 2 -->
-                            <tr>
-                                <td>Carlos Gómez</td>
-                                <td>Almacén General</td>
-                                <td><span class="badge no-registrada">No registrada</span></td>
-                            </tr>
-                            <!-- Ejemplo de fila 1 -->
-                            <tr>
-                                <td>Prueba</td>
-                                <td>Producción A</td>
-                                <td><span class="badge registrada">Registrada</span></td>
-                            </tr>
-                            <!-- Ejemplo de fila 2 -->
-                            <tr>
-                                <td>Carlos Gómez</td>
-                                <td>Almacén General</td>
-                                <td><span class="badge no-registrada">No registrada</span></td>
-                            </tr>
-                            <!-- Ejemplo de fila 1 -->
-                            <tr>
-                                <td>Prueba</td>
-                                <td>Producción A</td>
-                                <td><span class="badge registrada">Registrada</span></td>
-                            </tr>
-                            <!-- Ejemplo de fila 2 -->
                             <tr>
                                 <td>Carlos Gómez</td>
                                 <td>Almacén General</td>
@@ -527,15 +608,13 @@
                     </table>
                 </div>
             </div>
-<!-- Recuadro Derecho-->
-                <div class="content-section split-section">
-<!-- PRIMER RECUADRO: ENVÍO DE REPORTE MANUAL -->
+
+            <!-- Recuadro Derecho -->
+            <div class="content-section split-section">
+                <!-- PRIMER RECUADRO: ENVÍO DE REPORTE MANUAL -->
                 <div class="sub-box">
                     <h3>Envío de Reporte Manual</h3>
-                    
-                    <!-- CONTENEDOR EN UNA MISMA FILA PARA LOS FILTROS -->
                     <div class="filtros-fila">
-                        <!-- 1er Filtro: Periodicidad -->
                         <div class="form-group flex-1">
                             <label for="periodicidad">Periodicidad:</label>
                             <select id="periodicidad" class="form-control" onchange="cambiarFiltrosReporte()">
@@ -544,8 +623,6 @@
                                 <option value="semanal">Semanal</option>
                             </select>
                         </div>
-
-                        <!-- Contenedor dinámico al lado que cambia según la opción elegida -->
                         <div id="filtro-dinamico" class="form-group flex-2">
                             <label for="select-mes">Seleccionar Mes:</label>
                             <select id="select-mes" class="form-control">
@@ -565,56 +642,48 @@
                         </div>
                     </div>
 
-                    <!-- Correo Normal (abajo de la fila de filtros) -->
                     <div class="form-group">
                         <label for="correo-manual">Correo Electrónico:</label>
                         <input type="email" id="correo-manual" class="form-control" placeholder="ejemplo@correo.com">
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="botones-accion">
                         <button type="button" class="btn btn-secondary">Vista Previa</button>
                         <button type="button" class="btn btn-primary">Enviar Reporte</button>
                     </div>
                 </div>
 
-<!-- SEGUNDO RECUADRO: ENVÍO AUTOMÁTICO -->
-                    <div class="sub-box">
-                        <h3>Envío Automático</h3>
-                        <p class="sub-text">Los correos enlistados aquí recibirán los reportes mensual, quincenal y semanal automáticamente.</p>
+                <!-- SEGUNDO RECUADRO: ENVÍO AUTOMÁTICO -->
+                <div class="sub-box">
+                    <h3>Envío Automático</h3>
+                    <p class="sub-text">Los correos enlistados aquí recibirán los reportes mensual, quincenal y semanal automáticamente.</p>
 
-                        <!-- Input para agregar correo -->
-                        <div class="form-group input-group">
-                            <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
-                            <button type="button" class="btn btn-success" onclick="agregarCorreoAuto()">Agregar</button>
-                        </div>
-
-                        <!-- Lista de Correos con opción de eliminar -->
-                        <div class="tags-container">
-                            <label>Destinatarios Automáticos:</label>
-                            <ul id="lista-correos-auto" class="correo-list">
-                                <!-- Ejemplo inicial de correo -->
-                                <li class="correo-item">
-                                    <span>supervisor@empresa.com</span>
-                                    <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">❌</button>
-                                </li>
-                            </ul>
-                        </div>
+                    <div class="form-group input-group">
+                        <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
+                        <button type="button" class="btn btn-success" onclick="agregarCorreoAuto()">Agregar</button>
                     </div>
 
+                    <div class="tags-container">
+                        <label>Destinatarios Automáticos:</label>
+                        <ul id="lista-correos-auto" class="correo-list">
+                            <li class="correo-item">
+                                <span>supervisor@empresa.com</span>
+                                <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">❌</button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
-    <script src="data-manager.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- SCRIPTS -->
     <script>
-        // Seleccionamos todos los botones y modales
+        // 1. CONTROL GENERAL DE MODALES Y TECLA ESC
         const buttons = document.querySelectorAll('.metric-card');
         const modals = document.querySelectorAll('.modal-overlay');
-        const closeButtons = document.querySelectorAll('.close-modal');
+        const closeTriggers = document.querySelectorAll('.close-modal');
 
-        // Abrir el modal correspondiente al hacer clic en un botón
         buttons.forEach(button => {
             button.addEventListener('click', () => {
                 const modalId = button.getAttribute('data-modal');
@@ -625,11 +694,12 @@
             });
         });
 
-        // Cerrar el modal al hacer clic en el botón de cerrar
-        closeButtons.forEach(btn => {
+        closeTriggers.forEach(btn => {
             btn.addEventListener('click', () => {
                 const modal = btn.closest('.modal-overlay');
-                modal.style.display = 'none';
+                if (modal) {
+                    modal.style.display = 'none';
+                }
             });
         });
 
@@ -640,8 +710,16 @@
                 }
             });
         });
-    </script>
-    <script>
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modals.forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+        });
+
+        // 2. CAMBIAR FILTROS DE REPORTE MANUAL
         function cambiarFiltrosReporte() {
             const periodicidad = document.getElementById('periodicidad').value;
             const contenedor = document.getElementById('filtro-dinamico');
@@ -671,6 +749,109 @@
                         <input type="date" class="form-control" id="s-fin">
                     </div>
                 `;
+            }
+        }
+
+        // 3. GESTIÓN DE USUARIOS (AGREGAR FILA CON BOTÓN DE ELIMINAR VISIBLE)
+        function agregarFilaUsuario() {
+            const tbody = document.querySelector('#tabla-usuarios tbody');
+            const nuevaFila = document.createElement('tr');
+            
+            nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="Nuevo usuario" required></td>
+                <td>
+                    <div class="password-box">
+                        <input type="password" class="form-control-table password-input" placeholder="Contraseña" required>
+                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
+                    </div>
+                </td>
+                <td>
+                    <select class="form-control-table select-depto">
+                        <option value="Almacen">Almacén</option>
+                        <option value="EPS">EPS</option>
+                        <option value="Ensamble">Ensamble</option>
+                        <option value="Calidad">Calidad</option>
+                        <option value="Compras">Compras</option>
+                        <option value="Embarques">Embarques</option>
+                        <option value="Corte">Corte</option>
+                    </select>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" title="Eliminar fila">🗑️</button>
+                </td>
+            `;
+            
+            const inputs = nuevaFila.querySelectorAll('input, select');
+            inputs.forEach(input => input.removeAttribute('disabled'));
+            
+            tbody.appendChild(nuevaFila);
+        }
+
+        // 4. HABILITAR EDICIÓN GLOBAL
+        function habilitarEdicionGlobal(btn) {
+            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
+            
+            filas.forEach(fila => {
+                const inputs = fila.querySelectorAll('input, select');
+                inputs.forEach(input => input.removeAttribute('disabled'));
+
+                const btnEliminar = fila.querySelector('.btn-eliminar');
+                if (btnEliminar) btnEliminar.style.display = 'inline-block';
+            });
+
+            const primerInput = document.querySelector('#tabla-usuarios tbody tr input');
+            if (primerInput) primerInput.focus();
+
+            btn.style.display = 'none';
+        }
+
+        // 5. GUARDAR CAMBIOS
+        function guardarCambiosUsuarios() {
+            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
+            const departamentosSeleccionados = [];
+
+            for (let i = 0; i < filas.length; i++) {
+                const fila = filas[i];
+                const deptoSelect = fila.querySelector('.select-depto');
+
+                if (departamentosSeleccionados.includes(deptoSelect.value)) {
+                    alert(`El departamento "${deptoSelect.value}" está repetido. Cada usuario debe tener un departamento único.`);
+                    deptoSelect.focus();
+                    return;
+                }
+                departamentosSeleccionados.push(deptoSelect.value);
+            }
+
+            filas.forEach(fila => {
+                const inputs = fila.querySelectorAll('input, select');
+                inputs.forEach(input => input.setAttribute('disabled', 'true'));
+
+                const btnEliminar = fila.querySelector('.btn-eliminar');
+                if (btnEliminar) btnEliminar.style.display = 'none';
+            });
+
+            const btnEditarGlobal = document.getElementById('btn-editar-global');
+            if (btnEditarGlobal) {
+                btnEditarGlobal.style.display = 'inline-block';
+            }
+
+            alert('¡Cambios guardados correctamente!');
+        }
+
+        // 6. VISUALIZAR / OCULTAR CONTRASEÑA CON EL OJITO (CORREGIDO)
+        function togglePasswordVisibility(iconElement) {
+            const passwordBox = iconElement.previousElementSibling;
+            
+            if (passwordBox.getAttribute('type') === 'password') {
+                passwordBox.setAttribute('type', 'text');
+                // Al mostrar la contraseña, el ojo se queda abierto (sin la barra)
+                iconElement.classList.remove('fa-eye-slash');
+                iconElement.classList.add('fa-eye');
+            } else {
+                passwordBox.setAttribute('type', 'password');
+                // Al ocultar la contraseña, el ojo se muestra tachado (con la barra)
+                iconElement.classList.remove('fa-eye');
+                iconElement.classList.add('fa-eye-slash');
             }
         }
     </script>
