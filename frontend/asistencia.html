@@ -117,7 +117,7 @@
         }
 
         .modal-content {
-            background: #1e1e1e;
+            background: #282828;
             border: 1px solid #333;
             border-radius: 12px;
             padding: 30px;
@@ -127,6 +127,7 @@
             color: #fff;
             text-align: left;
             position: relative;
+            box-sizing: border-box;
         }
 
         .modal-content h3 {
@@ -142,18 +143,19 @@
             margin-bottom: 20px;
         }
 
-        /* Botón Tacha (✖) estilizado flotante o superior */
+        /* Botón Tacha (✖) estilizado */
         .close-modal-x {
             background: transparent;
             border: none;
-            color: #aaa;
+            color: #ffffff;
             font-size: 1.2rem;
             position: absolute;
             top: 15px;
             right: 20px;
             cursor: pointer;
+            transition: color 0.2s ease;
         }
-        .close-modal-x:hover { color: #fff; }
+        .close-modal-x:hover { color: #aaa; }
 
         /* Botón interno para cerrar el modal */
         .close-modal {
@@ -253,7 +255,6 @@
             display: flex;
             align-items: center;
         }
-        /* Ojito más cerca de la contraseña */
         .password-box .toggle-password {
             position: absolute;
             right: 6px;
@@ -312,13 +313,6 @@
             margin-bottom: 15px;
             border-bottom: 1px solid #333;
             padding-bottom: 8px;
-        }
-
-        .sub-text {
-            color: #aaa;
-            font-size: 0.85rem;
-            margin-top: -10px;
-            margin-bottom: 15px;
         }
 
         .form-group {
@@ -409,12 +403,12 @@
         .correo-item {
             background: #141414;
             border: 1px solid #282828;
-            padding: 8px 12px;
+            padding: 4px 12px;
             border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             font-size: 0.9rem;
         }
 
@@ -437,7 +431,34 @@
         }
         .btn-texto:hover {
             text-decoration: underline;
-            color: #ffffff;
+        }
+
+        /* Estilos de la tabla dentro de la ventana de faltas */
+        #tabla-faltas th, 
+        #tabla-faltas td {
+            padding: 12px 10px;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        #tabla-faltas tbody tr:hover {
+            background-color: #333;
+        }
+
+        /* Botón de estado (Falta) */
+        .btn-faltas-estado {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-faltas-estado:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
@@ -476,12 +497,9 @@
         <!-- VENTANAS EMERGENTES (ACCESO A PAGINA) -->
         <div id="modal-mes" class="modal-overlay">
             <div class="modal-content modal-ancho">
-                <!-- Cerrar -->
                 <button class="close-modal-x close-modal" type="button">✖</button>
-
                 <h3>Gestión de Usuarios y Contraseñas</h3>
                 <br>
-                <!-- Botón superior de Editar -->
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                     <button type="button" class="btn-texto" id="btn-editar-global" onclick="habilitarEdicionGlobal(this)">✐ Editar Todos</button>
                 </div>
@@ -519,56 +537,95 @@
                                     <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;" title="Eliminar fila">✖</button>
                                 </td>
                             </tr>
-                            <tr>
-                                <td><input type="text" class="form-control-table" value="capturista_almacen" disabled></td>
-                                <td>
-                                    <div class="password-box">
-                                        <input type="password" class="form-control-table password-input" value="X9y8z#" disabled>
-                                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                                    </div>
-                                </td>
-                                <td>
-                                    <select class="form-control-table select-depto" disabled>
-                                        <option value="Almacen" selected>Almacén</option>
-                                        <option value="EPS">EPS</option>
-                                        <option value="Ensamble">Ensamble</option>
-                                        <option value="Calidad">Calidad</option>
-                                        <option value="Compras">Compras</option>
-                                        <option value="Embarques">Embarques</option>
-                                        <option value="Corte">Corte</option>
-                                    </select>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;" title="Eliminar fila">✖</button>
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Botón de Agregar Usuario  -->
                 <div style="margin-top: 15px; text-align: center;">
                     <button type="button" class="btn-texto" onclick="agregarFilaUsuario()">+ Agregar Usuario</button>
                 </div>
-
-                <!-- Botón de guardado  -->
                 <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
                     <button type="button" class="btn btn-success" onclick="guardarCambiosUsuarios()">Guardar Cambios</button>
                 </div>
             </div>
         </div>
 
-        <!-- VENTANAS EMERGENTES (JUSTIFICACIONES) -->
+        <!-- ========================================== -->
+        <!-- VENTANA 1: BÚSQUEDA (JUSTIFICACIONES)      -->
+        <!-- ========================================== -->
         <div id="modal-top" class="modal-overlay">
-            <div class="modal-content">
+            <div class="modal-content" style="width: 700px; max-width: 90%;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Top Mensual</h3>
-                <p>Aquí irá el listado o métricas del top mensual...</p>
-                <button class="close-modal" type="button">Cerrar</button>
+                <h3>Faltas Justificables</h3>
+                
+                <!-- Filtros -->
+                <div class="filtros-container" style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <label for="filtro-numero"><strong>N° de Empleado:</strong></label>
+                        <input type="text" id="filtro-numero" class="form-control" placeholder="Ej. 1001" style="margin-top: 5px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="filtro-nombre"><strong>Nombre Completo:</strong></label>
+                        <input type="text" id="filtro-nombre" class="form-control" placeholder="Ej. Juan Pérez" style="margin-top: 5px;">
+                    </div>
+                </div>
+
+                <!-- Tabla de Faltas -->
+                <div style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
+                    <table id="tabla-faltas" style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #444;">
+                                <th style="padding: 10px;">N° de Empleado</th>
+                                <th style="padding: 10px;">Nombre</th>
+                                <th style="padding: 10px;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-faltas">
+                            <!-- Datos dinámicos -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- VENTANAS EMERGENTES (SUSPENCIONES) -->
+        <!-- ========================================== -->
+        <!-- VENTANA 2: JUSTIFICAR FALTA                -->
+        <!-- ========================================== -->
+        <div id="modal-justificar" class="modal-overlay">
+            <div class="modal-content" style="width: 500px; max-width: 90%;">
+                <button class="close-modal-x" id="btn-cerrar-justificar" type="button">✖</button>
+                <h3>Justificar Falta</h3>
+                
+                <form id="form-justificar" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label><strong>Fecha de la Falta:</strong></label>
+                        <input type="text" id="j-fecha" readonly class="form-control" style="background: #141414; color: #aaa;">
+                    </div>
+                    <div>
+                        <label><strong>N° de Empleado:</strong></label>
+                        <input type="text" id="j-numero" readonly class="form-control" style="background: #141414; color: #aaa;">
+                    </div>
+                    <div>
+                        <label><strong>Nombre:</strong></label>
+                        <input type="text" id="j-nombre" readonly class="form-control" style="background: #141414; color: #aaa;">
+                    </div>
+                    <div>
+                        <label for="j-motivo"><strong>Motivo de falta:</strong></label>
+                        <textarea id="j-motivo" rows="3" placeholder="Escriba el motivo..." required class="form-control"></textarea>
+                    </div>
+                    <div>
+                        <label><strong>Adjuntar Comprobante:</strong></label><br>
+                        <input type="file" id="j-archivo" style="margin-top: 5px; color: #fff;">
+                    </div>
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                        <button type="button" id="btn-cancelar-justificacion" class="close-modal" style="padding: 8px 15px;">Cancelar</button>
+                        <button type="submit" class="btn btn-success" style="padding: 8px 15px;">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- VENTANAS EMERGENTES (SUSPENSIONES) -->
         <div id="modal-fuente" class="modal-overlay">
             <div class="modal-content">
                 <button class="close-modal-x close-modal" type="button">✖</button>
@@ -611,7 +668,6 @@
 
             <!-- Recuadro Derecho -->
             <div class="content-section split-section">
-                <!-- PRIMER RECUADRO: ENVÍO DE REPORTE MANUAL -->
                 <div class="sub-box">
                     <h3>Envío de Reporte Manual</h3>
                     <div class="filtros-fila">
@@ -653,11 +709,8 @@
                     </div>
                 </div>
 
-                <!-- SEGUNDO RECUADRO: ENVÍO AUTOMÁTICO -->
                 <div class="sub-box">
                     <h3>Envío Automático</h3>
-                    <p class="sub-text">Los correos enlistados aquí recibirán los reportes mensual, quincenal y semanal automáticamente.</p>
-
                     <div class="form-group input-group">
                         <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
                         <button type="button" class="btn btn-success" onclick="agregarCorreoAuto()">Agregar</button>
@@ -752,7 +805,7 @@
             }
         }
 
-        // 3. GESTIÓN DE USUARIOS (AGREGAR FILA CON BOTÓN DE ELIMINAR VISIBLE)
+        // 3. GESTIÓN DE USUARIOS
         function agregarFilaUsuario() {
             const tbody = document.querySelector('#tabla-usuarios tbody');
             const nuevaFila = document.createElement('tr');
@@ -783,14 +836,11 @@
             
             const inputs = nuevaFila.querySelectorAll('input, select');
             inputs.forEach(input => input.removeAttribute('disabled'));
-            
             tbody.appendChild(nuevaFila);
         }
 
-        // 4. HABILITAR EDICIÓN GLOBAL
         function habilitarEdicionGlobal(btn) {
             const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
-            
             filas.forEach(fila => {
                 const inputs = fila.querySelectorAll('input, select');
                 inputs.forEach(input => input.removeAttribute('disabled'));
@@ -798,30 +848,11 @@
                 const btnEliminar = fila.querySelector('.btn-eliminar');
                 if (btnEliminar) btnEliminar.style.display = 'inline-block';
             });
-
-            const primerInput = document.querySelector('#tabla-usuarios tbody tr input');
-            if (primerInput) primerInput.focus();
-
             btn.style.display = 'none';
         }
 
-        // 5. GUARDAR CAMBIOS
         function guardarCambiosUsuarios() {
             const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
-            const departamentosSeleccionados = [];
-
-            for (let i = 0; i < filas.length; i++) {
-                const fila = filas[i];
-                const deptoSelect = fila.querySelector('.select-depto');
-
-                if (departamentosSeleccionados.includes(deptoSelect.value)) {
-                    alert(`El departamento "${deptoSelect.value}" está repetido. Cada usuario debe tener un departamento único.`);
-                    deptoSelect.focus();
-                    return;
-                }
-                departamentosSeleccionados.push(deptoSelect.value);
-            }
-
             filas.forEach(fila => {
                 const inputs = fila.querySelectorAll('input, select');
                 inputs.forEach(input => input.setAttribute('disabled', 'true'));
@@ -831,29 +862,123 @@
             });
 
             const btnEditarGlobal = document.getElementById('btn-editar-global');
-            if (btnEditarGlobal) {
-                btnEditarGlobal.style.display = 'inline-block';
-            }
+            if (btnEditarGlobal) btnEditarGlobal.style.display = 'inline-block';
 
             alert('¡Cambios guardados correctamente!');
         }
 
-        // 6. VISUALIZAR / OCULTAR CONTRASEÑA CON EL OJITO (CORREGIDO)
         function togglePasswordVisibility(iconElement) {
             const passwordBox = iconElement.previousElementSibling;
-            
             if (passwordBox.getAttribute('type') === 'password') {
                 passwordBox.setAttribute('type', 'text');
-                // Al mostrar la contraseña, el ojo se queda abierto (sin la barra)
                 iconElement.classList.remove('fa-eye-slash');
                 iconElement.classList.add('fa-eye');
             } else {
                 passwordBox.setAttribute('type', 'password');
-                // Al ocultar la contraseña, el ojo se muestra tachado (con la barra)
                 iconElement.classList.remove('fa-eye');
                 iconElement.classList.add('fa-eye-slash');
             }
         }
+    </script>
+
+    <!-- VENTANA 2: JUSTIFICAR FALTA -->
+    <script>
+        const datosEmpleadosFaltas = [
+            { numero: "1001", nombre: "Carlos Gómez", fecha: "2026-06-10", estado: "Falta" },
+            { numero: "1002", nombre: "Ana Martínez", fecha: "2026-06-12", estado: "Falta" },
+            { numero: "1003", nombre: "Luis Rodríguez", fecha: "2026-06-14", estado: "Falta" }
+        ];
+
+        const inputNumero = document.getElementById('filtro-numero');
+        const inputNombre = document.getElementById('filtro-nombre');
+        const tbodyFaltas = document.getElementById('tbody-faltas');
+
+        function actualizarTabla(filtroNum = "", filtroNom = "") {
+            tbodyFaltas.innerHTML = "";
+            
+            const resultados = datosEmpleadosFaltas.filter(item => {
+                const coincideNum = item.numero.toLowerCase().includes(filtroNum.toLowerCase());
+                const coincideNom = item.nombre.toLowerCase().includes(filtroNom.toLowerCase());
+                return coincideNum && coincideNom;
+            });
+
+            if (resultados.length === 0) {
+                tbodyFaltas.innerHTML = `<tr><td colspan="3" style="padding: 15px; text-align: center; color: #777;">No se encontraron registros</td></tr>`;
+                return;
+            }
+
+            resultados.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px solid #333";
+                
+                tr.innerHTML = `
+                    <td style="padding: 10px;">${item.numero}</td>
+                    <td style="padding: 10px;">${item.nombre}</td>
+                    <td style="padding: 10px;">
+                        <button class="btn-faltas-estado" data-index="${index}">
+                            ${item.estado}
+                        </button>
+                    </td>
+                `;
+                tbodyFaltas.appendChild(tr);
+            });
+
+            document.querySelectorAll('.btn-faltas-estado').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    abrirVentanaJustificar(resultados[idx]);
+                });
+            });
+        }
+
+        inputNumero.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const encontrado = datosEmpleadosFaltas.find(item => item.numero.toLowerCase() === val.toLowerCase());
+            if (encontrado) {
+                inputNombre.value = encontrado.nombre;
+            } else if (val === "") {
+                inputNombre.value = "";
+            }
+            actualizarTabla(val, inputNombre.value);
+        });
+
+        inputNombre.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const encontrado = datosEmpleadosFaltas.find(item => item.nombre.toLowerCase().includes(val.toLowerCase()));
+            if (encontrado && val.length > 2) {
+                inputNumero.value = encontrado.numero;
+            } else if (val === "") {
+                inputNumero.value = "";
+            }
+            actualizarTabla(inputNumero.value, val);
+        });
+
+        function abrirVentanaJustificar(data) {
+            document.getElementById('j-fecha').value = data.fecha;
+            document.getElementById('j-numero').value = data.numero;
+            document.getElementById('j-nombre').value = data.nombre;
+            document.getElementById('j-motivo').value = "";
+            document.getElementById('j-archivo').value = "";
+
+            document.getElementById('modal-top').style.display = 'none';
+            document.getElementById('modal-justificar').style.display = 'flex';
+        }
+
+        document.getElementById('btn-cerrar-justificar').addEventListener('click', regresarVentanaPrincipal);
+        document.getElementById('btn-cancelar-justificacion').addEventListener('click', regresarVentanaPrincipal);
+
+        function regresarVentanaPrincipal() {
+            document.getElementById('modal-justificar').style.display = 'none';
+            document.getElementById('modal-top').style.display = 'flex';
+        }
+
+        document.getElementById('form-justificar').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert("Falta Justificada con éxito");
+            regresarVentanaPrincipal();
+        });
+
+        actualizarTabla();
     </script>
 </body>
 </html>
