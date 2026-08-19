@@ -379,14 +379,38 @@
             transition: background 0.2s;
         }
 
-        .btn-primary { background: #007bff; color: #fff; }
-        .btn-primary:hover { background: #0056b3; }
+        /*ENVIAR REPORTE*/
+        .btn-primary { 
+            text-decoration: none;
+            background: transparent;
+            color: #007bff;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #007bff;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
 
+        .btn-primary:hover {background: #007bff; color: white; }
+
+        /*VISTA PREVIA*/
         .btn-secondary { background: #444; color: #fff; }
         .btn-secondary:hover { background: #555; }
 
-        .btn-success { background: #28a745; color: #fff; }
-        .btn-success:hover { background: #218838; }
+        /*BOTON DE GUARDAR - ACCESO A PAGINA*/
+        .btn-success { 
+            text-decoration: none;
+            background: transparent;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #28a745;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .btn-success:hover { background: #28a745; color: white;}
 
         .tags-container {
             margin-top: 10px;
@@ -557,15 +581,15 @@
                 <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Faltas Justificables</h3>
                 
-                <!-- Filtros -->
+                <!-- Filtros (Solo N° de Empleado y Nombre) -->
                 <div class="filtros-container" style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="flex: 1;">
                         <label for="filtro-numero"><strong>N° de Empleado:</strong></label>
-                        <input type="text" id="filtro-numero" class="form-control" placeholder="Ej. 1001" style="margin-top: 5px;">
+                        <input type="text" id="filtro-numero" class="form-control" placeholder="Ej. 1001" style="margin-top: 5px; width: 100%;">
                     </div>
-                    <div style="flex: 1;">
+                    <div style="flex: 3;">
                         <label for="filtro-nombre"><strong>Nombre Completo:</strong></label>
-                        <input type="text" id="filtro-nombre" class="form-control" placeholder="Ej. Juan Pérez" style="margin-top: 5px;">
+                        <input type="text" id="filtro-nombre" class="form-control" placeholder="Ej. Juan Pérez" style="margin-top: 5px; width: 100%;">
                     </div>
                 </div>
 
@@ -576,6 +600,7 @@
                             <tr style="border-bottom: 2px solid #444;">
                                 <th style="padding: 10px;">N° de Empleado</th>
                                 <th style="padding: 10px;">Nombre</th>
+                                <th style="padding: 10px;">Fecha</th>
                                 <th style="padding: 10px;">Estado</th>
                             </tr>
                         </thead>
@@ -625,13 +650,91 @@
             </div>
         </div>
 
-        <!-- VENTANAS EMERGENTES (SUSPENSIONES) -->
+        <!-- VENTANAS EMERGENTES (SUSPENSIONES) -> IDs únicos con prefijo "sus-" -->
         <div id="modal-fuente" class="modal-overlay">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 700px;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Fuente Destacada</h3>
-                <p>Aquí irá la información de la fuente destacada...</p>
-                <button class="close-modal" type="button">Cerrar</button>
+                <h3>Gestión de suspensiones</h3>
+
+                <!-- Pestañas (Tabs) -->
+                <div class="tabs-container" style="display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px;">
+                    <button type="button" class="tab-btn active" onclick="cambiarPestana(event, 'tab-suspension')" style="padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; border-bottom: 3px solid #007bff; color: #007bff;">Registrar Suspensión</button>
+                    <button type="button" class="tab-btn" onclick="cambiarPestana(event, 'tab-listado')" style="padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; color: #666;">Empleados Suspendidos</button>
+                </div>
+
+                <!-- PESTAÑA 1: REGISTRAR / EDITAR SUSPENSIÓN -->
+                <div id="tab-suspension" class="tab-content" style="display: block;">
+                    <form id="form-suspension">
+                        <input type="hidden" id="modo-edicion" value="false">
+                        
+                        <!-- Filtros (N° de Empleado y Nombre) con prefijo sus- -->
+                        <div class="filtros-container" style="display: flex; gap: 15px; margin-bottom: 20px;">
+                            <div style="flex: 1;">
+                                <label for="sus-filtro-numero"><strong>N° de Empleado:</strong></label>
+                                <input type="text" id="sus-filtro-numero" class="form-control" style="margin-top: 5px; width: 100%;">
+                            </div>
+                            <div style="flex: 3;">
+                                <label for="sus-filtro-nombre"><strong>Nombre Completo:</strong></label>
+                                <input type="text" id="sus-filtro-nombre" class="form-control" style="margin-top: 5px; width: 100%;">
+                            </div>
+                        </div>
+
+                        <!-- Sección de Calendario y Fechas (Aparece al detectar empleado) -->
+                        <div id="seccion-calendario" style="display: none; background: #282828; padding: 15px; border-radius: 6px; margin-bottom: 20px; color: white;">
+                            <h4 style="margin-top: 0; font-size: 16px; color: white; text-align: center;">Selecciona los días de suspensión (Clic para marcar/desmarcar)</h4>
+                            
+                            <!-- Control de Mes/Año o Vista del mes actual -->
+                            <div style="text-align: center; margin-bottom: 10px; font-weight: bold;" id="mes-anio-label">Agosto 2026</div>
+
+                            <!-- Cuadrícula del Calendario (Días de la semana + Días del mes) -->
+                            <div id="calendario-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; margin-bottom: 15px;">
+                                <!-- Cabecera de días -->
+                                <span style="font-size: 12px; color: #aaa;">Lun</span>
+                                <span style="font-size: 12px; color: #aaa;">Mar</span>
+                                <span style="font-size: 12px; color: #aaa;">Mié</span>
+                                <span style="font-size: 12px; color: #aaa;">Jue</span>
+                                <span style="font-size: 12px; color: #aaa;">Vie</span>
+                                <span style="font-size: 12px; color: #aaa;">Sáb</span>
+                                <span style="font-size: 12px; color: #aaa;">Dom</span>
+                            </div>
+
+                            <!-- Resumen de días elegidos -->
+                            <div style="font-size: 13px; background: #1e1e1e; padding: 8px; border-radius: 4px;">
+                                <strong>Días seleccionados:</strong> <span id="resumen-dias" style="color: #4dabf7;">Ninguno</span>
+                            </div>
+                            
+                            <!-- Campo oculto o almacenamiento temporal para enviar en el form -->
+                            <input type="hidden" id="dias-suspension-seleccionados">
+                        </div>
+
+                        <!-- Botón Guardar -->
+                        <div style="text-align: right;">
+                            <button type="submit" class="btn btn-success" style="padding: 10px 20px; font-weight: bold;">Guardar Suspensión</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- PESTAÑA 2: LISTADO DE SUSPENDIDOS -->
+                <div id="tab-listado" class="tab-content" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #333; text-align: left; color: #ffffff;">
+                                    <th style="padding: 8px;">N° Empleado</th>
+                                    <th style="padding: 8px;">Nombre</th>
+                                    <th style="padding: 8px;">Días / Fechas Suspendido</th>
+                                    <th style="padding: 8px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-suspendidos-body" style="color: #ffffff;">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 15px; color: #666;">No hay suspensiones registradas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -713,7 +816,7 @@
                     <h3>Envío Automático</h3>
                     <div class="form-group input-group">
                         <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
-                        <button type="button" class="btn btn-success" onclick="agregarCorreoAuto()">Agregar</button>
+                        <button type="button" class="btn btn-primary" onclick="agregarCorreoAuto()">Agregar</button>
                     </div>
 
                     <div class="tags-container">
@@ -721,7 +824,7 @@
                         <ul id="lista-correos-auto" class="correo-list">
                             <li class="correo-item">
                                 <span>supervisor@empresa.com</span>
-                                <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">❌</button>
+                                <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">✖</button>
                             </li>
                         </ul>
                     </div>
@@ -889,11 +992,11 @@
             { numero: "1003", nombre: "Luis Rodríguez", fecha: "2026-06-14", estado: "Falta" }
         ];
 
-        const inputNumero = document.getElementById('filtro-numero');
-        const inputNombre = document.getElementById('filtro-nombre');
+        const inputNumeroFaltas = document.getElementById('filtro-numero');
+        const inputNombreFaltas = document.getElementById('filtro-nombre');
         const tbodyFaltas = document.getElementById('tbody-faltas');
 
-        function actualizarTabla(filtroNum = "", filtroNom = "") {
+        function actualizarTablaFaltas(filtroNum = "", filtroNom = "") {
             tbodyFaltas.innerHTML = "";
             
             const resultados = datosEmpleadosFaltas.filter(item => {
@@ -903,7 +1006,7 @@
             });
 
             if (resultados.length === 0) {
-                tbodyFaltas.innerHTML = `<tr><td colspan="3" style="padding: 15px; text-align: center; color: #777;">No se encontraron registros</td></tr>`;
+                tbodyFaltas.innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; color: #777;">No se encontraron registros</td></tr>`;
                 return;
             }
 
@@ -914,6 +1017,7 @@
                 tr.innerHTML = `
                     <td style="padding: 10px;">${item.numero}</td>
                     <td style="padding: 10px;">${item.nombre}</td>
+                    <td style="padding: 10px;">${item.fecha}</td>
                     <td style="padding: 10px;">
                         <button class="btn-faltas-estado" data-index="${index}">
                             ${item.estado}
@@ -931,27 +1035,29 @@
             });
         }
 
-        inputNumero.addEventListener('input', (e) => {
-            const val = e.target.value;
-            const encontrado = datosEmpleadosFaltas.find(item => item.numero.toLowerCase() === val.toLowerCase());
-            if (encontrado) {
-                inputNombre.value = encontrado.nombre;
-            } else if (val === "") {
-                inputNombre.value = "";
-            }
-            actualizarTabla(val, inputNombre.value);
-        });
+        if (inputNumeroFaltas && inputNombreFaltas) {
+            inputNumeroFaltas.addEventListener('input', (e) => {
+                const val = e.target.value;
+                const encontrado = datosEmpleadosFaltas.find(item => item.numero.toLowerCase() === val.toLowerCase());
+                if (encontrado) {
+                    inputNombreFaltas.value = encontrado.nombre;
+                } else if (val === "") {
+                    inputNombreFaltas.value = "";
+                }
+                actualizarTablaFaltas(val, inputNombreFaltas.value);
+            });
 
-        inputNombre.addEventListener('input', (e) => {
-            const val = e.target.value;
-            const encontrado = datosEmpleadosFaltas.find(item => item.nombre.toLowerCase().includes(val.toLowerCase()));
-            if (encontrado && val.length > 2) {
-                inputNumero.value = encontrado.numero;
-            } else if (val === "") {
-                inputNumero.value = "";
-            }
-            actualizarTabla(inputNumero.value, val);
-        });
+            inputNombreFaltas.addEventListener('input', (e) => {
+                const val = e.target.value;
+                const encontrado = datosEmpleadosFaltas.find(item => item.nombre.toLowerCase().includes(val.toLowerCase()));
+                if (encontrado && val.length > 2) {
+                    inputNumeroFaltas.value = encontrado.numero;
+                } else if (val === "") {
+                    inputNumeroFaltas.value = "";
+                }
+                actualizarTablaFaltas(inputNumeroFaltas.value, val);
+            });
+        }
 
         function abrirVentanaJustificar(data) {
             document.getElementById('j-fecha').value = data.fecha;
@@ -978,7 +1084,206 @@
             regresarVentanaPrincipal();
         });
 
-        actualizarTabla();
+        actualizarTablaFaltas();
+    </script>
+
+    <!-- VENTANA 3: SUSPENSIONES -->
+    <script>
+        // 1. Función para cambiar entre pestañas
+        function cambiarPestana(evt, tabId) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.style.display = 'none');
+
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.style.borderBottom = 'none';
+                btn.style.color = '#666';
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabId).style.display = 'block';
+            evt.currentTarget.classList.add('active');
+            evt.currentTarget.style.borderBottom = '3px solid #007bff';
+            evt.currentTarget.style.color = '#007bff';
+        }
+
+        // 2. Interactividad: Mostrar el calendario cuando se detecta texto en los filtros de empleado
+        const inputNumero = document.getElementById('sus-filtro-numero');
+        const inputNombre = document.getElementById('sus-filtro-nombre');
+        const seccionCalendario = document.getElementById('seccion-calendario');
+
+        function verificarEmpleado() {
+            if (inputNumero.value.trim() !== '' || inputNombre.value.trim() !== '') {
+                seccionCalendario.style.display = 'block';
+            } else {
+                seccionCalendario.style.display = 'none';
+            }
+        }
+
+        inputNumero.addEventListener('input', verificarEmpleado);
+        inputNombre.addEventListener('input', verificarEmpleado);
+
+        // 3. Arreglo para almacenar los días seleccionados en el calendario interactivo
+        let diasSeleccionados = [];
+
+        // Función para generar dinámicamente el calendario del mes actual con botones seleccionables
+        function generarCalendarioInteractivo() {
+            const grid = document.getElementById('calendario-grid');
+            if (!grid) return;
+
+            // Mantener los encabezados (primeros 7 span de días) y limpiar el resto
+            const headers = Array.from(grid.querySelectorAll('span'));
+            grid.innerHTML = '';
+            headers.forEach(h => grid.appendChild(h));
+
+            const fechaActual = new Date();
+            const anio = fechaActual.getFullYear();
+            const mes = fechaActual.getMonth(); // 0 a 11
+
+            const primerDiaMes = new Date(anio, mes, 1).getDay();
+            let primerDiaIndex = primerDiaMes === 0 ? 6 : primerDiaMes - 1; // Ajuste para iniciar en Lunes
+            const totalDiasMes = new Date(anio, mes + 1, 0).getDate();
+
+            // Rellenar espacios vacíos previos al inicio del mes
+            for (let i = 0; i < primerDiaIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                grid.appendChild(emptyDiv);
+            }
+
+            // Crear botones interactivos para cada día del mes
+            for (let dia = 1; dia <= totalDiasMes; dia++) {
+                const mesStr = String(mes + 1).padStart(2, '0');
+                const diaStr = String(dia).padStart(2, '0');
+                const fechaIso = `${anio}-${mesStr}-${diaStr}`;
+
+                const btnDia = document.createElement('button');
+                btnDia.type = 'button';
+                btnDia.textContent = dia;
+                btnDia.dataset.fecha = fechaIso;
+                
+                // Estilo base del botón de día
+                const estaSeleccionado = diasSeleccionados.includes(fechaIso);
+                btnDia.style.cssText = `
+                    padding: 8px;
+                    background: ${estaSeleccionado ? '#007bff' : '#333'};
+                    color: white;
+                    border: 1px solid ${estaSeleccionado ? '#0056b3' : '#444'};
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                `;
+
+                // Evento al hacer clic en un día específico (permite alternar días sueltos)
+                btnDia.addEventListener('click', function() {
+                    const index = diasSeleccionados.indexOf(fechaIso);
+                    if (index > -1) {
+                        diasSeleccionados.splice(index, 1);
+                        btnDia.style.background = '#333';
+                        btnDia.style.borderColor = '#444';
+                    } else {
+                        diasSeleccionados.push(fechaIso);
+                        btnDia.style.background = '#007bff';
+                        btnDia.style.borderColor = '#0056b3';
+                    }
+                    actualizarResumenDias();
+                });
+
+                grid.appendChild(btnDia);
+            }
+        }
+
+        function actualizarResumenDias() {
+            const resumenSpan = document.getElementById('resumen-dias');
+            const inputOculto = document.getElementById('dias-suspension-seleccionados');
+
+            if (diasSeleccionados.length === 0) {
+                if (resumenSpan) resumenSpan.textContent = "Ninguno";
+                if (inputOculto) inputOculto.value = "";
+            } else {
+                diasSeleccionados.sort();
+                if (resumenSpan) resumenSpan.textContent = diasSeleccionados.join(', ');
+                if (inputOculto) inputOculto.value = JSON.stringify(diasSeleccionados);
+            }
+        }
+
+        // 4. Lista con un empleado ficticio de ejemplo inicial (adaptado a días seleccionados)
+        let listaSuspendidos = [
+            { 
+                numero: "1001", 
+                nombre: "Juan Pérez (Ejemplo)", 
+                diasTexto: "2026-08-20, 2026-08-21, 2026-08-23" // Ejemplo con día intercalado libre
+            }
+        ];
+
+        // Cargar la tabla y el calendario al iniciar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarTablaSuspendidos();
+            generarCalendarioInteractivo();
+        });
+
+        // 5. Lógica de envío de formulario y llenado de la tabla
+        const formSuspension = document.getElementById('form-suspension');
+        const tablaBody = document.getElementById('tabla-suspendidos-body');
+
+        formSuspension.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const numero = inputNumero.value.trim();
+            const nombre = inputNombre.value.trim();
+
+            if (!numero || !nombre || diasSeleccionados.length === 0) {
+                alert('Por favor complete los datos del empleado y seleccione al menos un día en el calendario.');
+                return;
+            }
+
+            // Ordenar y empaquetar los días seleccionados para la tabla
+            diasSeleccionados.sort();
+            const diasTexto = diasSeleccionados.join(', ');
+
+            // Agregar nuevo registro a la lista
+            listaSuspendidos.push({ numero, nombre, diasTexto });
+
+            // Actualizar la tabla visualmente
+            actualizarTablaSuspendidos();
+
+            // Limpiar formulario, restablecer selección y ocultar calendario
+            formSuspension.reset();
+            diasSeleccionados = [];
+            generarCalendarioInteractivo();
+            actualizarResumenDias();
+            seccionCalendario.style.display = 'none';
+
+            alert('¡Suspensión registrada con éxito!');
+        });
+
+        function actualizarTablaSuspendidos() {
+            if (!tablaBody) return;
+
+            if (listaSuspendidos.length === 0) {
+                tablaBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 15px; color: #666;">No hay suspensiones registradas.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            listaSuspendidos.forEach((item, index) => {
+                html += `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.numero}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.nombre}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.diasTexto}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarSuspensiones(${index})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tablaBody.innerHTML = html;
+        }
+
+        function eliminarSuspensiones(index) {
+            listaSuspendidos.splice(index, 1);
+            actualizarTablaSuspendidos();
+        }
     </script>
 </body>
 </html>
