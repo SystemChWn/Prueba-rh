@@ -650,7 +650,7 @@
             </div>
         </div>
 
-        <!-- VENTANAS EMERGENTES (SUSPENSIONES) -> IDs únicos con prefijo "sus-" -->
+        <!-- VENTANAS EMERGENTES (SUSPENSIONES) ->  -->
         <div id="modal-fuente" class="modal-overlay">
             <div class="modal-content" style="max-width: 700px;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
@@ -1089,7 +1089,6 @@
 
     <!-- VENTANA 3: SUSPENSIONES -->
     <script>
-        // 1. Función para cambiar entre pestañas
         function cambiarPestana(evt, tabId) {
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(content => content.style.display = 'none');
@@ -1107,12 +1106,36 @@
             evt.currentTarget.style.color = '#007bff';
         }
 
-        // 2. Interactividad: Mostrar el calendario cuando se detecta texto en los filtros de empleado
+        // 2. Catálogo simulado de empleados
+        const catalogoEmpleados = [
+            { numero: "1001", nombre: "Juan Pérez" },
+            { numero: "1002", nombre: "María Gómez" },
+            { numero: "1003", nombre: "Carlos Martínez" },
+            { numero: "1004", nombre: "Ana Rodríguez" }
+        ];
+
+        // Elementos del DOM
         const inputNumero = document.getElementById('sus-filtro-numero');
         const inputNombre = document.getElementById('sus-filtro-nombre');
         const seccionCalendario = document.getElementById('seccion-calendario');
 
-        function verificarEmpleado() {
+        // 3. Lógica de Autocompletado cruzado y validación de campos
+        function verificarEmpleado(origen) {
+            const valNum = inputNumero.value.trim();
+            const valNom = inputNombre.value.trim();
+
+            if (origen === 'numero' && valNum !== '') {
+                const encontrado = catalogoEmpleados.find(emp => emp.numero === valNum);
+                if (encontrado) {
+                    inputNombre.value = encontrado.nombre;
+                }
+            } else if (origen === 'nombre' && valNom !== '') {
+                const encontrado = catalogoEmpleados.find(emp => emp.nombre.toLowerCase().includes(valNom.toLowerCase()));
+                if (encontrado) {
+                    inputNumero.value = encontrado.numero;
+                }
+            }
+
             if (inputNumero.value.trim() !== '' || inputNombre.value.trim() !== '') {
                 seccionCalendario.style.display = 'block';
             } else {
@@ -1120,37 +1143,32 @@
             }
         }
 
-        inputNumero.addEventListener('input', verificarEmpleado);
-        inputNombre.addEventListener('input', verificarEmpleado);
+        inputNumero.addEventListener('input', () => verificarEmpleado('numero'));
+        inputNombre.addEventListener('input', () => verificarEmpleado('nombre'));
 
-        // 3. Arreglo para almacenar los días seleccionados en el calendario interactivo
         let diasSeleccionados = [];
 
-        // Función para generar dinámicamente el calendario del mes actual con botones seleccionables
         function generarCalendarioInteractivo() {
             const grid = document.getElementById('calendario-grid');
             if (!grid) return;
 
-            // Mantener los encabezados (primeros 7 span de días) y limpiar el resto
             const headers = Array.from(grid.querySelectorAll('span'));
             grid.innerHTML = '';
             headers.forEach(h => grid.appendChild(h));
 
             const fechaActual = new Date();
             const anio = fechaActual.getFullYear();
-            const mes = fechaActual.getMonth(); // 0 a 11
+            const mes = fechaActual.getMonth();
 
             const primerDiaMes = new Date(anio, mes, 1).getDay();
-            let primerDiaIndex = primerDiaMes === 0 ? 6 : primerDiaMes - 1; // Ajuste para iniciar en Lunes
+            let primerDiaIndex = primerDiaMes === 0 ? 6 : primerDiaMes - 1;
             const totalDiasMes = new Date(anio, mes + 1, 0).getDate();
 
-            // Rellenar espacios vacíos previos al inicio del mes
             for (let i = 0; i < primerDiaIndex; i++) {
                 const emptyDiv = document.createElement('div');
                 grid.appendChild(emptyDiv);
             }
 
-            // Crear botones interactivos para cada día del mes
             for (let dia = 1; dia <= totalDiasMes; dia++) {
                 const mesStr = String(mes + 1).padStart(2, '0');
                 const diaStr = String(dia).padStart(2, '0');
@@ -1161,7 +1179,6 @@
                 btnDia.textContent = dia;
                 btnDia.dataset.fecha = fechaIso;
                 
-                // Estilo base del botón de día
                 const estaSeleccionado = diasSeleccionados.includes(fechaIso);
                 btnDia.style.cssText = `
                     padding: 8px;
@@ -1173,7 +1190,6 @@
                     font-size: 14px;
                 `;
 
-                // Evento al hacer clic en un día específico (permite alternar días sueltos)
                 btnDia.addEventListener('click', function() {
                     const index = diasSeleccionados.indexOf(fechaIso);
                     if (index > -1) {
@@ -1206,22 +1222,20 @@
             }
         }
 
-        // 4. Lista con un empleado ficticio de ejemplo inicial (adaptado a días seleccionados)
         let listaSuspendidos = [
             { 
                 numero: "1001", 
-                nombre: "Juan Pérez (Ejemplo)", 
-                diasTexto: "2026-08-20, 2026-08-21, 2026-08-23" // Ejemplo con día intercalado libre
+                nombre: "Juan Pérez", 
+                diasTexto: "2026-08-20, 2026-08-21, 2026-08-23" 
             }
         ];
 
-        // Cargar la tabla y el calendario al iniciar la página
         document.addEventListener('DOMContentLoaded', function() {
             actualizarTablaSuspendidos();
             generarCalendarioInteractivo();
         });
 
-        // 5. Lógica de envío de formulario y llenado de la tabla
+        // 6. Envío de formulario y llenado de la tabla
         const formSuspension = document.getElementById('form-suspension');
         const tablaBody = document.getElementById('tabla-suspendidos-body');
 
@@ -1236,17 +1250,12 @@
                 return;
             }
 
-            // Ordenar y empaquetar los días seleccionados para la tabla
             diasSeleccionados.sort();
             const diasTexto = diasSeleccionados.join(', ');
 
-            // Agregar nuevo registro a la lista
             listaSuspendidos.push({ numero, nombre, diasTexto });
-
-            // Actualizar la tabla visualmente
             actualizarTablaSuspendidos();
 
-            // Limpiar formulario, restablecer selección y ocultar calendario
             formSuspension.reset();
             diasSeleccionados = [];
             generarCalendarioInteractivo();

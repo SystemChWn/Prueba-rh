@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Acceso</title>
+<!-- Importar los íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
             margin: 0; 
@@ -51,15 +53,49 @@
         }
 
         .login-container input { 
-            width: 100%; padding: 12px; margin: 10px 0; 
-            background: #3e3e3e; border: 1px solid #555; border-radius: 5px; 
-            box-sizing: border-box; color: white;
+            width: 100%; 
+            /* Se ajusta el padding: Arriba, Derecha (espacio para el ojo), Abajo, Izquierda (espacio para el candado) */
+            padding: 20px 35px 12px 45px; 
+            margin: 10px 0; 
+            background: #3e3e3e; 
+            border: 1px solid #555; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+            color: white;
         }
 
         .login-container button { 
             width: 100%; padding: 12px; background: #007bff; 
             color: white; border: none; border-radius: 5px; 
             cursor: pointer; font-weight: bold; margin-top: 10px;
+        }
+
+        /* ÍCONOS GENERALES */
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 1rem;
+        }
+
+        /* ÍCONO DEL OJO */
+        .input-group i.toggle-password {
+            position: absolute;
+            left: auto;       /* Limpia el valor izquierdo anterior */
+            right: 15px;      /* Lo manda al lado derecho */
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 1rem;
+            cursor: pointer;  /* Muestra la manita al pasar el mouse */
+            z-index: 10;
         }
     </style>
 </head>
@@ -83,9 +119,16 @@
             <h2 style="margin-top: 0; color: #fff;">CW CONNECT</h2>
 
             <form id="loginForm" autocomplete="off">
-                <input type="text" id="user" placeholder="Usuario" required>
-                <input type="password" id="pass" placeholder="Contraseña" required>
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="user" placeholder="Usuario" required>
+                </div>
 
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="pass" placeholder="Contraseña" required>
+                    <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
+                </div>
                 <button type="submit">Ingresar</button>
             </form>
 
@@ -143,6 +186,20 @@
                 });
             }
         })();
+    </script>
+    <script>
+        function togglePasswordVisibility(iconElement) {
+            const passwordBox = iconElement.previousElementSibling;
+            if (passwordBox.getAttribute('type') === 'password') {
+                passwordBox.setAttribute('type', 'text');
+                iconElement.classList.remove('fa-eye-slash');
+                iconElement.classList.add('fa-eye');
+            } else {
+                passwordBox.setAttribute('type', 'password');
+                iconElement.classList.remove('fa-eye');
+                iconElement.classList.add('fa-eye-slash');
+            }
+        }
     </script>
 
 </body>
