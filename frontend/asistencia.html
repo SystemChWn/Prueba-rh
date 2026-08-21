@@ -777,33 +777,19 @@
                         <div class="form-group flex-1">
                             <label for="periodicidad">Periodicidad:</label>
                             <select id="periodicidad" class="form-control" onchange="cambiarFiltrosReporte()">
-                                <option value="mensual">Mensual</option>
-                                <option value="quincenal">Quincenal</option>
+                                <option value="diario">Diario</option>
                                 <option value="semanal">Semanal</option>
+                                <option value="mensual">Mensual</option>
                             </select>
                         </div>
                         <div id="filtro-dinamico" class="form-group flex-2">
-                            <label for="select-mes">Seleccionar Mes:</label>
-                            <select id="select-mes" class="form-control">
-                                <option>Enero</option>
-                                <option>Febrero</option>
-                                <option>Marzo</option>
-                                <option>Abril</option>
-                                <option>Mayo</option>
-                                <option>Junio</option>
-                                <option>Julio</option>
-                                <option>Agosto</option>
-                                <option>Septiembre</option>
-                                <option>Octubre</option>
-                                <option>Noviembre</option>
-                                <option>Diciembre</option>
-                            </select>
+                            <!-- Se carga dinámicamente con JavaScript -->
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="correo-manual">Correo Electrónico:</label>
-                        <input type="email" id="correo-manual" class="form-control" placeholder="ejemplo@correo.com">
+                        <input type="email" id="correo-manual" class="form-control">
                     </div>
 
                     <div class="botones-accion">
@@ -815,7 +801,7 @@
                 <div class="sub-box">
                     <h3>Envío Automático</h3>
                     <div class="form-group input-group">
-                        <input type="email" id="nuevo-correo-auto" class="form-control" placeholder="correo.automatico@empresa.com">
+                        <input type="email" id="nuevo-correo-auto" class="form-control">
                         <button type="button" class="btn btn-primary" onclick="agregarCorreoAuto()">Agregar</button>
                     </div>
 
@@ -835,7 +821,6 @@
 
     <!-- SCRIPTS -->
     <script>
-        // 1. CONTROL GENERAL DE MODALES Y TECLA ESC
         const buttons = document.querySelectorAll('.metric-card');
         const modals = document.querySelectorAll('.modal-overlay');
         const closeTriggers = document.querySelectorAll('.close-modal');
@@ -875,37 +860,84 @@
             }
         });
 
-        // 2. CAMBIAR FILTROS DE REPORTE MANUAL
+        // ENVIO DE REPORTE MANUAL
+        window.onload = function() {
+            cambiarFiltrosReporte();
+        };
+
         function cambiarFiltrosReporte() {
             const periodicidad = document.getElementById('periodicidad').value;
             const contenedor = document.getElementById('filtro-dinamico');
 
-            if (periodicidad === 'mensual') {
+            if (periodicidad === 'diario') {
                 contenedor.innerHTML = `
-                    <label for="select-mes">Seleccionar Mes:</label>
-                    <select id="select-mes" class="form-control">
-                        <option value="2026-08">Agosto 2026</option>
-                        <option value="2026-07">Julio 2026</option>
-                        <option value="2026-06">Junio 2026</option>
-                    </select>
+                    <label for="input-diario">Seleccionar Día:</label>
+                    <input type="date" id="input-diario" class="form-control">
                 `;
-            } else if (periodicidad === 'quincenal') {
+            } 
+            else if (periodicidad === 'semanal') {
                 contenedor.innerHTML = `
-                    <label>Rango (Inicio y Fin):</label>
-                    <div class="rango-fechas-fila">
-                        <input type="date" class="form-control" id="q-inicio">
-                        <input type="date" class="form-control" id="q-fin">
-                    </div>
+                    <label for="input-semanal">Seleccionar Semana (Lunes a Viernes):</label>
+                    <input type="date" id="input-semanal" class="form-control" onchange="validarSemanaLunesViernes(this)">
+                    <small id="info-semana" style="color: #3b82f6; display: block; margin-top: 5px; font-size: 0.85rem;"></small>
                 `;
-            } else if (periodicidad === 'semanal') {
+            } 
+            else if (periodicidad === 'mensual') {
                 contenedor.innerHTML = `
-                    <label>Rango (Inicio y Fin):</label>
-                    <div class="rango-fechas-fila">
-                        <input type="date" class="form-control" id="s-inicio">
-                        <input type="date" class="form-control" id="s-fin">
+                    <label>Seleccionar Mes y Año:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="select-mes" class="form-control">
+                            <option value="01">Enero</option>
+                            <option value="02">Febrero</option>
+                            <option value="03">Marzo</option>
+                            <option value="04">Abril</option>
+                            <option value="05">Mayo</option>
+                            <option value="06">Junio</option>
+                            <option value="07">Julio</option>
+                            <option value="08" selected>Agosto</option>
+                            <option value="09">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                        <select id="select-anio" class="form-control">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
                     </div>
                 `;
             }
+        }
+
+        // Función exclusiva para calcular automáticamente de Lunes a Viernes al elegir cualquier día
+        function validarSemanaLunesViernes(inputElement) {
+            if (!inputElement.value) return;
+
+            const fechaSeleccionada = new Date(inputElement.value + 'T00:00:00');
+            const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes, etc.
+
+            // Calcular cuántos días restar para llegar al Lunes
+            // Si es domingo (0), el lunes anterior fue hace 6 días. Si es otro, restamos (diaSemana - 1)
+            const diferenciaLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+            const lunes = new Date(fechaSeleccionada);
+            lunes.setDate(fechaSeleccionada.getDate() + diferenciaLunes);
+
+            // Calcular el Viernes sumando 4 días al Lunes
+            const viernes = new Date(lunes);
+            viernes.setDate(lunes.getDate() + 4);
+
+            // Formatear fechas a YYYY-MM-DD para mostrarlas o manejarlas
+            const formatoLunes = lunes.toISOString().split('T')[0];
+            const formatoViernes = viernes.toISOString().split('T')[0];
+
+            // Mostrar visualmente al usuario el rango seleccionado en automático
+            const infoSemana = document.getElementById('info-semana');
+            infoSemana.textContent = `📅 Rango aplicado automáticamente: ${formatoLunes} (Lunes) al ${formatoViernes} (Viernes)`;
+            
+            // Opcional: si quieres guardar los valores reales en inputs ocultos para tu envío posterior
+            inputElement.dataset.lunes = formatoLunes;
+            inputElement.dataset.viernes = formatoViernes;
         }
 
         // 3. GESTIÓN DE USUARIOS
