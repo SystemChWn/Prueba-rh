@@ -177,13 +177,12 @@
             <form id="loginForm" autocomplete="off">
                 <div class="input-group">
                     <i class="fa-solid fa-user"></i>
-                    <!-- Añadimos autocomplete="new-password" o "off" para evitar que el navegador autocomplemente -->
-                    <input type="text" id="user" placeholder="Usuario" autocomplete="off" required>
+                    <input type="text" id="user" placeholder="Usuario" required>
                 </div>
 
                 <div class="input-group">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="pass" placeholder="Contraseña" autocomplete="new-password" required>
+                    <input type="password" id="pass" placeholder="Contraseña" required>
                     <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
                 </div>
 
@@ -234,25 +233,6 @@
             }
         });
     </script>
-    <script>
-        // Validar al cargar que exista sesión activa
-        window.addEventListener('DOMContentLoaded', () => {
-            const sesionActiva = localStorage.getItem('usuarioLogueado');
-            if (!sesionActiva) {
-                window.location.replace('lis asist.html');
-            }
-        });
 
-        // Interceptar el botón de Cerrar Sesión
-        document.querySelector('.btn-logout').addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Limpiar sesión y datos residuales
-            localStorage.removeItem('usuarioLogueado');
-            
-            // Redirigir limpiando el historial para que la flecha "Atrás" no funcione
-            window.location.replace('lis asist.html');
-        });
-    </script>
 </body>
 </html>
