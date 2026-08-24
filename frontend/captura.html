@@ -334,35 +334,5 @@
             });
         });
     </script>
-    <script> //NO REGRESAR A SESION CERRADA
-        window.addEventListener('DOMContentLoaded', () => {
-            const sesionActiva = localStorage.getItem('usuarioLogueado');
-            if (!sesionActiva) {
-                window.location.replace('lis asist.html');
-            }
-        });
-
-        document.querySelector('.btn-logout').addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            localStorage.removeItem('usuarioLogueado');
-            
-            window.location.replace('lis asist.html');
-        });
-    </script>
-    <script>
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted) {
-                window.location.reload();
-            }
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const sesionActiva = localStorage.getItem('usuarioLogueado');
-            if (sesionActiva) {
-
-            }
-        });
-    </script>
 </body>
 </html>
