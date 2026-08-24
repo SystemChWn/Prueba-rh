@@ -254,21 +254,5 @@
             window.location.replace('lis asist.html');
         });
     </script>
-    <script>
-        // Forzar limpieza de campos y recarga si se accede por el historial (cache del boton atrás)
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-                document.getElementById('user').value = '';
-                document.getElementById('pass').value = '';
-                window.location.reload();
-            }
-        });
-
-        // Limpiar campos automáticamente al cargar la página
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('user').value = '';
-            document.getElementById('pass').value = '';
-        });
-    </script>
 </body>
 </html>
