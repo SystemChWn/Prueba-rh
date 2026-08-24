@@ -334,25 +334,20 @@
             });
         });
     </script>
-    <script>
-        // 1. Validar al cargar la página de captura si realmente hay una sesión activa
+    <script> //NO REGRESAR A SESION CERRADA
         window.addEventListener('DOMContentLoaded', () => {
             const sesionActiva = localStorage.getItem('usuarioLogueado');
             if (!sesionActiva) {
-                // Si no hay sesión, redirigir inmediatamente al login (portalrh.html o como se llame tu login)
-                window.location.replace('portalrh.html');
+                window.location.replace('lis asist.html');
             }
         });
 
-        // 2. Interceptar el botón de Cerrar Sesión para limpiar el historial de navegación
         document.querySelector('.btn-logout').addEventListener('click', function(e) {
-            e.preventDefault(); // Evita el comportamiento predeterminado del enlace por un momento
+            e.preventDefault();
             
-            // Borrar la sesión almacenada
             localStorage.removeItem('usuarioLogueado');
             
-            // Reemplazar la historia del navegador para que el botón "Atrás" no pueda regresar aquí
-            window.location.replace('lis asist.html'); // Cambia 'portalrh.html' por la ruta exacta de tu login si es distinta
+            window.location.replace('lis asist.html');
         });
     </script>
     <script>
