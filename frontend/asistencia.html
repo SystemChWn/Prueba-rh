@@ -820,6 +820,36 @@
     </main>
 
     <!-- SCRIPTS -->
+
+    <script>
+        function guardarCambiosUsuarios() {
+            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
+            let usuariosBD = [];
+
+            filas.forEach(fila => {
+                const inputs = fila.querySelectorAll('input, select');
+                const usuario = inputs[0].value;
+                const password = inputs[1].value;
+                const depto = inputs[2].value;
+
+                if (usuario && password) {
+                    usuariosBD.push({ usuario, password, depto });
+                }
+
+                inputs.forEach(input => input.setAttribute('disabled', 'true'));
+                const btnEliminar = fila.querySelector('.btn-eliminar');
+                if (btnEliminar) btnEliminar.style.display = 'none';
+            });
+
+            // Guardar en el navegador para que el login los reconozca
+            localStorage.setItem('usuariosAsistencia', JSON.stringify(usuariosBD));
+
+            const btnEditarGlobal = document.getElementById('btn-editar-global');
+            if (btnEditarGlobal) btnEditarGlobal.style.display = 'inline-block';
+
+            alert('¡Cambios guardados y sincronizados para el inicio de sesión!');
+        }
+    </script>
     <script>
         const buttons = document.querySelectorAll('.metric-card');
         const modals = document.querySelectorAll('.modal-overlay');

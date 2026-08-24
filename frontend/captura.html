@@ -3,14 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Control de Asistencias</title>
+    <!-- Incluimos FontAwesome para la flecha del acordeón -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; background-color: #ffffff; color: #000000; }
-        .form-container { background: #2c2c2c; padding: 30px; border-radius: 10px; max-width: 800px; margin: auto; }
-        .row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .col { flex: 1; }
-        input, select { background: #3e3e3e; border: 1px solid #555; color: #fff; padding: 12px; width: 100%; border-radius: 5px; box-sizing: border-box; }
-        button { background: #007bff; color: white; padding: 15px; border: none; border-radius: 5px; width: 100%; cursor: pointer; font-weight: bold; }
+        body { 
+            margin: 0; 
+            font-family: Arial, sans-serif; 
+            background-color: #ffffff; 
+            color: #111827; 
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
 
         header {
             display: flex;
@@ -18,9 +26,7 @@
             align-items: center;
             padding: 10px 20px;
             background-color: #ffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
-            position: relative;
-            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .branding { display: flex; align-items: center; gap: -5px; }
@@ -38,53 +44,71 @@
             font-weight: bold;
             font-size: 0.9rem;
             border: 1px solid #ff4b4b;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 5px;
             transition: 0.3s;
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
-
-/* ------------------------------------------------------------------------------------------------------------------------------------- */
-        /* Tarjetas de Información General */
+ /* -------------------------------------------------------------------------------------------------------- */
+        /* Tarjeta de Bienvenida y Datos Generales */
         .dashboard-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
         }
         
-    /* Fila 1 y 2 */
-        .info-row {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;  
-            padding: 15px 20px; 
-            border-radius: 8px; 
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 12px;
+        }
+
+        .card-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
             font-size: 0.95rem;
         }
 
-        /* Sección Desplegable (Acordeón) */
+        /* Sección Desplegable (Acordeón) con estilo de solo borde y separado */
         .accordion-container {
-            border-radius: 8px; 
-            overflow: hidden;
+            margin-bottom: 25px;
         }
 
         .accordion-btn {
-            width: 100%; 
-            color: #000; 
-            background-color: #afafafdc;
-            border: none; 
+            background-color: transparent; 
+            color: #111827; 
+            border: 1px solid #d1d5db;
             padding: 12px 20px; 
+            border-radius: 6px;
             text-align: left; 
             font-weight: bold; 
             cursor: pointer; 
-            display: flex; 
-            justify-content: space-between; 
+            display: inline-flex; 
             align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .accordion-btn:hover {
+            background-color: #f3f4f6;
         }
 
         .accordion-content {
             display: none; 
+            margin-top: 10px;
             padding: 15px; 
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
         }
 
         /* Tabla de Estatus (Información) */
@@ -96,14 +120,17 @@
         }
 
         .table-estatus th, .table-estatus td {
-            padding: 8px;
-            border-bottom: 1px solid #333;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         /* Tabla de Asistencia */
         .attendance-card {
-            border-radius: 8px; 
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px; 
             padding: 20px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
             overflow-x: auto;
         }
 
@@ -116,7 +143,7 @@
 
         .attendance-table th, .attendance-table td {
             padding: 12px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         /* Selectores y Inputs de la Tabla */
@@ -124,7 +151,8 @@
             padding: 8px; 
             border-radius: 5px; 
             font-weight: bold; 
-            border: 1px solid #555; 
+            border: 1px solid #ccc; 
+            width: 100%;
         }
 
         .input-comentario {
@@ -132,6 +160,7 @@
             padding: 8px; 
             border-radius: 4px; 
             box-sizing: border-box;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
@@ -145,12 +174,13 @@
             <a href="lis asist.html" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
+
     <main>
-    <!-- Tarjeta de Bienvenida y Datos Generales -->
+        <!-- Tarjeta de Bienvenida y Datos Generales -->
         <div class="dashboard-card">
             <div class="card-top">
-                <span style="color: #ffffff; font-weight: bold; font-size: 1.2rem;">BUEN DÍA, BIENVENIDO</span>
-                <span id="fecha-hoy" style="color: #9ca3af; font-size: 0.9rem;">Viernes, 21 de Agosto de 2026</span>
+                <span style="font-weight: bold; font-size: 1.1rem;">BUEN DÍA, BIENVENIDO</span>
+                <span id="fecha-hoy" style="color: #000000; font-size: 0.9rem;">Viernes, 21 de Agosto de 2026</span>
             </div>
             <div class="card-grid">
                 <div><strong>Área:</strong> <span>Producción</span></div>
@@ -162,19 +192,19 @@
         <!-- PESTAÑA DESPLEGABLE: INFORMACIÓN -->
         <div class="accordion-container">
             <button onclick="toggleInfo()" class="accordion-btn">
-                <span>> INFORMACIÓN</span>
+                <span>INFORMACIÓN</span>
                 <i id="flecha-info" class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i>
             </button>
             <div id="contenido-info" class="accordion-content">
                 <table class="table-estatus">
                     <tr><th>Estatus</th><th>Descripción</th></tr>
-                    <tr><td style="background: #86efac; color: #000; font-weight: bold;">EN AREA</td><td>El empleado se encuentra en su área de trabajo dentro de su horario establecido.</td></tr>
-                    <tr><td style="background: #fca5a5; color: #000; font-weight: bold;">FALTA</td><td>El empleado no se presentó a laborar durante su jornada establecida.</td></tr>
-                    <tr><td style="background: #fde047; color: #000; font-weight: bold;">RETARDO</td><td>El empleado se presentó después de su horario. Es obligatorio registrar un comentario.</td></tr>
-                    <tr><td style="background: #d1d5db; color: #000; font-weight: bold;">SUSPENSIÓN</td><td>El empleado se encuentra suspendido. Gestionado exclusivamente por Recursos Humanos.</td></tr>
-                    <tr><td style="background: #a5f3fc; color: #000; font-weight: bold;">VACACIONES</td><td>El empleado está en periodo vacacional. Gestionado exclusivamente por Recursos Humanos.</td></tr>
-                    <tr><td style="background: #5eead4; color: #000; font-weight: bold;">INCAPACIDADES</td><td>El empleado se encuentra incapacitado. Gestionado exclusivamente por RH.</td></tr>
-                    <tr><td style="background: #fdba74; color: #000; font-weight: bold;">FALTA JUSTIFICADA</td><td>El empleado deberá presentarse con Recursos Humanos para validar el motivo.</td></tr>
+                    <tr><td style="background: #99FF99; color: #275317; font-weight: bold;">EN AREA</td><td>El empleado se encuentra en su área de trabajo dentro de su horario establecido.</td></tr>
+                    <tr><td style="background: #FBE2D5; color: #C00000; font-weight: bold;">FALTA</td><td>El empleado no se presentó a laborar durante su jornada establecida.</td></tr>
+                    <tr><td style="background: #FFFF8F; color: #7E350E; font-weight: bold;">RETARDO</td><td>El empleado se presentó después de su horario. Es obligatorio registrar un comentario.</td></tr>
+                    <tr><td style="background: #E8E8E8; color: #808080; font-weight: bold;">SUSPENSIÓN</td><td>El empleado se encuentra suspendido. Gestionado exclusivamente por Recursos Humanos.</td></tr>
+                    <tr><td style="background: #ACEAE9; color: #215C98; font-weight: bold;">VACACIONES</td><td>El empleado está en periodo vacacional. Gestionado exclusivamente por Recursos Humanos.</td></tr>
+                    <tr><td style="background: #C5FFE8; color: #00CC99; font-weight: bold;">INCAPACIDADES</td><td>El empleado se encuentra incapacitado. Gestionado exclusivamente por RH.</td></tr>
+                    <tr><td style="background: #F1A983; color: #000; font-weight: bold;">FALTA JUSTIFICADA</td><td>El empleado deberá presentarse con Recursos Humanos para validar el motivo.</td></tr>
                 </table>
             </div>
         </div>
@@ -184,7 +214,7 @@
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1rem;">Lista de Registro de Asistencia</h3>
             <table class="attendance-table">
                 <thead>
-                    <tr style="border-bottom: 2px solid #555;">
+                    <tr style="border-bottom: 2px solid #d1d5db;">
                         <th>N° Empleado</th>
                         <th>Apellido</th>
                         <th>Nombre</th>
@@ -206,13 +236,12 @@
                             </select>
                         </td>
                         <td>
-                            <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #2a2a2a; color: #fff; border: 1px solid #444;">
+                            <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #f3f4f6; color: #9ca3af;">
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-
     </main>
 
     <script>
@@ -248,13 +277,15 @@
 
                 if (this.value === 'retardo') {
                     inputComentario.disabled = false;
-                    inputComentario.style.background = '#3e3e3e';
+                    inputComentario.style.background = '#ffffff';
+                    inputComentario.style.color = '#000000';
                     inputComentario.placeholder = 'Indique el motivo del retardo...';
                     inputComentario.focus();
                 } else {
                     inputComentario.disabled = true;
                     inputComentario.value = '';
-                    inputComentario.style.background = '#2a2a2a';
+                    inputComentario.style.background = '#f3f4f6';
+                    inputComentario.style.color = '#9ca3af';
                     inputComentario.placeholder = 'Solo obligatorio en retardo...';
                 }
             });

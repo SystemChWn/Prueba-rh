@@ -208,6 +208,31 @@
             }
         }
     </script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userInput = document.getElementById('user').value.trim();
+            const passInput = document.getElementById('pass').value.trim();
+            const mensajeError = document.getElementById('mensajeError');
+
+            // Obtener la base de datos de usuarios guardados (o usar uno por defecto si está vacío)
+            let usuariosBD = JSON.parse(localStorage.getItem('usuariosAsistencia')) || [
+                { usuario: "Prueba", password: "1", depto: "Corte" }
+            ];
+
+            // Validar si coinciden
+            const usuarioEncontrado = usuariosBD.find(u => u.usuario === userInput && u.password === passInput);
+
+            if (usuarioEncontrado) {
+                // Guardar el usuario actual en sesión y redirigir a su vista de captura
+                localStorage.setItem('usuarioLogueado', JSON.stringify(usuarioEncontrado));
+                window.location.href = 'captura.html'; // Cambia por la ruta de tu página de captura
+            } else {
+                mensajeError.style.display = 'block';
+            }
+        });
+    </script>
 
 </body>
 </html>
