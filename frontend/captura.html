@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Asistencias</title>
-    <!-- Incluimos FontAwesome para la flecha del acordeón -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -24,12 +23,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 20px;
+            padding: 15px 30px;
             background-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
+            position: relative;
+            z-index: 10;
         }
 
-        .branding { display: flex; align-items: center; gap: -5px; }
+        .branding { display: flex; align-items: center; gap: 10px; }
         .logo { 
             width: 100px;
             height: 40px;
@@ -49,7 +50,7 @@
             transition: 0.3s;
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
- /* -------------------------------------------------------------------------------------------------------- */
+
         /* Tarjeta de Bienvenida y Datos Generales */
         .dashboard-card {
             background: #f9fafb;
@@ -58,6 +59,7 @@
             padding: 25px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.02);
             margin-bottom: 20px;
+            text-transform: uppercase;
         }
         
         .card-top {
@@ -77,9 +79,17 @@
             font-size: 0.95rem;
         }
 
-        /* Sección Desplegable (Acordeón) con estilo de solo borde y separado */
-        .accordion-container {
+        /* Contenedor de la Fila de Acciones (Información + Botón Enviar) */
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 25px;
+        }
+
+        /* Sección Desplegable (Acordeón) con estilo de solo borde */
+        .accordion-container {
+            flex: 1;
         }
 
         .accordion-btn {
@@ -111,10 +121,31 @@
             border-radius: 8px;
         }
 
+        /* Botón Enviar Asistencia */
+        .btn-enviar {
+            width: 300px;
+            text-decoration: none;
+            background-color: #ffffff;
+            color: #28df50;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid #28df50;
+            padding: 10px 14px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        .btn-enviar:hover
+           { background: #28df50; color: white;
+        }
+
         /* Tabla de Estatus (Información) */
         .table-estatus {
             width: 100%; 
             border-collapse: collapse; 
+            border-color: #007bff;
+
             font-size: 0.9rem; 
             text-align: left;
         }
@@ -189,24 +220,31 @@
             </div>
         </div>
 
-        <!-- PESTAÑA DESPLEGABLE: INFORMACIÓN -->
-        <div class="accordion-container">
-            <button onclick="toggleInfo()" class="accordion-btn">
-                <span>INFORMACIÓN</span>
-                <i id="flecha-info" class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i>
-            </button>
-            <div id="contenido-info" class="accordion-content">
-                <table class="table-estatus">
-                    <tr><th>Estatus</th><th>Descripción</th></tr>
-                    <tr><td style="background: #99FF99; color: #275317; font-weight: bold;">EN AREA</td><td>El empleado se encuentra en su área de trabajo dentro de su horario establecido.</td></tr>
-                    <tr><td style="background: #FBE2D5; color: #C00000; font-weight: bold;">FALTA</td><td>El empleado no se presentó a laborar durante su jornada establecida.</td></tr>
-                    <tr><td style="background: #FFFF8F; color: #7E350E; font-weight: bold;">RETARDO</td><td>El empleado se presentó después de su horario. Es obligatorio registrar un comentario.</td></tr>
-                    <tr><td style="background: #E8E8E8; color: #808080; font-weight: bold;">SUSPENSIÓN</td><td>El empleado se encuentra suspendido. Gestionado exclusivamente por Recursos Humanos.</td></tr>
-                    <tr><td style="background: #ACEAE9; color: #215C98; font-weight: bold;">VACACIONES</td><td>El empleado está en periodo vacacional. Gestionado exclusivamente por Recursos Humanos.</td></tr>
-                    <tr><td style="background: #C5FFE8; color: #00CC99; font-weight: bold;">INCAPACIDADES</td><td>El empleado se encuentra incapacitado. Gestionado exclusivamente por RH.</td></tr>
-                    <tr><td style="background: #F1A983; color: #000; font-weight: bold;">FALTA JUSTIFICADA</td><td>El empleado deberá presentarse con Recursos Humanos para validar el motivo.</td></tr>
-                </table>
+        <!-- FILA DE ACCIONES: INFORMACIÓN (Izquierda) Y BOTÓN ENVIAR (Derecha) -->
+        <div class="action-row">
+            <div class="accordion-container">
+                <button onclick="toggleInfo()" class="accordion-btn">
+                    <span>INFORMACIÓN</span>
+                    <i id="flecha-info" class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i>
+                </button>
             </div>
+            <div>
+                <button class="btn-enviar" onclick="enviarAsistencia()">Enviar Asistencia</button>
+            </div>
+        </div>
+
+        <!-- CONTENIDO DESPLEGABLE DEL ACORDEÓN -->
+        <div id="contenido-info" class="accordion-content" style="margin-bottom: 25px;">
+            <table class="table-estatus">
+                <tr><th>Estatus</th><th>Descripción</th></tr>
+                <tr><td style="background: #86efac; color: #000; font-weight: bold;">EN AREA</td><td>El empleado se encuentra en su área de trabajo dentro de su horario establecido.</td></tr>
+                <tr><td style="background: #fca5a5; color: #000; font-weight: bold;">FALTA</td><td>El empleado no se presentó a laborar durante su jornada establecida.</td></tr>
+                <tr><td style="background: #fde047; color: #000; font-weight: bold;">RETARDO</td><td>El empleado se presentó después de su horario. Es obligatorio registrar un comentario.</td></tr>
+                <tr><td style="background: #d1d5db; color: #000; font-weight: bold;">SUSPENSIÓN</td><td>El empleado se encuentra suspendido. Gestionado exclusivamente por Recursos Humanos.</td></tr>
+                <tr><td style="background: #a5f3fc; color: #000; font-weight: bold;">VACACIONES</td><td>El empleado está en periodo vacacional. Gestionado exclusivamente por Recursos Humanos.</td></tr>
+                <tr><td style="background: #5eead4; color: #000; font-weight: bold;">INCAPACIDADES</td><td>El empleado se encuentra incapacitado. Gestionado exclusivamente por RH.</td></tr>
+                <tr><td style="background: #fdba74; color: #000; font-weight: bold;">FALTA JUSTIFICADA</td><td>El empleado deberá presentarse con Recursos Humanos para validar el motivo.</td></tr>
+            </table>
         </div>
 
         <!-- TABLA DE REGISTRO DE ASISTENCIA -->
@@ -258,6 +296,11 @@
             }
         }
 
+        // Función de ejemplo para el botón Enviar Asistencia
+        function enviarAsistencia() {
+            alert('Asistencia enviada correctamente.');
+        }
+
         // Lógica para cambiar colores del select y habilitar comentarios solo en 'retardo'
         document.querySelectorAll('.select-asistencia').forEach(select => {
             select.addEventListener('change', function() {
@@ -289,6 +332,41 @@
                     inputComentario.placeholder = 'Solo obligatorio en retardo...';
                 }
             });
+        });
+    </script>
+    <script>
+        // 1. Validar al cargar la página de captura si realmente hay una sesión activa
+        window.addEventListener('DOMContentLoaded', () => {
+            const sesionActiva = localStorage.getItem('usuarioLogueado');
+            if (!sesionActiva) {
+                // Si no hay sesión, redirigir inmediatamente al login (portalrh.html o como se llame tu login)
+                window.location.replace('portalrh.html');
+            }
+        });
+
+        // 2. Interceptar el botón de Cerrar Sesión para limpiar el historial de navegación
+        document.querySelector('.btn-logout').addEventListener('click', function(e) {
+            e.preventDefault(); // Evita el comportamiento predeterminado del enlace por un momento
+            
+            // Borrar la sesión almacenada
+            localStorage.removeItem('usuarioLogueado');
+            
+            // Reemplazar la historia del navegador para que el botón "Atrás" no pueda regresar aquí
+            window.location.replace('lis asist.html'); // Cambia 'portalrh.html' por la ruta exacta de tu login si es distinta
+        });
+    </script>
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const sesionActiva = localStorage.getItem('usuarioLogueado');
+            if (sesionActiva) {
+
+            }
         });
     </script>
 </body>
