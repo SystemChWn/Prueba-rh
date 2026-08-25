@@ -4,15 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Interno Reclutamiento</title>
-    <!-- Importar iconos para el ojito y elementos visuales -->
+    <!-- Importar iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Eliminar la barra de desplazamiento visualmente */
-        ::-webkit-scrollbar {
-            display: none;
-        }
-
+        ::-webkit-scrollbar { display: none; }
         body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
         .branding { display: flex; align-items: center; gap: 10px; }
@@ -20,470 +16,87 @@
         .nav-links { display: flex; gap: 20px; }
         .nav-links a { text-decoration: none; color: #ddd; font-weight: bold; padding: 5px 10px; }
         .nav-links a.active { color: #007bff; border-bottom: 2px solid #007bff; }
-
-        /* SECCIONES DE ENCABEZADO */
-        .main-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #1e1e1e;
-            border-bottom: 2px solid #444;
-        }
-
-        .header-section {
-            flex: 1; 
-            display: flex;
-            align-items: center;
-        }
-
-        .left { justify-content: flex-start; }
-        .center { justify-content: center; }
-        .right { justify-content: flex-end; }
-
-        .nav-links {
-            gap: 40px; 
-        }
-
-        /* Botón Cerrar Sesión */
-        .btn-logout {
-            text-decoration: none;
-            color: #ff4b4b;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #ff4b4b;
-            padding: 5px 12px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
+        .btn-logout { text-decoration: none; color: #ff4b4b; font-weight: bold; font-size: 0.9rem; border: 1px solid #ff4b4b; padding: 5px 12px; border-radius: 5px; transition: 0.3s; }
         .btn-logout:hover { background: #ff4b4b; color: white; }
 
-        /* RECUADROS SUPERIORES (BOTONES) */
-        .metrics-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 40px;
-            padding: 20px 20px 0 20px;
-        }
+        .metrics-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; padding: 25px 20px 0 20px; }
+        
+        /* Tarjetas principales unificadas con estilo estándar (Azul) */
+        .metric-card-asistencia, .metric-card-incidencias { background: #1e1e1e; border: 1px solid #007bff; padding: 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .metric-card-asistencia:hover, .metric-card-incidencias:hover { background: #007bff; }
+        .metric-card-asistencia:hover h3, .metric-card-incidencias:hover h3 { color: #fff; }
+        .metric-card-asistencia h3, .metric-card-incidencias h3 { color: #007bff; margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
 
-        .metric-card {
-            background-color: #333;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #007bff;
-            padding: 15px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #282828; border: 1px solid #333; border-radius: 12px; padding: 30px; width: 90%; max-width: 750px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; text-align: left; position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-top: 0; color: #fff; font-size: 1.2rem; margin-bottom: 15px; }
 
-        .metric-card:hover {
-            background: #007bff;
-            border-color: #007bff;
-            transform: translateY(-2px);
-        }
-
-        .metric-card:active {
-            transform: translateY(0);
-        }
-
-        .metric-card h3 {
-            color: #007bff;
-            margin: 0;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            font-weight: 600;
-            transition: color 0.2s ease;
-        }
-
-        .metric-card:hover h3 {
-            color: #fff;
-        }
-
-        /* ESTILOS DE LA VENTANA EMERGENTE (MODAL) */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(3px);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #282828;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            color: #fff;
-            text-align: left;
-            position: relative;
-            box-sizing: border-box;
-        }
-
-        .modal-content h3 {
-            margin-top: 0;
-            color: #fff;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-        }
-
-        .modal-content p {
-            color: #aaa;
-            font-size: 0.95rem;
-            margin-bottom: 20px;
-        }
-
-        /* Botón Tacha (✖) estilizado */
-        .close-modal-x {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: 1.2rem;
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
+        .close-modal-x { background: transparent; border: none; color: #ffffff; font-size: 1.2rem; position: absolute; top: 15px; right: 20px; cursor: pointer; }
         .close-modal-x:hover { color: #aaa; }
-
-        /* Botón interno para cerrar el modal */
-        .close-modal {
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: background 0.2s;
-        }
+        .close-modal { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .close-modal:hover { background: #444; }
 
-        /* CONTENEDOR DE DOS MITADES */
-        .half-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            padding: 20px;
-        }
+        .half-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; }
+        .half-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 25px; color: #fff; text-align: center; }
+        .half-card h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 10px; }
+        .half-card p { color: #aaa; margin: 0; font-size: 0.95rem; }
+        .half-card .fecha-hoy { color: #888; font-size: 0.85rem; margin-bottom: 15px; }
 
-        .half-card {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 25px;
-            color: #fff;
-            box-sizing: border-box;
-            text-align: center;
-        }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .asistencia-status-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        .asistencia-status-table th { color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px; font-weight: 600; }
+        .asistencia-status-table td { padding: 12px 0; border-bottom: 1px solid #252525; color: #fff; }
 
-        .half-card h3 {
-            margin-top: 0;
-            color: #fff;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
+        .form-control-table { background: #141414; border: 1px solid #444; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; width: 100%; box-sizing: border-box; }
+        .form-control-table:disabled { background: transparent; border-color: transparent; color: #fff; }
 
-        .half-card p {
-            color: #aaa;
-            margin: 0;
-            font-size: 0.95rem;
-        }
+        .password-box { position: relative; display: flex; align-items: center; }
+        .password-box .toggle-password { position: absolute; right: 6px; cursor: pointer; color: #aaa; font-size: 0.85rem; }
 
-        .half-card .fecha-hoy {
-            color: #888;
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-            margin-top: -5px;
-        }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge.registrada { background-color: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.4); }
+        .badge.no-registrada { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.4); }
 
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
+        .content-section.split-section { display: grid; grid-template-columns: 1fr; gap: 20px; background: transparent !important; border: none !important; padding: 0 !important; }
+        .sub-box { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; color: #fff; margin-bottom: 20px; }
+        .sub-box h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 8px; }
 
-        .asistencia-status-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.9rem;
-        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #aaa; font-size: 0.85rem; margin-bottom: 5px; }
+        .form-control { width: 100%; background: #141414; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
+        .form-control:focus { border-color: #007bff; outline: none; }
 
-        .asistencia-status-table th {
-            color: #aaa;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .asistencia-status-table td {
-            padding: 12px 0;
-            border-bottom: 1px solid #252525;
-            color: #fff;
-        }
-
-        /* Estilos para Inputs en Tablas y Cajas de Contraseña */
-        .form-control-table {
-            background: #141414;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .form-control-table:disabled {
-            background: transparent;
-            border-color: transparent;
-            color: #fff;
-        }
-
-        .password-box {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-box .toggle-password {
-            position: absolute;
-            right: 6px;
-            cursor: pointer;
-            color: #aaa;
-            font-size: 0.85rem;
-        }
-        .password-box .toggle-password:hover {
-            color: #fff;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .badge.registrada {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.4);
-        }
-
-        .badge.no-registrada {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.4);
-        }
-
-        .content-section.split-section {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            background: transparent !important;
-            border: none !important;
-            padding: 0 !important;
-        }
-
-        .sub-box {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            color: #fff;
-        }
-
-        .sub-box h3 {
-            margin-top: 0;
-            color: #fff;
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            color: #aaa;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-        }
-
-        .form-control {
-            width: 100%;
-            background: #141414;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            box-sizing: border-box;
-        }
-
-        .form-control:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-        .filtros-fila {
-            display: flex;
-            gap: 15px;
-            width: 100%;
-            align-items: flex-end;
-        }
-
+        .filtros-fila { display: flex; gap: 15px; width: 100%; align-items: flex-end; }
         .form-group.flex-1 { flex: 1; }
         .form-group.flex-2 { flex: 1; }
 
-        .rango-fechas-fila {
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-        }
+        .input-group { display: flex; gap: 10px; }
         .input-group input { flex: 1; }
 
-        .botones-accion {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-        }
+        .botones-accion { display: flex; gap: 10px; margin-top: 8px; }
 
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s;
-        }
-
-        /*ENVIAR REPORTE*/
-        .btn-primary { 
-            text-decoration: none;
-            background: transparent;
-            color: #007bff;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #007bff;
-            padding: 5px 12px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-
-        .btn-primary:hover {background: #007bff; color: white; }
-
-        /*VISTA PREVIA*/
-        .btn-secondary { background: #444; color: #fff; }
+        /* Botones estándar unificados (Azul, Verde, Rojo) */
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn-primary { background: transparent; color: #007bff; border: 1px solid #007bff; }
+        .btn-primary:hover { background: #007bff; color: white; }
+        .btn-success { background: transparent; color: #28a745; border: 1px solid #28a745; }
+        .btn-success:hover { background: #28a745; color: white; }
+        .btn-danger { background: transparent; color: #dc3545; border: 1px solid #dc3545; }
+        .btn-danger:hover { background: #dc3545; color: white; }
+        .btn-secondary { background: #444; color: #fff; border: 1px solid #555; }
         .btn-secondary:hover { background: #555; }
-
-        /*BOTON DE GUARDAR - ACCESO A PAGINA*/
-        .btn-success { 
-            text-decoration: none;
-            background: transparent;
-            color: #28a745;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #28a745;
-            padding: 5px 12px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .btn-success:hover { background: #28a745; color: white;}
-
-        .tags-container {
-            margin-top: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .correo-list {
-            list-style: none;
-            padding: 0;
-            margin: 5px 0 0 0;
-        }
-
-        .correo-item {
-            background: #141414;
-            border: 1px solid #282828;
-            padding: 4px 12px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
-        }
-
-        .btn-eliminar {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            color: #ffffff;
-        }
         
-        .btn-texto {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 0;
-        }
-        .btn-texto:hover {
-            text-decoration: underline;
-        }
+        .btn-texto { background: transparent; border: none; color: #007bff; font-weight: bold; cursor: pointer; font-size: 0.9rem; padding: 0; }
+        .btn-texto:hover { text-decoration: underline; }
 
-        /* Estilos de la tabla dentro de la ventana de faltas */
-        #tabla-faltas th, 
-        #tabla-faltas td {
-            padding: 12px 10px;
-            font-size: 14px;
-            color: #fff;
-        }
+        .tags-container { margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .correo-list { list-style: none; padding: 0; margin: 5px 0 0 0; }
+        .correo-item { background: #141414; border: 1px solid #282828; padding: 4px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.9rem; }
+        .btn-eliminar { background: transparent; border: none; cursor: pointer; font-size: 1rem; color: #dc3545; }
 
-        #tabla-faltas tbody tr:hover {
-            background-color: #333;
-        }
-
-        /* Botón de estado (Falta) */
-        .btn-faltas-estado {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-faltas-estado:hover {
-            background-color: #c82333;
-        }
+        .incidencias-menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-width: 400px; margin: 0 auto; }
+        .btn-incidencia-menu { background: #1e1e1e; border: 1px solid #007bff; color: #007bff; padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; text-align: center; }
+        .btn-incidencia-menu:hover { background: #007bff; color: #fff; }
     </style>
 </head>
 <body>
@@ -505,95 +118,165 @@
     </header>
 
     <main>
-        <!-- Contenedor de Botones -->
+        <!-- 2 BOTONES PRINCIPALES -->
         <div class="metrics-container">
-            <button class="metric-card" type="button" data-modal="modal-mes">
-                <h3>Acceso a Pagina</h3>
+            <button class="metric-card-asistencia" type="button" data-modal="modal-control-accesos">
+                <h3>Control de Accesos</h3>
             </button>
-            <button class="metric-card" type="button" data-modal="modal-top">
-                <h3>Justificaciones</h3>
-            </button>
-            <button class="metric-card" type="button" data-modal="modal-fuente">
-                <h3>Suspenciones</h3>
+            <button class="metric-card-incidencias" type="button" data-modal="modal-gestion-incidencias">
+                <h3>Gestión de Incidencias</h3>
             </button>
         </div>
 
-        <!-- VENTANAS EMERGENTES (ACCESO A PAGINA) -->
-        <div id="modal-mes" class="modal-overlay">
-            <div class="modal-content modal-ancho">
+        <!-- ========================================== -->
+        <!-- BOTÓN 1: CONTROL DE ACCESOS (4 OPCIONES)   -->
+        <!-- ========================================== -->
+        <div id="modal-control-accesos" class="modal-overlay">
+            <div class="modal-content" style="max-width: 800px;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Gestión de Usuarios y Contraseñas</h3>
-                <br>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-                    <button type="button" class="btn-texto" id="btn-editar-global" onclick="habilitarEdicionGlobal(this)">✐ Editar Todos</button>
+                <h3>Control de Accesos y Permisos</h3>
+
+                <!-- Pestañas (Tabs) de las 4 opciones -->
+                <div style="display: flex; border-bottom: 2px solid #444; margin-bottom: 20px; gap: 10px; overflow-x: auto;">
+                    <button type="button" class="tab-accesos-btn active" onclick="cambiarPestanaAccesos(event, 'tab-acc-rrhh')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #007bff; border-bottom: 3px solid #007bff; cursor: pointer;">RRHH</button>
+                    <button type="button" class="tab-accesos-btn" onclick="cambiarPestanaAccesos(event, 'tab-acc-reclutamiento')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #aaa; cursor: pointer;">Reclutamiento</button>
+                    <button type="button" class="tab-accesos-btn" onclick="cambiarPestanaAccesos(event, 'tab-acc-asistencias')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #aaa; cursor: pointer;">Control de Asistencias</button>
+                    <button type="button" class="tab-accesos-btn" onclick="cambiarPestanaAccesos(event, 'tab-acc-notificaciones')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #aaa; cursor: pointer;">Notificaciones</button>
                 </div>
-                <br>
-                <div class="table-responsive">
-                    <table class="asistencia-status-table" id="tabla-usuarios">
-                        <thead>
-                            <tr>
-                                <th>Usuario</th>
-                                <th>Contraseña</th>
-                                <th>Departamento</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" class="form-control-table" value="capturista_prod" disabled></td>
-                                <td>
-                                    <div class="password-box">
-                                        <input type="password" class="form-control-table password-input" value="A1b2c*" disabled>
-                                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                                    </div>
-                                </td>
-                                <td>
-                                    <select class="form-control-table select-depto" disabled>
-                                        <option value="Almacen">Almacén</option>
-                                        <option value="EPS">EPS</option>
-                                        <option value="Ensamble">Ensamble</option>
-                                        <option value="Calidad">Calidad</option>
-                                        <option value="Compras">Compras</option>
-                                        <option value="Embarques">Embarques</option>
-                                        <option value="Corte" selected>Corte</option>
-                                    </select>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;" title="Eliminar fila">✖</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- 1. RRHH -->
+                <div id="tab-acc-rrhh" class="tab-accesos-content" style="display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #ddd;">Usuarios de RRHH</h4>
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-rrhh', this)">✐ Editar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table" id="tabla-rrhh">
+                            <thead><tr><th>Usuario</th><th>Contraseña</th><th style="text-align: center;">Acción</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control-table" value="admin_rrhh" disabled></td>
+                                    <td><div class="password-box"><input type="password" class="form-control-table password-input" value="rrhh2026*" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaGenerica('tabla-rrhh')">+ Agregar</button></div>
+                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-rrhh')">Guardar datos</button></div>
                 </div>
-                <div style="margin-top: 15px; text-align: center;">
-                    <button type="button" class="btn-texto" onclick="agregarFilaUsuario()">+ Agregar Usuario</button>
+
+                <!-- 2. Reclutamiento -->
+                <div id="tab-acc-reclutamiento" class="tab-accesos-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #ddd;">Usuarios de Reclutamiento</h4>
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-reclutamiento', this)">✐ Editar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table" id="tabla-reclutamiento">
+                            <thead><tr><th>Usuario</th><th>Contraseña</th><th style="text-align: center;">Acción</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control-table" value="recruiter_1" disabled></td>
+                                    <td><div class="password-box"><input type="password" class="form-control-table password-input" value="rec123" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaGenerica('tabla-reclutamiento')">+ Agregar</button></div>
+                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-reclutamiento')">Guardar datos</button></div>
                 </div>
-                <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
-                    <button type="button" class="btn btn-success" onclick="guardarCambiosUsuarios()">Guardar Cambios</button>
+
+                <!-- 3. Control de Asistencias -->
+                <div id="tab-acc-asistencias" class="tab-accesos-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #ddd;">Control de Asistencias - Departamentos</h4>
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-asistencias-deptos', this)">✐ Editar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table" id="tabla-asistencias-deptos">
+                            <thead>
+                                <tr>
+                                    <th>N° de Empleado</th>
+                                    <th>Usuario</th>
+                                    <th>Departamento</th>
+                                    <th>Contraseña</th>
+                                    <th style="text-align: center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control-table" value="1001" disabled></td>
+                                    <td><input type="text" class="form-control-table" value="capturista_corte" disabled></td>
+                                    <td><input type="text" class="form-control-table" value="Corte" disabled></td>
+                                    <td><div class="password-box"><input type="password" class="form-control-table password-input" value="A1b2c*" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaAsistenciaDeptos()">+ Agregar</button></div>
+                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-asistencias-deptos')">Guardar datos</button></div>
+                </div>
+
+                <!-- 4. Notificaciones -->
+                <div id="tab-acc-notificaciones" class="tab-accesos-content" style="display: none;">
+                    <h4 style="margin-top: 0; color: #ddd;">Destinatarios de Notificaciones</h4>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="notif-nombre" class="form-control" placeholder="Nombre">
+                        <input type="text" id="notif-whatsapp" class="form-control" placeholder="Número de WhatsApp">
+                        <button type="button" class="btn btn-success" onclick="agregarDestinatarioWhatsApp()">Agregar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table" id="tabla-notif-whatsapp">
+                            <thead><tr><th>Nombre</th><th>WhatsApp</th><th style="text-align: center;">Acción</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>Supervisor General</td>
+                                    <td>8119876543</td>
+                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="alert('Notificaciones guardadas correctamente.')">Guardar datos</button></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- BOTÓN 2: GESTIÓN DE INCIDENCIAS (5 OPCIONES)-->
+        <!-- ========================================== -->
+        <div id="modal-gestion-incidencias" class="modal-overlay">
+            <div class="modal-content" style="max-width: 500px; text-align: center;">
+                <button class="close-modal-x close-modal" type="button">✖</button>
+                <h3>Gestión de Incidencias</h3>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">Seleccione el tipo de incidencia que desea resolver:</p>
+                
+                <div class="incidencias-menu-grid">
+                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-top')">Justificaciones</button>
+                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-fuente')">Suspensiones</button>
+                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-pase-salida')">Pase de salida</button>
+                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-incapacidades')">Incapacidades</button>
+                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-vacaciones')">Vacaciones</button>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- VENTANA 1: BÚSQUEDA (JUSTIFICACIONES)      -->
+        <!-- VENTANAS EXCLUSIVAS PARA CADA INCIDENCIA    -->
         <!-- ========================================== -->
+
+        <!-- 1. Justificaciones -->
         <div id="modal-top" class="modal-overlay">
             <div class="modal-content" style="width: 700px; max-width: 90%;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Faltas Justificables</h3>
-                
-                <!-- Filtros (Solo N° de Empleado y Nombre) -->
-                <div class="filtros-container" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div style="flex: 1;">
-                        <label for="filtro-numero"><strong>N° de Empleado:</strong></label>
-                        <input type="text" id="filtro-numero" class="form-control" placeholder="Ej. 1001" style="margin-top: 5px; width: 100%;">
-                    </div>
-                    <div style="flex: 3;">
-                        <label for="filtro-nombre"><strong>Nombre Completo:</strong></label>
-                        <input type="text" id="filtro-nombre" class="form-control" placeholder="Ej. Juan Pérez" style="margin-top: 5px; width: 100%;">
-                    </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-top')">Volver al Menú</button>
                 </div>
-
-                <!-- Tabla de Faltas -->
                 <div style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
                     <table id="tabla-faltas" style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -604,141 +287,77 @@
                                 <th style="padding: 10px;">Estado</th>
                             </tr>
                         </thead>
-                        <tbody id="tbody-faltas">
-                            <!-- Datos dinámicos -->
-                        </tbody>
+                        <tbody id="tbody-faltas"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- VENTANA 2: JUSTIFICAR FALTA                -->
-        <!-- ========================================== -->
-        <div id="modal-justificar" class="modal-overlay">
-            <div class="modal-content" style="width: 500px; max-width: 90%;">
-                <button class="close-modal-x" id="btn-cerrar-justificar" type="button">✖</button>
-                <h3>Justificar Falta</h3>
-                
-                <form id="form-justificar" style="display: flex; flex-direction: column; gap: 12px;">
-                    <div>
-                        <label><strong>Fecha de la Falta:</strong></label>
-                        <input type="text" id="j-fecha" readonly class="form-control" style="background: #141414; color: #aaa;">
-                    </div>
-                    <div>
-                        <label><strong>N° de Empleado:</strong></label>
-                        <input type="text" id="j-numero" readonly class="form-control" style="background: #141414; color: #aaa;">
-                    </div>
-                    <div>
-                        <label><strong>Nombre:</strong></label>
-                        <input type="text" id="j-nombre" readonly class="form-control" style="background: #141414; color: #aaa;">
-                    </div>
-                    <div>
-                        <label for="j-motivo"><strong>Motivo de falta:</strong></label>
-                        <textarea id="j-motivo" rows="3" placeholder="Escriba el motivo..." required class="form-control"></textarea>
-                    </div>
-                    <div>
-                        <label><strong>Adjuntar Comprobante:</strong></label><br>
-                        <input type="file" id="j-archivo" style="margin-top: 5px; color: #fff;">
-                    </div>
-                    
-                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
-                        <button type="button" id="btn-cancelar-justificacion" class="close-modal" style="padding: 8px 15px;">Cancelar</button>
-                        <button type="submit" class="btn btn-success" style="padding: 8px 15px;">Guardar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- VENTANAS EMERGENTES (SUSPENSIONES) ->  -->
+        <!-- 2. Suspensiones -->
         <div id="modal-fuente" class="modal-overlay">
             <div class="modal-content" style="max-width: 700px;">
                 <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Gestión de suspensiones</h3>
-
-                <!-- Pestañas (Tabs) -->
-                <div class="tabs-container" style="display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px;">
-                    <button type="button" class="tab-btn active" onclick="cambiarPestana(event, 'tab-suspension')" style="padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; border-bottom: 3px solid #007bff; color: #007bff;">Registrar Suspensión</button>
-                    <button type="button" class="tab-btn" onclick="cambiarPestana(event, 'tab-listado')" style="padding: 10px 20px; cursor: pointer; background: none; border: none; font-weight: bold; color: #666;">Empleados Suspendidos</button>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-fuente')">Volver al Menú</button>
                 </div>
-
-                <!-- PESTAÑA 1: REGISTRAR / EDITAR SUSPENSIÓN -->
-                <div id="tab-suspension" class="tab-content" style="display: block;">
-                    <form id="form-suspension">
-                        <input type="hidden" id="modo-edicion" value="false">
-                        
-                        <!-- Filtros (N° de Empleado y Nombre) con prefijo sus- -->
-                        <div class="filtros-container" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                            <div style="flex: 1;">
-                                <label for="sus-filtro-numero"><strong>N° de Empleado:</strong></label>
-                                <input type="text" id="sus-filtro-numero" class="form-control" style="margin-top: 5px; width: 100%;">
-                            </div>
-                            <div style="flex: 3;">
-                                <label for="sus-filtro-nombre"><strong>Nombre Completo:</strong></label>
-                                <input type="text" id="sus-filtro-nombre" class="form-control" style="margin-top: 5px; width: 100%;">
-                            </div>
-                        </div>
-
-                        <!-- Sección de Calendario y Fechas (Aparece al detectar empleado) -->
-                        <div id="seccion-calendario" style="display: none; background: #282828; padding: 15px; border-radius: 6px; margin-bottom: 20px; color: white;">
-                            <h4 style="margin-top: 0; font-size: 16px; color: white; text-align: center;">Selecciona los días de suspensión (Clic para marcar/desmarcar)</h4>
-                            
-                            <!-- Control de Mes/Año o Vista del mes actual -->
-                            <div style="text-align: center; margin-bottom: 10px; font-weight: bold;" id="mes-anio-label">Agosto 2026</div>
-
-                            <!-- Cuadrícula del Calendario (Días de la semana + Días del mes) -->
-                            <div id="calendario-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; margin-bottom: 15px;">
-                                <!-- Cabecera de días -->
-                                <span style="font-size: 12px; color: #aaa;">Lun</span>
-                                <span style="font-size: 12px; color: #aaa;">Mar</span>
-                                <span style="font-size: 12px; color: #aaa;">Mié</span>
-                                <span style="font-size: 12px; color: #aaa;">Jue</span>
-                                <span style="font-size: 12px; color: #aaa;">Vie</span>
-                                <span style="font-size: 12px; color: #aaa;">Sáb</span>
-                                <span style="font-size: 12px; color: #aaa;">Dom</span>
-                            </div>
-
-                            <!-- Resumen de días elegidos -->
-                            <div style="font-size: 13px; background: #1e1e1e; padding: 8px; border-radius: 4px;">
-                                <strong>Días seleccionados:</strong> <span id="resumen-dias" style="color: #4dabf7;">Ninguno</span>
-                            </div>
-                            
-                            <!-- Campo oculto o almacenamiento temporal para enviar en el form -->
-                            <input type="hidden" id="dias-suspension-seleccionados">
-                        </div>
-
-                        <!-- Botón Guardar -->
-                        <div style="text-align: right;">
-                            <button type="submit" class="btn btn-success" style="padding: 10px 20px; font-weight: bold;">Guardar Suspensión</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- PESTAÑA 2: LISTADO DE SUSPENDIDOS -->
-                <div id="tab-listado" class="tab-content" style="display: none;">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #333; text-align: left; color: #ffffff;">
-                                    <th style="padding: 8px;">N° Empleado</th>
-                                    <th style="padding: 8px;">Nombre</th>
-                                    <th style="padding: 8px;">Días / Fechas Suspendido</th>
-                                    <th style="padding: 8px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-suspendidos-body" style="color: #ffffff;">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; padding: 15px; color: #666;">No hay suspensiones registradas.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <form id="form-suspension">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <div style="flex: 1;"><label><strong>N° Empleado:</strong></label><input type="text" id="sus-filtro-numero" class="form-control" style="margin-top: 5px;"></div>
+                        <div style="flex: 3;"><label><strong>Nombre:</strong></label><input type="text" id="sus-filtro-nombre" class="form-control" style="margin-top: 5px;" readonly></div>
                     </div>
-                </div>
-
+                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Guardar Suspensión</button></div>
+                </form>
             </div>
         </div>
 
-        <!-- Recuadro Izquierdo -->
+        <!-- 3. Pase de salida -->
+        <div id="modal-pase-salida" class="modal-overlay">
+            <div class="modal-content" style="max-width: 500px;">
+                <button class="close-modal-x close-modal" type="button">✖</button>
+                <h3>Resolver Pase de Salida</h3>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-pase-salida')">Volver al Menú</button>
+                </div>
+                <form onsubmit="event.preventDefault(); alert('Pase de salida registrado.'); regresarAlMenuIncidencias('modal-pase-salida');">
+                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
+                    <div class="form-group"><label>Motivo del Pase:</label><textarea class="form-control" rows="3" required></textarea></div>
+                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Autorizar Pase</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 4. Incapacidades -->
+        <div id="modal-incapacidades" class="modal-overlay">
+            <div class="modal-content" style="max-width: 500px;">
+                <h3>Resolver Incapacidades</h3>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-incapacidades')">Volver al Menú</button>
+                </div>
+                <form onsubmit="event.preventDefault(); alert('Incapacidad registrada.'); regresarAlMenuIncidencias('modal-incapacidades');">
+                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
+                    <div class="form-group"><label>Folio IMSS:</label><input type="text" class="form-control" required></div>
+                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Guardar Incapacidad</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 5. Vacaciones -->
+        <div id="modal-vacaciones" class="modal-overlay">
+            <div class="modal-content" style="max-width: 500px;">
+                <h3>Resolver Vacaciones</h3>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-vacaciones')">Volver al Menú</button>
+                </div>
+                <form onsubmit="event.preventDefault(); alert('Vacaciones aprobadas.'); regresarAlMenuIncidencias('modal-vacaciones');">
+                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
+                    <div class="form-group"><label>Fecha Inicio:</label><input type="date" class="form-control" required></div>
+                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Aprobar Vacaciones</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- RECUADROS INFERIORES -->
         <div class="half-container">
             <div class="half-card">
                 <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
@@ -769,7 +388,6 @@
                 </div>
             </div>
 
-            <!-- Recuadro Derecho -->
             <div class="content-section split-section">
                 <div class="sub-box">
                     <h3>Envío de Reporte Manual</h3>
@@ -782,16 +400,12 @@
                                 <option value="mensual">Mensual</option>
                             </select>
                         </div>
-                        <div id="filtro-dinamico" class="form-group flex-2">
-                            <!-- Se carga dinámicamente con JavaScript -->
-                        </div>
+                        <div id="filtro-dinamico" class="form-group flex-2"></div>
                     </div>
-
                     <div class="form-group">
                         <label for="correo-manual">Correo Electrónico:</label>
                         <input type="email" id="correo-manual" class="form-control">
                     </div>
-
                     <div class="botones-accion">
                         <button type="button" class="btn btn-secondary">Vista Previa</button>
                         <button type="button" class="btn btn-primary">Enviar Reporte</button>
@@ -804,7 +418,6 @@
                         <input type="email" id="nuevo-correo-auto" class="form-control">
                         <button type="button" class="btn btn-primary" onclick="agregarCorreoAuto()">Agregar</button>
                     </div>
-
                     <div class="tags-container">
                         <label>Destinatarios Automáticos:</label>
                         <ul id="lista-correos-auto" class="correo-list">
@@ -819,78 +432,142 @@
         </div>
     </main>
 
-    <!-- SCRIPTS -->
-
+    <!-- SCRIPTS DE CONTROL -->
     <script>
-        function guardarCambiosUsuarios() {
-            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
-            let usuariosBD = [];
-
-            filas.forEach(fila => {
-                const inputs = fila.querySelectorAll('input, select');
-                const usuario = inputs[0].value;
-                const password = inputs[1].value;
-                const depto = inputs[2].value;
-
-                if (usuario && password) {
-                    usuariosBD.push({ usuario, password, depto });
-                }
-
-                inputs.forEach(input => input.setAttribute('disabled', 'true'));
-                const btnEliminar = fila.querySelector('.btn-eliminar');
-                if (btnEliminar) btnEliminar.style.display = 'none';
-            });
-
-            // Guardar en el navegador para que el login los reconozca
-            localStorage.setItem('usuariosAsistencia', JSON.stringify(usuariosBD));
-
-            const btnEditarGlobal = document.getElementById('btn-editar-global');
-            if (btnEditarGlobal) btnEditarGlobal.style.display = 'inline-block';
-
-            alert('¡Cambios guardados y sincronizados para el inicio de sesión!');
-        }
-    </script>
-    <script>
-        const buttons = document.querySelectorAll('.metric-card');
-        const modals = document.querySelectorAll('.modal-overlay');
-        const closeTriggers = document.querySelectorAll('.close-modal');
-
-        buttons.forEach(button => {
-            button.addEventListener('click', () => {
-                const modalId = button.getAttribute('data-modal');
-                const targetModal = document.getElementById(modalId);
-                if (targetModal) {
-                    targetModal.style.display = 'flex';
-                }
+        // Manejo general de modales principales
+        document.querySelectorAll('.metric-card-asistencia, .metric-card-incidencias').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.getAttribute('data-modal'));
+                if (target) target.style.display = 'flex';
             });
         });
 
-        closeTriggers.forEach(btn => {
+        document.querySelectorAll('.close-modal').forEach(btn => {
             btn.addEventListener('click', () => {
                 const modal = btn.closest('.modal-overlay');
-                if (modal) {
-                    modal.style.display = 'none';
-                }
+                if (modal) modal.style.display = 'none';
             });
         });
 
-        modals.forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
+        function abrirSubVentana(modalId) {
+            document.getElementById('modal-gestion-incidencias').style.display = 'none';
+            document.getElementById(modalId).style.display = 'flex';
+        }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                modals.forEach(modal => {
-                    modal.style.display = 'none';
-                });
+        function regresarAlMenuIncidencias(modalActualId) {
+            document.getElementById(modalActualId).style.display = 'none';
+            document.getElementById('modal-gestion-incidencias').style.display = 'flex';
+        }
+
+        // Pestañas de Control de Accesos
+        function cambiarPestanaAccesos(evt, tabId) {
+            document.querySelectorAll('.tab-accesos-content').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.tab-accesos-btn').forEach(b => {
+                b.style.borderBottom = 'none';
+                b.style.color = '#aaa';
+            });
+            document.getElementById(tabId).style.display = 'block';
+            evt.currentTarget.style.borderBottom = '3px solid #007bff';
+            evt.currentTarget.style.color = '#007bff';
+        }
+
+        // CRUD genérico para RRHH, Reclutamiento y Asistencias
+        function habilitarEdicionSeccion(tablaId, btn) {
+            document.querySelectorAll(`#${tablaId} tbody tr`).forEach(fila => {
+                fila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
+                const el = fila.querySelector('.btn-eliminar');
+                if (el) el.style.display = 'inline-block';
+            });
+            btn.style.display = 'none';
+        }
+
+        function guardarCambiosSeccion(tablaId) {
+            document.querySelectorAll(`#${tablaId} tbody tr`).forEach(fila => {
+                fila.querySelectorAll('input').forEach(i => i.setAttribute('disabled', 'true'));
+                const el = fila.querySelector('.btn-eliminar');
+                if (el) el.style.display = 'none';
+            });
+            alert('¡Datos guardados correctamente!');
+        }
+
+        function agregarFilaGenerica(tablaId) {
+            const tbody = document.querySelector(`#${tablaId} tbody`);
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
+                <td><div class="password-box"><input type="password" class="form-control-table password-input" placeholder="Contraseña" required><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+            `;
+            nuevaFila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
+            tbody.appendChild(nuevaFila);
+        }
+
+        function agregarFilaAsistenciaDeptos() {
+            const tbody = document.querySelector('#tabla-asistencias-deptos tbody');
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="N° Empleado" required></td>
+                <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
+                <td><input type="text" class="form-control-table" placeholder="Departamento" required></td>
+                <td><div class="password-box"><input type="password" class="form-control-table password-input" placeholder="Contraseña" required><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+            `;
+            nuevaFila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
+            tbody.appendChild(nuevaFila);
+        }
+
+        function togglePasswordVisibility(iconElement) {
+            const passwordBox = iconElement.previousElementSibling;
+            if (passwordBox.getAttribute('type') === 'password') {
+                passwordBox.setAttribute('type', 'text');
+                iconElement.classList.remove('fa-eye-slash');
+                iconElement.classList.add('fa-eye');
+            } else {
+                passwordBox.setAttribute('type', 'password');
+                iconElement.classList.remove('fa-eye');
+                iconElement.classList.add('fa-eye-slash');
             }
-        });
+        }
 
-        // ENVIO DE REPORTE MANUAL
+        // Notificaciones WhatsApp
+        function agregarDestinatarioWhatsApp() {
+            const nombre = document.getElementById('notif-nombre').value.trim();
+            const wats = document.getElementById('notif-whatsapp').value.trim();
+            if (!nombre || !wats) {
+                alert('Ingrese nombre y número de WhatsApp.');
+                return;
+            }
+            const tbody = document.querySelector('#tabla-notif-whatsapp tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${nombre}</td><td>${wats}</td><td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>`;
+            tbody.appendChild(tr);
+            document.getElementById('notif-nombre').value = '';
+            document.getElementById('notif-whatsapp').value = '';
+        }
+
+        // Envío Automático de Correos
+        function agregarCorreoAuto() {
+            const inputCorreo = document.getElementById('nuevo-correo-auto');
+            const listaCorreos = document.getElementById('lista-correos-auto');
+            const correoValor = inputCorreo.value.trim();
+
+            if (correoValor === '') {
+                alert('Por favor ingrese un correo electrónico válido.');
+                return;
+            }
+
+            const nuevoItem = document.createElement('li');
+            nuevoItem.className = 'correo-item';
+            nuevoItem.innerHTML = `
+                <span>${correoValor}</span>
+                <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">✖</button>
+            `;
+
+            listaCorreos.appendChild(nuevoItem);
+            inputCorreo.value = '';
+        }
+
+        // Configuración de Reportes Manuales
         window.onload = function() {
             cambiarFiltrosReporte();
         };
@@ -917,443 +594,32 @@
                     <label>Seleccionar Mes y Año:</label>
                     <div style="display: flex; gap: 10px;">
                         <select id="select-mes" class="form-control">
-                            <option value="01">Enero</option>
-                            <option value="02">Febrero</option>
-                            <option value="03">Marzo</option>
-                            <option value="04">Abril</option>
-                            <option value="05">Mayo</option>
-                            <option value="06">Junio</option>
-                            <option value="07">Julio</option>
-                            <option value="08" selected>Agosto</option>
-                            <option value="09">Septiembre</option>
-                            <option value="10">Octubre</option>
-                            <option value="11">Noviembre</option>
-                            <option value="12">Diciembre</option>
+                            <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+                            <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+                            <option value="07">Julio</option><option value="08" selected>Agosto</option><option value="09">Septiembre</option>
+                            <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
                         </select>
                         <select id="select-anio" class="form-control">
-                            <option value="2026">2026</option>
-                            <option value="2025">2025</option>
-                            <option value="2024">2024</option>
+                            <option value="2026">2026</option><option value="2025">2025</option>
                         </select>
                     </div>
                 `;
             }
         }
 
-        // Función exclusiva para calcular automáticamente de Lunes a Viernes al elegir cualquier día
         function validarSemanaLunesViernes(inputElement) {
             if (!inputElement.value) return;
-
             const fechaSeleccionada = new Date(inputElement.value + 'T00:00:00');
-            const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes, etc.
-
-            // Calcular cuántos días restar para llegar al Lunes
-            // Si es domingo (0), el lunes anterior fue hace 6 días. Si es otro, restamos (diaSemana - 1)
+            const diaSemana = fechaSeleccionada.getDay();
             const diferenciaLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
             const lunes = new Date(fechaSeleccionada);
             lunes.setDate(fechaSeleccionada.getDate() + diferenciaLunes);
-
-            // Calcular el Viernes sumando 4 días al Lunes
             const viernes = new Date(lunes);
             viernes.setDate(lunes.getDate() + 4);
 
-            // Formatear fechas a YYYY-MM-DD para mostrarlas o manejarlas
             const formatoLunes = lunes.toISOString().split('T')[0];
             const formatoViernes = viernes.toISOString().split('T')[0];
-
-            // Mostrar visualmente al usuario el rango seleccionado en automático
-            const infoSemana = document.getElementById('info-semana');
-            infoSemana.textContent = `📅 Rango aplicado automáticamente: ${formatoLunes} (Lunes) al ${formatoViernes} (Viernes)`;
-            
-            // Opcional: si quieres guardar los valores reales en inputs ocultos para tu envío posterior
-            inputElement.dataset.lunes = formatoLunes;
-            inputElement.dataset.viernes = formatoViernes;
-        }
-
-        // 3. GESTIÓN DE USUARIOS
-        function agregarFilaUsuario() {
-            const tbody = document.querySelector('#tabla-usuarios tbody');
-            const nuevaFila = document.createElement('tr');
-            
-            nuevaFila.innerHTML = `
-                <td><input type="text" class="form-control-table" placeholder="Nuevo usuario" required></td>
-                <td>
-                    <div class="password-box">
-                        <input type="password" class="form-control-table password-input" placeholder="Contraseña" required>
-                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                    </div>
-                </td>
-                <td>
-                    <select class="form-control-table select-depto">
-                        <option value="Almacen">Almacén</option>
-                        <option value="EPS">EPS</option>
-                        <option value="Ensamble">Ensamble</option>
-                        <option value="Calidad">Calidad</option>
-                        <option value="Compras">Compras</option>
-                        <option value="Embarques">Embarques</option>
-                        <option value="Corte">Corte</option>
-                    </select>
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" title="Eliminar fila">🗑️</button>
-                </td>
-            `;
-            
-            const inputs = nuevaFila.querySelectorAll('input, select');
-            inputs.forEach(input => input.removeAttribute('disabled'));
-            tbody.appendChild(nuevaFila);
-        }
-
-        function habilitarEdicionGlobal(btn) {
-            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
-            filas.forEach(fila => {
-                const inputs = fila.querySelectorAll('input, select');
-                inputs.forEach(input => input.removeAttribute('disabled'));
-
-                const btnEliminar = fila.querySelector('.btn-eliminar');
-                if (btnEliminar) btnEliminar.style.display = 'inline-block';
-            });
-            btn.style.display = 'none';
-        }
-
-        function guardarCambiosUsuarios() {
-            const filas = document.querySelectorAll('#tabla-usuarios tbody tr');
-            filas.forEach(fila => {
-                const inputs = fila.querySelectorAll('input, select');
-                inputs.forEach(input => input.setAttribute('disabled', 'true'));
-
-                const btnEliminar = fila.querySelector('.btn-eliminar');
-                if (btnEliminar) btnEliminar.style.display = 'none';
-            });
-
-            const btnEditarGlobal = document.getElementById('btn-editar-global');
-            if (btnEditarGlobal) btnEditarGlobal.style.display = 'inline-block';
-
-            alert('¡Cambios guardados correctamente!');
-        }
-
-        function togglePasswordVisibility(iconElement) {
-            const passwordBox = iconElement.previousElementSibling;
-            if (passwordBox.getAttribute('type') === 'password') {
-                passwordBox.setAttribute('type', 'text');
-                iconElement.classList.remove('fa-eye-slash');
-                iconElement.classList.add('fa-eye');
-            } else {
-                passwordBox.setAttribute('type', 'password');
-                iconElement.classList.remove('fa-eye');
-                iconElement.classList.add('fa-eye-slash');
-            }
-        }
-    </script>
-
-    <!-- VENTANA 2: JUSTIFICAR FALTA -->
-    <script>
-        const datosEmpleadosFaltas = [
-            { numero: "1001", nombre: "Carlos Gómez", fecha: "2026-06-10", estado: "Falta" },
-            { numero: "1002", nombre: "Ana Martínez", fecha: "2026-06-12", estado: "Falta" },
-            { numero: "1003", nombre: "Luis Rodríguez", fecha: "2026-06-14", estado: "Falta" }
-        ];
-
-        const inputNumeroFaltas = document.getElementById('filtro-numero');
-        const inputNombreFaltas = document.getElementById('filtro-nombre');
-        const tbodyFaltas = document.getElementById('tbody-faltas');
-
-        function actualizarTablaFaltas(filtroNum = "", filtroNom = "") {
-            tbodyFaltas.innerHTML = "";
-            
-            const resultados = datosEmpleadosFaltas.filter(item => {
-                const coincideNum = item.numero.toLowerCase().includes(filtroNum.toLowerCase());
-                const coincideNom = item.nombre.toLowerCase().includes(filtroNom.toLowerCase());
-                return coincideNum && coincideNom;
-            });
-
-            if (resultados.length === 0) {
-                tbodyFaltas.innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; color: #777;">No se encontraron registros</td></tr>`;
-                return;
-            }
-
-            resultados.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.style.borderBottom = "1px solid #333";
-                
-                tr.innerHTML = `
-                    <td style="padding: 10px;">${item.numero}</td>
-                    <td style="padding: 10px;">${item.nombre}</td>
-                    <td style="padding: 10px;">${item.fecha}</td>
-                    <td style="padding: 10px;">
-                        <button class="btn-faltas-estado" data-index="${index}">
-                            ${item.estado}
-                        </button>
-                    </td>
-                `;
-                tbodyFaltas.appendChild(tr);
-            });
-
-            document.querySelectorAll('.btn-faltas-estado').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const idx = e.target.getAttribute('data-index');
-                    abrirVentanaJustificar(resultados[idx]);
-                });
-            });
-        }
-
-        if (inputNumeroFaltas && inputNombreFaltas) {
-            inputNumeroFaltas.addEventListener('input', (e) => {
-                const val = e.target.value;
-                const encontrado = datosEmpleadosFaltas.find(item => item.numero.toLowerCase() === val.toLowerCase());
-                if (encontrado) {
-                    inputNombreFaltas.value = encontrado.nombre;
-                } else if (val === "") {
-                    inputNombreFaltas.value = "";
-                }
-                actualizarTablaFaltas(val, inputNombreFaltas.value);
-            });
-
-            inputNombreFaltas.addEventListener('input', (e) => {
-                const val = e.target.value;
-                const encontrado = datosEmpleadosFaltas.find(item => item.nombre.toLowerCase().includes(val.toLowerCase()));
-                if (encontrado && val.length > 2) {
-                    inputNumeroFaltas.value = encontrado.numero;
-                } else if (val === "") {
-                    inputNumeroFaltas.value = "";
-                }
-                actualizarTablaFaltas(inputNumeroFaltas.value, val);
-            });
-        }
-
-        function abrirVentanaJustificar(data) {
-            document.getElementById('j-fecha').value = data.fecha;
-            document.getElementById('j-numero').value = data.numero;
-            document.getElementById('j-nombre').value = data.nombre;
-            document.getElementById('j-motivo').value = "";
-            document.getElementById('j-archivo').value = "";
-
-            document.getElementById('modal-top').style.display = 'none';
-            document.getElementById('modal-justificar').style.display = 'flex';
-        }
-
-        document.getElementById('btn-cerrar-justificar').addEventListener('click', regresarVentanaPrincipal);
-        document.getElementById('btn-cancelar-justificacion').addEventListener('click', regresarVentanaPrincipal);
-
-        function regresarVentanaPrincipal() {
-            document.getElementById('modal-justificar').style.display = 'none';
-            document.getElementById('modal-top').style.display = 'flex';
-        }
-
-        document.getElementById('form-justificar').addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert("Falta Justificada con éxito");
-            regresarVentanaPrincipal();
-        });
-
-        actualizarTablaFaltas();
-    </script>
-
-    <!-- VENTANA 3: SUSPENSIONES -->
-    <script>
-        function cambiarPestana(evt, tabId) {
-            const tabContents = document.querySelectorAll('.tab-content');
-            tabContents.forEach(content => content.style.display = 'none');
-
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => {
-                btn.style.borderBottom = 'none';
-                btn.style.color = '#666';
-                btn.classList.remove('active');
-            });
-
-            document.getElementById(tabId).style.display = 'block';
-            evt.currentTarget.classList.add('active');
-            evt.currentTarget.style.borderBottom = '3px solid #007bff';
-            evt.currentTarget.style.color = '#007bff';
-        }
-
-        // 2. Catálogo simulado de empleados
-        const catalogoEmpleados = [
-            { numero: "1001", nombre: "Juan Pérez" },
-            { numero: "1002", nombre: "María Gómez" },
-            { numero: "1003", nombre: "Carlos Martínez" },
-            { numero: "1004", nombre: "Ana Rodríguez" }
-        ];
-
-        // Elementos del DOM
-        const inputNumero = document.getElementById('sus-filtro-numero');
-        const inputNombre = document.getElementById('sus-filtro-nombre');
-        const seccionCalendario = document.getElementById('seccion-calendario');
-
-        // 3. Lógica de Autocompletado cruzado y validación de campos
-        function verificarEmpleado(origen) {
-            const valNum = inputNumero.value.trim();
-            const valNom = inputNombre.value.trim();
-
-            if (origen === 'numero' && valNum !== '') {
-                const encontrado = catalogoEmpleados.find(emp => emp.numero === valNum);
-                if (encontrado) {
-                    inputNombre.value = encontrado.nombre;
-                }
-            } else if (origen === 'nombre' && valNom !== '') {
-                const encontrado = catalogoEmpleados.find(emp => emp.nombre.toLowerCase().includes(valNom.toLowerCase()));
-                if (encontrado) {
-                    inputNumero.value = encontrado.numero;
-                }
-            }
-
-            if (inputNumero.value.trim() !== '' || inputNombre.value.trim() !== '') {
-                seccionCalendario.style.display = 'block';
-            } else {
-                seccionCalendario.style.display = 'none';
-            }
-        }
-
-        inputNumero.addEventListener('input', () => verificarEmpleado('numero'));
-        inputNombre.addEventListener('input', () => verificarEmpleado('nombre'));
-
-        let diasSeleccionados = [];
-
-        function generarCalendarioInteractivo() {
-            const grid = document.getElementById('calendario-grid');
-            if (!grid) return;
-
-            const headers = Array.from(grid.querySelectorAll('span'));
-            grid.innerHTML = '';
-            headers.forEach(h => grid.appendChild(h));
-
-            const fechaActual = new Date();
-            const anio = fechaActual.getFullYear();
-            const mes = fechaActual.getMonth();
-
-            const primerDiaMes = new Date(anio, mes, 1).getDay();
-            let primerDiaIndex = primerDiaMes === 0 ? 6 : primerDiaMes - 1;
-            const totalDiasMes = new Date(anio, mes + 1, 0).getDate();
-
-            for (let i = 0; i < primerDiaIndex; i++) {
-                const emptyDiv = document.createElement('div');
-                grid.appendChild(emptyDiv);
-            }
-
-            for (let dia = 1; dia <= totalDiasMes; dia++) {
-                const mesStr = String(mes + 1).padStart(2, '0');
-                const diaStr = String(dia).padStart(2, '0');
-                const fechaIso = `${anio}-${mesStr}-${diaStr}`;
-
-                const btnDia = document.createElement('button');
-                btnDia.type = 'button';
-                btnDia.textContent = dia;
-                btnDia.dataset.fecha = fechaIso;
-                
-                const estaSeleccionado = diasSeleccionados.includes(fechaIso);
-                btnDia.style.cssText = `
-                    padding: 8px;
-                    background: ${estaSeleccionado ? '#007bff' : '#333'};
-                    color: white;
-                    border: 1px solid ${estaSeleccionado ? '#0056b3' : '#444'};
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                `;
-
-                btnDia.addEventListener('click', function() {
-                    const index = diasSeleccionados.indexOf(fechaIso);
-                    if (index > -1) {
-                        diasSeleccionados.splice(index, 1);
-                        btnDia.style.background = '#333';
-                        btnDia.style.borderColor = '#444';
-                    } else {
-                        diasSeleccionados.push(fechaIso);
-                        btnDia.style.background = '#007bff';
-                        btnDia.style.borderColor = '#0056b3';
-                    }
-                    actualizarResumenDias();
-                });
-
-                grid.appendChild(btnDia);
-            }
-        }
-
-        function actualizarResumenDias() {
-            const resumenSpan = document.getElementById('resumen-dias');
-            const inputOculto = document.getElementById('dias-suspension-seleccionados');
-
-            if (diasSeleccionados.length === 0) {
-                if (resumenSpan) resumenSpan.textContent = "Ninguno";
-                if (inputOculto) inputOculto.value = "";
-            } else {
-                diasSeleccionados.sort();
-                if (resumenSpan) resumenSpan.textContent = diasSeleccionados.join(', ');
-                if (inputOculto) inputOculto.value = JSON.stringify(diasSeleccionados);
-            }
-        }
-
-        let listaSuspendidos = [
-            { 
-                numero: "1001", 
-                nombre: "Juan Pérez", 
-                diasTexto: "2026-08-20, 2026-08-21, 2026-08-23" 
-            }
-        ];
-
-        document.addEventListener('DOMContentLoaded', function() {
-            actualizarTablaSuspendidos();
-            generarCalendarioInteractivo();
-        });
-
-        // 6. Envío de formulario y llenado de la tabla
-        const formSuspension = document.getElementById('form-suspension');
-        const tablaBody = document.getElementById('tabla-suspendidos-body');
-
-        formSuspension.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const numero = inputNumero.value.trim();
-            const nombre = inputNombre.value.trim();
-
-            if (!numero || !nombre || diasSeleccionados.length === 0) {
-                alert('Por favor complete los datos del empleado y seleccione al menos un día en el calendario.');
-                return;
-            }
-
-            diasSeleccionados.sort();
-            const diasTexto = diasSeleccionados.join(', ');
-
-            listaSuspendidos.push({ numero, nombre, diasTexto });
-            actualizarTablaSuspendidos();
-
-            formSuspension.reset();
-            diasSeleccionados = [];
-            generarCalendarioInteractivo();
-            actualizarResumenDias();
-            seccionCalendario.style.display = 'none';
-
-            alert('¡Suspensión registrada con éxito!');
-        });
-
-        function actualizarTablaSuspendidos() {
-            if (!tablaBody) return;
-
-            if (listaSuspendidos.length === 0) {
-                tablaBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 15px; color: #666;">No hay suspensiones registradas.</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            listaSuspendidos.forEach((item, index) => {
-                html += `
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${item.numero}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${item.nombre}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${item.diasTexto}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarSuspensiones(${index})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            tablaBody.innerHTML = html;
-        }
-
-        function eliminarSuspensiones(index) {
-            listaSuspendidos.splice(index, 1);
-            actualizarTablaSuspendidos();
+            document.getElementById('info-semana').textContent = `📅 Rango: ${formatoLunes} al ${formatoViernes}`;
         }
     </script>
 </body>
