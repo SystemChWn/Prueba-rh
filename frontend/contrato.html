@@ -43,22 +43,6 @@
             justify-content: center;
         }
 
-        .page {
-            background: white;
-            width: 21.6cm;
-            height: 27.9cm;
-            padding: 2.54cm 2.84cm 2.54cm 2.5cm;
-            margin: 10mm auto;
-            box-sizing: border-box;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-            font-size: 10pt;
-            line-height: 1.5;
-            color: #1a202c;
-            text-align: justify;
-            overflow: hidden;
-        }
-
         .declaracion-item {
             margin: 4px 0;
             padding-left: 35px;
@@ -70,22 +54,35 @@
             width: 35px;
         }
 
-        /* Estilo para el número de página */
+        .page {
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            /* Modificamos el padding inferior para dejar espacio libre al número */
+            padding: 2.54cm 2.84cm 2.0cm 2.5cm; 
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #1a202c;
+            text-align: justify;
+            /* Quitamos 'overflow: hidden' para que no oculte elementos de abajo */
+            overflow: visible; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Distribuye el contenido y manda el número al fondo */
+        }
+
+        /* Estilo limpio para el número de página */
         .page-number {
-            position: absolute;
-            bottom: 1.5cm;
-            right: 2.5cm;
+            text-align: right;
             font-size: 12pt;
             color: #000000;
             font-family: 'Times New Roman', Times, serif, sans-serif;
-        }
-
-        @media print {
-            .page-number {
-                position: fixed;
-                bottom: 1.5cm;
-                right: 2.5cm;
-            }
+            margin-top: auto; /* Lo empuja siempre al fondo de la hoja */
+            padding-top: 10px;
         }
 
         @media print {
@@ -112,11 +109,6 @@
                 page-break-after: always;
                 break-after: page;
                 break-inside: avoid;
-            }
-
-            .page:last-of-type {
-                page-break-after: auto;
-                break-after: auto;
             }
         }
 
