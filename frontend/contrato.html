@@ -70,6 +70,24 @@
             width: 35px;
         }
 
+        /* Estilo para el número de página */
+        .page-number {
+            position: absolute;
+            bottom: 1.5cm;
+            right: 2.5cm;
+            font-size: 12pt;
+            color: #000000;
+            font-family: 'Times New Roman', Times, serif, sans-serif;
+        }
+
+        @media print {
+            .page-number {
+                position: fixed;
+                bottom: 1.5cm;
+                right: 2.5cm;
+            }
+        }
+
         @media print {
             @page {
                 size: letter;
@@ -101,6 +119,13 @@
                 break-after: auto;
             }
         }
+
+        .linea-decorativa {
+            border: none;
+            height: 1.5px;
+            background: #000000;
+            margin: 50px 5px;
+        }
     </style>
 </head>
 <body>
@@ -114,10 +139,7 @@
     <div class="page" id="contrato-page-1">
         <p style="text-align: justify; font-size: 10pt; margin-bottom: 8px;">
         <strong>CONTRATO INDIVIDUAL DE TRABAJO POR TIEMPO DETERMINADO</strong>, que celebran, por una parte, <strong>CHEONG WOON MEXICO, S.A. DE C.V.</strong> denominada en lo sucesivo como <strong>LA EMPRESA</strong>, y por otra parte, <strong><span id="lbl-nombre" style="text-transform: uppercase;"></span></strong> a quien se le denominará como <strong>EL TRABAJADOR</strong>, estableciéndose las siguientes Declaraciones y Cláusulas:</p>
-        <br>
-
         <h3 style="text-align: center; margin: 5px 0;">D E C L A R A C I O N E S</h3>
-        <br>
         <p style="margin: 4px 0;">Declara<strong> LA EMPRESA:</strong></p>
         <br>
         <div style="display: flex; margin: 4px 0;">
@@ -167,8 +189,9 @@
             <div style="width: 30px; font-weight: bold; flex-shrink: 0;">IX.</div>
             <div style="flex-grow: 1; text-align: justify;">Que sabe que <strong>LA EMPRESA</strong> tiene necesidad de rotar su personal de acuerdo con las necesidades de la misma, por lo que está de acuerdo en ser cambiado de puesto cuando sea necesario, sin perjuicio de su sueldo.</div>
         </div>
-        
         <p style="margin: 8px 0">Expuesto lo anterior, las partes otorgan las siguientes:</p>
+        <!-- Numeración automática -->
+        <div class="page-number">1</div>
     </div>
 
 <!-- PÁGINA 2 -->
@@ -187,7 +210,8 @@
         <p style="margin: 3px 0;"><strong>SEXTA. </strong> <strong>EL TRABAJADOR</strong> en forma expresa y por motivo de seguridad y conveniencia, manifiesta su conformidad en recibir su pago, mediante sistemas electrónicos de pago, o cualquier otro instrumento Bancario el cual le permita la disposición inmediata de su salario en efectivo.</p>
         <br>
         <p style="margin: 3px 0;"><strong>SEPTIMA. </strong> <strong>EL TRABAJADOR</strong> deberá desempeñar dentro de su jornada de trabajo, las labores propias de su categoría, así como todas aquellas que resulten compatibles con la misma y está de acuerdo en que se cambie de trabajo cuando lo requieran las necesidades de <strong>LA EMPRESA</strong> y ésta así lo determine.</p>
-        <br>
+        <!-- Numeración automática -->
+        <div class="page-number">2</div>
     </div>
 
 <!-- PÁGINA 3 -->
@@ -205,8 +229,8 @@
         <p style="margin: 3px 0;">En el evento de que <strong>EL TRABAJADOR</strong> falte a sus labores injustificadamente se le descontará además de la falta o faltas injustificadas, la parte proporcional correspondiente al día de descanso semanal.</p>
         <br>
         <p style="margin: 3px 0;"><strong>DECIMA TERCERA. </strong><strong>LA EMPRESA</strong> podrá y <strong>EL TRABAJADOR</strong> accederá a cambiar los días de la semana en que deberá laborar, entendiéndose por tal que <strong>LA EMPRESA</strong>, podrá variar la semana laboral y así variar el día de descanso de <strong>EL TRABAJADOR</strong> por cada 6-seis de labores. Para el tal efecto <strong>LA EMPRESA</strong> deberá dar aviso por escrito a <strong>EL TRABAJADOR</strong> de su cambio de día de descanso y de jornada semanal con un mínimo de 1-un día de anticipación.</p>
-
-
+        <!-- Numeración automática -->
+        <div class="page-number">3</div>
     </div>
 
 <!-- PÁGINA 4 -->
@@ -238,6 +262,8 @@
         <p style="margin: 3px 0;"><strong>DECIMA SEXTA.</strong> <strong>EL TRABAJADOR</strong> tendrá derecho a un aguinaldo anual de 15-quince días de salario, el cual deberá cubrirse por <strong>LA EMPRESA</strong> antes del día 20 de diciembre del año correspondiente. La persona que no cumpla con el año completo prestando sus servicios a <strong>LA EMPRESA</strong>, recibirá proporcionalmente el aguinaldo mencionado.</p>
         <br>
         <p style="margin: 2px 0;"><strong>DECIMA SEPTIMA.</strong> La jornada semanal de <strong>EL TRABAJADOR</strong> será de 48-cuarenta y ocho horas la diurna, de 45-cuarenta y cinco la mixta y de 42-cuarenta y dos la nocturna, las cuales dada su categoría y actividades <strong>EL TRABAJADOR</strong> administrará y distribuirá de manera que optimice el trabajo contratado y mejor convenga a los</p>
+        <!-- Numeración automática -->
+        <div class="page-number">4</div>
     </div>
 
 <!-- PÁGINA 5 -->
@@ -254,19 +280,15 @@
         <br>
         <p style="margin: 2px 0;"><strong>VIGESIMA SEGUNDA.</strong>  <strong>LA EMPRESA</strong> proporcionará al <strong>TRABAJADOR</strong> Capacitación y adiestramiento en los términos de los planes y programas que se establezcan en <strong>LA EMPRESA</strong>, conforme a lo dispuesto en la Ley Federal del Trabajo.</p>
         <br>
-
         <p style="margin: 2px 0;"><strong>VIGESIMA TERCERA.</strong> <strong>EL TRABAJADOR</strong> se obliga a asistir puntualmente a los cursos, sesiones de grupo y demás actividades que le señale <strong>LA EMPRESA</strong> y que forman parte del proceso de capacitación y adiestramiento, a atender las indicaciones de las personas que impartan dichas actividades, cumplir con los programas respectivos y presentar los exámenes de conocimientos y aptitud que le sean requeridos.</p>
-
         <br>
-
         <p style="margin: 2px 0;"><strong>VIGESIMA CUARTA.</strong> <strong>EL TRABAJADOR</strong> está de acuerdo en que este contrato se tendrá por terminado sin ninguna responsabilidad para <strong>LA EMPRESA</strong>, por cualquiera de las causas enumeradas en el Artículo 47 o por incumplimiento de lo estipulado en los Artículos 134 y 135, todos de la Ley Federal del Trabajo:</p>
         <br>
         <ul style="margin: 4px 0 4px 20px; padding: 0; font-size: 10pt; line-height: 1.35; text-align: justify;">
             <li style="margin: 3px 0;">Cumplir con el Reglamento Interior de Trabajo.</li>
         </ul>
-        <br>
-
-
+        <!-- Numeración automática -->
+        <div class="page-number">5</div>
     </div>
 
 <!-- PÁGINA 6 -->
@@ -301,7 +323,13 @@
                 <strong>C. <span id="lbl-nombre-firma" style="text-transform: uppercase;"></span></strong>
             </div>
         </div>
+
+        <hr class="linea-decorativa">
+
+        <!-- Numeración automática -->
+        <div class="page-number">6</div>
     </div>
+
     <script src="data-manager.js"></script>
     <script>
         const currentHost = window.location.hostname;
@@ -560,6 +588,31 @@
         }
 
         cargarEmpleadoContrato();
+    </script>
+    <script>
+        function formatearNombreApellidos() {
+            const spanNombre = document.getElementById('lbl-nombre');
+            if (!spanNombre) return;
+
+            let textoOriginal = spanNombre.textContent.trim();
+            if (!textoOriginal) return;
+
+            let palabras = textoOriginal.split(/\s+/);
+
+            if (palabras.length <= 2) {
+                spanNombre.style.textTransform = 'uppercase';
+                return; 
+            }
+
+            let apellidos = palabras.slice(-2).join(' '); // Últimas 2 palabras
+            let nombres = palabras.slice(0, -2).join(' '); // El resto
+
+            // Reconstruimos: Apellidos primero, luego los nombres
+            spanNombre.textContent = `${apellidos} ${nombres}`;
+        }
+
+        // Ejecutar cuando cargue la página
+        window.addEventListener('DOMContentLoaded', formatearNombreApellidos);
     </script>
 </body>
 </html>
