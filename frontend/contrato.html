@@ -133,7 +133,7 @@
 <!-- PÁGINA 1 -->
     <div class="controls">
         <a id="btn-regresar" class="btn" href="#">Regresar</a>
-        <button id="btn-descargar-contrato" class="btn">Descargar Contrato</button>
+        <button id="btn-descargar-contrato" class="btn">Descargar / Imprimir Contrato</button>
     </div>
 
     <div class="page" id="contrato-page-1">
@@ -331,7 +331,7 @@
     </div>
 
     <script src="data-manager.js"></script>
-    <script>
+<script>
         const currentHost = window.location.hostname;
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
@@ -431,10 +431,32 @@
             }
         }
 
+        // Función auxiliar para formatear los nombres: toma las últimas 2 palabras como apellidos y las pasa al inicio
+        function formatearNombreApellidosTexto(texto) {
+            if (!texto) return '';
+            let textoLimpio = String(texto).trim();
+            let palabras = textoLimpio.split(/\s+/);
+
+            if (palabras.length <= 2) {
+                return textoLimpio.toUpperCase();
+            }
+
+            let apellidos = palabras.slice(-2).join(' ');
+            let nombres = palabras.slice(0, -2).join(' ');
+
+            return `${apellidos} ${nombres}`.toUpperCase();
+        }
+
         function setText(id, value) {
             const el = document.getElementById(id);
             if (!el) return;
-            el.textContent = value === null || value === undefined || value === '' ? '' : String(value);
+            
+            // Si el campo es el nombre, aplicamos la regla de reordenamiento de apellidos
+            if (id === 'lbl-nombre' || id === 'lbl-nombre-firma') {
+                el.textContent = formatearNombreApellidosTexto(value);
+            } else {
+                el.textContent = value === null || value === undefined || value === '' ? '' : String(value);
+            }
         }
 
         function hasValue(value) {
@@ -491,9 +513,7 @@
         function numeroALetras(numero) {
             const valor = Number(String(numero || '').replace(/[^0-9.-]/g, ''));
             if (!Number.isFinite(valor)) return '';
-            const unidades = [
-                'cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'
-            ];
+            const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
             const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
             const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
             const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
@@ -588,31 +608,6 @@
         }
 
         cargarEmpleadoContrato();
-    </script>
-    <script>
-        function formatearNombreApellidos() {
-            const spanNombre = document.getElementById('lbl-nombre');
-            if (!spanNombre) return;
-
-            let textoOriginal = spanNombre.textContent.trim();
-            if (!textoOriginal) return;
-
-            let palabras = textoOriginal.split(/\s+/);
-
-            if (palabras.length <= 2) {
-                spanNombre.style.textTransform = 'uppercase';
-                return; 
-            }
-
-            let apellidos = palabras.slice(-2).join(' '); // Últimas 2 palabras
-            let nombres = palabras.slice(0, -2).join(' '); // El resto
-
-            // Reconstruimos: Apellidos primero, luego los nombres
-            spanNombre.textContent = `${apellidos} ${nombres}`;
-        }
-
-        // Ejecutar cuando cargue la página
-        window.addEventListener('DOMContentLoaded', formatearNombreApellidos);
     </script>
 </body>
 </html>
