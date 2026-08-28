@@ -21,17 +21,17 @@
 
         .metrics-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; padding: 25px 20px 0 20px; }
         
-        /* Tarjetas principales unificadas con estilo estándar (Azul) */
         .metric-card-asistencia, .metric-card-incidencias { background: #1e1e1e; border: 1px solid #007bff; padding: 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center; }
         .metric-card-asistencia:hover, .metric-card-incidencias:hover { background: #007bff; }
         .metric-card-asistencia:hover h3, .metric-card-incidencias:hover h3 { color: #fff; }
         .metric-card-asistencia h3, .metric-card-incidencias h3 { color: #007bff; margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #282828; border: 1px solid #333; border-radius: 12px; padding: 30px; width: 90%; max-width: 750px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; text-align: left; position: relative; max-height: 90vh; overflow-y: auto; }
-        .modal-content h3 { margin-top: 0; color: #fff; font-size: 1.2rem; margin-bottom: 15px; }
+        
+        .modal-content { background: #282828; border: 1px solid #333; border-radius: 12px; padding: 40px 50px; width: 95%; max-width: 1100px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; text-align: left; position: relative; max-height: 92vh; overflow-y: auto; box-sizing: border-box; }
+        .modal-content h3 { margin-top: 0; color: #fff; font-size: 1.4rem; margin-bottom: 25px; }
 
-        .close-modal-x { background: transparent; border: none; color: #ffffff; font-size: 1.2rem; position: absolute; top: 15px; right: 20px; cursor: pointer; }
+        .close-modal-x { background: transparent; border: none; color: #ffffff; font-size: 1.2rem; position: absolute; top: 25px; right: 30px; cursor: pointer; }
         .close-modal-x:hover { color: #aaa; }
         .close-modal { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .close-modal:hover { background: #444; }
@@ -42,15 +42,19 @@
         .half-card p { color: #aaa; margin: 0; font-size: 0.95rem; }
         .half-card .fecha-hoy { color: #888; font-size: 0.85rem; margin-bottom: 15px; }
 
-        .table-responsive { width: 100%; overflow-x: auto; }
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; margin-bottom: 15px; }
         .asistencia-status-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        .asistencia-status-table th { color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px; font-weight: 600; }
-        .asistencia-status-table td { padding: 12px 0; border-bottom: 1px solid #252525; color: #fff; }
+        
+        .asistencia-status-table th { color: #aaa; border-bottom: 1px solid #333; padding: 0 20px 14px 20px; font-weight: 600; }
+        .asistencia-status-table td { padding: 16px 20px; border-bottom: 1px solid #252525; color: #fff; }
+        .asistencia-status-table th:first-child, .asistencia-status-table td:first-child { padding-left: 10px; }
+        .asistencia-status-table th:last-child, .asistencia-status-table td:last-child { padding-right: 10px; }
 
-        .form-control-table { background: #141414; border: 1px solid #444; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; width: 100%; box-sizing: border-box; }
+        .form-control-table { background: #141414; border: 1px solid #444; color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
         .form-control-table:disabled { background: transparent; border-color: transparent; color: #fff; }
 
-        .password-box { position: relative; display: flex; align-items: center; }
+        .password-box { position: relative; display: inline-flex; align-items: center; width: 100%; }
+        .password-box input { width: 100%; padding-right: 22px; }
         .password-box .toggle-password { position: absolute; right: 6px; cursor: pointer; color: #aaa; font-size: 0.85rem; }
 
         .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
@@ -66,6 +70,13 @@
         .form-control { width: 100%; background: #141414; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
         .form-control:focus { border-color: #007bff; outline: none; }
 
+        /* Estilo estético para inputs de archivos tipo botón */
+        .file-upload-wrapper { position: relative; display: inline-block; width: 100%; }
+        .file-upload-wrapper input[type="file"] { display: none; }
+        .file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #141414; border: 1px dashed #007bff; color: #fff; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.3s; text-align: center; }
+        .file-upload-btn:hover { background: rgba(0, 123, 255, 0.1); border-color: #0056b3; }
+        .file-name-display { display: block; margin-top: 5px; font-size: 0.8rem; color: #888; font-style: italic; }
+
         .filtros-fila { display: flex; gap: 15px; width: 100%; align-items: flex-end; }
         .form-group.flex-1 { flex: 1; }
         .form-group.flex-2 { flex: 1; }
@@ -75,7 +86,6 @@
 
         .botones-accion { display: flex; gap: 10px; margin-top: 8px; }
 
-        /* Botones estándar unificados (Azul, Verde, Rojo) */
         .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-primary { background: transparent; color: #007bff; border: 1px solid #007bff; }
         .btn-primary:hover { background: #007bff; color: white; }
@@ -93,10 +103,6 @@
         .correo-list { list-style: none; padding: 0; margin: 5px 0 0 0; }
         .correo-item { background: #141414; border: 1px solid #282828; padding: 4px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.9rem; }
         .btn-eliminar { background: transparent; border: none; cursor: pointer; font-size: 1rem; color: #dc3545; }
-
-        .incidencias-menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; max-width: 400px; margin: 0 auto; }
-        .btn-incidencia-menu { background: #1e1e1e; border: 1px solid #007bff; color: #007bff; padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; text-align: center; }
-        .btn-incidencia-menu:hover { background: #007bff; color: #fff; }
     </style>
 </head>
 <body>
@@ -127,17 +133,15 @@
                 <h3>Gestión de Incidencias</h3>
             </button>
         </div>
-
         <!-- ========================================== -->
-        <!-- BOTÓN 1: CONTROL DE ACCESOS (4 OPCIONES)   -->
+        <!-- BOTÓN 1: CONTROL DE ACCESOS                -->
         <!-- ========================================== -->
         <div id="modal-control-accesos" class="modal-overlay">
-            <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-content">
                 <button class="close-modal-x close-modal" type="button">✖</button>
                 <h3>Control de Accesos y Permisos</h3>
 
-                <!-- Pestañas (Tabs) de las 4 opciones -->
-                <div style="display: flex; border-bottom: 2px solid #444; margin-bottom: 20px; gap: 10px; overflow-x: auto;">
+                <div style="display: flex; justify-content: center; border-bottom: 2px solid #444; margin-bottom: 25px; gap: 20px; overflow-x: auto;">
                     <button type="button" class="tab-accesos-btn active" onclick="cambiarPestanaAccesos(event, 'tab-acc-rrhh')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #007bff; border-bottom: 3px solid #007bff; cursor: pointer;">RRHH</button>
                     <button type="button" class="tab-accesos-btn" onclick="cambiarPestanaAccesos(event, 'tab-acc-reclutamiento')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #aaa; cursor: pointer;">Reclutamiento</button>
                     <button type="button" class="tab-accesos-btn" onclick="cambiarPestanaAccesos(event, 'tab-acc-asistencias')" style="padding: 10px 15px; background: none; border: none; font-weight: bold; color: #aaa; cursor: pointer;">Control de Asistencias</button>
@@ -146,213 +150,396 @@
 
                 <!-- 1. RRHH -->
                 <div id="tab-acc-rrhh" class="tab-accesos-content" style="display: block;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="margin: 0; color: #ddd;">Usuarios de RRHH</h4>
-                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-rrhh', this)">✐ Editar</button>
+                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-rrhh', this)">✐ Editar datos</button>
                     </div>
                     <div class="table-responsive">
                         <table class="asistencia-status-table" id="tabla-rrhh">
-                            <thead><tr><th>Usuario</th><th>Contraseña</th><th style="text-align: center;">Acción</th></tr></thead>
+                            <thead><tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th style="text-align: center; display:none;" class="th-accion"></th></tr></thead>
                             <tbody>
                                 <tr>
+                                    <td><input type="text" class="form-control-table" value="Ana Fernanda" disabled></td>
                                     <td><input type="text" class="form-control-table" value="admin_rrhh" disabled></td>
                                     <td><div class="password-box"><input type="password" class="form-control-table password-input" value="rrhh2026*" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
-                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                    <td style="text-align: center; display:none;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaGenerica('tabla-rrhh')">+ Agregar</button></div>
-                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-rrhh')">Guardar datos</button></div>
+                    <div style="margin-top: 15px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaRRHH()">+ Agregar</button></div>
+                    <div style="margin-top: 30px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-rrhh')">Guardar cambios</button></div>
                 </div>
 
                 <!-- 2. Reclutamiento -->
                 <div id="tab-acc-reclutamiento" class="tab-accesos-content" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="margin: 0; color: #ddd;">Usuarios de Reclutamiento</h4>
-                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-reclutamiento', this)">✐ Editar</button>
+                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-reclutamiento', this)">✐ Editar datos</button>
                     </div>
                     <div class="table-responsive">
                         <table class="asistencia-status-table" id="tabla-reclutamiento">
-                            <thead><tr><th>Usuario</th><th>Contraseña</th><th style="text-align: center;">Acción</th></tr></thead>
+                            <thead><tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th style="text-align: center; display:none;" class="th-accion"></th></tr></thead>
                             <tbody>
                                 <tr>
+                                    <td><input type="text" class="form-control-table" value="Carlos Reclu" disabled></td>
                                     <td><input type="text" class="form-control-table" value="recruiter_1" disabled></td>
                                     <td><div class="password-box"><input type="password" class="form-control-table password-input" value="rec123" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
-                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                    <td style="text-align: center; display:none;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaGenerica('tabla-reclutamiento')">+ Agregar</button></div>
-                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-reclutamiento')">Guardar datos</button></div>
+                    <div style="margin-top: 15px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaReclutamiento()">+ Agregar</button></div>
+                    <div style="margin-top: 30px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-reclutamiento')">Guardar cambios</button></div>
                 </div>
 
                 <!-- 3. Control de Asistencias -->
                 <div id="tab-acc-asistencias" class="tab-accesos-content" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4 style="margin: 0; color: #ddd;">Control de Asistencias - Departamentos</h4>
-                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-asistencias-deptos', this)">✐ Editar</button>
+                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-asistencias-deptos', this)">✐ Editar datos</button>
                     </div>
                     <div class="table-responsive">
                         <table class="asistencia-status-table" id="tabla-asistencias-deptos">
                             <thead>
                                 <tr>
                                     <th>N° de Empleado</th>
+                                    <th>Nombre</th>
                                     <th>Usuario</th>
                                     <th>Departamento</th>
                                     <th>Contraseña</th>
+                                    <th style="text-align: center; display:none;" class="th-accion"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control-table input-num" value="1001" oninput="completarDatosAsistencia(this)" disabled></td>
+                                    <td><input type="text" class="form-control-table input-nom" value="Juan Pérez" oninput="completarDatosAsistencia(this)" disabled></td>
+                                    <td><input type="text" class="form-control-table" value="capturista_corte" disabled></td>
+                                    <td>
+                                        <select class="form-control-table select-depto" disabled>
+                                            <option value="Almacen">Almacén</option>
+                                            <option value="EPS">EPS</option>
+                                            <option value="Ensamble">Ensamble</option>
+                                            <option value="Calidad">Calidad</option>
+                                            <option value="Compras">Compras</option>
+                                            <option value="Embarques">Embarques</option>
+                                            <option value="Corte" selected>Corte</option>
+                                        </select>
+                                    </td>
+                                    <td><div class="password-box"><input type="password" class="form-control-table password-input" value="A1b2c*" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                                    <td style="text-align: center; display:none;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaAsistenciaDeptos()">+ Agregar</button></div>
+                    <div style="margin-top: 30px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosAsistenciaDeptos()">Guardar cambios</button></div>
+                </div>
+
+                <!-- 4. Notificaciones -->
+                <div id="tab-acc-notificaciones" class="tab-accesos-content" style="display: none;">
+                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                        <button type="button" class="btn-texto" onclick="habilitarEdicionSeccion('tabla-notif-whatsapp', this)">✐ Editar datos</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table" id="tabla-notif-whatsapp">
+                            <thead><tr><th>Usuario</th><th>Número</th><th style="text-align: center; display:none;" class="th-accion"></th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control-table" value="Supervisor General" disabled></td>
+                                    <td><input type="text" class="form-control-table" value="8119876543" disabled></td>
+                                    <td style="text-align: center; display:none;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaNotificaciones()">+ Agregar</button></div>
+                    <div style="margin-top: 30px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-notif-whatsapp')">Guardar cambios</button></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- BOTÓN 2: GESTIÓN DE INCIDENCIAS            -->
+        <!-- ========================================== -->
+        <div id="modal-gestion-incidencias" class="modal-overlay">
+            <div class="modal-content">
+                <button class="close-modal-x close-modal" type="button">✖</button>
+                <h3>Gestión de Incidencias</h3>
+
+                <!-- MENÚ DESPLEGABLE PRINCIPAL PARA SELECCIONAR LA OPCIÓN -->
+                <div class="form-group" style="max-width: 450px; margin-bottom: 30px;">
+                    <select id="select-menu-incidencias" class="form-control" onchange="seleccionarOpcionIncidencia(this.value)" style="border-color: #007bff; font-weight: bold;">
+                        <option value="justificaciones">Justificaciones</option>
+                        <option value="suspensiones">Suspensiones</option>
+                        <option value="pase">Pase de Entrada / Salida</option>
+                        <option value="reporte">Reporte de Indiciplina</option>
+                        <option value="carta">Carta Compromiso</option>
+                    </select>
+                </div>
+
+                <!-- CONTENEDORES DE CADA OPCIÓN DEL MENÚ -->
+
+                <!-- 1. JUSTIFICACIONES -->
+                <div id="seccion-justificaciones" class="seccion-incidencia-content" style="display: block;">
+
+                    <div class="table-responsive">
+                        <table class="asistencia-status-table">
+                            <thead>
+                                <tr>
+                                    <th>N° Empleado</th>
+                                    <th>Nombre</th>
+                                    <th>Fecha de Falta</th>
                                     <th style="text-align: center;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="text" class="form-control-table" value="1001" disabled></td>
-                                    <td><input type="text" class="form-control-table" value="capturista_corte" disabled></td>
-                                    <td><input type="text" class="form-control-table" value="Corte" disabled></td>
-                                    <td><div class="password-box"><input type="password" class="form-control-table password-input" value="A1b2c*" disabled><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
-                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()" style="display:none;">✖</button></td>
+                                    <td>1001</td>
+                                    <td>Juan Pérez</td>
+                                    <td>2026-08-25</td>
+                                    <td style="text-align: center;">
+                                        <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="abrirModalJustificar('1001', 'Juan Pérez')">Falta</button>
+                                    </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="margin-top: 10px; text-align: center;"><button type="button" class="btn-texto" onclick="agregarFilaAsistenciaDeptos()">+ Agregar</button></div>
-                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="guardarCambiosSeccion('tabla-asistencias-deptos')">Guardar datos</button></div>
-                </div>
-
-                <!-- 4. Notificaciones -->
-                <div id="tab-acc-notificaciones" class="tab-accesos-content" style="display: none;">
-                    <h4 style="margin-top: 0; color: #ddd;">Destinatarios de Notificaciones</h4>
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="notif-nombre" class="form-control" placeholder="Nombre">
-                        <input type="text" id="notif-whatsapp" class="form-control" placeholder="Número de WhatsApp">
-                        <button type="button" class="btn btn-success" onclick="agregarDestinatarioWhatsApp()">Agregar</button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="asistencia-status-table" id="tabla-notif-whatsapp">
-                            <thead><tr><th>Nombre</th><th>WhatsApp</th><th style="text-align: center;">Acción</th></tr></thead>
-                            <tbody>
                                 <tr>
-                                    <td>Supervisor General</td>
-                                    <td>8119876543</td>
-                                    <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                                    <td>1002</td>
+                                    <td>María López</td>
+                                    <td>2026-08-26</td>
+                                    <td style="text-align: center;">
+                                        <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="abrirModalJustificar('1002', 'María López')">Falta</button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style="margin-top: 20px; text-align: right;"><button type="button" class="btn btn-success" onclick="alert('Notificaciones guardadas correctamente.')">Guardar datos</button></div>
                 </div>
 
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- BOTÓN 2: GESTIÓN DE INCIDENCIAS (5 OPCIONES)-->
-        <!-- ========================================== -->
-        <div id="modal-gestion-incidencias" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px; text-align: center;">
-                <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Gestión de Incidencias</h3>
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">Seleccione el tipo de incidencia que desea resolver:</p>
-                
-                <div class="incidencias-menu-grid">
-                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-top')">Justificaciones</button>
-                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-fuente')">Suspensiones</button>
-                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-pase-salida')">Pase de salida</button>
-                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-incapacidades')">Incapacidades</button>
-                    <button type="button" class="btn-incidencia-menu" onclick="abrirSubVentana('modal-vacaciones')">Vacaciones</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- VENTANAS EXCLUSIVAS PARA CADA INCIDENCIA    -->
-        <!-- ========================================== -->
-
-        <!-- 1. Justificaciones -->
-        <div id="modal-top" class="modal-overlay">
-            <div class="modal-content" style="width: 700px; max-width: 90%;">
-                <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Faltas Justificables</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-top')">Volver al Menú</button>
-                </div>
-                <div style="max-height: 250px; overflow-y: auto; margin-bottom: 20px;">
-                    <table id="tabla-faltas" style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #444;">
-                                <th style="padding: 10px;">N° de Empleado</th>
-                                <th style="padding: 10px;">Nombre</th>
-                                <th style="padding: 10px;">Fecha</th>
-                                <th style="padding: 10px;">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-faltas"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Suspensiones -->
-        <div id="modal-fuente" class="modal-overlay">
-            <div class="modal-content" style="max-width: 700px;">
-                <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Gestión de suspensiones</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-fuente')">Volver al Menú</button>
-                </div>
-                <form id="form-suspension">
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        <div style="flex: 1;"><label><strong>N° Empleado:</strong></label><input type="text" id="sus-filtro-numero" class="form-control" style="margin-top: 5px;"></div>
-                        <div style="flex: 3;"><label><strong>Nombre:</strong></label><input type="text" id="sus-filtro-nombre" class="form-control" style="margin-top: 5px;" readonly></div>
+                <!-- 2. SUSPENSIONES -->
+                <div id="seccion-suspensiones" class="seccion-incidencia-content" style="display: none;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
+                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('sus', 'registrar')">Registrar</button>
+                        <a href="https://drive.google.com/file/d/1IMw93o8y56e423HZoKVJNnE5z5b26e5A/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
                     </div>
-                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Guardar Suspensión</button></div>
-                </form>
+
+                    <div id="sus-registrar" class="sub-seccion-interna" style="display: none;">
+                        <form onsubmit="event.preventDefault(); alert('¡Suspensión guardada con éxito!');">
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>N° de Empleado:</label>
+                                    <input type="text" id="sus-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('sus')">
+                                </div>
+                                <div class="form-group flex-2" style="flex: 2;">
+                                    <label>Nombre Completo:</label>
+                                    <input type="text" id="sus-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('sus')">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>Área:</label>
+                                    <input type="text" id="sus-area" class="form-control" readonly>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label>Puesto:</label>
+                                    <input type="text" id="sus-puesto" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Adjuntar Aviso:</label>
+                                <div class="file-upload-wrapper">
+                                    <label class="file-upload-btn" for="file-sus">
+                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                                    </label>
+                                    <input type="file" id="file-sus" onchange="mostrarNombreArchivo(this)" required>
+                                    <span class="file-name-display" id="file-sus-name">Ningún archivo seleccionado</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <button type="submit" class="btn btn-success">Guardar Suspensión</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 3. PASE DE ENTRADA / SALIDA -->
+                <div id="seccion-pase" class="seccion-incidencia-content" style="display: none;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
+                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('pase', 'registrar')">Registrar</button>
+                        <a href="https://drive.google.com/file/d/1MjIXgFLUJAO25hNfZb0IzTFwIW4YLvU5/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
+                    </div>
+
+                    <div id="pase-registrar" class="sub-seccion-interna" style="display: none;">
+                        <form onsubmit="event.preventDefault(); alert('¡Pase de entrada/salida registrado con éxito!');">
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>N° de Empleado:</label>
+                                    <input type="text" id="pase-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('pase')">
+                                </div>
+                                <div class="form-group flex-2" style="flex: 2;">
+                                    <label>Nombre Completo:</label>
+                                    <input type="text" id="pase-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('pase')">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>Área:</label>
+                                    <input type="text" id="pase-area" class="form-control" readonly>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label>Puesto:</label>
+                                    <input type="text" id="pase-puesto" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>Tipo de Pase:</label>
+                                    <select id="pase-tipo" class="form-control" onchange="cambiarTipoPase()">
+                                        <option value="entrada">Entrada</option>
+                                        <option value="salida">Salida</option>
+                                    </select>
+                                </div>
+                                <div class="form-group flex-1" id="grupo-hora">
+                                    <label id="lbl-hora">Hora de Entrada:</label>
+                                    <input type="time" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Adjuntar Permiso:</label>
+                                <div class="file-upload-wrapper">
+                                    <label class="file-upload-btn" for="file-pase">
+                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                                    </label>
+                                    <input type="file" id="file-pase" onchange="mostrarNombreArchivo(this)" required>
+                                    <span class="file-name-display" id="file-pase-name">Ningún archivo seleccionado</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <button type="submit" class="btn btn-success">Guardar Pase</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 4. REPORTE DE INDICIPLINA -->
+                <div id="seccion-reporte" class="seccion-incidencia-content" style="display: none;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
+                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('rep', 'registrar')">Registrar</button>
+                        <a href="https://drive.google.com/file/d/1gWuv28J-7WjbfsaOdUMSIb0Mbb6KHRqO/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
+                    </div>
+
+                    <div id="rep-registrar" class="sub-seccion-interna" style="display: none;">
+                        <form onsubmit="event.preventDefault(); alert('¡Reporte de indisciplina guardado con éxito!');">
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>N° de Empleado:</label>
+                                    <input type="text" id="rep-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('rep')">
+                                </div>
+                                <div class="form-group flex-2" style="flex: 2;">
+                                    <label>Nombre Completo:</label>
+                                    <input type="text" id="rep-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('rep')">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="form-group flex-1">
+                                    <label>Área:</label>
+                                    <input type="text" id="rep-area" class="form-control" readonly>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label>Puesto:</label>
+                                    <input type="text" id="rep-puesto" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Adjuntar Reporte:</label>
+                                <div class="file-upload-wrapper">
+                                    <label class="file-upload-btn" for="file-rep">
+                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                                    </label>
+                                    <input type="file" id="file-rep" onchange="mostrarNombreArchivo(this)" required>
+                                    <span class="file-name-display" id="file-rep-name">Ningún archivo seleccionado</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <button type="submit" class="btn btn-success">Guardar Reporte</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 5. CARTA COMPROMISO -->
+                <div id="seccion-carta" class="seccion-incidencia-content" style="display: none;">
+                    <form onsubmit="event.preventDefault(); alert('Generando carta compromiso...');">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group flex-1">
+                                <label>N° de Empleado:</label>
+                                <input type="text" id="carta-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('carta')">
+                            </div>
+                            <div class="form-group flex-2" style="flex: 2;">
+                                <label>Nombre Completo:</label>
+                                <input type="text" id="carta-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('carta')">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group flex-1">
+                                <label>Área:</label>
+                                <input type="text" id="carta-area" class="form-control" readonly>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label>Puesto:</label>
+                                <input type="text" id="carta-puesto" class="form-control" readonly>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 25px;">
+                            <a href="automatizacion_carta.html" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Generar Carta (Abrir en nueva pestaña)</a>
+                        </div>
+                    </form>
+                </div>
+
             </div>
         </div>
 
-        <!-- 3. Pase de salida -->
-        <div id="modal-pase-salida" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px;">
-                <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Resolver Pase de Salida</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-pase-salida')">Volver al Menú</button>
-                </div>
-                <form onsubmit="event.preventDefault(); alert('Pase de salida registrado.'); regresarAlMenuIncidencias('modal-pase-salida');">
-                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
-                    <div class="form-group"><label>Motivo del Pase:</label><textarea class="form-control" rows="3" required></textarea></div>
-                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Autorizar Pase</button></div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 4. Incapacidades -->
-        <div id="modal-incapacidades" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px;">
-                <h3>Resolver Incapacidades</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-incapacidades')">Volver al Menú</button>
-                </div>
-                <form onsubmit="event.preventDefault(); alert('Incapacidad registrada.'); regresarAlMenuIncidencias('modal-incapacidades');">
-                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
-                    <div class="form-group"><label>Folio IMSS:</label><input type="text" class="form-control" required></div>
-                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Guardar Incapacidad</button></div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 5. Vacaciones -->
-        <div id="modal-vacaciones" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px;">
-                <h3>Resolver Vacaciones</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="regresarAlMenuIncidencias('modal-vacaciones')">Volver al Menú</button>
-                </div>
-                <form onsubmit="event.preventDefault(); alert('Vacaciones aprobadas.'); regresarAlMenuIncidencias('modal-vacaciones');">
-                    <div class="form-group"><label>N° de Empleado:</label><input type="text" class="form-control" required></div>
-                    <div class="form-group"><label>Fecha Inicio:</label><input type="date" class="form-control" required></div>
-                    <div style="text-align: right;"><button type="submit" class="btn btn-success">Aprobar Vacaciones</button></div>
+        <!-- MODAL AUXILIAR PARA JUSTIFICAR FALTA DESDE LA TABLA -->
+        <div id="modal-justificar-falta" class="modal-overlay">
+            <div class="modal-content" style="max-width: 550px;">
+                <button class="close-modal-x" type="button" onclick="cerrarModalJustificar()">✖</button>
+                <h3>Justificar Falta de Empleado</h3>
+                <form onsubmit="event.preventDefault(); alert('¡Falta justificada con éxito!'); cerrarModalJustificar();">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group flex-1">
+                            <label>N° de Empleado:</label>
+                            <input type="text" id="just-num" class="form-control" readonly>
+                        </div>
+                        <div class="form-group flex-2" style="flex: 2;">
+                            <label>Nombre Completo:</label>
+                            <input type="text" id="just-nombre" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group flex-1">
+                            <label>Área:</label>
+                            <input type="text" id="just-area" class="form-control" readonly>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>Puesto:</label>
+                            <input type="text" id="just-puesto" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo de la Justificación:</label>
+                        <textarea class="form-control" rows="3" placeholder="Escriba el motivo..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Subir Archivos (Evidencia):</label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-btn" for="file-just">
+                                <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                            </label>
+                            <input type="file" id="file-just" onchange="mostrarNombreArchivo(this)" required>
+                            <span class="file-name-display" id="file-just-name">Ningún archivo seleccionado</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success">Guardar Justificación</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -434,7 +621,12 @@
 
     <!-- SCRIPTS DE CONTROL -->
     <script>
-        // Manejo general de modales principales
+        const baseDatosEmpleados = {
+            "1001": { nombre: "Juan Pérez", area: "Corte", puesto: "Operador" },
+            "1002": { nombre: "María López", area: "Calidad", puesto: "Inspectora" },
+            "1003": { nombre: "Pedro Gómez", area: "Almacen", puesto: "Montacarguista" }
+        };
+
         document.querySelectorAll('.metric-card-asistencia, .metric-card-incidencias').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = document.getElementById(btn.getAttribute('data-modal'));
@@ -449,19 +641,8 @@
             });
         });
 
-        function abrirSubVentana(modalId) {
-            document.getElementById('modal-gestion-incidencias').style.display = 'none';
-            document.getElementById(modalId).style.display = 'flex';
-        }
-
-        function regresarAlMenuIncidencias(modalActualId) {
-            document.getElementById(modalActualId).style.display = 'none';
-            document.getElementById('modal-gestion-incidencias').style.display = 'flex';
-        }
-
-        // Pestañas de Control de Accesos
         function cambiarPestanaAccesos(evt, tabId) {
-            document.querySelectorAll('.tab-accesos-content').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('#modal-control-accesos .tab-accesos-content').forEach(c => c.style.display = 'none');
             document.querySelectorAll('.tab-accesos-btn').forEach(b => {
                 b.style.borderBottom = 'none';
                 b.style.color = '#aaa';
@@ -471,32 +652,147 @@
             evt.currentTarget.style.color = '#007bff';
         }
 
-        // CRUD genérico para RRHH, Reclutamiento y Asistencias
+        // Función del menú desplegable para Gestión de Incidencias
+        function seleccionarOpcionIncidencia(opcionValor) {
+            document.querySelectorAll('.seccion-incidencia-content').forEach(c => {
+                c.style.display = 'none';
+                // Ocultar también los sub-registros internos al cambiar de opción principal
+                c.querySelectorAll('.sub-seccion-interna').forEach(sub => sub.style.display = 'none');
+            });
+            const seccionSeleccionada = document.getElementById(`seccion-${opcionValor}`);
+            if (seccionSeleccionada) {
+                seccionSeleccionada.style.display = 'block';
+            }
+        }
+
+        function mostrarSeccionInterna(prefijo, seccion) {
+            const containerId = prefijo === 'sus' ? 'seccion-suspensiones' : prefijo === 'pase' ? 'seccion-pase' : 'seccion-reporte';
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.sub-seccion-interna').forEach(div => div.style.display = 'none');
+            const targetSub = document.getElementById(`${prefijo}-${seccion}`);
+            if (targetSub) {
+                targetSub.style.display = 'block';
+            }
+        }
+
+        function mostrarNombreArchivo(input) {
+            const span = document.getElementById(`${input.id}-name`);
+            if (input.files && input.files.length > 0) {
+                span.textContent = input.files[0].name;
+                span.style.color = '#28a745';
+            } else {
+                span.textContent = 'Ningún archivo seleccionado';
+                span.style.color = '#888';
+            }
+        }
+
+        function autocompletarPorNum(prefijo) {
+            const numVal = document.getElementById(`${prefijo}-num`).value.trim();
+            const inputNombre = document.getElementById(`${prefijo}-nombre`);
+            const inputArea = document.getElementById(`${prefijo}-area`);
+            const inputPuesto = document.getElementById(`${prefijo}-puesto`);
+
+            if (baseDatosEmpleados[numVal]) {
+                inputNombre.value = baseDatosEmpleados[numVal].nombre;
+                inputArea.value = baseDatosEmpleados[numVal].area;
+                inputPuesto.value = baseDatosEmpleados[numVal].puesto;
+            } else {
+                inputNombre.value = '';
+                inputArea.value = '';
+                inputPuesto.value = '';
+            }
+        }
+
+        function autocompletarPorNombre(prefijo) {
+            const nombreVal = document.getElementById(`${prefijo}-nombre`).value.trim().toLowerCase();
+            const inputNum = document.getElementById(`${prefijo}-num`);
+            const inputArea = document.getElementById(`${prefijo}-area`);
+            const inputPuesto = document.getElementById(`${prefijo}-puesto`);
+
+            let encontrado = false;
+            for (let [num, datos] of Object.entries(baseDatosEmpleados)) {
+                if (datos.nombre.toLowerCase() === nombreVal) {
+                    inputNum.value = num;
+                    inputArea.value = datos.area;
+                    inputPuesto.value = datos.puesto;
+                    encontrado = true;
+                    break;
+                }
+            }
+            if (!encontrado) {
+                inputNum.value = '';
+                inputArea.value = '';
+                inputPuesto.value = '';
+            }
+        }
+
+        function cambiarTipoPase() {
+            const tipo = document.getElementById('pase-tipo').value;
+            const lblHora = document.getElementById('lbl-hora');
+            if (tipo === 'entrada') {
+                lblHora.textContent = 'Hora de Entrada:';
+            } else {
+                lblHora.textContent = 'Hora de Salida:';
+            }
+        }
+
+        function abrirModalJustificar(num, nombre) {
+            document.getElementById('just-num').value = num;
+            document.getElementById('just-nombre').value = nombre;
+            if (baseDatosEmpleados[num]) {
+                document.getElementById('just-area').value = baseDatosEmpleados[num].area;
+                document.getElementById('just-puesto').value = baseDatosEmpleados[num].puesto;
+            }
+            document.getElementById('modal-justificar-falta').style.display = 'flex';
+        }
+
+        function cerrarModalJustificar() {
+            document.getElementById('modal-justificar-falta').style.display = 'none';
+        }
+
         function habilitarEdicionSeccion(tablaId, btn) {
             document.querySelectorAll(`#${tablaId} tbody tr`).forEach(fila => {
                 fila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
-                const el = fila.querySelector('.btn-eliminar');
-                if (el) el.style.display = 'inline-block';
             });
+            document.querySelectorAll(`#${tablaId} .th-accion`).forEach(th => th.style.display = 'table-cell');
+            document.querySelectorAll(`#${tablaId} .td-accion`).forEach(td => td.style.display = 'table-cell');
             btn.style.display = 'none';
         }
 
         function guardarCambiosSeccion(tablaId) {
             document.querySelectorAll(`#${tablaId} tbody tr`).forEach(fila => {
                 fila.querySelectorAll('input').forEach(i => i.setAttribute('disabled', 'true'));
-                const el = fila.querySelector('.btn-eliminar');
-                if (el) el.style.display = 'none';
             });
+            document.querySelectorAll(`#${tablaId} .th-accion`).forEach(th => th.style.display = 'none');
+            document.querySelectorAll(`#${tablaId} .td-accion`).forEach(td => td.style.display = 'none');
+            
+            const btnEditar = document.querySelector(`button[onclick*="${tablaId}"]`);
+            if(btnEditar) btnEditar.style.display = 'inline-block';
+            
             alert('¡Datos guardados correctamente!');
         }
 
-        function agregarFilaGenerica(tablaId) {
-            const tbody = document.querySelector(`#${tablaId} tbody`);
+        function agregarFilaRRHH() {
+            const tbody = document.querySelector('#tabla-rrhh tbody');
             const nuevaFila = document.createElement('tr');
             nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="Nombre" required></td>
                 <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
                 <td><div class="password-box"><input type="password" class="form-control-table password-input" placeholder="Contraseña" required><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
-                <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                <td style="text-align: center;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+            `;
+            nuevaFila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
+            tbody.appendChild(nuevaFila);
+        }
+
+        function agregarFilaReclutamiento() {
+            const tbody = document.querySelector('#tabla-reclutamiento tbody');
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="Nombre" required></td>
+                <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
+                <td><div class="password-box"><input type="password" class="form-control-table password-input" placeholder="Contraseña" required><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
+                <td style="text-align: center;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
             `;
             nuevaFila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
             tbody.appendChild(nuevaFila);
@@ -506,11 +802,82 @@
             const tbody = document.querySelector('#tabla-asistencias-deptos tbody');
             const nuevaFila = document.createElement('tr');
             nuevaFila.innerHTML = `
-                <td><input type="text" class="form-control-table" placeholder="N° Empleado" required></td>
+                <td><input type="text" class="form-control-table input-num" placeholder="N° Empleado" oninput="completarDatosAsistencia(this)" required></td>
+                <td><input type="text" class="form-control-table input-nom" placeholder="Nombre" oninput="completarDatosAsistencia(this)" required></td>
                 <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
-                <td><input type="text" class="form-control-table" placeholder="Departamento" required></td>
+                <td>
+                    <select class="form-control-table select-depto" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Almacen">Almacén</option>
+                        <option value="EPS">EPS</option>
+                        <option value="Ensamble">Ensamble</option>
+                        <option value="Calidad">Calidad</option>
+                        <option value="Compras">Compras</option>
+                        <option value="Embarques">Embarques</option>
+                        <option value="Corte">Corte</option>
+                    </select>
+                </td>
                 <td><div class="password-box"><input type="password" class="form-control-table password-input" placeholder="Contraseña" required><i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i></div></td>
-                <td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+                <td style="text-align: center;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
+            `;
+            nuevaFila.querySelectorAll('input, select').forEach(i => i.removeAttribute('disabled'));
+            tbody.appendChild(nuevaFila);
+        }
+
+        function completarDatosAsistencia(inputElement) {
+            const fila = inputElement.closest('tr');
+            const inputNum = fila.querySelector('.input-num');
+            const inputNom = fila.querySelector('.input-nom');
+
+            const empleadosDBTabla = { "1001": "Juan Pérez", "1002": "María López", "1003": "Pedro Gómez" };
+
+            if (inputElement.classList.contains('input-num')) {
+                const valNum = inputNum.value.trim();
+                if (empleadosDBTabla[valNum]) {
+                    inputNom.value = empleadosDBTabla[valNum];
+                }
+            } else if (inputElement.classList.contains('input-nom')) {
+                const valNom = inputNom.value.trim().toLowerCase();
+                for (let [num, nombre] of Object.entries(empleadosDBTabla)) {
+                    if (nombre.toLowerCase() === valNom) {
+                        inputNum.value = num;
+                        break;
+                    }
+                }
+            }
+        }
+
+        function guardarCambiosAsistenciaDeptos() {
+            const selects = document.querySelectorAll('#tabla-asistencias-deptos .select-depto');
+            const deptosSeleccionados = [];
+            for (let sel of selects) {
+                const val = sel.value;
+                if(val && deptosSeleccionados.includes(val)) {
+                    alert(`El departamento "${val}" está repetido. Cada usuario debe tener un departamento único.`);
+                    return;
+                }
+                if(val) deptosSeleccionados.push(val);
+            }
+
+            document.querySelectorAll('#tabla-asistencias-deptos tbody tr').forEach(fila => {
+                fila.querySelectorAll('input, select').forEach(i => i.setAttribute('disabled', 'true'));
+            });
+            document.querySelectorAll('#tabla-asistencias-deptos .th-accion').forEach(th => th.style.display = 'none');
+            document.querySelectorAll('#tabla-asistencias-deptos .td-accion').forEach(td => td.style.display = 'none');
+            
+            const btnEditar = document.querySelector(`button[onclick*="tabla-asistencias-deptos"]`);
+            if(btnEditar) btnEditar.style.display = 'inline-block';
+
+            alert('¡Datos de asistencias guardados correctamente!');
+        }
+
+        function agregarFilaNotificaciones() {
+            const tbody = document.querySelector('#tabla-notif-whatsapp tbody');
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `
+                <td><input type="text" class="form-control-table" placeholder="Usuario" required></td>
+                <td><input type="text" class="form-control-table" placeholder="Número" required></td>
+                <td style="text-align: center;" class="td-accion"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>
             `;
             nuevaFila.querySelectorAll('input').forEach(i => i.removeAttribute('disabled'));
             tbody.appendChild(nuevaFila);
@@ -529,23 +896,6 @@
             }
         }
 
-        // Notificaciones WhatsApp
-        function agregarDestinatarioWhatsApp() {
-            const nombre = document.getElementById('notif-nombre').value.trim();
-            const wats = document.getElementById('notif-whatsapp').value.trim();
-            if (!nombre || !wats) {
-                alert('Ingrese nombre y número de WhatsApp.');
-                return;
-            }
-            const tbody = document.querySelector('#tabla-notif-whatsapp tbody');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${nombre}</td><td>${wats}</td><td style="text-align: center;"><button type="button" class="btn-eliminar" onclick="this.closest('tr').remove()">✖</button></td>`;
-            tbody.appendChild(tr);
-            document.getElementById('notif-nombre').value = '';
-            document.getElementById('notif-whatsapp').value = '';
-        }
-
-        // Envío Automático de Correos
         function agregarCorreoAuto() {
             const inputCorreo = document.getElementById('nuevo-correo-auto');
             const listaCorreos = document.getElementById('lista-correos-auto');
@@ -567,7 +917,6 @@
             inputCorreo.value = '';
         }
 
-        // Configuración de Reportes Manuales
         window.onload = function() {
             cambiarFiltrosReporte();
         };
