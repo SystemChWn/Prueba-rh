@@ -10,7 +10,7 @@ window.LOGIN_CONFIG = {
     redirect: 'InicioReclu.html'
   },
   captura: {
-    username: 'admin',
+    username: 'Asistencia',
     password: '000',
     redirect: 'captura.html'
   }
