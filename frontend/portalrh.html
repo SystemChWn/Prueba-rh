@@ -179,8 +179,8 @@
                 return;
             }
 
-            if (u === capturaConfig.username && p === capturaConfig.password) {
-                window.location.href = capturaConfig.redirect || 'captura.html';
+            if ((u === rhConfig.username || u.toUpperCase() === 'ADMIN') && p === rhConfig.password) {
+                window.location.href = rhConfig.redirect || 'iniciorh.html';
                 return;
             }
 
