@@ -97,7 +97,6 @@
         /* Estilos específicos para el nuevo panel de Control de Accesos */
         .permisos-recuadro {
             background: #1e1e1e;
-            border: 1px solid #333;
             border-radius: 8px;
             padding: 20px;
             margin-top: 20px;
@@ -105,18 +104,15 @@
         }
         .permisos-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 10px;
             margin-top: 10px;
         }
         .permiso-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: #141414;
             padding: 10px 15px;
             border-radius: 6px;
-            border: 1px solid #282828;
             cursor: pointer;
         }
         .permiso-item input[type="checkbox"] {
@@ -135,7 +131,7 @@
         .notif-campos-extra {
             display: none;
             background: #141414;
-            border: 1px dashed #007bff;
+            border: 1px solid #007bff;
             border-radius: 8px;
             padding: 15px;
             margin-top: 15px;
@@ -216,7 +212,6 @@
         <div id="modal-control-accesos" class="modal-overlay">
             <div class="modal-content">
                 <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Control de Accesos y Permisos</h3>
 
                 <!-- PESTAÑAS DE NAVEGACIÓN -->
                 <div class="access-tabs" style="display: flex; justify-content: center;">
@@ -267,7 +262,6 @@
 
                             <!-- Opciones adicionales si se marca Notificaciones (Nombre y Teléfono debajo del usuario y contraseña ya puestos) -->
                             <div id="seccion-campos-notificacion" class="notif-campos-extra">
-                                <label style="color: #007bff; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px;">Campos Adicionales para Notificaciones</label>
                                 <div style="display: flex; gap: 15px;">
                                     <div class="form-group flex-1" style="margin-bottom: 0;">
                                         <label for="notif-nombre">Nombre:</label>
