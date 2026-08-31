@@ -6,37 +6,10 @@
     <title>Control de Asistencias</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            margin: 0; 
-            font-family: Arial, sans-serif; 
-            background-color: #ffffff; 
-            color: #111827; 
-        }
-
-        main {
-            max-width: 1000px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
-            position: relative;
-            z-index: 10;
-        }
-
+        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
         .branding { display: flex; align-items: center; gap: 10px; }
-        .logo { 
-            width: 100px;
-            height: 40px;
-            border-radius: 5px;
-            object-fit: contain;
-        }
+        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
 
         /* Botón Cerrar Sesión */
         .btn-logout {
@@ -45,21 +18,29 @@
             font-weight: bold;
             font-size: 0.9rem;
             border: 1px solid #ff4b4b;
-            padding: 6px 14px;
+            padding: 5px 12px;
             border-radius: 5px;
             transition: 0.3s;
         }
         .btn-logout:hover { background: #ff4b4b; color: white; }
 
-        /* Tarjeta de Bienvenida y Datos Generales */
+        /* Estilo general del main con ancho limitado y centrado */
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        /* Tarjeta de Bienvenida */
         .dashboard-card {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: #1e1e1e;
+            border: 1px solid #333;
             border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            margin-bottom: 20px;
+            padding: 30px;
             text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
         }
         
         .card-top {
@@ -67,7 +48,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #333;
             padding-bottom: 12px;
         }
 
@@ -87,15 +68,15 @@
             margin-bottom: 25px;
         }
 
-        /* Sección Desplegable (Acordeón) con estilo de solo borde */
+        /* Sección Desplegable (Acordeón) con estilo oscuro */
         .accordion-container {
             flex: 1;
         }
 
         .accordion-btn {
-            background-color: transparent; 
-            color: #111827; 
-            border: 1px solid #d1d5db;
+            background-color: #1e1e1e; 
+            color: #ffffff; 
+            border: 1px solid #444;
             padding: 12px 20px; 
             border-radius: 6px;
             text-align: left; 
@@ -109,15 +90,15 @@
         }
 
         .accordion-btn:hover {
-            background-color: #f3f4f6;
+            background-color: #2a2a2a;
         }
 
         .accordion-content {
             display: none; 
             margin-top: 10px;
             padding: 15px; 
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: #1e1e1e;
+            border: 1px solid #333;
             border-radius: 8px;
         }
 
@@ -125,7 +106,7 @@
         .btn-enviar {
             width: 300px;
             text-decoration: none;
-            background-color: #ffffff;
+            background-color: transparent;
             color: #28df50;
             font-weight: bold;
             font-size: 0.9rem;
@@ -134,34 +115,34 @@
             border-radius: 5px;
             text-transform: uppercase;
             transition: 0.3s;
+            cursor: pointer;
         }
 
-        .btn-enviar:hover
-           { background: #28df50; color: white;
+        .btn-enviar:hover { 
+            background: #28df50; 
+            color: white;
         }
 
-        /* Tabla de Estatus (Información) */
+        /* Tabla de Estatus (Información) adaptada al modo oscuro */
         .table-estatus {
             width: 100%; 
             border-collapse: collapse; 
-            border-color: #007bff;
-
             font-size: 0.9rem; 
             text-align: left;
         }
 
         .table-estatus th, .table-estatus td {
             padding: 8px 12px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #333;
         }
 
-        /* Tabla de Asistencia */
+        /* Tabla de Asistencia adaptada al modo oscuro */
         .attendance-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
+            background: #1e1e1e;
+            border: 1px solid #333;
             border-radius: 10px; 
             padding: 20px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             overflow-x: auto;
         }
 
@@ -174,7 +155,7 @@
 
         .attendance-table th, .attendance-table td {
             padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #333;
         }
 
         /* Selectores y Inputs de la Tabla */
@@ -182,7 +163,7 @@
             padding: 8px; 
             border-radius: 5px; 
             font-weight: bold; 
-            border: 1px solid #ccc; 
+            border: 1px solid #444; 
             width: 100%;
         }
 
@@ -191,7 +172,7 @@
             padding: 8px; 
             border-radius: 4px; 
             box-sizing: border-box;
-            border: 1px solid #ccc;
+            border: 1px solid #444;
         }
     </style>
 </head>
@@ -202,7 +183,7 @@
             <h1 style="font-size: 1rem; margin: 0; font-weight: 700;">CONTROL DE ASISTENCIAS</h1>
         </div>
         <div class="header-right">
-            <a href="lis asist.html" class="btn-logout">Cerrar Sesión</a>
+            <a href="portalrh.html" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
 
@@ -211,7 +192,7 @@
         <div class="dashboard-card">
             <div class="card-top">
                 <span style="font-weight: bold; font-size: 1.1rem;">BUEN DÍA, BIENVENIDO</span>
-                <span id="fecha-hoy" style="color: #000000; font-size: 0.9rem;">Viernes, 21 de Agosto de 2026</span>
+                <span id="fecha-hoy" style="color: #ffffff; font-size: 0.9rem;">Viernes, 21 de Agosto de 2026</span>
             </div>
             <div class="card-grid">
                 <div><strong>Área:</strong> <span>Producción</span></div>
@@ -252,7 +233,7 @@
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1rem;">Lista de Registro de Asistencia</h3>
             <table class="attendance-table">
                 <thead>
-                    <tr style="border-bottom: 2px solid #d1d5db;">
+                    <tr style="border-bottom: 2px solid #444;">
                         <th>N° Empleado</th>
                         <th>Apellido</th>
                         <th>Nombre</th>
@@ -274,7 +255,7 @@
                             </select>
                         </td>
                         <td>
-                            <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #f3f4f6; color: #9ca3af;">
+                            <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #2a2a2a; color: #9ca3af;">
                         </td>
                     </tr>
                 </tbody>
@@ -327,7 +308,7 @@
                 } else {
                     inputComentario.disabled = true;
                     inputComentario.value = '';
-                    inputComentario.style.background = '#f3f4f6';
+                    inputComentario.style.background = '#2a2a2a';
                     inputComentario.style.color = '#9ca3af';
                     inputComentario.placeholder = 'Solo obligatorio en retardo...';
                 }

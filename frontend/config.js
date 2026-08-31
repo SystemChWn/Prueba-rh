@@ -8,5 +8,10 @@ window.LOGIN_CONFIG = {
     username: 'Reclutamiento',
     password: '321',
     redirect: 'InicioReclu.html'
+  },
+  captura: {
+    username: 'admin',
+    password: '000',
+    redirect: 'captura.html'
   }
 };

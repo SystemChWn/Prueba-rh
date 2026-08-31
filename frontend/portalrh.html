@@ -167,6 +167,7 @@
             const loginConfig = window.LOGIN_CONFIG || {};
             const rhConfig = loginConfig.rh || {};
             const reclutamientoConfig = loginConfig.reclutamiento || {};
+            const capturaConfig = loginConfig.captura || {};
 
             if ((u === rhConfig.username || u.toUpperCase() === 'ADMIN') && p === rhConfig.password) {
                 window.location.href = rhConfig.redirect || 'iniciorh.html';
@@ -175,6 +176,11 @@
 
             if (u === reclutamientoConfig.username && p === reclutamientoConfig.password) {
                 window.location.href = reclutamientoConfig.redirect || 'InicioReclu.html';
+                return;
+            }
+
+            if (u === capturaConfig.username && p === capturaConfig.password) {
+                window.location.href = capturaConfig.redirect || 'captura.html';
                 return;
             }
 
