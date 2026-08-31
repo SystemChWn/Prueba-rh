@@ -169,7 +169,7 @@
             const reclutamientoConfig = loginConfig.reclutamiento || {};
             const capturaConfig = loginConfig.captura || {};
 
-            if ((u === rhConfig.username || u.toUpperCase() === 'ADMIN') && p === rhConfig.password) {
+            if (u === rhConfig.username && p === rhConfig.password) {
                 window.location.href = rhConfig.redirect || 'iniciorh.html';
                 return;
             }
