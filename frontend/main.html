@@ -11,7 +11,7 @@
             font-family: Arial, sans-serif; 
             background-color: #121212; 
             color: #fff; 
-            height: 100vh;
+            height: 100px;
             overflow: hidden;
         }
         
@@ -24,7 +24,7 @@
             border-bottom: 2px solid #444;
             height: 60px;
             box-sizing: border-box;
-        }
+        }   
 
         .branding { display: flex; align-items: center; gap: 10px; }
         .logo { 
@@ -46,7 +46,7 @@
             padding: 20px;
             box-sizing: border-box;
             display: flex;
-            gap: 20px;
+            gap: 30px;
             width: 100%;
         }
 
@@ -60,7 +60,7 @@
         }
 
         .dashboard-card {
-            background: rgba(1, 1, 1, 0.75);
+            background: rgba(1, 1, 1, 0.65);
             backdrop-filter: blur(8px);
             padding: 20px;
             border-radius: 12px;
@@ -73,11 +73,11 @@
         }
 
         .card-ingresos {
-            flex: 1.2;
+            flex: 1;
         }
 
         .card-avisos {
-            flex: 0.8;
+            flex: 1;
         }
 
         .card-cumpleanos {
@@ -129,13 +129,16 @@
         <!-- Columna Izquierda -->
         <div class="column">
             <div class="dashboard-card card-ingresos">
-                <h3>
-                    <span>INGRESOS DE LA SEMANA</span>
-                    <span style="color: #007bff; font-weight: bold;">¡Bienvenidos!</span>
+                <h3 style="display: flex; flex-direction: column; gap: 4px; align-items: stretch; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span>INGRESOS DE LA SEMANA</span>
+                        <span style="color: #ffffff; font-weight: bold; font-size: 0.95rem;">¡BIENVENIDOS!</span>
+                    </div>
                     <span id="week-range" class="week-subtitle"></span>
                 </h3>
-                <div id="weekly-income-content" class="scrollable-content" style="display: flex; flex-direction: column; gap: 6px;">
-                    <!-- Nombres dinámicos -->
+                <div style="overflow: visible; flex: 1; display: flex; gap: 15px;">
+                    <div id="columna-1" style="flex: 1; display: flex; flex-direction: column; gap: 6px;"></div>
+                    <div id="columna-2" style="flex: 1; display: flex; flex-direction: column; gap: 6px;"></div>
                 </div>
             </div>
 
@@ -152,8 +155,7 @@
         <div class="column">
             <div class="dashboard-card card-cumpleanos">
                 <h3>
-                    Cumpleaños del Mes 
-                    <span id="birthday-month-subtitle" class="week-subtitle"></span>
+                    <span id="birthday-title">CUMPLEAÑEROS DE </span>
                 </h3>
                 <div id="birthdays-content" class="scrollable-content" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Cumpleaños del mes -->
@@ -175,7 +177,7 @@
             const mesLunes = mesesCortos[lunes.getMonth()];
             const mesViernes = mesesCortos[viernes.getMonth()];
 
-            return `(del ${lunes.getDate()} de ${mesLunes} al ${viernes.getDate()} de ${mesViernes})`;
+            return `${lunes.getDate()} ${mesLunes} - ${viernes.getDate()} ${mesViernes}`;
         }
 
         function obtenerMesActualMayusculas() {
@@ -184,21 +186,38 @@
             return mesesLargos[ahora.getMonth()];
         }
 
+        document.getElementById('birthday-title').textContent = `CUMPLEAÑEROS DE ${obtenerMesActualMayusculas()}`;
+
         document.getElementById('week-range').textContent = obtenerFechasSemanaCalendario();
-        document.getElementById('birthday-month-subtitle').textContent = obtenerMesActualMayusculas();
 
         function cargarIngresosSemana() {
-            const contenedor = document.getElementById('weekly-income-content');
+            const col1 = document.getElementById('columna-1');
+            const col2 = document.getElementById('columna-2');
+            
+            // Ejemplo con varios nombres (pueden ser 10, 12, etc.)
             const personasIngresadas = [
                 "Carlos Pérez", "María Gómez", "Juan López", 
-                "Ana Torres", "Luis Ramírez", "Sofía Martínez"
+                "Ana Torres", "Luis Ramírez", "Sofía Martínez",
+                "Ricardo Morales", "Elena Castillo", "Jorge Herrera",
+                "Patricia Rojas"
             ];
 
-            let html = "";
-            personasIngresadas.forEach(nombre => {
-                html += `<div style="font-size: 0.9rem; color: #ddd; padding: 3px 0;">• ${nombre}</div>`;
+            const mitad = Math.ceil(personasIngresadas.length / 2);
+            const grupo1 = personasIngresadas.slice(0, mitad);
+            const grupo2 = personasIngresadas.slice(mitad);
+
+            let html1 = "";
+            grupo1.forEach(nombre => {
+                html1 += `<div style="font-size: 0.85rem; color: #ddd; padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">• ${nombre}</div>`;
             });
-            contenedor.innerHTML = html;
+
+            let html2 = "";
+            grupo2.forEach(nombre => {
+                html2 += `<div style="font-size: 0.855rem; color: #ddd; padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">• ${nombre}</div>`;
+            });
+
+            col1.innerHTML = html1;
+            col2.innerHTML = html2;
         }
         cargarIngresosSemana();
 

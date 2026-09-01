@@ -310,6 +310,8 @@
                     <div class="back-fields">
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">NÚMERO DE EMPLEADO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-numero-empleado"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
@@ -357,6 +359,8 @@
                     <div class="back-fields">
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">NÚMERO DE EMPLEADO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-numero-empleado"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
@@ -406,6 +410,8 @@
                     <div class="back-fields">
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">NÚMERO DE EMPLEADO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-numero-empleado"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
@@ -453,6 +459,8 @@
                     <div class="back-fields">
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">ÁREA</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-area"></span> </div>
+                        <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">NÚMERO DE EMPLEADO</div>
+                        <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-numero-empleado"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; color: #1e3a8a; margin-bottom: 2mm; text-align: center;">CONTACTO DE EMERGENCIA:</div>
                         <div class="back-field-item" style="text-align: center; margin-bottom: 2mm; font-size: 10pt;"> <span class="employee-contact-name"></span> </div>
                         <div class="back-field-item" style="font-size: 10pt; margin-bottom: 2mm; text-align: center;">TEL: <span class="employee-contact-phone"></span></div>
@@ -536,6 +544,9 @@
                 });
                 card.querySelectorAll('.employee-area').forEach((el) => {
                     el.textContent = (datos.area || datos.puesto || '').toUpperCase();
+                });
+                card.querySelectorAll('.employee-numero-empleado').forEach((el) => {
+                    el.textContent = datos.numero_empleado || '';
                 });
                 card.querySelectorAll('.employee-contact-name').forEach((el) => {
                     el.textContent = (datos.nombre_emergencia || '').toUpperCase();

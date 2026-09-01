@@ -747,7 +747,6 @@
                 <div class="photo-actions">
                     <label class="file-label" for="foto-input">SUBIR FOTO</label>
                     <input id="foto-input" class="file-input" type="file" accept="image/*" />
-                    <button class="action-btn" id="btn-descargar-credencial" type="button">DESCARGAR CREDENCIAL</button>
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
                 </div>
                 <div id="photo-upload-status" style="width:100%; max-width:300px; margin:10px auto 0; min-height:20px; text-align:center; font-size:0.9rem; color:var(--grisc);"></div>
@@ -1051,7 +1050,6 @@
         const photoPlaceholder = document.getElementById('photo-placeholder');
         const signaturePreview = document.getElementById('signature-preview');
         const signaturePlaceholder = document.getElementById('signature-placeholder');
-        const btnDescargarCredencial = document.getElementById('btn-descargar-credencial');
         const btnDescargarContrato = document.getElementById('btn-descargar-contrato');
         const btnEditar = document.getElementById('btn-editar');
         const btnGuardar = document.getElementById('btn-guardar');
@@ -2006,29 +2004,6 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         cargarEmpleado().catch((error) => {
             statusBox.className = 'error-box';
             statusBox.textContent = 'Error al iniciar expediente: ' + (error && error.message ? error.message : error);
-        });
-
-/*GAFETTE*/
-        document.getElementById('btn-descargar-credencial').addEventListener('click', () => {
-            const activeTab = getCurrentEmpleadoTab();
-            const returnUrl = window.location.href;
-
-            const datosRespaldo = {
-                nombre_completo: fields['nombre-completo'].value,
-                nss: fields['nss'].value,
-                curp: fields['curp'].value,
-                area: fields['area'].value,
-                nombre_emergencia: fields['emergencia-nombre'].value,
-                telefono_emergencia: fields['emergencia-telefono'].value,
-                fecha_ingreso: fechaIngresoEl.value || fechaIngresoEl.textContent,
-                empresa: companyName.textContent,
-                fotografia_base64: getCurrentPhotoSource()
-            };
-            localStorage.setItem('gafeteData', JSON.stringify(datosRespaldo));
-            localStorage.setItem('empleadoActiveTab', activeTab);
-            localStorage.setItem('gafeteReturnUrl', returnUrl);
-
-            window.location.href = `gafette.html?registro_id=${encodeURIComponent(registroId)}`;
         });
 
 /*CONTRATO*/
