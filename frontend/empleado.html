@@ -314,6 +314,66 @@
         .tabs-panel { display: none; animation: fadeIn 0.24s ease; }
         .tabs-panel.active { display: block; }
 
+        .attendance-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 16px;
+        }
+
+        .attendance-calendar,
+        .notification-history {
+            border: 1px solid var(--grisc);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .calendar-weekdays,
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+            text-align: center;
+        }
+
+        .calendar-weekdays {
+            margin-bottom: 6px;
+            color: var(--grisc);
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .calendar-day {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: var(--blanco);
+            font-weight: 700;
+        }
+
+        .calendar-day.empty {
+            border-color: transparent;
+        }
+
+        .notification-history {
+            min-height: 360px;
+        }
+
+        .notification-history .muted {
+            margin: 0;
+            text-align: center;
+        }
+
         .empty-panel {
             min-height: 660px;
             border:none;
@@ -673,6 +733,10 @@
             .row-2-contact {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            .attendance-layout {
+                grid-template-columns: minmax(0, 1fr) 240px;
+            }
         }
 
         @media (max-width: 760px) {
@@ -686,7 +750,8 @@
             .row-4,
             .row-3,
             .row-2-wide,
-            .row-2-contact {
+            .row-2-contact,
+            .attendance-layout {
                 grid-template-columns: 1fr;
             }
             .top-row { flex-direction: column; }
@@ -703,6 +768,7 @@
         <div class="tabs">
             <button class="tab-btn active active-tab" data-tab="informacion">Información</button>
             <button class="tab-btn" data-tab="papeleria">Papelería</button>
+            <button class="tab-btn" data-tab="asistencia">Asistencia</button>
         </div>
     </header>
 
@@ -1009,6 +1075,22 @@
                     </div>
                 </div>
 
+                <div id="tab-asistencia" class="tabs-panel">
+                    <div class="attendance-layout">
+                        <section class="attendance-calendar">
+                            <div id="calendar-month" class="calendar-header"></div>
+                            <div class="calendar-weekdays">
+                                <span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>
+                            </div>
+                            <div id="calendar-days" class="calendar-days"></div>
+                        </section>
+                        <aside class="notification-history">
+                            <div class="label">HISTORIAL DE NOTIFICACIONES</div>
+                            <div class="muted">Sin notificaciones</div>
+                        </aside>
+                    </div>
+                </div>
+
             </section>
         </div>
     </main>
@@ -1254,9 +1336,6 @@
                 return;
             }
 
-            if (btnDescargarCredencial) {
-                btnDescargarCredencial.style.display = esKronos ? 'none' : 'inline-flex';
-            }
             if (btnDescargarContrato) {
                 btnDescargarContrato.style.display = esKronos ? 'none' : 'inline-flex';
             }
@@ -1866,7 +1945,37 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             });
         }
 
+        function renderAttendanceCalendar() {
+            const calendarMonth = document.getElementById('calendar-month');
+            const calendarDays = document.getElementById('calendar-days');
+            if (!calendarMonth || !calendarDays) return;
+
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthName = today.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+
+            calendarMonth.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+            calendarDays.innerHTML = '';
+
+            for (let index = 0; index < firstDay; index += 1) {
+                const emptyDay = document.createElement('span');
+                emptyDay.className = 'calendar-day empty';
+                calendarDays.appendChild(emptyDay);
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const dayElement = document.createElement('span');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                calendarDays.appendChild(dayElement);
+            }
+        }
+
         bindTabButtons();
+        renderAttendanceCalendar();
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
