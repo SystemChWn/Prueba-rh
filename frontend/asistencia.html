@@ -783,25 +783,9 @@
             }
         }
 
-        const accessApiBases = [...new Set(['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
         let usuariosRegistrados = [];
         let usuarioSeleccionado = null;
         let edicionUsuarioActiva = false;
-
-        async function llamarApiAccesos(endpoint, options = {}) {
-            let lastError = null;
-            for (const baseUrl of accessApiBases) {
-                try {
-                    const response = await fetch(`${baseUrl}${endpoint}`, options);
-                    const body = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(body.error || 'No se pudo completar la operación.');
-                    return body;
-                } catch (error) {
-                    lastError = error;
-                }
-            }
-            throw lastError || new Error('No se pudo conectar al servidor.');
-        }
 
         function obtenerPermisos(nombre) {
             return Array.from(document.querySelectorAll(`input[name="${nombre}"]:checked`)).map((input) => input.value);
@@ -845,17 +829,12 @@
             });
         }
 
-        async function cargarUsuariosRegistrados() {
-            try {
-                const response = await llamarApiAccesos('/api/access-users');
-                usuariosRegistrados = Array.isArray(response.usuarios) ? response.usuarios : [];
-                renderUsuariosRegistrados();
-            } catch (error) {
-                alert(error.message);
-            }
+        function cargarUsuariosRegistrados() {
+            usuariosRegistrados = window.AccessControlUsers.list();
+            renderUsuariosRegistrados();
         }
 
-        async function guardarNuevoUsuario(form) {
+        function guardarNuevoUsuario(form) {
             const permisos = obtenerPermisos('permisos');
             const payload = {
                 usuario: document.getElementById('acceso-usuario').value.trim(),
@@ -867,14 +846,10 @@
             };
 
             try {
-                await llamarApiAccesos('/api/access-users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
+                window.AccessControlUsers.create(payload);
                 form.reset();
                 toggleCamposAdicionales();
-                await cargarUsuariosRegistrados();
+                cargarUsuariosRegistrados();
                 cambiarPestanaAcceso('registrados');
             } catch (error) {
                 alert(error.message);
@@ -917,7 +892,7 @@
             edicionUsuarioActiva = false;
         }
 
-        async function actualizarUsuarioRegistrado() {
+        function actualizarUsuarioRegistrado() {
             if (!usuarioSeleccionado || !edicionUsuarioActiva) return;
             const payload = {
                 usuario: document.getElementById('edit-usuario').value.trim(),
@@ -929,23 +904,19 @@
             };
 
             try {
-                await llamarApiAccesos(`/api/access-users/${usuarioSeleccionado.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                await cargarUsuariosRegistrados();
+                window.AccessControlUsers.update(usuarioSeleccionado.id, payload);
+                cargarUsuariosRegistrados();
                 cerrarModalEditarUsuario();
             } catch (error) {
                 alert(error.message);
             }
         }
 
-        async function eliminarUsuarioRegistrado() {
+        function eliminarUsuarioRegistrado() {
             if (!usuarioSeleccionado || !confirm('¿Está seguro de eliminar este usuario?')) return;
             try {
-                await llamarApiAccesos(`/api/access-users/${usuarioSeleccionado.id}`, { method: 'DELETE' });
-                await cargarUsuariosRegistrados();
+            window.AccessControlUsers.remove(usuarioSeleccionado.id);
+            cargarUsuariosRegistrados();
                 cerrarModalEditarUsuario();
             } catch (error) {
                 alert(error.message);

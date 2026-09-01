@@ -189,6 +189,7 @@
         </div>
     </main>
 
+    <script src="access-control.js"></script>
     <script src="config.js"></script>
     <script>
         async function verificarAcceso() {
@@ -208,41 +209,21 @@
                 return;
             }
 
-            try {
-                const bases = [...new Set(['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
-                let loginError = null;
-                for (const baseUrl of bases) {
-                    try {
-                        const response = await fetch(`${baseUrl}/api/auth/login`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ usuario: u, password: p }),
-                        });
-                        const data = await response.json().catch(() => ({}));
-                        if (!response.ok) throw new Error(data.error || 'Usuario o contraseña incorrectos.');
-
-                        const permissions = Array.isArray(data.permisos) ? data.permisos : [];
-                        const redirects = [
-                            ['recursos_humanos', 'iniciorh.html'],
-                            ['reclutamiento', 'InicioReclu.html'],
-                            ['control_asistencias', 'captura.html'],
-                        ];
-                        const redirect = redirects.find(([permission]) => permissions.includes(permission));
-                        if (!redirect) throw new Error('El usuario no tiene acceso a una página asignada.');
-
-                        sessionStorage.setItem('accesoUsuario', JSON.stringify(data));
-                        window.location.href = redirect[1];
-                        return;
-                    } catch (error) {
-                        loginError = error;
-                    }
+            const usuarioRegistrado = window.AccessControlUsers.authenticate(u, p);
+            if (usuarioRegistrado) {
+                const redirects = [
+                    ['recursos_humanos', 'iniciorh.html'],
+                    ['reclutamiento', 'InicioReclu.html'],
+                    ['control_asistencias', 'captura.html'],
+                ];
+                const redirect = redirects.find(([permission]) => usuarioRegistrado.permisos.includes(permission));
+                if (!redirect) {
+                    errorMsg.textContent = 'El usuario no tiene acceso a una página asignada.';
+                    errorMsg.style.display = 'block';
+                    return;
                 }
-                if (loginError && !/Usuario o contraseña incorrectos/.test(loginError.message)) {
-                    throw loginError;
-                }
-            } catch (error) {
-                errorMsg.textContent = error.message;
-                errorMsg.style.display = 'block';
+                sessionStorage.setItem('accesoUsuario', JSON.stringify(usuarioRegistrado));
+                window.location.href = redirect[1];
                 return;
             }
 
