@@ -546,7 +546,7 @@
                     el.textContent = (datos.area || datos.puesto || '').toUpperCase();
                 });
                 card.querySelectorAll('.employee-numero-empleado').forEach((el) => {
-                    el.textContent = datos.numero_empleado || '';
+                    el.textContent = datos.no_empleado || datos.numero_empleado || '';
                 });
                 card.querySelectorAll('.employee-contact-name').forEach((el) => {
                     el.textContent = (datos.nombre_emergencia || '').toUpperCase();
