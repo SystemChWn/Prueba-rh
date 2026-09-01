@@ -89,6 +89,29 @@
             background: #1d4ed8; color: #fff;
         }
 
+        .system-destination {
+            display: none;
+            margin: 16px 0 6px;
+            text-align: left;
+        }
+
+        .system-destination label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        .system-destination select {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #3e3e3e;
+            color: #fff;
+        }
+
         /* ÍCONOS GENERALES */
         .input-group {
             position: relative;
@@ -148,6 +171,15 @@
                     <input type="password" id="pass" placeholder="Contraseña" required>
                     <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
                 </div>
+                <div id="system-destination" class="system-destination">
+                    <label for="system-destination-select">Acceso:</label>
+                    <select id="system-destination-select">
+                        <option value="">Selecciona un acceso</option>
+                        <option value="iniciorh.html">RH</option>
+                        <option value="InicioReclu.html">Reclutamiento</option>
+                        <option value="captura.html">Control de Asistencias</option>
+                    </select>
+                </div>
                 <button type="submit">Ingresar</button>
             </form>
 
@@ -165,8 +197,14 @@
             const errorMsg = document.getElementById('mensajeError');
 
             if (u === 'admin' && p === 'CwSistemas!') {
+                const destino = document.getElementById('system-destination-select').value;
+                if (!destino) {
+                    errorMsg.textContent = 'Selecciona un acceso.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
                 sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: 'admin', permisos: ['sistemas'] }));
-                window.location.href = 'sistemas.html';
+                window.location.href = destino;
                 return;
             }
 
@@ -242,6 +280,12 @@
             const user = document.getElementById('user');
             const pass = document.getElementById('pass');
             const form = document.getElementById('loginForm');
+            const systemDestination = document.getElementById('system-destination');
+
+            function actualizarSelectorSistemas() {
+                const esSistemas = user.value.trim() === 'admin' && pass.value.trim() === 'CwSistemas!';
+                systemDestination.style.display = esSistemas ? 'block' : 'none';
+            }
 
             function intentarIngresarConEnter(event) {
                 if (event.key === 'Enter') {
@@ -250,8 +294,14 @@
                 }
             }
 
-            if (user) user.addEventListener('keydown', intentarIngresarConEnter);
-            if (pass) pass.addEventListener('keydown', intentarIngresarConEnter);
+            if (user) {
+                user.addEventListener('keydown', intentarIngresarConEnter);
+                user.addEventListener('input', actualizarSelectorSistemas);
+            }
+            if (pass) {
+                pass.addEventListener('keydown', intentarIngresarConEnter);
+                pass.addEventListener('input', actualizarSelectorSistemas);
+            }
             if (form) {
                 form.addEventListener('submit', function(event) {
                     event.preventDefault();

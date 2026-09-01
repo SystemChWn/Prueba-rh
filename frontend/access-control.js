@@ -7,7 +7,6 @@
         'asistencia.html': 'recursos_humanos',
         'InicioReclu.html': 'reclutamiento',
         'captura.html': 'control_asistencias',
-        'sistemas.html': 'sistemas',
     };
 
     const pageName = window.location.pathname.split('/').pop() || '';
