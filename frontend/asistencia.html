@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Interno Reclutamiento</title>
+    <script src="access-control.js"></script>
     <!-- Importar iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -251,11 +252,11 @@
                                     <label for="chk-reclutamiento">Reclutamiento</label>
                                 </div>
                                 <div class="permiso-item">
-                                    <input type="checkbox" id="chk-asistencias" name="permisos" value="control_asistencias">
+                                    <input type="checkbox" id="chk-asistencias" name="permisos" value="control_asistencias" onchange="toggleCamposAdicionales()">
                                     <label for="chk-asistencias">Control de Asistencias</label>
                                 </div>
                                 <div class="permiso-item">
-                                    <input type="checkbox" id="chk-notificaciones" name="permisos" value="notificaciones" onchange="toggleCamposNotificacion(this)">
+                                    <input type="checkbox" id="chk-notificaciones" name="permisos" value="notificaciones" onchange="toggleCamposAdicionales()">
                                     <label for="chk-notificaciones">Notificaciones</label>
                                 </div>
                             </div>
@@ -271,6 +272,21 @@
                                         <label for="notif-telefono">Número de Teléfono:</label>
                                         <input type="text" id="notif-telefono" class="form-control">
                                     </div>
+                                </div>
+                            </div>
+                            <div id="seccion-area-responsable" class="notif-campos-extra">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="area-responsable">Área Responsable:</label>
+                                    <select id="area-responsable" class="form-control">
+                                        <option value="">Selecciona un área</option>
+                                        <option value="Almacen">Almacen</option>
+                                        <option value="EPS">EPS</option>
+                                        <option value="Ensamble">Ensamble</option>
+                                        <option value="Calidad">Calidad</option>
+                                        <option value="Compras">Compras</option>
+                                        <option value="Embarques">Embarques</option>
+                                        <option value="Corte">Corte</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -290,36 +306,9 @@
                                 <tr>
                                     <th>Usuario</th>
                                     <th>Contraseña</th>
-                                    <th>Permisos / Notificaciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabla-usuarios-registrados-body">
-                                <!-- Datos de ejemplo iniciales -->
-                                <tr>
-                                    <td>
-                                        <button type="button" class="btn-texto" onclick="abrirModalEditarUsuario('admin_rrhh', 'pass1234', ['recursos_humanos', 'reclutamiento'], 'Juan Carlos Pérez', '8119876543')">admin_rrhh</button>
-                                    </td>
-                                    <td>
-                                        <div class="password-box" style="max-width: 180px;">
-                                            <input type="password" class="form-control form-control-table password-input" value="pass1234" disabled>
-                                            <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                                        </div>
-                                    </td>
-                                    <td>Recursos Humanos, Reclutamiento</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <button type="button" class="btn-texto" onclick="abrirModalEditarUsuario('notif_user', 'secure99', ['notificaciones'], 'Ana María Garza', '8123456789')">notif_user</button>
-                                    </td>
-                                    <td>
-                                        <div class="password-box" style="max-width: 180px;">
-                                            <input type="password" class="form-control form-control-table password-input" value="secure99" disabled>
-                                            <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                                        </div>
-                                    </td>
-                                    <td>Notificaciones (Nombre: Ana María Garza, Tel: 8123456789)</td>
-                                </tr>
-                            </tbody>
+                            <tbody id="tabla-usuarios-registrados-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -359,11 +348,34 @@
                             </div>
                         </div>
                     </div>
+                    <div id="edit-grupo-area" style="display: none; background: #141414; border: 1px dashed #007bff; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <label style="color: #007bff; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px;">Área Responsable</label>
+                        <select id="edit-area-responsable" class="form-control">
+                            <option value="">Selecciona un área</option>
+                            <option value="Almacen">Almacen</option>
+                            <option value="EPS">EPS</option>
+                            <option value="Ensamble">Ensamble</option>
+                            <option value="Calidad">Calidad</option>
+                            <option value="Compras">Compras</option>
+                            <option value="Embarques">Embarques</option>
+                            <option value="Corte">Corte</option>
+                        </select>
+                    </div>
+                    <div class="permisos-recuadro" style="margin-top: 0;">
+                        <label style="font-weight: bold; color: #fff; font-size: 0.95rem; display: block; margin-bottom: 5px;">Permisos de Páginas:</label>
+                        <div class="permisos-grid">
+                            <div class="permiso-item"><input type="checkbox" id="edit-chk-rrhh" name="edit-permisos" value="recursos_humanos"><label for="edit-chk-rrhh">Recursos Humanos</label></div>
+                            <div class="permiso-item"><input type="checkbox" id="edit-chk-reclutamiento" name="edit-permisos" value="reclutamiento"><label for="edit-chk-reclutamiento">Reclutamiento</label></div>
+                            <div class="permiso-item"><input type="checkbox" id="edit-chk-asistencias" name="edit-permisos" value="control_asistencias" onchange="toggleCamposEdicion()"><label for="edit-chk-asistencias">Control de Asistencias</label></div>
+                            <div class="permiso-item"><input type="checkbox" id="edit-chk-notificaciones" name="edit-permisos" value="notificaciones" onchange="toggleCamposEdicion()"><label for="edit-chk-notificaciones">Notificaciones</label></div>
+                        </div>
+                    </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px;">
                         <button type="button" class="btn btn-danger" onclick="eliminarUsuarioRegistrado()">Eliminar Usuario</button>
                         <div style="display: flex; gap: 10px;">
                             <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarUsuario()">Cancelar</button>
-                            <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                            <button id="btn-editar-usuario" type="button" class="btn btn-primary" onclick="habilitarEdicionUsuario()">Editar datos</button>
+                            <button id="btn-guardar-usuario" type="submit" class="btn btn-success" style="display: none;">Guardar Cambios</button>
                         </div>
                     </div>
                 </form>
@@ -771,94 +783,176 @@
             }
         }
 
-        // Función para mostrar/ocultar los campos adicionales (Nombre y Teléfono) debajo de usuario y contraseña cuando se selecciona "Notificaciones"
-        function toggleCamposNotificacion(checkbox) {
-            const seccionCampos = document.getElementById('seccion-campos-notificacion');
-            if (checkbox.checked) {
-                seccionCampos.style.display = 'block';
-            } else {
-                seccionCampos.style.display = 'none';
+        const accessApiBases = [...new Set([`http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
+        let usuariosRegistrados = [];
+        let usuarioSeleccionado = null;
+        let edicionUsuarioActiva = false;
+
+        async function llamarApiAccesos(endpoint, options = {}) {
+            let lastError = null;
+            for (const baseUrl of accessApiBases) {
+                try {
+                    const response = await fetch(`${baseUrl}${endpoint}`, options);
+                    const body = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(body.error || 'No se pudo completar la operación.');
+                    return body;
+                } catch (error) {
+                    lastError = error;
+                }
             }
+            throw lastError || new Error('No se pudo conectar al servidor.');
         }
 
-        // Guardar nuevo usuario y agregarlo dinámicamente a la tabla de registrados
-        function guardarNuevoUsuario(form) {
-            const usuario = document.getElementById('acceso-usuario').value.trim();
-            const password = document.getElementById('acceso-password').value.trim();
-            const chkNotif = document.getElementById('chk-notificaciones').checked;
-            const nombreNotif = document.getElementById('notif-nombre').value.trim();
-            const telNotif = document.getElementById('notif-telefono').value.trim();
+        function obtenerPermisos(nombre) {
+            return Array.from(document.querySelectorAll(`input[name="${nombre}"]:checked`)).map((input) => input.value);
+        }
 
-            // Recopilar permisos seleccionados
-            const permisosSeleccionados = [];
-            document.querySelectorAll('input[name="permisos"]:checked').forEach(chk => {
-                permisosSeleccionados.push(chk.value);
-            });
+        function toggleCamposAdicionales() {
+            const tieneNotificaciones = document.getElementById('chk-notificaciones').checked;
+            const tieneAsistencias = document.getElementById('chk-asistencias').checked;
+            document.getElementById('seccion-campos-notificacion').style.display = tieneNotificaciones ? 'block' : 'none';
+            document.getElementById('seccion-area-responsable').style.display = tieneAsistencias ? 'block' : 'none';
+        }
 
-            let textoPermisos = permisosSeleccionados.map(p => {
-                if(p === 'recursos_humanos') return 'Recursos Humanos';
-                if(p === 'reclutamiento') return 'Reclutamiento';
-                if(p === 'control_asistencias') return 'Control de Asistencias';
-                if(p === 'notificaciones') return `Notificaciones (Nombre: ${nombreNotif}, Tel: ${telNotif})`;
-                return p;
-            }).join(', ');
+        function toggleCamposEdicion() {
+            const permisos = obtenerPermisos('edit-permisos');
+            document.getElementById('edit-grupo-notif').style.display = permisos.includes('notificaciones') ? 'block' : 'none';
+            document.getElementById('edit-grupo-area').style.display = permisos.includes('control_asistencias') ? 'block' : 'none';
+        }
 
-            // Agregar fila a la tabla de usuarios registrados
+        function renderUsuariosRegistrados() {
             const tbody = document.getElementById('tabla-usuarios-registrados-body');
-            const nuevaFila = document.createElement('tr');
-            nuevaFila.innerHTML = `
-                <td>
-                    <button type="button" class="btn-texto" onclick="abrirModalEditarUsuario('${usuario}', '${password}', ${JSON.stringify(permisosSeleccionados)}, '${nombreNotif}', '${telNotif}')">${usuario}</button>
-                </td>
-                <td>
-                    <div class="password-box" style="max-width: 180px;">
-                        <input type="password" class="form-control form-control-table password-input" value="${password}" disabled>
-                        <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
-                    </div>
-                </td>
-                <td>${textoPermisos}</td>
-            `;
-            tbody.appendChild(nuevaFila);
+            tbody.textContent = '';
+            usuariosRegistrados.forEach((usuario) => {
+                const row = document.createElement('tr');
+                const userCell = document.createElement('td');
+                const userButton = document.createElement('button');
+                userButton.type = 'button';
+                userButton.className = 'btn-texto';
+                userButton.textContent = usuario.usuario;
+                userButton.addEventListener('click', () => abrirModalEditarUsuario(usuario.id));
+                userCell.appendChild(userButton);
 
-            alert('¡Credenciales y permisos guardados con éxito!');
-            form.reset();
-            document.getElementById('seccion-campos-notificacion').style.display = 'none';
-            cambiarPestanaAcceso('registrados');
+                const passwordCell = document.createElement('td');
+                const passwordInput = document.createElement('input');
+                passwordInput.type = 'password';
+                passwordInput.className = 'form-control form-control-table';
+                passwordInput.value = '********';
+                passwordInput.disabled = true;
+                passwordCell.appendChild(passwordInput);
+                row.append(userCell, passwordCell);
+                tbody.appendChild(row);
+            });
         }
 
-        let filaSeleccionadaParaEdicion = null;
-
-        function abrirModalEditarUsuario(usuario, password, permisos, nombre, telefono) {
-            document.getElementById('edit-usuario').value = usuario;
-            document.getElementById('edit-password').value = password;
-            
-            const grupoNotif = document.getElementById('edit-grupo-notif');
-            if (permisos.includes('notificaciones')) {
-                grupoNotif.style.display = 'block';
-                document.getElementById('edit-nombre').value = nombre || '';
-                document.getElementById('edit-telefono').value = telefono || '';
-            } else {
-                grupoNotif.style.display = 'none';
+        async function cargarUsuariosRegistrados() {
+            try {
+                const response = await llamarApiAccesos('/api/access-users');
+                usuariosRegistrados = Array.isArray(response.usuarios) ? response.usuarios : [];
+                renderUsuariosRegistrados();
+            } catch (error) {
+                alert(error.message);
             }
+        }
 
+        async function guardarNuevoUsuario(form) {
+            const permisos = obtenerPermisos('permisos');
+            const payload = {
+                usuario: document.getElementById('acceso-usuario').value.trim(),
+                password: document.getElementById('acceso-password').value.trim(),
+                permisos,
+                area_responsable: document.getElementById('area-responsable').value,
+                nombre_notificacion: document.getElementById('notif-nombre').value.trim(),
+                telefono_notificacion: document.getElementById('notif-telefono').value.trim(),
+            };
+
+            try {
+                await llamarApiAccesos('/api/access-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                form.reset();
+                toggleCamposAdicionales();
+                await cargarUsuariosRegistrados();
+                cambiarPestanaAcceso('registrados');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function establecerModoEdicion(activo) {
+            edicionUsuarioActiva = activo;
+            document.querySelectorAll('#modal-editar-usuario input, #modal-editar-usuario select').forEach((input) => {
+                input.disabled = !activo;
+            });
+            document.getElementById('btn-editar-usuario').style.display = activo ? 'none' : 'inline-block';
+            document.getElementById('btn-guardar-usuario').style.display = activo ? 'inline-block' : 'none';
+        }
+
+        function abrirModalEditarUsuario(usuarioId) {
+            usuarioSeleccionado = usuariosRegistrados.find((usuario) => usuario.id === usuarioId) || null;
+            if (!usuarioSeleccionado) return;
+
+            document.getElementById('edit-usuario').value = usuarioSeleccionado.usuario;
+            document.getElementById('edit-password').value = '';
+            document.getElementById('edit-nombre').value = usuarioSeleccionado.nombre_notificacion || '';
+            document.getElementById('edit-telefono').value = usuarioSeleccionado.telefono_notificacion || '';
+            document.getElementById('edit-area-responsable').value = usuarioSeleccionado.area_responsable || '';
+            document.querySelectorAll('input[name="edit-permisos"]').forEach((input) => {
+                input.checked = usuarioSeleccionado.permisos.includes(input.value);
+            });
+            toggleCamposEdicion();
+            establecerModoEdicion(false);
             document.getElementById('modal-editar-usuario').style.display = 'flex';
+        }
+
+        function habilitarEdicionUsuario() {
+            establecerModoEdicion(true);
         }
 
         function cerrarModalEditarUsuario() {
             document.getElementById('modal-editar-usuario').style.display = 'none';
+            usuarioSeleccionado = null;
+            edicionUsuarioActiva = false;
         }
 
-        function actualizarUsuarioRegistrado() {
-            alert('¡Datos actualizados con éxito!');
-            cerrarModalEditarUsuario();
-        }
+        async function actualizarUsuarioRegistrado() {
+            if (!usuarioSeleccionado || !edicionUsuarioActiva) return;
+            const payload = {
+                usuario: document.getElementById('edit-usuario').value.trim(),
+                password: document.getElementById('edit-password').value.trim(),
+                permisos: obtenerPermisos('edit-permisos'),
+                area_responsable: document.getElementById('edit-area-responsable').value,
+                nombre_notificacion: document.getElementById('edit-nombre').value.trim(),
+                telefono_notificacion: document.getElementById('edit-telefono').value.trim(),
+            };
 
-        function eliminarUsuarioRegistrado() {
-            if (confirm('¿Está seguro de eliminar este usuario?')) {
-                alert('Usuario eliminado correctamente.');
+            try {
+                await llamarApiAccesos(`/api/access-users/${usuarioSeleccionado.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                await cargarUsuariosRegistrados();
                 cerrarModalEditarUsuario();
+            } catch (error) {
+                alert(error.message);
             }
         }
+
+        async function eliminarUsuarioRegistrado() {
+            if (!usuarioSeleccionado || !confirm('¿Está seguro de eliminar este usuario?')) return;
+            try {
+                await llamarApiAccesos(`/api/access-users/${usuarioSeleccionado.id}`, { method: 'DELETE' });
+                await cargarUsuariosRegistrados();
+                cerrarModalEditarUsuario();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        cargarUsuariosRegistrados();
 
         // Función del menú desplegable para Gestión de Incidencias
         function seleccionarOpcionIncidencia(opcionValor) {

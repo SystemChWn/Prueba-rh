@@ -159,10 +159,48 @@
 
     <script src="config.js"></script>
     <script>
-        function verificarAcceso() {
+        async function verificarAcceso() {
             const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
             const errorMsg = document.getElementById('mensajeError');
+
+            try {
+                const bases = [...new Set([`http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
+                let loginError = null;
+                for (const baseUrl of bases) {
+                    try {
+                        const response = await fetch(`${baseUrl}/api/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ usuario: u, password: p }),
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.error || 'Usuario o contraseña incorrectos.');
+
+                        const permissions = Array.isArray(data.permisos) ? data.permisos : [];
+                        const redirects = [
+                            ['recursos_humanos', 'iniciorh.html'],
+                            ['reclutamiento', 'InicioReclu.html'],
+                            ['control_asistencias', 'captura.html'],
+                        ];
+                        const redirect = redirects.find(([permission]) => permissions.includes(permission));
+                        if (!redirect) throw new Error('El usuario no tiene acceso a una página asignada.');
+
+                        sessionStorage.setItem('accesoUsuario', JSON.stringify(data));
+                        window.location.href = redirect[1];
+                        return;
+                    } catch (error) {
+                        loginError = error;
+                    }
+                }
+                if (loginError && !/Usuario o contraseña incorrectos/.test(loginError.message)) {
+                    throw loginError;
+                }
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+                return;
+            }
 
             const loginConfig = window.LOGIN_CONFIG || {};
             const rhConfig = loginConfig.rh || {};
@@ -170,16 +208,19 @@
             const capturaConfig = loginConfig.captura || {};
 
             if (u === rhConfig.username && p === rhConfig.password) {
+                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['recursos_humanos'] }));
                 window.location.href = rhConfig.redirect || 'iniciorh.html';
                 return;
             }
 
             if (u === reclutamientoConfig.username && p === reclutamientoConfig.password) {
+                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['reclutamiento'] }));
                 window.location.href = reclutamientoConfig.redirect || 'InicioReclu.html';
                 return;
             }
 
             if (u === capturaConfig.username && p === capturaConfig.password) {
+                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['control_asistencias'] }));
                 window.location.href = capturaConfig.redirect || 'captura.html';
                 return;
             }
@@ -191,6 +232,7 @@
         }
 
         (function configurarLogin() {
+            sessionStorage.removeItem('accesoUsuario');
             const user = document.getElementById('user');
             const pass = document.getElementById('pass');
             const form = document.getElementById('loginForm');

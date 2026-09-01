@@ -13,6 +13,7 @@ from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from io import BytesIO
 import requests
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 CORS(app)
@@ -301,6 +302,210 @@ def get_db_connection():
         user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     )
+
+
+def asegurar_tabla_usuarios_acceso(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS usuarios_acceso (
+            id SERIAL PRIMARY KEY,
+            usuario VARCHAR(100) NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            permisos JSONB NOT NULL DEFAULT '[]'::jsonb,
+            area_responsable VARCHAR(100),
+            nombre_notificacion VARCHAR(150),
+            telefono_notificacion VARCHAR(30),
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def normalizar_permisos(permisos):
+    permitidos = {'recursos_humanos', 'reclutamiento', 'control_asistencias', 'notificaciones'}
+    if not isinstance(permisos, list):
+        return []
+    return [permiso for permiso in permisos if permiso in permitidos]
+
+
+def usuario_acceso_dict(row):
+    permisos = row[3] if isinstance(row[3], list) else json.loads(row[3] or '[]')
+    return {
+        'id': row[0],
+        'usuario': row[1],
+        'permisos': permisos,
+        'area_responsable': row[4] or '',
+        'nombre_notificacion': row[5] or '',
+        'telefono_notificacion': row[6] or '',
+    }
+
+
+@app.route('/api/access-users', methods=['GET'])
+def listar_usuarios_acceso():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_usuarios_acceso(cur)
+                cur.execute(
+                    """
+                    SELECT id, usuario, password_hash, permisos, area_responsable,
+                           nombre_notificacion, telefono_notificacion
+                    FROM usuarios_acceso
+                    ORDER BY usuario
+                    """
+                )
+                usuarios = [usuario_acceso_dict(row) for row in cur.fetchall()]
+            conn.commit()
+        return jsonify({'usuarios': usuarios})
+    except Exception as error:
+        return jsonify({'error': str(error)}), 500
+
+
+@app.route('/api/access-users', methods=['POST'])
+def crear_usuario_acceso():
+    datos = request.get_json(silent=True) or {}
+    usuario = str(datos.get('usuario', '')).strip()
+    password = str(datos.get('password', '')).strip()
+    permisos = normalizar_permisos(datos.get('permisos'))
+
+    if not usuario or not password or not permisos:
+        return jsonify({'error': 'Usuario, contraseña y al menos un permiso son obligatorios.'}), 400
+
+    area_responsable = str(datos.get('area_responsable', '')).strip() if 'control_asistencias' in permisos else ''
+    if 'control_asistencias' in permisos and not area_responsable:
+        return jsonify({'error': 'El área responsable es obligatoria para Control de Asistencias.'}), 400
+
+    nombre_notificacion = str(datos.get('nombre_notificacion', '')).strip() if 'notificaciones' in permisos else ''
+    telefono_notificacion = str(datos.get('telefono_notificacion', '')).strip() if 'notificaciones' in permisos else ''
+    if 'notificaciones' in permisos and (not nombre_notificacion or not telefono_notificacion):
+        return jsonify({'error': 'Nombre y teléfono son obligatorios para Notificaciones.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_usuarios_acceso(cur)
+                cur.execute(
+                    """
+                    INSERT INTO usuarios_acceso (
+                        usuario, password_hash, permisos, area_responsable,
+                        nombre_notificacion, telefono_notificacion
+                    ) VALUES (%s, %s, %s::jsonb, %s, %s, %s)
+                    RETURNING id, usuario, password_hash, permisos, area_responsable,
+                              nombre_notificacion, telefono_notificacion
+                    """,
+                    (usuario, generate_password_hash(password), json.dumps(permisos), area_responsable,
+                     nombre_notificacion, telefono_notificacion),
+                )
+                creado = usuario_acceso_dict(cur.fetchone())
+            conn.commit()
+        return jsonify(creado), 201
+    except psycopg2.IntegrityError:
+        return jsonify({'error': 'Ese usuario ya está registrado.'}), 409
+    except Exception as error:
+        return jsonify({'error': str(error)}), 500
+
+
+@app.route('/api/access-users/<int:usuario_id>', methods=['PUT'])
+def actualizar_usuario_acceso(usuario_id):
+    datos = request.get_json(silent=True) or {}
+    usuario = str(datos.get('usuario', '')).strip()
+    password = str(datos.get('password', '')).strip()
+    permisos = normalizar_permisos(datos.get('permisos'))
+
+    if not usuario or not permisos:
+        return jsonify({'error': 'Usuario y al menos un permiso son obligatorios.'}), 400
+
+    area_responsable = str(datos.get('area_responsable', '')).strip() if 'control_asistencias' in permisos else ''
+    if 'control_asistencias' in permisos and not area_responsable:
+        return jsonify({'error': 'El área responsable es obligatoria para Control de Asistencias.'}), 400
+
+    nombre_notificacion = str(datos.get('nombre_notificacion', '')).strip() if 'notificaciones' in permisos else ''
+    telefono_notificacion = str(datos.get('telefono_notificacion', '')).strip() if 'notificaciones' in permisos else ''
+    if 'notificaciones' in permisos and (not nombre_notificacion or not telefono_notificacion):
+        return jsonify({'error': 'Nombre y teléfono son obligatorios para Notificaciones.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_usuarios_acceso(cur)
+                if password:
+                    cur.execute(
+                        """UPDATE usuarios_acceso
+                           SET usuario = %s, password_hash = %s, permisos = %s::jsonb,
+                               area_responsable = %s, nombre_notificacion = %s,
+                               telefono_notificacion = %s, updated_at = CURRENT_TIMESTAMP
+                           WHERE id = %s
+                           RETURNING id, usuario, password_hash, permisos, area_responsable,
+                                     nombre_notificacion, telefono_notificacion""",
+                        (usuario, generate_password_hash(password), json.dumps(permisos), area_responsable,
+                         nombre_notificacion, telefono_notificacion, usuario_id),
+                    )
+                else:
+                    cur.execute(
+                        """UPDATE usuarios_acceso
+                           SET usuario = %s, permisos = %s::jsonb, area_responsable = %s,
+                               nombre_notificacion = %s, telefono_notificacion = %s,
+                               updated_at = CURRENT_TIMESTAMP
+                           WHERE id = %s
+                           RETURNING id, usuario, password_hash, permisos, area_responsable,
+                                     nombre_notificacion, telefono_notificacion""",
+                        (usuario, json.dumps(permisos), area_responsable, nombre_notificacion,
+                         telefono_notificacion, usuario_id),
+                    )
+                actualizado = cur.fetchone()
+            conn.commit()
+        if not actualizado:
+            return jsonify({'error': 'Usuario no encontrado.'}), 404
+        return jsonify(usuario_acceso_dict(actualizado))
+    except psycopg2.IntegrityError:
+        return jsonify({'error': 'Ese usuario ya está registrado.'}), 409
+    except Exception as error:
+        return jsonify({'error': str(error)}), 500
+
+
+@app.route('/api/access-users/<int:usuario_id>', methods=['DELETE'])
+def eliminar_usuario_acceso(usuario_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_usuarios_acceso(cur)
+                cur.execute('DELETE FROM usuarios_acceso WHERE id = %s', (usuario_id,))
+                eliminado = cur.rowcount
+            conn.commit()
+        if not eliminado:
+            return jsonify({'error': 'Usuario no encontrado.'}), 404
+        return jsonify({'ok': True})
+    except Exception as error:
+        return jsonify({'error': str(error)}), 500
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def iniciar_sesion_acceso():
+    datos = request.get_json(silent=True) or {}
+    usuario = str(datos.get('usuario', '')).strip()
+    password = str(datos.get('password', '')).strip()
+
+    if not usuario or not password:
+        return jsonify({'error': 'Usuario y contraseña son obligatorios.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_usuarios_acceso(cur)
+                cur.execute(
+                    """SELECT id, usuario, password_hash, permisos, area_responsable,
+                              nombre_notificacion, telefono_notificacion
+                       FROM usuarios_acceso WHERE usuario = %s LIMIT 1""",
+                    (usuario,),
+                )
+                encontrado = cur.fetchone()
+            conn.commit()
+        if not encontrado or not check_password_hash(encontrado[2], password):
+            return jsonify({'error': 'Usuario o contraseña incorrectos.'}), 401
+        return jsonify(usuario_acceso_dict(encontrado))
+    except Exception as error:
+        return jsonify({'error': str(error)}), 500
 
 
 def obtener_columnas(cur, tabla):
