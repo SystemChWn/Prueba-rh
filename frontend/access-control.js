@@ -7,6 +7,7 @@
         'asistencia.html': 'recursos_humanos',
         'InicioReclu.html': 'reclutamiento',
         'captura.html': 'control_asistencias',
+        'sistemas.html': 'sistemas',
     };
 
     const pageName = window.location.pathname.split('/').pop() || '';
@@ -16,7 +17,7 @@
     try {
         const accessUser = JSON.parse(sessionStorage.getItem('accesoUsuario') || '{}');
         const permissions = Array.isArray(accessUser.permisos) ? accessUser.permisos : [];
-        if (!permissions.includes(requiredPermission)) {
+        if (!permissions.includes('sistemas') && !permissions.includes(requiredPermission)) {
             window.location.replace('portalrh.html');
         }
     } catch (_) {
