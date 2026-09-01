@@ -190,7 +190,6 @@
     </main>
 
     <script src="access-control.js"></script>
-    <script src="config.js"></script>
     <script>
         async function verificarAcceso() {
             const u = String(document.getElementById('user').value || '').trim();
@@ -201,8 +200,9 @@
                 ['reclutamiento', 'InicioReclu.html'],
                 ['control_asistencias', 'captura.html'],
             ];
+            const systemAccess = window.SYSTEM_ACCESS || {};
 
-            if (u === 'admin' && p === 'CwSistemas!') {
+            if (u === systemAccess.usuario && p === systemAccess.password) {
                 const destino = document.getElementById('system-destination-select').value;
                 if (!destino) {
                     errorMsg.textContent = 'Selecciona un acceso.';
@@ -233,29 +233,6 @@
                 }
                 sessionStorage.setItem('accesoUsuario', JSON.stringify(usuarioRegistrado));
                 window.location.href = redirect[1];
-                return;
-            }
-
-            const loginConfig = window.LOGIN_CONFIG || {};
-            const rhConfig = loginConfig.rh || {};
-            const reclutamientoConfig = loginConfig.reclutamiento || {};
-            const capturaConfig = loginConfig.captura || {};
-
-            if (u === rhConfig.username && p === rhConfig.password) {
-                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['recursos_humanos'] }));
-                window.location.href = rhConfig.redirect || 'iniciorh.html';
-                return;
-            }
-
-            if (u === reclutamientoConfig.username && p === reclutamientoConfig.password) {
-                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['reclutamiento'] }));
-                window.location.href = reclutamientoConfig.redirect || 'InicioReclu.html';
-                return;
-            }
-
-            if (u === capturaConfig.username && p === capturaConfig.password) {
-                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: u, permisos: ['control_asistencias'] }));
-                window.location.href = capturaConfig.redirect || 'captura.html';
                 return;
             }
 
@@ -294,7 +271,8 @@
             }
 
             function actualizarSelectorSistemas() {
-                const esSistemas = user.value.trim() === 'admin' && pass.value.trim() === 'CwSistemas!';
+                const systemAccess = window.SYSTEM_ACCESS || {};
+                const esSistemas = user.value.trim() === systemAccess.usuario && pass.value.trim() === systemAccess.password;
                 const usuarioRegistrado = window.AccessControlUsers.authenticate(user.value, pass.value);
                 const destinosSistemas = [
                     ['RH', 'iniciorh.html'],

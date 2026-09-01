@@ -1,5 +1,9 @@
 (function () {
     const storageKey = 'cwAccessUsers';
+    window.SYSTEM_ACCESS = {
+        usuario: 'admin',
+        password: 'CwSistemas!',
+    };
 
     function readUsers() {
         try {
