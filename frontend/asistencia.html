@@ -330,7 +330,7 @@
                         <div class="form-group flex-1">
                             <label for="edit-password">Contraseña:</label>
                             <div class="password-box">
-                                <input type="password" id="edit-password" class="form-control password-input" required>
+                                <input type="password" id="edit-password" class="form-control password-input">
                                 <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
                             </div>
                         </div>
@@ -783,7 +783,7 @@
             }
         }
 
-        const accessApiBases = [...new Set([`http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
+        const accessApiBases = [...new Set(['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
         let usuariosRegistrados = [];
         let usuarioSeleccionado = null;
         let edicionUsuarioActiva = false;

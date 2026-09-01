@@ -209,7 +209,7 @@
             }
 
             try {
-                const bases = [...new Set([`http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
+                const bases = [...new Set(['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'])];
                 let loginError = null;
                 for (const baseUrl of bases) {
                     try {
