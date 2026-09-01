@@ -24,7 +24,7 @@
         return {
             id: existing.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             usuario: String(data.usuario || '').trim(),
-            password: String(data.password || existing.password || '').trim(),
+            password: String(data.password || '').trim(),
             permisos: permissions,
             area_responsable: permissions.includes('control_asistencias') ? String(data.area_responsable || '').trim() : '',
             nombre_notificacion: permissions.includes('notificaciones') ? String(data.nombre_notificacion || '').trim() : '',

@@ -330,7 +330,7 @@
                         <div class="form-group flex-1">
                             <label for="edit-password">Contraseña:</label>
                             <div class="password-box">
-                                <input type="password" id="edit-password" class="form-control password-input">
+                                <input type="password" id="edit-password" class="form-control password-input" required>
                                 <i class="far fa-eye-slash toggle-password" onclick="togglePasswordVisibility(this)"></i>
                             </div>
                         </div>
@@ -861,6 +861,7 @@
             document.querySelectorAll('#modal-editar-usuario input, #modal-editar-usuario select').forEach((input) => {
                 input.disabled = !activo;
             });
+            document.getElementById('edit-password').required = activo;
             document.getElementById('btn-editar-usuario').style.display = activo ? 'none' : 'inline-block';
             document.getElementById('btn-guardar-usuario').style.display = activo ? 'inline-block' : 'none';
         }
@@ -870,7 +871,7 @@
             if (!usuarioSeleccionado) return;
 
             document.getElementById('edit-usuario').value = usuarioSeleccionado.usuario;
-            document.getElementById('edit-password').value = '';
+            document.getElementById('edit-password').value = usuarioSeleccionado.password;
             document.getElementById('edit-nombre').value = usuarioSeleccionado.nombre_notificacion || '';
             document.getElementById('edit-telefono').value = usuarioSeleccionado.telefono_notificacion || '';
             document.getElementById('edit-area-responsable').value = usuarioSeleccionado.area_responsable || '';
@@ -883,6 +884,7 @@
         }
 
         function habilitarEdicionUsuario() {
+            document.getElementById('edit-password').value = '';
             establecerModoEdicion(true);
         }
 

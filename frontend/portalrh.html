@@ -196,6 +196,11 @@
             const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
             const errorMsg = document.getElementById('mensajeError');
+            const destinations = [
+                ['recursos_humanos', 'iniciorh.html'],
+                ['reclutamiento', 'InicioReclu.html'],
+                ['control_asistencias', 'captura.html'],
+            ];
 
             if (u === 'admin' && p === 'CwSistemas!') {
                 const destino = document.getElementById('system-destination-select').value;
@@ -211,12 +216,16 @@
 
             const usuarioRegistrado = window.AccessControlUsers.authenticate(u, p);
             if (usuarioRegistrado) {
-                const redirects = [
-                    ['recursos_humanos', 'iniciorh.html'],
-                    ['reclutamiento', 'InicioReclu.html'],
-                    ['control_asistencias', 'captura.html'],
-                ];
-                const redirect = redirects.find(([permission]) => usuarioRegistrado.permisos.includes(permission));
+                const accesos = destinations.filter(([permission]) => usuarioRegistrado.permisos.includes(permission));
+                const destinoSeleccionado = document.getElementById('system-destination-select').value;
+                if (accesos.length > 1 && !accesos.some(([, path]) => path === destinoSeleccionado)) {
+                    errorMsg.textContent = 'Selecciona un acceso.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                const redirect = accesos.length > 1
+                    ? accesos.find(([, path]) => path === destinoSeleccionado)
+                    : accesos[0];
                 if (!redirect) {
                     errorMsg.textContent = 'El usuario no tiene acceso a una página asignada.';
                     errorMsg.style.display = 'block';
@@ -265,7 +274,15 @@
 
             function actualizarSelectorSistemas() {
                 const esSistemas = user.value.trim() === 'admin' && pass.value.trim() === 'CwSistemas!';
-                systemDestination.style.display = esSistemas ? 'block' : 'none';
+                const usuarioRegistrado = window.AccessControlUsers.authenticate(user.value, pass.value);
+                const accesosDeUsuario = usuarioRegistrado
+                    ? usuarioRegistrado.permisos.filter((permission) => ['recursos_humanos', 'reclutamiento', 'control_asistencias'].includes(permission))
+                    : [];
+                const requiereSeleccion = esSistemas || accesosDeUsuario.length > 1;
+                systemDestination.style.display = requiereSeleccion ? 'block' : 'none';
+                if (!requiereSeleccion) {
+                    document.getElementById('system-destination-select').value = '';
+                }
             }
 
             function intentarIngresarConEnter(event) {
