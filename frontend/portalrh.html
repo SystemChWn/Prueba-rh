@@ -271,18 +271,49 @@
             const pass = document.getElementById('pass');
             const form = document.getElementById('loginForm');
             const systemDestination = document.getElementById('system-destination');
+            const destinationSelect = document.getElementById('system-destination-select');
+
+            function llenarDestinos(destinos) {
+                const seleccionado = destinationSelect.value;
+                destinationSelect.textContent = '';
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Selecciona un acceso';
+                destinationSelect.appendChild(defaultOption);
+
+                destinos.forEach(([label, path]) => {
+                    const option = document.createElement('option');
+                    option.value = path;
+                    option.textContent = label;
+                    destinationSelect.appendChild(option);
+                });
+
+                if (destinos.some(([, path]) => path === seleccionado)) {
+                    destinationSelect.value = seleccionado;
+                }
+            }
 
             function actualizarSelectorSistemas() {
                 const esSistemas = user.value.trim() === 'admin' && pass.value.trim() === 'CwSistemas!';
                 const usuarioRegistrado = window.AccessControlUsers.authenticate(user.value, pass.value);
+                const destinosSistemas = [
+                    ['RH', 'iniciorh.html'],
+                    ['Reclutamiento', 'InicioReclu.html'],
+                    ['Control de Asistencias', 'captura.html'],
+                ];
                 const accesosDeUsuario = usuarioRegistrado
-                    ? usuarioRegistrado.permisos.filter((permission) => ['recursos_humanos', 'reclutamiento', 'control_asistencias'].includes(permission))
+                    ? destinosSistemas.filter(([label]) => {
+                        const permission = {
+                            RH: 'recursos_humanos',
+                            Reclutamiento: 'reclutamiento',
+                            'Control de Asistencias': 'control_asistencias',
+                        }[label];
+                        return usuarioRegistrado.permisos.includes(permission);
+                    })
                     : [];
                 const requiereSeleccion = esSistemas || accesosDeUsuario.length > 1;
                 systemDestination.style.display = requiereSeleccion ? 'block' : 'none';
-                if (!requiereSeleccion) {
-                    document.getElementById('system-destination-select').value = '';
-                }
+                llenarDestinos(esSistemas ? destinosSistemas : accesosDeUsuario);
             }
 
             function intentarIngresarConEnter(event) {
