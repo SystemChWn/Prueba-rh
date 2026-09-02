@@ -8,6 +8,7 @@
     <!-- Importar iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         ::-webkit-scrollbar { display: none; }
         body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
@@ -41,7 +42,7 @@
         .half-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 25px; color: #fff; text-align: center; }
         .half-card h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 10px; }
         .half-card p { color: #aaa; margin: 0; font-size: 0.95rem; }
-        .half-card .fecha-hoy { color: #888; font-size: 0.85rem; margin-bottom: 15px; }
+        .half-card .fecha-hoy { color: #ffffff; font-size: 0.85rem; margin-bottom: 15px; }
 
         .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; margin-bottom: 15px; }
         .asistencia-status-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
@@ -677,6 +678,10 @@
             <div class="half-card">
                 <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
                 <p class="fecha-hoy"><span id="current-date"></span></p>
+                <p class="fecha-hoy" style="display: flex; justify-content: space-between; align-items: center; gap: 20px;">
+                    <span><strong>Turno:</strong> <span id="turno-global"></span></span>
+                    <button id="btn-exportar-excel" type="button" class="btn btn-primary" onclick="exportarAsistenciaExcel()">Descargar Excel</button>
+                </p>
                 <br>
                 <div class="table-responsive">
                     <table class="asistencia-status-table">
@@ -684,7 +689,6 @@
                             <tr>
                                 <th>Responsable</th>
                                 <th>Departamento</th>
-                                <th>Turno</th>
                                 <th>Discrepancias</th>
                                 <th>Registro</th>
                             </tr>
@@ -922,9 +926,14 @@
 
         function actualizarFechaHoy() {
             const fechaEl = document.getElementById('current-date');
-            if (!fechaEl) return;
-            const texto = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            fechaEl.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+            const turnoEl = document.getElementById('turno-global');
+            if (fechaEl) {
+                const texto = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                fechaEl.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+            }
+            if (turnoEl) {
+                turnoEl.textContent = window.CwAttendance.calcularTurnoActual();
+            }
         }
 
         function renderEnvioAsistenciaArea() {
@@ -959,8 +968,6 @@
                 departamentoCell.textContent = area;
 
                 const submission = window.CwAttendance.getSubmission(area);
-                const turnoCell = document.createElement('td');
-                turnoCell.textContent = submission ? submission.turno : '—';
                 const discrepanciasCell = document.createElement('td');
                 discrepanciasCell.textContent = '—';
 
@@ -983,9 +990,46 @@
                 }
                 registroCell.appendChild(registroBtn);
 
-                row.append(responsableCell, departamentoCell, turnoCell, discrepanciasCell, registroCell);
+                row.append(responsableCell, departamentoCell, discrepanciasCell, registroCell);
                 tbody.appendChild(row);
             });
+        }
+
+        function formatearAsistencia(valor) {
+            const etiquetas = { en_area: 'EN ÁREA', falta: 'FALTA', retardo: 'RETARDO' };
+            return etiquetas[valor] || String(valor || '').toUpperCase();
+        }
+
+        function exportarAsistenciaExcel() {
+            const submissions = window.CwAttendance.listTodaySubmissions();
+            if (!submissions.length) {
+                alert('No hay asistencias registradas el día de hoy.');
+                return;
+            }
+
+            const fechaTexto = document.getElementById('current-date').textContent;
+            const filas = [];
+
+            submissions.forEach((submission, indice) => {
+                if (indice > 0) filas.push([]);
+                filas.push([fechaTexto]);
+                filas.push([`${submission.area} - ${submission.responsable}`]);
+                filas.push(['N° Empleado', 'Apellido', 'Nombre', 'Asistencia', 'Comentario']);
+                (submission.registros || []).forEach((registro) => {
+                    filas.push([
+                        registro.no_empleado || '',
+                        registro.apellido || '',
+                        registro.nombre || '',
+                        formatearAsistencia(registro.asistencia),
+                        registro.comentario || '',
+                    ]);
+                });
+            });
+
+            const hoja = XLSX.utils.aoa_to_sheet(filas);
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(libro, hoja, 'Asistencia');
+            XLSX.writeFile(libro, `asistencia_${window.CwAttendance.getTodayIso()}.xlsx`);
         }
 
         actualizarFechaHoy();

@@ -32,8 +32,17 @@
         return `${String(area || '').trim().toUpperCase()}__${getTodayIso()}`;
     }
 
+    function calcularTurnoActual() {
+        const ahora = new Date();
+        const minutosDelDia = ahora.getHours() * 60 + ahora.getMinutes();
+        const inicioDia = 7 * 60 + 30;
+        const inicioNoche = 19 * 60 + 30;
+        return (minutosDelDia >= inicioDia && minutosDelDia < inicioNoche) ? 'DÍA' : 'NOCHE';
+    }
+
     window.CwAttendance = {
         getTodayIso,
+        calcularTurnoActual,
         submit(area, data) {
             const areaKey = String(area || '').trim();
             if (!areaKey) throw new Error('No hay área asignada para registrar la asistencia.');

@@ -283,11 +283,7 @@
         }
 
         function calcularTurnoActual() {
-            const ahora = new Date();
-            const minutosDelDia = ahora.getHours() * 60 + ahora.getMinutes();
-            const inicioDia = 7 * 60 + 30;
-            const inicioNoche = 17 * 60 + 30;
-            return (minutosDelDia >= inicioDia && minutosDelDia < inicioNoche) ? 'DÍA' : 'NOCHE';
+            return window.CwAttendance.calcularTurnoActual();
         }
 
         function getAreaActual() {
