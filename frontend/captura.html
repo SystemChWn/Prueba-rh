@@ -196,9 +196,9 @@
                 <span id="fecha-hoy" style="color: #ffffff; font-size: 0.9rem;">Viernes, 21 de Agosto de 2026</span>
             </div>
             <div class="card-grid">
-                <div><strong>Área:</strong> <span>Producción</span></div>
-                <div><strong>TURNO:</strong> <span>DÍA</span></div>
-                <div><strong>Responsable:</strong> <span>Juan Pérez</span></div>
+                <div><strong>Área:</strong> <span id="area-actual">—</span></div>
+                <div><strong>TURNO:</strong> <span id="turno-actual">—</span></div>
+                <div><strong>Responsable:</strong> <span id="responsable-actual">—</span></div>
             </div>
         </div>
 
@@ -242,53 +242,104 @@
                         <th>Comentarios</th>
                     </tr>   
                 </thead>
-                <tbody>
-                    <!-- Fila de Ejemplo 1 -->
-                    <tr>
-                        <td>1024</td>
-                        <td>González</td>
-                        <td>Carlos</td>
-                        <td>
-                            <select class="select-asistencia" style="background: #86efac; color: #000;">
-                                <option value="en_area" style="background: #86efac; color: #000;" selected>EN AREA</option>
-                                <option value="falta" style="background: #fca5a5; color: #000;">FALTA</option>
-                                <option value="retardo" style="background: #fde047; color: #000;">RETARDO</option>
-                            </select>
-                        </td>
-                        <td>
-                            <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #2a2a2a; color: #9ca3af;">
-                        </td>
-                    </tr>
-                </tbody>
+                <tbody id="tabla-lista-asistencia"></tbody>
             </table>
         </div>
     </main>
 
     <script>
-        // Función para desplegar u ocultar la sección de información
-        function toggleInfo() {
-            const contenido = document.getElementById('contenido-info');
-            const flecha = document.getElementById('flecha-info');
-            if (contenido.style.display === 'none' || contenido.style.display === '') {
-                contenido.style.display = 'block';
-                flecha.style.transform = 'rotate(180deg)';
-            } else {
-                contenido.style.display = 'none';
-                flecha.style.transform = 'rotate(0deg)';
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_BASES = [...new Set(['', `http://${currentHost}:${PORT}`, `http://localhost:${PORT}`])];
+
+        const accessUser = JSON.parse(sessionStorage.getItem('accesoUsuario') || '{}');
+        const esAdmin = Array.isArray(accessUser.permisos) && accessUser.permisos.includes('sistemas');
+        const areaResponsableCuenta = String(accessUser.area_responsable || '').trim();
+        const responsableActual = String(accessUser.usuario || '').trim();
+        const AREAS_DISPONIBLES = ['Almacen', 'EPS', 'Ensamble', 'Calidad', 'Compras', 'Embarques', 'Corte'];
+
+        async function obtenerEmpleadosCheongWoon() {
+            let lastError = null;
+            for (const baseUrl of API_BASES) {
+                try {
+                    const response = await fetch(`${baseUrl}/api/obtener-empleados/CHEONG_WOON`);
+                    const texto = await response.text();
+                    if (!response.ok) throw new Error(texto || 'No se pudo cargar la lista de empleados.');
+                    const empleados = JSON.parse(texto || '[]');
+                    return Array.isArray(empleados) ? empleados : [];
+                } catch (error) {
+                    lastError = error;
+                }
             }
+            throw lastError || new Error('No se pudo conectar con el servidor.');
         }
 
-        // Función de ejemplo para el botón Enviar Asistencia
-        function enviarAsistencia() {
-            alert('Asistencia enviada correctamente.');
+        function parseNombreCompleto(nombreCompleto) {
+            const palabras = String(nombreCompleto || '').trim().split(/\s+/).filter(Boolean);
+            if (!palabras.length) return { nombre: '', apellido: '' };
+            const apellido = palabras.slice(-2).join(' ');
+            const nombre = palabras.slice(0, -2).join(' ');
+            return { nombre: nombre || palabras[0], apellido };
         }
 
-        // Lógica para cambiar colores del select y habilitar comentarios solo en 'retardo'
-        document.querySelectorAll('.select-asistencia').forEach(select => {
-            select.addEventListener('change', function() {
-                const fila = this.closest('tr');
-                const inputComentario = fila.querySelector('.input-comentario');
-                
+        function calcularTurnoActual() {
+            const ahora = new Date();
+            const minutosDelDia = ahora.getHours() * 60 + ahora.getMinutes();
+            const inicioDia = 7 * 60 + 30;
+            const inicioNoche = 17 * 60 + 30;
+            return (minutosDelDia >= inicioDia && minutosDelDia < inicioNoche) ? 'DÍA' : 'NOCHE';
+        }
+
+        function getAreaActual() {
+            if (!esAdmin) return areaResponsableCuenta;
+            const select = document.getElementById('area-select');
+            return select ? select.value : '';
+        }
+
+        function getTurnoActual() {
+            if (!esAdmin) return calcularTurnoActual();
+            const select = document.getElementById('turno-select');
+            return select ? select.value : calcularTurnoActual();
+        }
+
+        function configurarEncabezadoAdmin() {
+            if (!esAdmin) return;
+            const estiloSelect = 'padding:4px 8px; border-radius:4px; background:#141414; color:#fff; border:1px solid #444; font-weight:bold;';
+
+            const areaSelect = document.createElement('select');
+            areaSelect.id = 'area-select';
+            areaSelect.style.cssText = estiloSelect;
+            areaSelect.innerHTML = '<option value="">Selecciona un área</option>' +
+                AREAS_DISPONIBLES.map((area) => `<option value="${area}">${area}</option>`).join('');
+            areaSelect.addEventListener('change', () => {
+                actualizarEncabezado();
+                cargarListaAsistencia();
+            });
+            document.getElementById('area-actual').replaceWith(areaSelect);
+
+            const turnoSelect = document.createElement('select');
+            turnoSelect.id = 'turno-select';
+            turnoSelect.style.cssText = estiloSelect;
+            turnoSelect.innerHTML = '<option value="DÍA">DÍA</option><option value="NOCHE">NOCHE</option>';
+            turnoSelect.value = calcularTurnoActual();
+            document.getElementById('turno-actual').replaceWith(turnoSelect);
+        }
+
+        function actualizarEncabezado() {
+            const fechaEl = document.getElementById('fecha-hoy');
+            const texto = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            fechaEl.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+            if (!esAdmin) {
+                document.getElementById('area-actual').textContent = areaResponsableCuenta || 'Sin área asignada';
+                document.getElementById('turno-actual').textContent = calcularTurnoActual();
+            }
+            document.getElementById('responsable-actual').textContent = responsableActual || '—';
+        }
+
+        function activarFilaAsistencia(fila) {
+            const select = fila.querySelector('.select-asistencia');
+            const inputComentario = fila.querySelector('.input-comentario');
+            select.addEventListener('change', function () {
                 if (this.value === 'en_area') {
                     this.style.background = '#86efac';
                     this.style.color = '#000';
@@ -314,7 +365,110 @@
                     inputComentario.placeholder = 'Solo obligatorio en retardo...';
                 }
             });
-        });
+        }
+
+        function crearFilaAsistencia(empleado) {
+            const { nombre, apellido } = parseNombreCompleto(empleado.nombre);
+            const fila = document.createElement('tr');
+            fila.dataset.noEmpleado = empleado.no_empleado || '';
+            fila.innerHTML = `
+                <td>${empleado.no_empleado || ''}</td>
+                <td>${apellido}</td>
+                <td>${nombre}</td>
+                <td>
+                    <select class="select-asistencia" style="background: #86efac; color: #000;">
+                        <option value="en_area" style="background: #86efac; color: #000;" selected>EN AREA</option>
+                        <option value="falta" style="background: #fca5a5; color: #000;">FALTA</option>
+                        <option value="retardo" style="background: #fde047; color: #000;">RETARDO</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="input-comentario" placeholder="Solo obligatorio en retardo..." disabled style="background: #2a2a2a; color: #9ca3af;">
+                </td>
+            `;
+            activarFilaAsistencia(fila);
+            return fila;
+        }
+
+        async function cargarListaAsistencia() {
+            const tbody = document.getElementById('tabla-lista-asistencia');
+            tbody.textContent = '';
+            const areaActual = getAreaActual();
+
+            if (!areaActual) {
+                const mensaje = esAdmin ? 'Selecciona un área para ver la lista.' : 'No hay área asignada a este usuario.';
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensaje}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando empleados...</td></tr>';
+
+            try {
+                const empleados = await obtenerEmpleadosCheongWoon();
+                const delArea = empleados.filter((empleado) => String(empleado.area || '').trim().toUpperCase() === areaActual.toUpperCase());
+                tbody.textContent = '';
+
+                if (!delArea.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay empleados registrados en esta área.</td></tr>';
+                    return;
+                }
+
+                delArea.forEach((empleado) => tbody.appendChild(crearFilaAsistencia(empleado)));
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${error.message}</td></tr>`;
+            }
+        }
+
+        // Función para desplegar u ocultar la sección de información
+        function toggleInfo() {
+            const contenido = document.getElementById('contenido-info');
+            const flecha = document.getElementById('flecha-info');
+            if (contenido.style.display === 'none' || contenido.style.display === '') {
+                contenido.style.display = 'block';
+                flecha.style.transform = 'rotate(180deg)';
+            } else {
+                contenido.style.display = 'none';
+                flecha.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function enviarAsistencia() {
+            const areaActual = getAreaActual();
+            if (!areaActual) {
+                alert('No hay área asignada para registrar la asistencia.');
+                return;
+            }
+
+            const filas = Array.from(document.querySelectorAll('#tabla-lista-asistencia tr'));
+            const registros = [];
+            for (const fila of filas) {
+                if (!fila.dataset.noEmpleado) continue;
+                const asistencia = fila.querySelector('.select-asistencia').value;
+                const comentario = fila.querySelector('.input-comentario').value.trim();
+                if (asistencia === 'retardo' && !comentario) {
+                    alert('Registra un comentario para los empleados marcados como RETARDO.');
+                    return;
+                }
+                registros.push({
+                    no_empleado: fila.dataset.noEmpleado,
+                    apellido: fila.children[1].textContent,
+                    nombre: fila.children[2].textContent,
+                    asistencia,
+                    comentario,
+                });
+            }
+
+            window.CwAttendance.submit(areaActual, {
+                responsable: responsableActual,
+                turno: getTurnoActual(),
+                registros,
+            });
+            alert('Asistencia enviada correctamente.');
+        }
+
+        configurarEncabezadoAdmin();
+        actualizarEncabezado();
+        cargarListaAsistencia();
     </script>
 </body>
 </html>

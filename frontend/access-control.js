@@ -5,6 +5,67 @@
         password: 'CwSistemas!',
     };
 
+    const attendanceStorageKey = 'cwAttendanceSubmissions';
+
+    function getTodayIso() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function readAttendanceMap() {
+        try {
+            const map = JSON.parse(localStorage.getItem(attendanceStorageKey) || '{}');
+            return map && typeof map === 'object' ? map : {};
+        } catch (_) {
+            return {};
+        }
+    }
+
+    function writeAttendanceMap(map) {
+        localStorage.setItem(attendanceStorageKey, JSON.stringify(map));
+    }
+
+    function attendanceKey(area) {
+        return `${String(area || '').trim().toUpperCase()}__${getTodayIso()}`;
+    }
+
+    window.CwAttendance = {
+        getTodayIso,
+        submit(area, data) {
+            const areaKey = String(area || '').trim();
+            if (!areaKey) throw new Error('No hay área asignada para registrar la asistencia.');
+            const map = readAttendanceMap();
+            const record = { ...data, area: areaKey, fecha: getTodayIso(), registradoEn: new Date().toISOString() };
+            map[attendanceKey(areaKey)] = record;
+            writeAttendanceMap(map);
+            return record;
+        },
+        isRegistered(area) {
+            if (!String(area || '').trim()) return false;
+            return Boolean(readAttendanceMap()[attendanceKey(area)]);
+        },
+        getSubmission(area) {
+            return readAttendanceMap()[attendanceKey(area)] || null;
+        },
+        remove(area) {
+            const map = readAttendanceMap();
+            const key = attendanceKey(area);
+            if (!(key in map)) return false;
+            delete map[key];
+            writeAttendanceMap(map);
+            return true;
+        },
+        listTodaySubmissions() {
+            const suffix = `__${getTodayIso()}`;
+            return Object.entries(readAttendanceMap())
+                .filter(([key]) => key.endsWith(suffix))
+                .map(([, record]) => record);
+        },
+    };
+
     function readUsers() {
         try {
             const users = JSON.parse(localStorage.getItem(storageKey) || '[]');

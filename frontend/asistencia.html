@@ -684,6 +684,8 @@
                             <tr>
                                 <th>Responsable</th>
                                 <th>Departamento</th>
+                                <th>Turno</th>
+                                <th>Discrepancias</th>
                                 <th>Registro</th>
                             </tr>
                         </thead>
@@ -927,18 +929,58 @@
             if (!tbody) return;
             tbody.textContent = '';
 
-            const responsables = window.AccessControlUsers.list()
-                .filter((usuario) => usuario.permisos.includes('control_asistencias') && usuario.area_responsable);
+            const filas = [];
+            const areasVistas = new Set();
 
-            responsables.forEach((usuario) => {
+            window.AccessControlUsers.list()
+                .filter((usuario) => usuario.permisos.includes('control_asistencias') && usuario.area_responsable)
+                .forEach((usuario) => {
+                    const areaKey = usuario.area_responsable.trim().toUpperCase();
+                    if (areasVistas.has(areaKey)) return;
+                    areasVistas.add(areaKey);
+                    filas.push({ responsable: usuario.usuario, area: usuario.area_responsable });
+                });
+
+            window.CwAttendance.listTodaySubmissions().forEach((submission) => {
+                const areaKey = String(submission.area || '').trim().toUpperCase();
+                if (!areaKey || areasVistas.has(areaKey)) return;
+                areasVistas.add(areaKey);
+                filas.push({ responsable: submission.responsable, area: submission.area });
+            });
+
+            filas.forEach(({ responsable, area }) => {
                 const row = document.createElement('tr');
                 const responsableCell = document.createElement('td');
-                responsableCell.textContent = usuario.usuario;
+                responsableCell.textContent = responsable;
                 const departamentoCell = document.createElement('td');
-                departamentoCell.textContent = usuario.area_responsable;
+                departamentoCell.textContent = area;
+
+                const submission = window.CwAttendance.getSubmission(area);
+                const turnoCell = document.createElement('td');
+                turnoCell.textContent = submission ? submission.turno : '—';
+                const discrepanciasCell = document.createElement('td');
+                discrepanciasCell.textContent = '—';
+
                 const registroCell = document.createElement('td');
-                registroCell.innerHTML = '<span class="badge no-registrada">No registrada</span>';
-                row.append(responsableCell, departamentoCell, registroCell);
+                const registrada = Boolean(submission);
+                const registroBtn = document.createElement('button');
+                registroBtn.type = 'button';
+                registroBtn.className = `badge ${registrada ? 'registrada' : 'no-registrada'}`;
+                registroBtn.style.border = 'none';
+                registroBtn.style.cursor = registrada ? 'pointer' : 'default';
+                registroBtn.textContent = registrada ? 'Registrada' : 'No registrada';
+                if (registrada) {
+                    registroBtn.addEventListener('click', () => {
+                        if (!confirm('¿Deseas eliminar este registro? Podrá volver a capturarse.')) return;
+                        window.CwAttendance.remove(area);
+                        renderEnvioAsistenciaArea();
+                    });
+                } else {
+                    registroBtn.disabled = true;
+                }
+                registroCell.appendChild(registroBtn);
+
+                row.append(responsableCell, departamentoCell, turnoCell, discrepanciasCell, registroCell);
                 tbody.appendChild(row);
             });
         }
