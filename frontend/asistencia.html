@@ -841,6 +841,7 @@
                 form.reset();
                 toggleCamposAdicionales();
                 cargarUsuariosRegistrados();
+                renderEnvioAsistenciaArea();
                 cambiarPestanaAcceso('registrados');
             } catch (error) {
                 alert(error.message);
@@ -898,6 +899,7 @@
             try {
                 window.AccessControlUsers.update(usuarioSeleccionado.id, payload);
                 cargarUsuariosRegistrados();
+                renderEnvioAsistenciaArea();
                 cerrarModalEditarUsuario();
             } catch (error) {
                 alert(error.message);
@@ -909,6 +911,7 @@
             try {
             window.AccessControlUsers.remove(usuarioSeleccionado.id);
             cargarUsuariosRegistrados();
+            renderEnvioAsistenciaArea();
                 cerrarModalEditarUsuario();
             } catch (error) {
                 alert(error.message);

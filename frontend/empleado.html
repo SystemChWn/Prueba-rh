@@ -932,7 +932,18 @@
                                     </select>
                                 </div>
                                 <div><div class="muted">Puesto</div><input id="puesto" class="editable-control" type="text" readonly /></div>
-                                <div><div class="muted">Área</div><input id="area" class="editable-control" type="text" readonly /></div>
+                                <div><div class="muted">Área</div>
+                                    <select id="area" class="editable-control" disabled>
+                                        <option value="">Selecciona la opcion</option>
+                                        <option value="Almacen">Almacen</option>
+                                        <option value="EPS">EPS</option>
+                                        <option value="Ensamble">Ensamble</option>
+                                        <option value="Calidad">Calidad</option>
+                                        <option value="Compras">Compras</option>
+                                        <option value="Embarques">Embarques</option>
+                                        <option value="Corte">Corte</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -1316,7 +1327,7 @@
             fields['no-empleado'].value = getDisplayValue(data.no_empleado);
             setSelectValue(fields['personal'], data.personal);
             fields['puesto'].value = getDisplayValue(data.puesto);
-            fields['area'].value = getDisplayValue(data.area);
+            setSelectValue(fields['area'], data.area);
             setSelectValue(fields['turno'], data.turno);
             fields['salario'].value = getDisplayValue(data.salario);
             setSelectValue(fields['pago'], data.pago);
