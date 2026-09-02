@@ -30,7 +30,7 @@
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px); justify-content: center; align-items: center; z-index: 1000; }
         
-        .modal-content { background: #282828; border: 1px solid #333; border-radius: 12px; padding: 40px 50px; width: 95%; max-width: 850px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; text-align: left; position: relative; max-height: 92vh; overflow-y: auto; box-sizing: border-box; }
+        .modal-content { background: #282828; border: 1px solid #333; border-radius: 12px; padding: 40px 50px; width: 95%; max-width: 1200px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; text-align: left; position: relative; max-height: 92vh; overflow-y: auto; box-sizing: border-box; }
         .modal-content h3 { margin-top: 0; color: #fff; font-size: 1.4rem; margin-bottom: 25px; }
 
         .close-modal-x { background: transparent; border: none; color: #ffffff; font-size: 1.2rem; position: absolute; top: 25px; right: 30px; cursor: pointer; }
@@ -71,6 +71,109 @@
         .form-group label { display: block; color: #aaa; font-size: 0.85rem; margin-bottom: 5px; }
         .form-control { width: 100%; background: #141414; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
         .form-control:focus { border-color: #007bff; outline: none; }
+
+        .incidencias-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .incidencia-modal-content {
+            height: 700px;
+            max-height: 88vh;
+            padding: 28px 32px;
+        }
+
+        .incidencia-nav-btn {
+            flex: 1 0 auto;
+            white-space: nowrap;
+            padding: 8px 10px;
+            font-size: 0.82rem;
+        }
+
+        .incidencia-nav-btn.active {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .incidencia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .incidencia-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .formatos-menu {
+            position: relative;
+            cursor: default;
+        }
+
+        .formatos-menu h3 {
+            cursor: default;
+        }
+
+        .formatos-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            padding: 10px 8px 8px;
+            background: #1e1e1e;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .formatos-menu:hover .formatos-dropdown,
+        .formatos-menu:focus-within .formatos-dropdown {
+            display: grid;
+            gap: 6px;
+        }
+
+        .formato-option {
+            display: block;
+            padding: 9px 10px;
+            border-radius: 5px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .formato-option:hover,
+        .formato-option:focus {
+            background: #007bff;
+            color: #fff;
+            outline: none;
+        }
+
+        .seccion-incidencia-content .form-group:has(input[id$="-num"]) {
+            flex: 0 1 170px;
+        }
+
+        .seccion-incidencia-content .form-group:has(input[id$="-area"]),
+        .seccion-incidencia-content .form-group:has(input[id$="-puesto"]) {
+            flex: 0 1 220px;
+        }
+
+        .seccion-incidencia-content .file-upload-wrapper {
+            max-width: 420px;
+        }
+
+        .seccion-incidencia-content .form-group {
+            margin-bottom: 10px;
+        }
 
         /* Pestañas de Navegación Interna (Control de Accesos) */
         .access-tabs { display: flex; gap: 10px; border-bottom: 1px solid #444; margin-bottom: 20px;}
@@ -203,9 +306,14 @@
             <button class="metric-card-asistencia" type="button" data-modal="modal-control-accesos">
                 <h3>Control de Accesos</h3>
             </button>
-            <button class="metric-card-incidencias" type="button" data-modal="modal-gestion-incidencias">
-                <h3>Gestión de Incidencias</h3>
-            </button>
+            <div class="metric-card-incidencias formatos-menu" tabindex="0">
+                <h3>Formatos Imprimibles</h3>
+                <div class="formatos-dropdown">
+                    <a class="formato-option" href="https://drive.google.com/file/d/1IMw93o8y56e423HZoKVJNnE5z5b26e5A/view?usp=sharing">Suspensión</a>
+                    <a class="formato-option" href="https://drive.google.com/file/d/1MjIXgFLUJAO25hNfZb0IzTFwIW4YLvU5/view?usp=sharing">Entrada/Salida</a>
+                    <a class="formato-option" href="https://drive.google.com/file/d/1gWuv28J-7WjbfsaOdUMSIb0Mbb6KHRqO/view?usp=sharing">Indisciplina</a>
+                </div>
+            </div>
         </div>
 
         <!-- ========================================== -->
@@ -383,249 +491,6 @@
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- BOTÓN 2: GESTIÓN DE INCIDENCIAS            -->
-        <!-- ========================================== -->
-        <div id="modal-gestion-incidencias" class="modal-overlay">
-            <div class="modal-content">
-                <button class="close-modal-x close-modal" type="button">✖</button>
-                <h3>Gestión de Incidencias</h3>
-
-                <!-- MENÚ DESPLEGABLE PRINCIPAL PARA SELECCIONAR LA OPCIÓN -->
-                <div class="form-group" style="max-width: 450px; margin-bottom: 30px;">
-                    <label for="select-menu-incidencias" style="font-weight: bold; color: #fff; font-size: 0.95rem;">Seleccione la opción de incidencia:</label>
-                    <select id="select-menu-incidencias" class="form-control" onchange="seleccionarOpcionIncidencia(this.value)" style="border-color: #007bff; font-weight: bold;">
-                        <option value="justificaciones">Justificaciones</option>
-                        <option value="suspensiones">Suspensiones</option>
-                        <option value="pase">Pase de Entrada / Salida</option>
-                        <option value="reporte">Reporte de Indiciplina</option>
-                        <option value="carta">Carta Compromiso</option>
-                    </select>
-                </div>
-
-                <!-- CONTENEDORES DE CADA OPCIÓN DEL MENÚ -->
-
-                <!-- 1. JUSTIFICACIONES -->
-                <div id="seccion-justificaciones" class="seccion-incidencia-content" style="display: block;">
-                    <div style="display: flex; justify-content: center; border-bottom: 1px solid #444; margin-bottom: 20px; gap: 20px;">
-                        <span style="padding: 8px 12px; font-weight: bold; color: #007bff; border-bottom: 2px solid #007bff; font-size: 0.9rem;">Listado de Faltas de Empleados</span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="asistencia-status-table">
-                            <thead>
-                                <tr>
-                                    <th>N° Empleado</th>
-                                    <th>Nombre</th>
-                                    <th>Fecha de Falta</th>
-                                    <th style="text-align: center;">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1001</td>
-                                    <td>Juan Pérez</td>
-                                    <td>2026-08-25</td>
-                                    <td style="text-align: center;">
-                                        <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="abrirModalJustificar('1001', 'Juan Pérez')">Falta</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>1002</td>
-                                    <td>María López</td>
-                                    <td>2026-08-26</td>
-                                    <td style="text-align: center;">
-                                        <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="abrirModalJustificar('1002', 'María López')">Falta</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 2. SUSPENSIONES -->
-                <div id="seccion-suspensiones" class="seccion-incidencia-content" style="display: none;">
-                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
-                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('sus', 'registrar')">Registrar</button>
-                        <a href="https://drive.google.com/file/d/1IMw93o8y56e423HZoKVJNnE5z5b26e5A/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
-                    </div>
-
-                    <div id="sus-registrar" class="sub-seccion-interna" style="display: none;">
-                        <form onsubmit="event.preventDefault(); alert('¡Suspensión guardada con éxito!');">
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>N° de Empleado:</label>
-                                    <input type="text" id="sus-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('sus')">
-                                </div>
-                                <div class="form-group flex-2" style="flex: 2;">
-                                    <label>Nombre Completo:</label>
-                                    <input type="text" id="sus-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('sus')">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>Área:</label>
-                                    <input type="text" id="sus-area" class="form-control" readonly>
-                                </div>
-                                <div class="form-group flex-1">
-                                    <label>Puesto:</label>
-                                    <input type="text" id="sus-puesto" class="form-control" readonly>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Adjuntar Aviso:</label>
-                                <div class="file-upload-wrapper">
-                                    <label class="file-upload-btn" for="file-sus">
-                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo o arrástrelo aquí
-                                    </label>
-                                    <input type="file" id="file-sus" onchange="mostrarNombreArchivo(this)" required>
-                                    <span class="file-name-display" id="file-sus-name">Ningún archivo seleccionado</span>
-                                </div>
-                            </div>
-                            <div style="text-align: right; margin-top: 20px;">
-                                <button type="submit" class="btn btn-success">Guardar Suspensión</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 3. PASE DE ENTRADA / SALIDA -->
-                <div id="seccion-pase" class="seccion-incidencia-content" style="display: none;">
-                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
-                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('pase', 'registrar')">Registrar</button>
-                        <a href="https://drive.google.com/file/d/1MjIXgFLUJAO25hNfZb0IzTFwIW4YLvU5/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
-                    </div>
-
-                    <div id="pase-registrar" class="sub-seccion-interna" style="display: none;">
-                        <form onsubmit="event.preventDefault(); alert('¡Pase de entrada/salida registrado con éxito!');">
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>N° de Empleado:</label>
-                                    <input type="text" id="pase-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('pase')">
-                                </div>
-                                <div class="form-group flex-2" style="flex: 2;">
-                                    <label>Nombre Completo:</label>
-                                    <input type="text" id="pase-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('pase')">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>Área:</label>
-                                    <input type="text" id="pase-area" class="form-control" readonly>
-                                </div>
-                                <div class="form-group flex-1">
-                                    <label>Puesto:</label>
-                                    <input type="text" id="pase-puesto" class="form-control" readonly>
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>Tipo de Pase:</label>
-                                    <select id="pase-tipo" class="form-control" onchange="cambiarTipoPase()">
-                                        <option value="entrada">Entrada</option>
-                                        <option value="salida">Salida</option>
-                                    </select>
-                                </div>
-                                <div class="form-group flex-1" id="grupo-hora">
-                                    <label id="lbl-hora">Hora de Entrada:</label>
-                                    <input type="time" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Adjuntar Permiso:</label>
-                                <div class="file-upload-wrapper">
-                                    <label class="file-upload-btn" for="file-pase">
-                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo o arrástrelo aquí
-                                    </label>
-                                    <input type="file" id="file-pase" onchange="mostrarNombreArchivo(this)" required>
-                                    <span class="file-name-display" id="file-pase-name">Ningún archivo seleccionado</span>
-                                </div>
-                            </div>
-                            <div style="text-align: right; margin-top: 20px;">
-                                <button type="submit" class="btn btn-success">Guardar Pase</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 4. REPORTE DE INDICIPLINA -->
-                <div id="seccion-reporte" class="seccion-incidencia-content" style="display: none;">
-                    <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
-                        <button type="button" class="btn btn-primary" onclick="mostrarSeccionInterna('rep', 'registrar')">Registrar</button>
-                        <a href="https://drive.google.com/file/d/1gWuv28J-7WjbfsaOdUMSIb0Mbb6KHRqO/view?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">Formato Imprimible</a>
-                    </div>
-
-                    <div id="rep-registrar" class="sub-seccion-interna" style="display: none;">
-                        <form onsubmit="event.preventDefault(); alert('¡Reporte de indisciplina guardado con éxito!');">
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>N° de Empleado:</label>
-                                    <input type="text" id="rep-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('rep')">
-                                </div>
-                                <div class="form-group flex-2" style="flex: 2;">
-                                    <label>Nombre Completo:</label>
-                                    <input type="text" id="rep-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('rep')">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <div class="form-group flex-1">
-                                    <label>Área:</label>
-                                    <input type="text" id="rep-area" class="form-control" readonly>
-                                </div>
-                                <div class="form-group flex-1">
-                                    <label>Puesto:</label>
-                                    <input type="text" id="rep-puesto" class="form-control" readonly>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Adjuntar Reporte:</label>
-                                <div class="file-upload-wrapper">
-                                    <label class="file-upload-btn" for="file-rep">
-                                        <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo o arrástrelo aquí
-                                    </label>
-                                    <input type="file" id="file-rep" onchange="mostrarNombreArchivo(this)" required>
-                                    <span class="file-name-display" id="file-rep-name">Ningún archivo seleccionado</span>
-                                </div>
-                            </div>
-                            <div style="text-align: right; margin-top: 20px;">
-                                <button type="submit" class="btn btn-success">Guardar Reporte</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 5. CARTA COMPROMISO -->
-                <div id="seccion-carta" class="seccion-incidencia-content" style="display: none;">
-                    <form onsubmit="event.preventDefault(); alert('Generando carta compromiso...');">
-                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                            <div class="form-group flex-1">
-                                <label>N° de Empleado:</label>
-                                <input type="text" id="carta-num" class="form-control" placeholder="Ej. 1001" oninput="autocompletarPorNum('carta')">
-                            </div>
-                            <div class="form-group flex-2" style="flex: 2;">
-                                <label>Nombre Completo:</label>
-                                <input type="text" id="carta-nombre" class="form-control" placeholder="Ej. Juan Pérez" oninput="autocompletarPorNombre('carta')">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                            <div class="form-group flex-1">
-                                <label>Área:</label>
-                                <input type="text" id="carta-area" class="form-control" readonly>
-                            </div>
-                            <div class="form-group flex-1">
-                                <label>Puesto:</label>
-                                <input type="text" id="carta-puesto" class="form-control" readonly>
-                            </div>
-                        </div>
-                        <div style="text-align: right; margin-top: 25px;">
-                            <a href="automatizacion_carta.html" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Generar Carta (Abrir en nueva pestaña)</a>
-                        </div>
-                    </form>
-                </div>
-
-            </div>
-        </div>
-
         <!-- MODAL AUXILIAR PARA JUSTIFICAR FALTA DESDE LA TABLA -->
         <div id="modal-justificar-falta" class="modal-overlay">
             <div class="modal-content" style="max-width: 550px;">
@@ -750,7 +615,7 @@
             "1003": { nombre: "Pedro Gómez", area: "Almacen", puesto: "Montacarguista" }
         };
 
-        document.querySelectorAll('.metric-card-asistencia, .metric-card-incidencias').forEach(btn => {
+        document.querySelectorAll('.metric-card-asistencia').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = document.getElementById(btn.getAttribute('data-modal'));
                 if (target) target.style.display = 'flex';
@@ -1035,8 +900,10 @@
         actualizarFechaHoy();
         renderEnvioAsistenciaArea();
 
-        // Función del menú desplegable para Gestión de Incidencias
         function seleccionarOpcionIncidencia(opcionValor) {
+            document.querySelectorAll('.incidencia-nav-btn').forEach((button) => {
+                button.classList.toggle('active', button.getAttribute('onclick') === `seleccionarOpcionIncidencia('${opcionValor}')`);
+            });
             document.querySelectorAll('.seccion-incidencia-content').forEach(c => {
                 c.style.display = 'none';
                 c.querySelectorAll('.sub-seccion-interna').forEach(sub => sub.style.display = 'none');
@@ -1044,6 +911,8 @@
             const seccionSeleccionada = document.getElementById(`seccion-${opcionValor}`);
             if (seccionSeleccionada) {
                 seccionSeleccionada.style.display = 'block';
+                const formularioRegistro = seccionSeleccionada.querySelector('.sub-seccion-interna');
+                if (formularioRegistro) formularioRegistro.style.display = 'block';
             }
         }
 

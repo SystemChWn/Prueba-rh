@@ -374,6 +374,105 @@
             text-align: center;
         }
 
+        .attendance-actions {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .incidencias-menu-trigger {
+            display: inline-flex;
+            width: auto;
+            min-width: 150px;
+            justify-content: center;
+        }
+
+        .incidencias-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 30;
+            min-width: 210px;
+            padding: 8px;
+            background: var(--negro);
+            border: 1px solid var(--azul);
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        }
+
+        .attendance-actions:hover .incidencias-dropdown,
+        .attendance-actions:focus-within .incidencias-dropdown {
+            display: grid;
+            gap: 4px;
+        }
+
+        .incidencia-option {
+            display: block;
+            width: 100%;
+            padding: 9px 10px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--blanco);
+            text-align: left;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .incidencia-option:hover,
+        .incidencia-option:focus {
+            background: var(--azrey);
+            outline: none;
+        }
+
+        .incidencia-modal .modal-content {
+            max-width: 620px;
+        }
+
+        .incidencia-modal .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .motivo-options {
+            display: grid;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .motivo-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--blanco);
+        }
+
+        .motivo-options input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--azul);
+        }
+
+        .calendar-day.suspended {
+            background: var(--rojo);
+            border-color: var(--rojo);
+            color: var(--blanco);
+        }
+
+        .notification-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            color: var(--blanco);
+            font-size: 0.9rem;
+        }
+
+        .notification-item strong {
+            display: block;
+            color: var(--azul);
+            margin-bottom: 4px;
+        }
+
         .empty-panel {
             min-height: 660px;
             border:none;
@@ -757,6 +856,8 @@
             .top-row { flex-direction: column; }
             .edit-group { width: 100%; }
             .fecha-inline { min-width: 0; }
+
+            .incidencia-modal .form-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -1087,6 +1188,17 @@
                 </div>
 
                 <div id="tab-asistencia" class="tabs-panel">
+                    <div class="attendance-actions">
+                        <button class="action-btn incidencias-menu-trigger" type="button">Incidencias</button>
+                        <div class="incidencias-dropdown">
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('suspension')">Suspensión</button>
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('entrada-salida')">Entrada/Salida</button>
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('indisciplina')">Indisciplina</button>
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta de Suspensión</button>
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('vacaciones')">Vacaciones</button>
+                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('incapacidad')">Incapacidades</button>
+                        </div>
+                    </div>
                     <div class="attendance-layout">
                         <section class="attendance-calendar">
                             <div id="calendar-month" class="calendar-header"></div>
@@ -1096,9 +1208,50 @@
                             <div id="calendar-days" class="calendar-days"></div>
                         </section>
                         <aside class="notification-history">
-                            <div class="label">HISTORIAL DE NOTIFICACIONES</div>
-                            <div class="muted">Sin notificaciones</div>
+                            <div class="label">NOTIFICACIONES</div>
+                            <div id="notification-history-list"><div class="muted">Sin notificaciones</div></div>
                         </aside>
+                    </div>
+
+                    <div id="modal-incidencia" class="modal-overlay incidencia-modal">
+                        <div class="modal-content">
+                            <button class="close-modal-x" type="button" onclick="cerrarIncidencia()">✖</button>
+                            <h3 id="incidencia-modal-title">Incidencia</h3>
+
+                            <form id="form-suspension" onsubmit="guardarIncidencia(event, 'suspension')" style="display:none;">
+                                <div class="form-group"><label for="suspension-motivo">Motivo:</label><textarea id="suspension-motivo" class="editable-control" rows="3" required></textarea></div>
+                                <div class="form-row">
+                                    <div class="form-group"><label for="suspension-dias">Cuántos días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" required></div>
+                                    <div class="form-group"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
+                                </div>
+                                <div class="form-group"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                <div class="form-group"><label for="suspension-archivo">Aviso de suspensión:</label><input id="suspension-archivo" class="editable-control" type="file" accept=".pdf,.png,.jpg,.jpeg" required></div>
+                                <button class="action-btn" type="submit">Guardar Suspensión</button>
+                            </form>
+
+                            <form id="form-entrada-salida" onsubmit="guardarIncidencia(event, 'entrada-salida')" style="display:none;">
+                                <div class="form-row">
+                                    <div class="form-group"><label for="pase-tipo">Opción:</label><select id="pase-tipo" class="editable-control" required><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
+                                    <div class="form-group"><label for="pase-hora">Hora:</label><input id="pase-hora" class="editable-control" type="time" required></div>
+                                </div>
+                                <div class="form-group"><label>Motivo:</label><div class="motivo-options"><label><input type="checkbox" name="pase-motivo" value="Compromiso Personal">Compromiso Personal</label><label><input type="checkbox" name="pase-motivo" value="Asistencia a cita Medica">Asistencia a cita Médica</label><label><input type="checkbox" name="pase-motivo" value="Sentirse mal">Sentirse mal</label></div></div>
+                                <div class="form-group"><label for="pase-otro-motivo">Otro Motivo:</label><textarea id="pase-otro-motivo" class="editable-control" rows="2"></textarea></div>
+                                <div class="form-group"><label for="pase-archivo">Adjuntar permiso:</label><input id="pase-archivo" class="editable-control" type="file" accept=".pdf,.png,.jpg,.jpeg" required></div>
+                                <button class="action-btn" type="submit">Guardar Entrada/Salida</button>
+                            </form>
+
+                            <form id="form-indisciplina" onsubmit="guardarIncidencia(event, 'indisciplina')" style="display:none;">
+                                <div class="form-group"><label>Motivo:</label><div class="motivo-options"><label><input type="checkbox" name="disciplina-motivo" value="SALIDAS SIN PERMISO DEL AREA">Salidas sin permiso del área</label><label><input type="checkbox" name="disciplina-motivo" value="LLEGADAS TARDE AL AREA DE TRABAJO">Llegadas tarde al área de trabajo</label><label><input type="checkbox" name="disciplina-motivo" value="DEFECTOS">Defectos</label><label><input type="checkbox" name="disciplina-motivo" value="NO USO DE EQUIPO DE SEGURIDAD">No uso de equipo de seguridad</label><label><input type="checkbox" name="disciplina-motivo" value="DESOBEDECER ORDENES">Desobedecer órdenes</label><label><input type="checkbox" name="disciplina-motivo" value="JUGAR EN EL AREA">Jugar en el área</label><label><input type="checkbox" name="disciplina-motivo" value="FALTA INJUSTIFICADA">Falta injustificada</label><label><input type="checkbox" name="disciplina-motivo" value="FUMAR SIN PERMISO O EN AREAS NO PERMITIDAS">Fumar sin permiso o en áreas no permitidas</label><label><input type="checkbox" name="disciplina-motivo" value="USO DEL CELULAR DENTRO DEL AREA">Uso del celular dentro del área</label><label><input type="checkbox" name="disciplina-motivo" value="TARDAR AL REGRESAR DEL COMEDOR O DEL BAÑO">Tardar al regresar del comedor o del baño</label><label><input type="checkbox" name="disciplina-motivo" value="FALTA DE RESPETO O ACOSO A COMPAÑEROS">Falta de respeto o acoso a compañeros</label><label><input type="checkbox" name="disciplina-motivo" value="SALIR CON COMIDA A LINEAS">Salir con comida a líneas</label></div></div>
+                                <div class="form-group"><label for="disciplina-otro-motivo">Otro Motivo:</label><textarea id="disciplina-otro-motivo" class="editable-control" rows="2"></textarea></div>
+                                <div class="form-group"><label for="disciplina-archivo">Adjuntar reporte:</label><input id="disciplina-archivo" class="editable-control" type="file" accept=".pdf,.png,.jpg,.jpeg" required></div>
+                                <button class="action-btn" type="submit">Guardar Indisciplina</button>
+                            </form>
+
+                            <div id="form-carta-suspension" style="display:none;"><p class="muted">La generación de la carta de suspensión se habilitará en su página correspondiente.</p></div>
+
+                            <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;"><div class="form-row"><div class="form-group"><label for="vacaciones-dias">Cuántos días:</label><input id="vacaciones-dias" class="editable-control" type="number" min="1" required></div><div class="form-group"><label for="vacaciones-desde">De fecha:</label><input id="vacaciones-desde" class="editable-control" type="date" required></div></div><div class="form-group"><label for="vacaciones-hasta">A fecha:</label><input id="vacaciones-hasta" class="editable-control" type="date" required></div><button class="action-btn" type="submit">Guardar Vacaciones</button></form>
+                            <form id="form-incapacidad" onsubmit="guardarIncidencia(event, 'incapacidad')" style="display:none;"><div class="form-row"><div class="form-group"><label for="incapacidad-dias">Cuántos días:</label><input id="incapacidad-dias" class="editable-control" type="number" min="1" required></div><div class="form-group"><label for="incapacidad-desde">De fecha:</label><input id="incapacidad-desde" class="editable-control" type="date" required></div></div><div class="form-group"><label for="incapacidad-hasta">A fecha:</label><input id="incapacidad-hasta" class="editable-control" type="date" required></div><button class="action-btn" type="submit">Guardar Incapacidad</button></form>
+                        </div>
                     </div>
                 </div>
 
@@ -1956,6 +2109,169 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             });
         }
 
+        const employeeIncidentsKey = 'rh_employee_incidents_v1';
+
+        function readEmployeeIncidents() {
+            try {
+                const incidents = JSON.parse(localStorage.getItem(employeeIncidentsKey) || '{}');
+                return incidents && typeof incidents === 'object' ? incidents : {};
+            } catch (_) {
+                return {};
+            }
+        }
+
+        function getEmployeeIncidentList() {
+            const incidents = readEmployeeIncidents();
+            const key = String(registroId || currentEmployeeCurp || '').trim();
+            return Array.isArray(incidents[key]) ? incidents[key] : [];
+        }
+
+        function saveEmployeeIncident(incident) {
+            const incidents = readEmployeeIncidents();
+            const key = String(registroId || currentEmployeeCurp || '').trim();
+            if (!key) return;
+            if (!Array.isArray(incidents[key])) incidents[key] = [];
+            incidents[key].push({ ...incident, createdAt: new Date().toISOString() });
+            localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
+        }
+
+        function formatIncidentDate(dateValue) {
+            if (!dateValue) return '';
+            const date = new Date(`${dateValue}T00:00:00`);
+            return Number.isNaN(date.getTime()) ? dateValue : date.toLocaleDateString('es-MX');
+        }
+
+        function renderEmployeeNotifications() {
+            const container = document.getElementById('notification-history-list');
+            if (!container) return;
+            const incidents = getEmployeeIncidentList();
+            container.textContent = '';
+
+            if (!incidents.length) {
+                const empty = document.createElement('div');
+                empty.className = 'muted';
+                empty.textContent = 'Sin notificaciones';
+                container.appendChild(empty);
+                return;
+            }
+
+            incidents.slice().reverse().forEach((incident) => {
+                const item = document.createElement('div');
+                item.className = 'notification-item';
+                const title = document.createElement('strong');
+                title.textContent = incident.title;
+                const detail = document.createElement('span');
+                detail.textContent = incident.detail;
+                item.append(title, detail);
+                container.appendChild(item);
+            });
+        }
+
+        function getDateRange(startValue, endValue) {
+            const dates = [];
+            const start = new Date(`${startValue}T00:00:00`);
+            const end = new Date(`${endValue}T00:00:00`);
+            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return dates;
+            for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                dates.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
+            }
+            return dates;
+        }
+
+        function abrirIncidencia(tipo) {
+            const titles = {
+                suspension: 'Suspensión',
+                'entrada-salida': 'Entrada/Salida',
+                indisciplina: 'Indisciplina',
+                'carta-suspension': 'Generar Carta de Suspensión',
+                vacaciones: 'Vacaciones',
+                incapacidad: 'Incapacidades',
+            };
+            document.getElementById('incidencia-modal-title').textContent = titles[tipo] || 'Incidencia';
+            document.querySelectorAll('#modal-incidencia form, #form-carta-suspension').forEach((form) => {
+                form.style.display = 'none';
+            });
+            const form = document.getElementById(`form-${tipo}`);
+            if (form) form.style.display = 'block';
+            document.getElementById('modal-incidencia').style.display = 'flex';
+        }
+
+        function cerrarIncidencia() {
+            document.getElementById('modal-incidencia').style.display = 'none';
+        }
+
+        function getCheckedValues(name) {
+            return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
+        }
+
+        function guardarIncidencia(event, tipo) {
+            event.preventDefault();
+            const config = {
+                suspension: {
+                    title: 'Suspensión',
+                    motivo: document.getElementById('suspension-motivo').value.trim(),
+                    desde: document.getElementById('suspension-desde').value,
+                    hasta: document.getElementById('suspension-hasta').value,
+                    dias: document.getElementById('suspension-dias').value,
+                },
+                vacaciones: {
+                    title: 'Vacaciones',
+                    desde: document.getElementById('vacaciones-desde').value,
+                    hasta: document.getElementById('vacaciones-hasta').value,
+                    dias: document.getElementById('vacaciones-dias').value,
+                },
+                incapacidad: {
+                    title: 'Incapacidad',
+                    desde: document.getElementById('incapacidad-desde').value,
+                    hasta: document.getElementById('incapacidad-hasta').value,
+                    dias: document.getElementById('incapacidad-dias').value,
+                },
+                'entrada-salida': {
+                    title: 'Entrada/Salida',
+                    tipo: document.getElementById('pase-tipo').value,
+                    hora: document.getElementById('pase-hora').value,
+                    motivos: getCheckedValues('pase-motivo'),
+                    otro: document.getElementById('pase-otro-motivo').value.trim(),
+                },
+                indisciplina: {
+                    title: 'Indisciplina',
+                    motivos: getCheckedValues('disciplina-motivo'),
+                    otro: document.getElementById('disciplina-otro-motivo').value.trim(),
+                },
+            }[tipo];
+
+            if (!config) return;
+            if (['suspension', 'vacaciones', 'incapacidad'].includes(tipo)) {
+                if (config.desde > config.hasta) {
+                    alert('La fecha inicial no puede ser posterior a la fecha final.');
+                    return;
+                }
+            }
+            if (tipo === 'entrada-salida' && !config.motivos.length && !config.otro) {
+                alert('Selecciona un motivo o escribe Otro Motivo.');
+                return;
+            }
+            if (tipo === 'indisciplina' && !config.motivos.length && !config.otro) {
+                alert('Selecciona un motivo o escribe Otro Motivo.');
+                return;
+            }
+
+            const motivo = config.motivo || config.motivos?.join(', ') || config.otro || '';
+            const range = config.desde ? getDateRange(config.desde, config.hasta) : [];
+            saveEmployeeIncident({
+                type: tipo,
+                title: config.title,
+                detail: tipo === 'entrada-salida'
+                    ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${config.hora}. ${motivo}`
+                    : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`,
+                suspendedDates: tipo === 'suspension' ? range : [],
+            });
+            event.target.reset();
+            cerrarIncidencia();
+            renderEmployeeNotifications();
+            renderAttendanceCalendar();
+        }
+
         function renderAttendanceCalendar() {
             const calendarMonth = document.getElementById('calendar-month');
             const calendarDays = document.getElementById('calendar-days');
@@ -1970,6 +2286,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
             calendarMonth.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
             calendarDays.innerHTML = '';
+            const suspendedDates = new Set(getEmployeeIncidentList().flatMap((incident) => incident.suspendedDates || []));
 
             for (let index = 0; index < firstDay; index += 1) {
                 const emptyDay = document.createElement('span');
@@ -1981,12 +2298,15 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 const dayElement = document.createElement('span');
                 dayElement.className = 'calendar-day';
                 dayElement.textContent = day;
+                const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                if (suspendedDates.has(isoDate)) dayElement.classList.add('suspended');
                 calendarDays.appendChild(dayElement);
             }
         }
 
         bindTabButtons();
         renderAttendanceCalendar();
+        renderEmployeeNotifications();
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
