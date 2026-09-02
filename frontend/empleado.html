@@ -376,7 +376,7 @@
 
         .attendance-actions {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .incidencias-menu-trigger {
@@ -389,7 +389,7 @@
         .incidencias-dropdown {
             display: none;
             position: absolute;
-            top: calc(100% + 4px);
+            top: 100%;
             left: 0;
             z-index: 30;
             min-width: 210px;
@@ -426,7 +426,27 @@
         }
 
         .incidencia-modal .modal-content {
+            position: relative;
+            width: 95%;
             max-width: 620px;
+            max-height: 88vh;
+            overflow-y: auto;
+            background: var(--negro);
+            border: 1px solid var(--grisc);
+            border-radius: 12px;
+            padding: 28px;
+            color: var(--blanco);
+        }
+
+        .incidencia-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.72);
+            z-index: 1000;
         }
 
         .incidencia-modal .form-row {
@@ -1188,17 +1208,6 @@
                 </div>
 
                 <div id="tab-asistencia" class="tabs-panel">
-                    <div class="attendance-actions">
-                        <button class="action-btn incidencias-menu-trigger" type="button">Incidencias</button>
-                        <div class="incidencias-dropdown">
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('suspension')">Suspensión</button>
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('entrada-salida')">Entrada/Salida</button>
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('indisciplina')">Indisciplina</button>
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta de Suspensión</button>
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('vacaciones')">Vacaciones</button>
-                            <button class="incidencia-option" type="button" onclick="abrirIncidencia('incapacidad')">Incapacidades</button>
-                        </div>
-                    </div>
                     <div class="attendance-layout">
                         <section class="attendance-calendar">
                             <div id="calendar-month" class="calendar-header"></div>
@@ -1207,9 +1216,22 @@
                             </div>
                             <div id="calendar-days" class="calendar-days"></div>
                         </section>
-                        <aside class="notification-history">
-                            <div class="label">NOTIFICACIONES</div>
-                            <div id="notification-history-list"><div class="muted">Sin notificaciones</div></div>
+                        <aside>
+                            <div class="attendance-actions">
+                                <button class="action-btn incidencias-menu-trigger" type="button">Incidencias</button>
+                                <div class="incidencias-dropdown">
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('suspension')">Suspensión</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('entrada-salida')">Entrada/Salida</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('indisciplina')">Indisciplina</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta de Suspensión</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('vacaciones')">Vacaciones</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('incapacidad')">Incapacidades</button>
+                                </div>
+                            </div>
+                            <div class="notification-history">
+                                <div class="label">NOTIFICACIONES</div>
+                                <div id="notification-history-list"><div class="muted">Sin notificaciones</div></div>
+                            </div>
                         </aside>
                     </div>
 
