@@ -676,7 +676,7 @@
         <div class="half-container">
             <div class="half-card">
                 <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
-                <p class="fecha-hoy"><span id="current-date">Lunes, 17 de agosto de 2026</span></p>
+                <p class="fecha-hoy"><span id="current-date"></span></p>
                 <br>
                 <div class="table-responsive">
                     <table class="asistencia-status-table">
@@ -687,18 +687,7 @@
                                 <th>Registro</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Prueba</td>
-                                <td>Producción A</td>
-                                <td><span class="badge registrada">Registrada</span></td>
-                            </tr>
-                            <tr>
-                                <td>Carlos Gómez</td>
-                                <td>Almacén General</td>
-                                <td><span class="badge no-registrada">No registrada</span></td>
-                            </tr>
-                        </tbody>
+                        <tbody id="tabla-envio-asistencia-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -925,6 +914,37 @@
         }
 
         cargarUsuariosRegistrados();
+
+        function actualizarFechaHoy() {
+            const fechaEl = document.getElementById('current-date');
+            if (!fechaEl) return;
+            const texto = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            fechaEl.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+        }
+
+        function renderEnvioAsistenciaArea() {
+            const tbody = document.getElementById('tabla-envio-asistencia-body');
+            if (!tbody) return;
+            tbody.textContent = '';
+
+            const responsables = window.AccessControlUsers.list()
+                .filter((usuario) => usuario.permisos.includes('control_asistencias') && usuario.area_responsable);
+
+            responsables.forEach((usuario) => {
+                const row = document.createElement('tr');
+                const responsableCell = document.createElement('td');
+                responsableCell.textContent = usuario.usuario;
+                const departamentoCell = document.createElement('td');
+                departamentoCell.textContent = usuario.area_responsable;
+                const registroCell = document.createElement('td');
+                registroCell.innerHTML = '<span class="badge no-registrada">No registrada</span>';
+                row.append(responsableCell, departamentoCell, registroCell);
+                tbody.appendChild(row);
+            });
+        }
+
+        actualizarFechaHoy();
+        renderEnvioAsistenciaArea();
 
         // Función del menú desplegable para Gestión de Incidencias
         function seleccionarOpcionIncidencia(opcionValor) {
