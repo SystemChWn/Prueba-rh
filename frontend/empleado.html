@@ -1365,18 +1365,21 @@
                             <div id="form-carta-suspension" style="display:none;"><p class="muted">La generación de la carta de suspensión se habilitará en su página correspondiente.</p></div>
 
                             <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">
-                                <div class="form-row"><div class="form-group"><label for="vacaciones-dias">Cuántos días:</label>
-                                    <input id="vacaciones-dias" class="editable-control" type="number" min="1" required></div>
-                                    <div class="form-group"><label for="vacaciones-desde">De fecha:</label>
-                                        <input id="vacaciones-desde" class="editable-control" type="date" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="vacaciones-hasta">A fecha:</label>
-                                        <input id="vacaciones-hasta" class="editable-control" type="date" required>
-                                    </div>
+                                <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                </div>
                                 <button class="action-btn" type="submit">Guardar Vacaciones</button>
                             </form>
-                            <form id="form-incapacidad" onsubmit="guardarIncidencia(event, 'incapacidad')" style="display:none;"><div class="form-row"><div class="form-group"><label for="incapacidad-dias">Cuántos días:</label><input id="incapacidad-dias" class="editable-control" type="number" min="1" required></div><div class="form-group"><label for="incapacidad-desde">De fecha:</label><input id="incapacidad-desde" class="editable-control" type="date" required></div></div><div class="form-group"><label for="incapacidad-hasta">A fecha:</label><input id="incapacidad-hasta" class="editable-control" type="date" required></div><button class="action-btn" type="submit">Guardar Incapacidad</button></form>
+                            <form id="form-incapacidad" onsubmit="guardarIncidencia(event, 'incapacidad')" style="display:none;">
+                                <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                </div>
+                                <button class="action-btn" type="submit">Guardar Incapacidad</button>
+                            </form>
                         </div>
                     </div>
                 </div>
