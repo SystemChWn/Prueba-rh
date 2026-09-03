@@ -476,6 +476,11 @@
             margin-top: 2px;
         }
 
+        .incidencia-modal form input[id$="-dias"] {
+            border: 1px solid var(--grisc);
+            text-align: center;
+        }
+
         .incidencia-modal form .form-row {
             align-items: end;
             margin-bottom: 18px !important;
@@ -576,11 +581,19 @@
 
         .notification-file-actions {
             display: flex;
+            justify-content: center;
             gap: 10px;
             margin-top: 10px;
         }
 
         .notification-file-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 112px;
+            padding: 6px 10px;
+            border: 1px solid var(--azul);
+            border-radius: 6px;
             color: var(--azul);
             font-size: 0.82rem;
             font-weight: 700;
