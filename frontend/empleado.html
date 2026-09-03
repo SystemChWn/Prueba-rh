@@ -1256,10 +1256,10 @@
 
                             <form id="form-suspension" onsubmit="guardarIncidencia(event, 'suspension')" style="display:none;">
                                 <div class="form-group"><label for="suspension-motivo">Motivo:</label><textarea id="suspension-motivo" class="editable-control" rows="3" style="margin-top: 8px;" required></textarea></div>
-                                <div class="form-row">
-                                    <div class="form-group"><label for="suspension-dias">N° de dias:</label><input id="suspension-dias" class="editable-control" type="number" min="1" required></div>
-                                    <div class="form-group"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
-                                    <div class="form-group"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                <div class="form-row" style="display: flex; gap: 10px;">
+                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
                                 <div class="form-group"><label for="suspension-archivo"></label><input id="suspension-archivo" class="editable-control" type="file" accept=".pdf,.png,.jpg,.jpeg" required></div>
                                 <button class="action-btn" type="submit">Guardar Suspensión</button>
