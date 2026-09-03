@@ -380,42 +380,6 @@
             width: 280px;
         }
 
-/* Contenedor del menú desplegable */
-        .incidencias-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 280px; /* Mismo ancho fijo que el botón principal y las notificaciones */
-            background: #121212;
-            border: 1px solid #007bff;
-            border-radius: 8px;
-            margin-top: 5px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            z-index: 100;
-            display: none; /* O visible según tu lógica de JS */
-        }
-
-        /* Opciones individuales del menú (altura más compacta) */
-        .incidencias-menu a, 
-        .incidencias-menu button {
-            display: block;
-            width: 100%;
-            padding: 10px 15px; /* Reducido de padding vertical anterior a 10px para hacerlo más chico */
-            color: #ffffff;
-            text-decoration: none;
-            text-align: left;
-            background: transparent;
-            border: none;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-
-        .incidencias-menu a:hover, 
-        .incidencias-menu button:hover {
-            background: #1e1e1e;
-            color: #007bff;
-        }
-
         .incidencias-menu-trigger {
             display: inline-flex;
             width: 100%;
@@ -424,7 +388,7 @@
             background: #1e1e1e;
             border: 1px solid #007bff;
             border-radius: 8px;
-            padding: 20px;
+            padding: 12px 20px;
             color: #007bff;
             text-transform: uppercase;
             letter-spacing: 1px;
