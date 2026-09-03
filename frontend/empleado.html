@@ -538,8 +538,32 @@
         }
 
         .calendar-day.suspended {
-            background: var(--rojo);
-            border-color: var(--rojo);
+            background: rgba(164, 33, 33, 0.55);
+            border-color: rgba(164, 33, 33, 0.8);
+            color: var(--blanco);
+        }
+
+        .calendar-day.incapacidad {
+            background: #00AC7F;
+            border-color: #00AC7F;
+            color: var(--blanco);
+        }
+
+        .calendar-day.vacaciones {
+            background: #FFFF00;
+            border-color: #FFFF00;
+            color: #121212;
+        }
+
+        .calendar-day.indisciplina {
+            background: #FFC000;
+            border-color: #FFC000;
+            color: #121212;
+        }
+
+        .calendar-day.carta-compromiso {
+            background: #6196FF;
+            border-color: #6196FF;
             color: var(--blanco);
         }
 
@@ -557,6 +581,26 @@
             display: inline;
             color: var(--azul);
             margin-bottom: 0;
+        }
+
+        .notification-item.type-suspension .notification-title {
+            color: rgba(164, 33, 33, 0.65);
+        }
+
+        .notification-item.type-indisciplina .notification-title {
+            color: #FFC000;
+        }
+
+        .notification-item.type-carta-compromiso .notification-title {
+            color: #6196FF;
+        }
+
+        .notification-item.type-incapacidad .notification-title {
+            color: #00AC7F;
+        }
+
+        .notification-item.type-vacaciones .notification-title {
+            color: #FFFF00;
         }
 
         .notification-title-row {
@@ -1354,7 +1398,7 @@
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('suspension')">Suspensión</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('entrada-salida')">Entrada/Salida</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('indisciplina')">Indisciplina</button>
-                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta de Suspensión</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta Compromiso</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('vacaciones')">Vacaciones</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('incapacidad')">Incapacidades</button>
                                 </div>
@@ -1403,7 +1447,7 @@
 
                             <form id="form-indisciplina" onsubmit="guardarIncidencia(event, 'indisciplina')" style="display:none;">
                                 <div class="form-group"><label for="disciplina-motivo">Motivo:</label><select id="disciplina-motivo" class="editable-control" required><option value="">Selecciona un motivo</option><option value="SALIDAS SIN PERMISO DEL AREA">Salidas sin permiso del área</option><option value="LLEGADAS TARDE AL AREA DE TRABAJO">Llegadas tarde al área de trabajo</option><option value="DEFECTOS">Defectos</option><option value="NO USO DE EQUIPO DE SEGURIDAD">No uso de equipo de seguridad</option><option value="DESOBEDECER ORDENES">Desobedecer órdenes</option><option value="JUGAR EN EL AREA">Jugar en el área</option><option value="FALTA INJUSTIFICADA">Falta injustificada</option><option value="FUMAR SIN PERMISO O EN AREAS NO PERMITIDAS">Fumar sin permiso o en áreas no permitidas</option><option value="USO DEL CELULAR DENTRO DEL AREA">Uso del celular dentro del área</option><option value="TARDAR AL REGRESAR DEL COMEDOR O DEL BAÑO">Tardar al regresar del comedor o del baño</option><option value="FALTA DE RESPETO O ACOSO A COMPAÑEROS">Falta de respeto o acoso a compañeros</option><option value="SALIR CON COMIDA A LINEAS">Salir con comida a líneas</option><option value="otro">Otro motivo</option></select></div>
-                                <div id="disciplina-otro-motivo-group" class="form-group" style="display: none;"><label for="disciplina-otro-motivo">Otro Motivo:</label><textarea id="disciplina-otro-motivo" class="editable-control" rows="2"></textarea></div>
+                                <div id="disciplina-otro-motivo-group" class="form-group" style="display: none;"><textarea id="disciplina-otro-motivo" class="editable-control" rows="2" placeholder="Escribe el otro motivo"></textarea></div>
                                 <div class="form-group" style="margin: 20px 0;">
                                     <label for="indiciplina-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
                                     <input id="indiciplina-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;" required>
@@ -1411,7 +1455,7 @@
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
 
-                            <div id="form-carta-suspension" style="display:none;"><p class="muted">La generación de la carta de suspensión se habilitará en su página correspondiente.</p></div>
+                            <div id="form-carta-suspension" style="display:none;"><p class="muted">La generación de la carta compromiso se habilitará en su página correspondiente.</p></div>
 
                             <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
@@ -2359,6 +2403,23 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             return date.toLocaleDateString('es-MX');
         }
 
+        function formatNotificationDay(dateValue) {
+            if (!dateValue) return 'Sin fecha';
+            const date = new Date(dateValue);
+            if (Number.isNaN(date.getTime())) return 'Sin fecha';
+            const parts = new Intl.DateTimeFormat('es-MX', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+            }).formatToParts(date).reduce((result, part) => {
+                result[part.type] = part.value.replace(/\./g, '');
+                return result;
+            }, {});
+            const month = parts.month ? `${parts.month.charAt(0).toUpperCase()}${parts.month.slice(1)}` : '';
+            return `${parts.weekday || ''} ${parts.day || ''} ${month} ${parts.year || ''}`.trim();
+        }
+
         function renderEmployeeNotifications() {
             const container = document.getElementById('notification-history-list');
             if (!container) return;
@@ -2373,9 +2434,25 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 return;
             }
 
+            const groupedIncidents = new Map();
             incidents.slice().reverse().forEach((incident, reverseIndex) => {
+                const dayKey = incident.createdAt ? new Date(incident.createdAt).toLocaleDateString('en-CA') : `legacy-${reverseIndex}`;
+                if (!groupedIncidents.has(dayKey)) groupedIncidents.set(dayKey, []);
+                groupedIncidents.get(dayKey).push({ incident, reverseIndex });
+            });
+
+            groupedIncidents.forEach((group, dayKey) => {
+                const dayGroup = document.createElement('div');
+                dayGroup.className = 'notification-day-group';
+                const dayHeading = document.createElement('div');
+                dayHeading.className = 'notification-day-heading';
+                dayHeading.textContent = formatNotificationDay(group[0].incident.createdAt);
+                dayGroup.appendChild(dayHeading);
+
+                group.forEach(({ incident, reverseIndex }) => {
                 const item = document.createElement('div');
                 item.className = 'notification-item';
+                item.classList.add(`type-${incident.type === 'carta-suspension' ? 'carta-compromiso' : incident.type}`);
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'notification-delete';
                 deleteButton.type = 'button';
@@ -2385,18 +2462,21 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 const titleRow = document.createElement('div');
                 titleRow.className = 'notification-title-row';
                 const title = document.createElement('strong');
+                title.className = 'notification-title';
                 title.textContent = incident.title;
                 titleRow.appendChild(title);
-                const notificationDate = formatNotificationDate(incident.createdAt);
-                if (notificationDate) {
-                    const date = document.createElement('span');
-                    date.className = 'notification-date';
-                    date.textContent = notificationDate;
-                    titleRow.appendChild(date);
-                }
                 const detail = document.createElement('span');
-                detail.textContent = incident.detail;
+                detail.className = 'notification-detail';
+                const detailText = String(incident.detail || '');
+                const dateMatch = detailText.match(/^(.*?)(?: \(([^)]+)\))$/);
+                detail.textContent = dateMatch ? dateMatch[1] : detailText;
                 item.append(deleteButton, titleRow, detail);
+                if (dateMatch) {
+                    const dates = document.createElement('strong');
+                    dates.className = 'notification-dates';
+                    dates.textContent = dateMatch[2];
+                    item.appendChild(dates);
+                }
                 if (incident.file && incident.file.dataUrl) {
                     const fileActions = document.createElement('div');
                     fileActions.className = 'notification-file-actions';
@@ -2414,7 +2494,9 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                     fileActions.append(previewLink, downloadLink);
                     item.appendChild(fileActions);
                 }
-                container.appendChild(item);
+                dayGroup.appendChild(item);
+                });
+                container.appendChild(dayGroup);
             });
         }
 
@@ -2475,7 +2557,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 suspension: 'Suspensión',
                 'entrada-salida': 'Entrada/Salida',
                 indisciplina: 'Indisciplina',
-                'carta-suspension': 'Generar Carta de Suspensión',
+                'carta-suspension': 'Generar Carta Compromiso',
                 vacaciones: 'Vacaciones',
                 incapacidad: 'Incapacidades',
             };
@@ -2489,7 +2571,16 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         }
 
         function cerrarIncidencia() {
-            document.getElementById('modal-incidencia').style.display = 'none';
+            const modal = document.getElementById('modal-incidencia');
+            modal.style.display = 'none';
+            document.querySelectorAll('#modal-incidencia form').forEach((form) => form.reset());
+            document.querySelectorAll('#modal-incidencia input[type="file"]').forEach((input) => {
+                input.value = '';
+            });
+            const otherGroup = document.getElementById('disciplina-otro-motivo-group');
+            const otherReason = document.getElementById('disciplina-otro-motivo');
+            if (otherGroup) otherGroup.style.display = 'none';
+            if (otherReason) otherReason.required = false;
         }
 
         function getCheckedValues(name) {
@@ -2571,6 +2662,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                         ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${formatIncidentTime(config.hora)}. ${motivo}`
                         : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`,
                     suspendedDates: tipo === 'suspension' ? range : [],
+                    incidentDates: ['suspension', 'vacaciones', 'incapacidad'].includes(tipo) ? range : [],
                     file,
                 });
             } catch (error) {
@@ -2597,7 +2689,14 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
             calendarMonth.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
             calendarDays.innerHTML = '';
-            const suspendedDates = new Set(getEmployeeIncidentList().flatMap((incident) => incident.suspendedDates || []));
+            const incidentDates = new Map();
+            getEmployeeIncidentList().forEach((incident) => {
+                const dates = incident.incidentDates || incident.suspendedDates || [];
+                const datesToPaint = dates.length
+                    ? dates
+                    : (incident.type === 'indisciplina' && incident.createdAt ? [incident.createdAt.slice(0, 10)] : []);
+                datesToPaint.forEach((date) => incidentDates.set(date, incident.type === 'carta-suspension' ? 'carta-compromiso' : incident.type));
+            });
 
             for (let index = 0; index < firstDay; index += 1) {
                 const emptyDay = document.createElement('span');
@@ -2610,7 +2709,10 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 dayElement.className = 'calendar-day';
                 dayElement.textContent = day;
                 const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                if (suspendedDates.has(isoDate)) dayElement.classList.add('suspended');
+                const incidentType = incidentDates.get(isoDate);
+                if (incidentType) {
+                    dayElement.classList.add(incidentType === 'suspension' ? 'suspended' : incidentType);
+                }
                 calendarDays.appendChild(dayElement);
             }
         }
@@ -2619,6 +2721,16 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         bindIncidentControls();
         renderAttendanceCalendar();
         renderEmployeeNotifications();
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && document.getElementById('modal-incidencia').style.display === 'flex') {
+                cerrarIncidencia();
+            }
+        });
+
+        document.getElementById('modal-incidencia').addEventListener('click', (event) => {
+            if (event.target === event.currentTarget) cerrarIncidencia();
+        });
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
