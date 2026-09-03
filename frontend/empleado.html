@@ -1252,8 +1252,7 @@
 
                     <div id="modal-incidencia" class="modal-overlay incidencia-modal">
                         <div class="modal-content">
-                            <button class="close-modal-x" type="button" onclick="cerrarIncidencia()">✖</button>
-                            <h3 id="incidencia-modal-title">Incidencia</h3>
+                            <button class="close-modal-x" type="button" onclick="cerrarIncidencia()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✖</button>                            <h3 id="incidencia-modal-title">Incidencia</h3>
 
                             <form id="form-suspension" onsubmit="guardarIncidencia(event, 'suspension')" style="display:none;">
                                 <div class="form-group"><label for="suspension-motivo">Motivo:</label><textarea id="suspension-motivo" class="editable-control" rows="3" required></textarea></div>
