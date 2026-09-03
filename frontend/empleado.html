@@ -476,6 +476,17 @@
             margin-top: 2px;
         }
 
+        .incidencia-modal input[type="date"],
+        .incidencia-modal input[type="time"] {
+            color-scheme: dark;
+        }
+
+        .incidencia-modal input[type="date"]::-webkit-calendar-picker-indicator,
+        .incidencia-modal input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg);
+            opacity: 1;
+        }
+
         .incidencia-modal form input[id$="-dias"] {
             border: 1px solid var(--grisc);
             text-align: center;
@@ -583,24 +594,35 @@
             margin-bottom: 0;
         }
 
-        .notification-item.type-suspension .notification-title {
-            color: #E8E8E8;
+        .notification-item .notification-title {
+            color: var(--azul);
         }
 
-        .notification-item.type-indisciplina .notification-title {
-            color: #FFC000;
+        .notification-day-group {
+            margin-bottom: 18px;
         }
 
-        .notification-item.type-carta-compromiso .notification-title {
-            color: #007bff;
+        .notification-day-heading {
+            position: relative;
+            margin: 0 0 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #444;
+            color: var(--blanco);
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-align: center;
+            text-transform: capitalize;
         }
 
-        .notification-item.type-incapacidad .notification-title {
-            color: #00AC7F;
-        }
-
-        .notification-item.type-vacaciones .notification-title {
-            color: #FFFF00;
+        .notification-day-heading::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -1px;
+            width: 72px;
+            height: 2px;
+            background: var(--azul);
+            transform: translateX(-50%);
         }
 
         .notification-title-row {
@@ -615,6 +637,17 @@
             color: var(--grisc);
             font-size: 0.78rem;
             white-space: nowrap;
+        }
+
+        .notification-detail {
+            display: block;
+        }
+
+        .notification-dates {
+            display: block;
+            margin-top: 6px;
+            color: var(--blanco);
+            font-weight: 800;
         }
 
         .notification-delete {
