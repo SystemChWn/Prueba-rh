@@ -554,9 +554,23 @@
         }
 
         .notification-item strong {
-            display: block;
+            display: inline;
             color: var(--azul);
+            margin-bottom: 0;
+        }
+
+        .notification-title-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            padding-right: 22px;
             margin-bottom: 4px;
+        }
+
+        .notification-date {
+            color: var(--grisc);
+            font-size: 0.78rem;
+            white-space: nowrap;
         }
 
         .notification-delete {
@@ -590,7 +604,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 112px;
+            flex: 1 1 0;
+            min-width: 0;
+            max-width: 150px;
             padding: 6px 10px;
             border: 1px solid var(--azul);
             border-radius: 6px;
@@ -598,6 +614,8 @@
             font-size: 0.82rem;
             font-weight: 700;
             text-decoration: none;
+            box-sizing: border-box;
+            white-space: nowrap;
         }
 
         .notification-file-link:hover,
@@ -2334,6 +2352,13 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             return `${hour}:${String(minutes).padStart(2, '0')} ${period}`;
         }
 
+        function formatNotificationDate(dateValue) {
+            if (!dateValue) return '';
+            const date = new Date(dateValue);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('es-MX');
+        }
+
         function renderEmployeeNotifications() {
             const container = document.getElementById('notification-history-list');
             if (!container) return;
@@ -2357,11 +2382,21 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 deleteButton.setAttribute('aria-label', 'Eliminar notificación');
                 deleteButton.textContent = '✕';
                 deleteButton.addEventListener('click', () => deleteEmployeeIncident(incidents.length - 1 - reverseIndex));
+                const titleRow = document.createElement('div');
+                titleRow.className = 'notification-title-row';
                 const title = document.createElement('strong');
                 title.textContent = incident.title;
+                titleRow.appendChild(title);
+                const notificationDate = formatNotificationDate(incident.createdAt);
+                if (notificationDate) {
+                    const date = document.createElement('span');
+                    date.className = 'notification-date';
+                    date.textContent = notificationDate;
+                    titleRow.appendChild(date);
+                }
                 const detail = document.createElement('span');
                 detail.textContent = incident.detail;
-                item.append(deleteButton, title, detail);
+                item.append(deleteButton, titleRow, detail);
                 if (incident.file && incident.file.dataUrl) {
                     const fileActions = document.createElement('div');
                     fileActions.className = 'notification-file-actions';
