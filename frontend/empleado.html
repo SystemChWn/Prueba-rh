@@ -336,6 +336,46 @@
             font-weight: 800;
         }
 
+        .calendar-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .calendar-navigation button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--grisc);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--blanco);
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .calendar-navigation button:hover,
+        .calendar-navigation button:focus {
+            border-color: var(--azul);
+            color: var(--azul);
+            outline: none;
+        }
+
+        .calendar-period {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .calendar-year {
+            color: var(--grisc);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
         .calendar-weekdays,
         .calendar-days {
             display: grid;
@@ -1418,7 +1458,16 @@
                 <div id="tab-asistencia" class="tabs-panel">
                     <div class="attendance-layout">
                         <section class="attendance-calendar">
-                            <div id="calendar-month" class="calendar-header"></div>
+                            <div class="calendar-header">
+                                <div class="calendar-navigation">
+                                    <button id="calendar-prev" type="button" aria-label="Mes anterior">&#8249;</button>
+                                    <div class="calendar-period">
+                                        <span id="calendar-month"></span>
+                                        <span id="calendar-year" class="calendar-year"></span>
+                                    </div>
+                                    <button id="calendar-next" type="button" aria-label="Mes siguiente">&#8250;</button>
+                                </div>
+                            </div>
                             <div class="calendar-weekdays">
                                 <span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>
                             </div>
@@ -2708,19 +2757,27 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             renderAttendanceCalendar();
         }
 
+        let calendarDate = new Date();
+
+        function changeCalendarMonth(offset) {
+            calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + offset, 1);
+            renderAttendanceCalendar();
+        }
+
         function renderAttendanceCalendar() {
             const calendarMonth = document.getElementById('calendar-month');
+            const calendarYear = document.getElementById('calendar-year');
             const calendarDays = document.getElementById('calendar-days');
             if (!calendarMonth || !calendarDays) return;
 
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth();
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const monthName = today.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+            const monthName = calendarDate.toLocaleDateString('es-MX', { month: 'long' });
 
             calendarMonth.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+            if (calendarYear) calendarYear.textContent = year;
             calendarDays.innerHTML = '';
             const incidentDates = new Map();
             getEmployeeIncidentList().forEach((incident) => {
@@ -2752,6 +2809,8 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
         bindTabButtons();
         bindIncidentControls();
+        document.getElementById('calendar-prev')?.addEventListener('click', () => changeCalendarMonth(-1));
+        document.getElementById('calendar-next')?.addEventListener('click', () => changeCalendarMonth(1));
         renderAttendanceCalendar();
         renderEmployeeNotifications();
 

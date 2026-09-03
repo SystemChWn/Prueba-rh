@@ -10,13 +10,22 @@
         return normalizeText(value).toUpperCase();
     }
 
+    function normalizeNombre(value) {
+        return normalizeText(value).toUpperCase().replace(/\s+/g, ' ');
+    }
+
     function normalizeStatus(value) {
         return normalizeText(value).toUpperCase();
     }
 
     function parseFechaValor(value) {
-        if (!value) return 0;
-        const parsed = Date.parse(String(value));
+        const texto = normalizeText(value);
+        if (!texto) return 0;
+        const ddmmyyyy = texto.match(/^(\d{2})[-/]?(\d{2})[-/]?(\d{4})$/);
+        const valorParseable = ddmmyyyy
+            ? `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}`
+            : texto;
+        const parsed = Date.parse(valorParseable);
         return Number.isNaN(parsed) ? 0 : parsed;
     }
 
@@ -95,29 +104,32 @@
         return normalizeEmpleado(merged);
     }
 
-    function deduplicarPorCurp(empleados) {
-        const mapa = new Map();
+    function deduplicarPorIdentidad(empleados) {
+        const resultado = [];
         (Array.isArray(empleados) ? empleados : []).forEach((item) => {
             const normalized = normalizeEmpleado(item);
-            if (!normalized.curp) {
-                mapa.set(`${Math.random()}-${Date.now()}`, normalized);
+            const nombre = normalizeNombre(normalized.nombre || normalized.nombre_completo);
+            const index = resultado.findIndex((existente) => {
+                const mismaEmpresa = !normalized.empresa || !existente.empresa
+                    || normalizeText(normalized.empresa).toUpperCase() === normalizeText(existente.empresa).toUpperCase();
+                const mismoCurp = normalized.curp && normalizeCurp(existente.curp) === normalized.curp;
+                const mismoNombre = nombre && normalizeNombre(existente.nombre || existente.nombre_completo) === nombre;
+                return mismaEmpresa && (mismoCurp || mismoNombre);
+            });
+
+            if (index < 0) {
+                resultado.push(normalized);
                 return;
             }
 
-            const existente = mapa.get(normalized.curp);
-            if (!existente) {
-                mapa.set(normalized.curp, normalized);
-                return;
-            }
-
+            const existente = resultado[index];
             const preferirIncoming = parseFechaValor(normalized.fecha_ingreso) >= parseFechaValor(existente.fecha_ingreso);
-            const combinado = preferirIncoming
+            resultado[index] = preferirIncoming
                 ? mergeEmpleadoRecords(existente, normalized)
                 : mergeEmpleadoRecords(normalized, existente);
-            mapa.set(normalized.curp, combinado);
         });
 
-        return Array.from(mapa.values());
+        return resultado;
     }
 
     function safeParse(jsonText, fallback) {
@@ -188,7 +200,7 @@
             empleados.push(normalized);
         }
 
-        setEmpleados(deduplicarPorCurp(empleados));
+        setEmpleados(deduplicarPorIdentidad(empleados));
         return empleados[index] || normalized;
     }
 
@@ -205,7 +217,7 @@
             }
         });
 
-        setEmpleados(deduplicarPorCurp(empleados));
+        setEmpleados(deduplicarPorIdentidad(empleados));
     }
 
     function getEmpleadoByCurp(curp) {
@@ -238,7 +250,7 @@
             ...empleados[index],
             ...(patch || {}),
         });
-        setEmpleados(deduplicarPorCurp(empleados));
+        setEmpleados(deduplicarPorIdentidad(empleados));
         return empleados[index];
     }
 
@@ -274,7 +286,7 @@
             index = empleados.length - 1;
         }
 
-        setEmpleados(deduplicarPorCurp(empleados));
+        setEmpleados(deduplicarPorIdentidad(empleados));
         return empleados[index];
     }
 
@@ -329,7 +341,7 @@
         };
 
         empleados[index] = normalizeEmpleado(patch);
-        setEmpleados(deduplicarPorCurp(empleados));
+        setEmpleados(deduplicarPorIdentidad(empleados));
         actualizarVistas();
         return empleados[index];
     }
@@ -394,6 +406,7 @@
 
     const manager = {
         getEmpleados,
+        deduplicate: deduplicarPorIdentidad,
         upsertEmpleado,
         upsertMany,
         getEmpleadoByCurp,
