@@ -574,6 +574,24 @@
             outline: none;
         }
 
+        .notification-file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .notification-file-link {
+            color: var(--azul);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .notification-file-link:hover,
+        .notification-file-link:focus {
+            color: var(--blanco);
+        }
+
         .empty-panel {
             min-height: 660px;
             border:none;
@@ -1325,7 +1343,7 @@
                             <form id="form-suspension" onsubmit="guardarIncidencia(event, 'suspension')" style="display:none;">
                                 <div class="form-group"><label for="suspension-motivo">Motivo:</label><textarea id="suspension-motivo" class="editable-control" rows="3" style="margin-top: 8px;" required></textarea></div>
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
-                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
+                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" readonly required></div>
                                     <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
                                     <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
@@ -1339,7 +1357,7 @@
                             <form id="form-entrada-salida" onsubmit="guardarIncidencia(event, 'entrada-salida')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 5px;">
                                     <div class="form-group" style="flex: 1;"><label for="pase-tipo">Opción:</label><select id="pase-tipo" class="editable-control" required><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
-                                    <div class="form-group" style="flex: 1;"><label for="pase-hora">Hora:</label><input id="pase-hora" class="editable-control" type="time" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="pase-hora">Hora:</label><input id="pase-hora" class="editable-control" type="time" step="60" inputmode="none" required></div>
                                 </div>
                                 <div class="form-group"><label>Motivo:</label>
                                     <div class="motivo-options"><label><input type="checkbox" name="pase-motivo" value="Compromiso Personal">Compromiso Personal</label><label><input type="checkbox" name="pase-motivo" value="Asistencia a cita Medica">Asistencia a cita Médica</label><label><input type="checkbox" name="pase-motivo" value="Sentirse mal">Sentirse mal</label></div>
@@ -1353,12 +1371,12 @@
                             </form>
 
                             <form id="form-indisciplina" onsubmit="guardarIncidencia(event, 'indisciplina')" style="display:none;">
-                                <div class="form-group"><label>Motivo:</label><div class="motivo-options"><label><input type="checkbox" name="disciplina-motivo" value="SALIDAS SIN PERMISO DEL AREA">Salidas sin permiso del área</label><label><input type="checkbox" name="disciplina-motivo" value="LLEGADAS TARDE AL AREA DE TRABAJO">Llegadas tarde al área de trabajo</label><label><input type="checkbox" name="disciplina-motivo" value="DEFECTOS">Defectos</label><label><input type="checkbox" name="disciplina-motivo" value="NO USO DE EQUIPO DE SEGURIDAD">No uso de equipo de seguridad</label><label><input type="checkbox" name="disciplina-motivo" value="DESOBEDECER ORDENES">Desobedecer órdenes</label><label><input type="checkbox" name="disciplina-motivo" value="JUGAR EN EL AREA">Jugar en el área</label><label><input type="checkbox" name="disciplina-motivo" value="FALTA INJUSTIFICADA">Falta injustificada</label><label><input type="checkbox" name="disciplina-motivo" value="FUMAR SIN PERMISO O EN AREAS NO PERMITIDAS">Fumar sin permiso o en áreas no permitidas</label><label><input type="checkbox" name="disciplina-motivo" value="USO DEL CELULAR DENTRO DEL AREA">Uso del celular dentro del área</label><label><input type="checkbox" name="disciplina-motivo" value="TARDAR AL REGRESAR DEL COMEDOR O DEL BAÑO">Tardar al regresar del comedor o del baño</label><label><input type="checkbox" name="disciplina-motivo" value="FALTA DE RESPETO O ACOSO A COMPAÑEROS">Falta de respeto o acoso a compañeros</label><label><input type="checkbox" name="disciplina-motivo" value="SALIR CON COMIDA A LINEAS">Salir con comida a líneas</label></div></div>
-                                <div class="form-group"><label for="disciplina-otro-motivo">Otro Motivo:</label><textarea id="disciplina-otro-motivo" class="editable-control" rows="2"></textarea></div>
+                                <div class="form-group"><label for="disciplina-motivo">Motivo:</label><select id="disciplina-motivo" class="editable-control" required><option value="">Selecciona un motivo</option><option value="SALIDAS SIN PERMISO DEL AREA">Salidas sin permiso del área</option><option value="LLEGADAS TARDE AL AREA DE TRABAJO">Llegadas tarde al área de trabajo</option><option value="DEFECTOS">Defectos</option><option value="NO USO DE EQUIPO DE SEGURIDAD">No uso de equipo de seguridad</option><option value="DESOBEDECER ORDENES">Desobedecer órdenes</option><option value="JUGAR EN EL AREA">Jugar en el área</option><option value="FALTA INJUSTIFICADA">Falta injustificada</option><option value="FUMAR SIN PERMISO O EN AREAS NO PERMITIDAS">Fumar sin permiso o en áreas no permitidas</option><option value="USO DEL CELULAR DENTRO DEL AREA">Uso del celular dentro del área</option><option value="TARDAR AL REGRESAR DEL COMEDOR O DEL BAÑO">Tardar al regresar del comedor o del baño</option><option value="FALTA DE RESPETO O ACOSO A COMPAÑEROS">Falta de respeto o acoso a compañeros</option><option value="SALIR CON COMIDA A LINEAS">Salir con comida a líneas</option><option value="otro">Otro motivo</option></select></div>
+                                <div id="disciplina-otro-motivo-group" class="form-group" style="display: none;"><label for="disciplina-otro-motivo">Otro Motivo:</label><textarea id="disciplina-otro-motivo" class="editable-control" rows="2"></textarea></div>
                                 <div class="form-group" style="margin: 20px 0;">
                                     <label for="indiciplina-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
                                     <input id="indiciplina-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;" required>
-                                </div>                                 
+                                </div>                         
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
 
@@ -1366,24 +1384,24 @@
 
                             <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
-                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="max-width: 90px;"><label for="vacaciones-dias">N° de días:</label><input id="vacaciones-dias" class="editable-control" type="number" min="1" max="999" readonly required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="vacaciones-desde">De fecha:</label><input id="vacaciones-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="vacaciones-hasta">A fecha:</label><input id="vacaciones-hasta" class="editable-control" type="date" required></div>
                                 </div>
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
+
                             <form id="form-incapacidad" onsubmit="guardarIncidencia(event, 'incapacidad')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
-                                    <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="max-width: 90px;"><label for="incapacidad-dias">N° de días:</label><input id="incapacidad-dias" class="editable-control" type="number" min="1" max="999" readonly required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="incapacidad-desde">De fecha:</label><input id="incapacidad-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="incapacidad-hasta">A fecha:</label><input id="incapacidad-hasta" class="editable-control" type="date" required></div>
                                 </div>
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
                         </div>
                     </div>
                 </div>
-
             </section>
         </div>
     </main>
@@ -2264,6 +2282,19 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
         }
 
+        function readIncidentFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve({
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    dataUrl: reader.result,
+                });
+                reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
         function deleteEmployeeIncident(index) {
             if (!window.confirm('¿Deseas eliminar esta notificación?')) return;
             const incidents = readEmployeeIncidents();
@@ -2279,6 +2310,15 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             if (!dateValue) return '';
             const date = new Date(`${dateValue}T00:00:00`);
             return Number.isNaN(date.getTime()) ? dateValue : date.toLocaleDateString('es-MX');
+        }
+
+        function formatIncidentTime(timeValue) {
+            if (!timeValue) return '';
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            if (Number.isNaN(hours) || Number.isNaN(minutes)) return timeValue;
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hour = hours % 12 || 12;
+            return `${hour}:${String(minutes).padStart(2, '0')} ${period}`;
         }
 
         function renderEmployeeNotifications() {
@@ -2309,8 +2349,66 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 const detail = document.createElement('span');
                 detail.textContent = incident.detail;
                 item.append(deleteButton, title, detail);
+                if (incident.file && incident.file.dataUrl) {
+                    const fileActions = document.createElement('div');
+                    fileActions.className = 'notification-file-actions';
+                    const previewLink = document.createElement('a');
+                    previewLink.className = 'notification-file-link';
+                    previewLink.href = incident.file.dataUrl;
+                    previewLink.target = '_blank';
+                    previewLink.rel = 'noopener';
+                    previewLink.textContent = 'Vista previa';
+                    const downloadLink = document.createElement('a');
+                    downloadLink.className = 'notification-file-link';
+                    downloadLink.href = incident.file.dataUrl;
+                    downloadLink.download = incident.file.name || 'archivo-incidencia';
+                    downloadLink.textContent = 'Descargar';
+                    fileActions.append(previewLink, downloadLink);
+                    item.appendChild(fileActions);
+                }
                 container.appendChild(item);
             });
+        }
+
+        function updateIncidentDays(prefix) {
+            const start = document.getElementById(`${prefix}-desde`);
+            const end = document.getElementById(`${prefix}-hasta`);
+            const days = document.getElementById(`${prefix}-dias`);
+            if (!start || !end || !days) return;
+            if (!start.value || !end.value || start.value > end.value) {
+                days.value = '';
+                return;
+            }
+            days.value = getDateRange(start.value, end.value).length;
+        }
+
+        function bindIncidentControls() {
+            ['suspension', 'vacaciones', 'incapacidad'].forEach((prefix) => {
+                const start = document.getElementById(`${prefix}-desde`);
+                const end = document.getElementById(`${prefix}-hasta`);
+                if (start) start.addEventListener('change', () => updateIncidentDays(prefix));
+                if (end) end.addEventListener('change', () => updateIncidentDays(prefix));
+            });
+
+            const hour = document.getElementById('pase-hora');
+            if (hour) {
+                hour.addEventListener('keydown', (event) => event.preventDefault());
+                hour.addEventListener('beforeinput', (event) => event.preventDefault());
+                hour.addEventListener('paste', (event) => event.preventDefault());
+                hour.addEventListener('drop', (event) => event.preventDefault());
+            }
+
+            const disciplineReason = document.getElementById('disciplina-motivo');
+            const otherGroup = document.getElementById('disciplina-otro-motivo-group');
+            const otherReason = document.getElementById('disciplina-otro-motivo');
+            if (disciplineReason && otherGroup && otherReason) {
+                disciplineReason.addEventListener('change', () => {
+                    const isOther = disciplineReason.value === 'otro';
+                    otherGroup.style.display = isOther ? 'block' : 'none';
+                    otherReason.required = isOther;
+                    if (!isOther) otherReason.value = '';
+                });
+            }
         }
 
         function getDateRange(startValue, endValue) {
@@ -2350,8 +2448,9 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
         }
 
-        function guardarIncidencia(event, tipo) {
+        async function guardarIncidencia(event, tipo) {
             event.preventDefault();
+            if (['suspension', 'vacaciones', 'incapacidad'].includes(tipo)) updateIncidentDays(tipo);
             const config = {
                 suspension: {
                     title: 'Suspensión',
@@ -2381,7 +2480,9 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 },
                 indisciplina: {
                     title: 'Indisciplina',
-                    motivos: getCheckedValues('disciplina-motivo'),
+                    motivos: document.getElementById('disciplina-motivo').value === 'otro'
+                        ? []
+                        : [document.getElementById('disciplina-motivo').value],
                     otro: document.getElementById('disciplina-otro-motivo').value.trim(),
                 },
             }[tipo];
@@ -2404,14 +2505,30 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
             const motivo = config.motivo || config.motivos?.join(', ') || config.otro || '';
             const range = config.desde ? getDateRange(config.desde, config.hasta) : [];
-            saveEmployeeIncident({
-                type: tipo,
-                title: config.title,
-                detail: tipo === 'entrada-salida'
-                    ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${config.hora}. ${motivo}`
-                    : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`,
-                suspendedDates: tipo === 'suspension' ? range : [],
-            });
+            const fileInputId = {
+                suspension: 'suspension-archivo',
+                'entrada-salida': 'pase-archivo',
+                indisciplina: 'indiciplina-archivo',
+            }[tipo];
+            let file = null;
+            try {
+                if (fileInputId) {
+                    const selectedFile = document.getElementById(fileInputId)?.files?.[0];
+                    if (selectedFile) file = await readIncidentFile(selectedFile);
+                }
+                saveEmployeeIncident({
+                    type: tipo,
+                    title: config.title,
+                    detail: tipo === 'entrada-salida'
+                        ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${formatIncidentTime(config.hora)}. ${motivo}`
+                        : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`,
+                    suspendedDates: tipo === 'suspension' ? range : [],
+                    file,
+                });
+            } catch (error) {
+                alert(error.message);
+                return;
+            }
             event.target.reset();
             cerrarIncidencia();
             renderEmployeeNotifications();
@@ -2451,6 +2568,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         }
 
         bindTabButtons();
+        bindIncidentControls();
         renderAttendanceCalendar();
         renderEmployeeNotifications();
 
