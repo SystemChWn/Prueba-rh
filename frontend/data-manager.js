@@ -142,7 +142,12 @@
 
     function getEmpleados() {
         const parsed = safeParse(localStorage.getItem(STORAGE_KEY), []);
-        return Array.isArray(parsed) ? parsed : [];
+        const empleados = Array.isArray(parsed) ? parsed : [];
+        const deduplicados = deduplicarPorIdentidad(empleados);
+        if (deduplicados.length !== empleados.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(deduplicados));
+        }
+        return deduplicados;
     }
 
     function setEmpleados(empleados) {
