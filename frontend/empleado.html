@@ -377,11 +377,13 @@
         .attendance-actions {
             position: relative;
             margin-bottom: 10px;
+            width: 280px; /* Ancho idéntico al contenedor de notificaciones */
         }
 
         .incidencias-menu-trigger {
             display: inline-flex;
-            width: 150px;
+            width: 100%; /* Ocupa todo el ancho del contenedor padre (280px) */
+            min-width: 0;
             justify-content: center;
             background: #1e1e1e;
             border: 1px solid #007bff;
