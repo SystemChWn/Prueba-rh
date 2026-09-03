@@ -1344,7 +1344,7 @@
                                 <div class="form-group"><label>Motivo:</label>
                                     <div class="motivo-options"><label><input type="checkbox" name="pase-motivo" value="Compromiso Personal">Compromiso Personal</label><label><input type="checkbox" name="pase-motivo" value="Asistencia a cita Medica">Asistencia a cita Médica</label><label><input type="checkbox" name="pase-motivo" value="Sentirse mal">Sentirse mal</label></div>
                                 </div>
-                                <div class="form-group" style="margin-top: 5px; margin-bottom: 15px;"><label for="pase-otro-motivo">Otro Motivo:</label><textarea id="pase-otro-motivo" class="editable-control" rows="2" style="margin-top: 8px;"></textarea></div>
+                                <div class="form-group" style="margin-top: 2px; margin-bottom: 5px;"><label for="pase-otro-motivo">Otro Motivo:</label><textarea id="pase-otro-motivo" class="editable-control" rows="2" style="margin-top: 8px;"></textarea></div>
                                 <div class="form-group" style="margin: 20px 0;">
                                     <label for="pase-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
                                     <input id="pase-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;" required>
@@ -1364,7 +1364,18 @@
 
                             <div id="form-carta-suspension" style="display:none;"><p class="muted">La generación de la carta de suspensión se habilitará en su página correspondiente.</p></div>
 
-                            <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;"><div class="form-row"><div class="form-group"><label for="vacaciones-dias">Cuántos días:</label><input id="vacaciones-dias" class="editable-control" type="number" min="1" required></div><div class="form-group"><label for="vacaciones-desde">De fecha:</label><input id="vacaciones-desde" class="editable-control" type="date" required></div></div><div class="form-group"><label for="vacaciones-hasta">A fecha:</label><input id="vacaciones-hasta" class="editable-control" type="date" required></div><button class="action-btn" type="submit">Guardar Vacaciones</button></form>
+                            <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">
+                                <div class="form-row"><div class="form-group"><label for="vacaciones-dias">Cuántos días:</label>
+                                    <input id="vacaciones-dias" class="editable-control" type="number" min="1" required></div>
+                                    <div class="form-group"><label for="vacaciones-desde">De fecha:</label>
+                                        <input id="vacaciones-desde" class="editable-control" type="date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="vacaciones-hasta">A fecha:</label>
+                                        <input id="vacaciones-hasta" class="editable-control" type="date" required>
+                                    </div>
+                                <button class="action-btn" type="submit">Guardar Vacaciones</button>
+                            </form>
                             <form id="form-incapacidad" onsubmit="guardarIncidencia(event, 'incapacidad')" style="display:none;"><div class="form-row"><div class="form-group"><label for="incapacidad-dias">Cuántos días:</label><input id="incapacidad-dias" class="editable-control" type="number" min="1" required></div><div class="form-group"><label for="incapacidad-desde">De fecha:</label><input id="incapacidad-desde" class="editable-control" type="date" required></div></div><div class="form-group"><label for="incapacidad-hasta">A fecha:</label><input id="incapacidad-hasta" class="editable-control" type="date" required></div><button class="action-btn" type="submit">Guardar Incapacidad</button></form>
                         </div>
                     </div>
