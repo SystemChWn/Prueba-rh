@@ -495,8 +495,11 @@
         }
 
         .notification-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #333;
+            position: relative;
+            margin-bottom: 8px;
+            padding: 12px 38px 12px 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
             color: var(--blanco);
             font-size: 0.9rem;
         }
@@ -505,6 +508,26 @@
             display: block;
             color: var(--azul);
             margin-bottom: 4px;
+        }
+
+        .notification-delete {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: #ff4b4b;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .notification-delete:hover,
+        .notification-delete:focus {
+            color: #fff;
+            outline: none;
         }
 
         .empty-panel {
@@ -2174,6 +2197,17 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
         }
 
+        function deleteEmployeeIncident(index) {
+            if (!window.confirm('¿Deseas eliminar esta notificación?')) return;
+            const incidents = readEmployeeIncidents();
+            const key = String(registroId || currentEmployeeCurp || '').trim();
+            if (!Array.isArray(incidents[key]) || !incidents[key][index]) return;
+            incidents[key].splice(index, 1);
+            localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
+            renderEmployeeNotifications();
+            renderAttendanceCalendar();
+        }
+
         function formatIncidentDate(dateValue) {
             if (!dateValue) return '';
             const date = new Date(`${dateValue}T00:00:00`);
@@ -2194,14 +2228,20 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 return;
             }
 
-            incidents.slice().reverse().forEach((incident) => {
+            incidents.slice().reverse().forEach((incident, reverseIndex) => {
                 const item = document.createElement('div');
                 item.className = 'notification-item';
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'notification-delete';
+                deleteButton.type = 'button';
+                deleteButton.setAttribute('aria-label', 'Eliminar notificación');
+                deleteButton.textContent = '✕';
+                deleteButton.addEventListener('click', () => deleteEmployeeIncident(incidents.length - 1 - reverseIndex));
                 const title = document.createElement('strong');
                 title.textContent = incident.title;
                 const detail = document.createElement('span');
                 detail.textContent = incident.detail;
-                item.append(title, detail);
+                item.append(deleteButton, title, detail);
                 container.appendChild(item);
             });
         }
