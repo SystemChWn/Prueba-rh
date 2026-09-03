@@ -1261,7 +1261,10 @@
                                     <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
                                     <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
-                                <div class="form-group"><label for="suspension-archivo"></label><input id="suspension-archivo" class="editable-control" type="file" accept=".pdf,.png,.jpg,.jpeg" required></div>
+                                <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
+                                    <label for="suspension-archivo" style="display: inline-block; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 8px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Seleccionar archivo</label>
+                                    <input id="suspension-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;" required>
+                                </div>                                
                                 <button class="action-btn" type="submit">Guardar Suspensión</button>
                             </form>
 
