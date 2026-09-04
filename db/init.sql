@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     fuente              VARCHAR(50),
     fecha_registro      DATE DEFAULT CURRENT_DATE,
     nombre_reclutador   VARCHAR(50),
+    team_reclutador     VARCHAR(100),
     nombre_empleado     VARCHAR(200),
     detalle             TEXT
 );

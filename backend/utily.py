@@ -719,15 +719,20 @@ def guardar_encuesta():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS team_reclutador VARCHAR(100)
+                """)
                 cur.execute(
                     """
                     INSERT INTO encuesta_reclutamiento
-                        (fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
-                    VALUES (%s, now(), %s, %s, %s)
+                        (fuente, fecha_registro, nombre_reclutador, team_reclutador, nombre_empleado, detalle)
+                    VALUES (%s, now(), %s, %s, %s, %s)
                     """,
                     (
                         fuente_norm,
                         (datos.get('nombre_reclutador') or '').strip(),
+                        (datos.get('team_reclutador') or '').strip(),
                         (datos.get('nombre_empleado') or '').strip(),
                         (datos.get('detalle') or '').strip(),
                     )
@@ -1871,16 +1876,31 @@ def obtener_ingresos_por_team():
                 """)
                 
                 cur.execute("""
-                    SELECT pr.team, COUNT(e.id) as total
-                    FROM personal_reclutamiento pr
-                    LEFT JOIN encuesta_reclutamiento e
-                      ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
-                     AND EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
-                     AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
-                    WHERE pr.team IS NOT NULL AND pr.team != ''
-                    GROUP BY pr.team
-                    ORDER BY total DESC, pr.team ASC
-                """, (tz, mes, tz, tz))
+                                        WITH teams AS (
+                                                SELECT DISTINCT team
+                                                FROM personal_reclutamiento
+                                                WHERE team IS NOT NULL AND TRIM(team) <> ''
+                                                UNION
+                                                SELECT DISTINCT team_reclutador
+                                                FROM encuesta_reclutamiento
+                                                WHERE team_reclutador IS NOT NULL AND TRIM(team_reclutador) <> ''
+                                        ),
+                                        ingresos AS (
+                                                SELECT COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team)) AS team,
+                                                             COUNT(*) AS total
+                                                FROM encuesta_reclutamiento e
+                                                LEFT JOIN personal_reclutamiento pr
+                                                    ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
+                                                WHERE EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
+                                                    AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
+                                                    AND COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team)) IS NOT NULL
+                                                GROUP BY COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team))
+                                        )
+                                        SELECT teams.team, COALESCE(ingresos.total, 0) AS total
+                                        FROM teams
+                                        LEFT JOIN ingresos ON ingresos.team = teams.team
+                                        ORDER BY total DESC, teams.team ASC
+                                """, (tz, mes, tz, tz))
                 
                 rows = cur.fetchall()
         
