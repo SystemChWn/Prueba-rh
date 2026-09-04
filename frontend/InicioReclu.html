@@ -503,10 +503,12 @@
         async function actualizarMejorTeam() {
             const elementoValor = document.getElementById('countPendientes');
             const mes = new Date().getMonth() + 1;
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
             try {
-                const datosLocales = obtenerDatosIngresosLocales(mes);
-                if (datosLocales.length > 0) {
-                    const mejorTeam = datosLocales.slice().sort((a, b) => Number(b.total || 0) - Number(a.total || 0))[0];
+                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { cache: 'no-store' });
+                const datos = response.ok ? await response.json() : [];
+                if (Array.isArray(datos) && datos.length > 0) {
+                    const mejorTeam = datos.slice().sort((a, b) => Number(b.total || 0) - Number(a.total || 0))[0];
                     elementoValor.textContent = mejorTeam.team || 'Sin equipo';
                 } else {
                     elementoValor.textContent = 'Esperando...';
@@ -691,22 +693,16 @@
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
             let datos = [];
             
-            // Primero intentar obtener datos locales
-            const datosLocales = obtenerDatosIngresosLocales(mes);
-            if (datosLocales.length > 0) {
-                datos = datosLocales;
-            } else {
-                // Si no hay datos locales, intentar desde la API
-                try {
-                    const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
-                        cache: 'no-store' 
-                    });
-                    if (!response.ok) throw new Error('No se pudo cargar la gráfica');
-                    datos = await response.json();
-                } catch (error) {
-                    console.error('Error cargando ingresos por team:', error);
-                    datos = [];
-                }
+            try {
+                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, {
+                    cache: 'no-store'
+                });
+                if (!response.ok) throw new Error('No se pudo cargar la gráfica');
+                datos = await response.json();
+                if (!Array.isArray(datos)) datos = [];
+            } catch (error) {
+                console.error('Error cargando ingresos por team:', error);
+                datos = obtenerDatosIngresosLocales(mes);
             }
 
             crearGraficaReclutadores(datos);

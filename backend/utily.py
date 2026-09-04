@@ -720,8 +720,17 @@ def guardar_encuesta():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO encuesta_reclutamiento (fuente, fecha_registro) VALUES (%s, now())",
-                    (fuente_norm,)
+                    """
+                    INSERT INTO encuesta_reclutamiento
+                        (fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
+                    VALUES (%s, now(), %s, %s, %s)
+                    """,
+                    (
+                        fuente_norm,
+                        (datos.get('nombre_reclutador') or '').strip(),
+                        (datos.get('nombre_empleado') or '').strip(),
+                        (datos.get('detalle') or '').strip(),
+                    )
                 )
             conn.commit()
         return ("OK", 200)
