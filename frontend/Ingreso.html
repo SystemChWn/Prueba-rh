@@ -192,7 +192,17 @@
             throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
+        function obtenerNumeroTemporal(nombre) {
+            try {
+                const tempIds = JSON.parse(localStorage.getItem('rh_temp_employee_ids') || '{}');
+                return tempIds[String(nombre || '').trim().toLocaleLowerCase()] || '';
+            } catch (_) {
+                return '';
+            }
+        }
+
         function filaTemplate(candidato) {
+            const tempId = obtenerNumeroTemporal(candidato.nombre_completo);
             return `
                 <tr data-id="${candidato.id}">
                     <td>${candidato.nombre_completo || ''}</td>
@@ -203,7 +213,7 @@
                             <option value="KRONOS">KRONOS</option>
                         </select>
                     </td>
-                    <td><input class="campo-no-empleado" type="text" required></td>
+                    <td><input class="campo-no-empleado" type="text" value="${tempId}" readonly required></td>
                     <td>
                         <select class="campo-personal" required>
                             <option value="" selected>Selecciona la opcion</option>
@@ -394,6 +404,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             cargarPendientes();
             btnGuardarDatos.addEventListener('click', guardarDatosCompletos);
+        });
+
+        cuerpo.addEventListener('change', (event) => {
+            const empresa = event.target.closest('.campo-empresa');
+            if (!empresa) return;
+            const fila = empresa.closest('tr');
+            const numeroEmpleado = fila && fila.querySelector('.campo-no-empleado');
+            if (numeroEmpleado) numeroEmpleado.readOnly = false;
         });
     </script>
 </body>

@@ -382,15 +382,6 @@
                         <br>
                         <div class="form-group-link">
                             <label for="expiry-minutes">Tiempo límite de respuesta:</label>
-                            <select id="expiry-minutes">
-                                <option value="5">5 minutos</option>
-                                <option value="10">10 minutos</option>
-                                <option value="15">15 minutos</option>
-                                <option value="20">20 minutos</option>
-                            </select>
-                        </div>
-                        <button class="btn-generate" id="btn-generate-link">Generar y Copiar Enlace</button>
-                        <div class="link-result-box" id="link-result-container">
                             <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
                         </div>
                     </div>
@@ -625,9 +616,7 @@
             try {
                 const INGRESOS_KEY = 'ingresos_por_team_local';
                 const ingresos = localStorage.getItem(INGRESOS_KEY);
-                if (!ingresos) return [];
-
-                const ingresosArray = JSON.parse(ingresos);
+                const ingresosArray = ingresos ? JSON.parse(ingresos) : [];
                 if (!Array.isArray(ingresosArray)) return [];
 
                 const ahora = new Date();
@@ -647,10 +636,14 @@
                     conteo[team] = (conteo[team] || 0) + 1;
                 });
 
-                // Convertir a formato de datos para la gráfica
-                return Object.entries(conteo).map(([team, total]) => ({
-                    team: team,
-                    total: total
+                const teamsActivos = leerReclutadores()
+                    .map((reclutador) => String(reclutador.team || '').trim())
+                    .filter(Boolean);
+                const todosLosTeams = Array.from(new Set([...teamsActivos, ...Object.keys(conteo)])).sort(compareTeams);
+
+                return todosLosTeams.map((team) => ({
+                    team,
+                    total: conteo[team] || 0,
                 }));
             } catch (error) {
                 console.error('Error leyendo ingresos locales:', error);
@@ -674,10 +667,6 @@
                     });
                     if (!response.ok) throw new Error('No se pudo cargar la gráfica');
                     datos = await response.json();
-
-                    if (!Array.isArray(datos)) {
-                        datos = [];
-                    }
                 } catch (error) {
                     console.error('Error cargando ingresos por team:', error);
                     datos = [];
