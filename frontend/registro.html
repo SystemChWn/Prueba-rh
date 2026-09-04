@@ -759,7 +759,7 @@
             
             // Registrar el ingreso por team si se encontró un reclutador con team
             if (teamReclutador) {
-                registrarIngresosPorTeam(teamReclutador, fuenteParaEnviar);
+                registrarIngresosPorTeam(teamReclutador, fuenteParaEnviar, nombreReclutador);
             }
 
             const encuestaForm = new FormData();
@@ -887,17 +887,26 @@
         }
 
         function obtenerTeamDelReclutador(nombre) {
-            const nombreNormal = String(nombre || '').trim().toLowerCase();
+            const nombreNormal = normalizarNombreReclutador(nombre);
             if (!nombreNormal) return null;
 
             const reclutadores = leerReclutadoresLocales();
             const reclutador = reclutadores.find(
-                (item) => String(item?.nombre || '').trim().toLowerCase() === nombreNormal
+                (item) => normalizarNombreReclutador(item?.nombre) === nombreNormal
             );
             return reclutador?.team || null;
         }
 
-        function registrarIngresosPorTeam(team, fuente) {
+        function normalizarNombreReclutador(nombre) {
+            return String(nombre || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .replace(/\s+/g, ' ')
+                .toLocaleLowerCase();
+        }
+
+        function registrarIngresosPorTeam(team, fuente, nombreReclutador) {
             if (!team || !fuente) return;
 
             try {
@@ -913,6 +922,7 @@
                 ingresosArray.push({
                     team: team,
                     fuente: fuente,
+                    nombre_reclutador: nombreReclutador || '',
                     fecha: hoy,
                     timestamp: Date.now()
                 });
