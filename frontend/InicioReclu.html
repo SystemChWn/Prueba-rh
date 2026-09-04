@@ -36,9 +36,12 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             padding: 20px 20px 0 20px;
+            align-items: center;
         }
 
         .metric-card {
+            position: relative;
+            align-self: center;
             background: #1e1e1e;
             border: 1px solid #333;
             border-radius: 12px;
@@ -221,6 +224,11 @@
         
         .link-result-box {
             display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 20px;
+            right: 20px;
+            z-index: 5;
             background: #1e1e1e;
             padding: 8px;
             border-radius: 4px;
@@ -1118,9 +1126,9 @@
                             },
                             y: {
                                 beginAtZero: true,
-                                max: 50, //valor máximo
+                                max: 150, //valor máximo
                                 ticks: { 
-                                    stepSize: 5,
+                                    stepSize: 10,
                                     color: '#fff' 
                                 },
                                 grid: { color: '#333' }
