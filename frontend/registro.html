@@ -841,6 +841,7 @@
                 id: item?.id || Date.now(),
                 nombre,
                 ingresos: Number(item?.ingresos || 0),
+                team: String(item?.team || '').trim(),
             };
         }
 
@@ -925,7 +926,7 @@
                     ingresos: Number(reclutadores[index]?.ingresos || 0) + 1,
                 };
             } else {
-                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1 });
+                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1, team: '' });
             }
 
             guardarReclutadoresLocales(reclutadores);

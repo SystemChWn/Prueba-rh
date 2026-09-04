@@ -510,17 +510,10 @@
         async function actualizarMejorTeam() {
             const elementoValor = document.getElementById('countPendientes');
             const mes = new Date().getMonth() + 1;
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
-            
             try {
-                const response = await fetch(`/api/ingresos-por-team?mes=${mes}&tz=${encodeURIComponent(tz)}`, { 
-                    cache: 'no-store' 
-                });
-                if (!response.ok) throw new Error('Error al cargar teams');
-                
-                const datos = await response.json();
-                if (Array.isArray(datos) && datos.length > 0) {
-                    const mejorTeam = datos[0];
+                const datosLocales = obtenerDatosIngresosLocales(mes);
+                if (datosLocales.length > 0) {
+                    const mejorTeam = datosLocales.slice().sort((a, b) => Number(b.total || 0) - Number(a.total || 0))[0];
                     elementoValor.textContent = mejorTeam.team || 'Sin equipo';
                 } else {
                     elementoValor.textContent = 'Esperando...';
@@ -530,7 +523,7 @@
                 elementoValor.textContent = 'Esperando...';
             }
         }
-        actualizarMejorTeam();
+        document.addEventListener('DOMContentLoaded', actualizarMejorTeam);
         
 // RECUADROS SUPERIORES - 3
         document.addEventListener("DOMContentLoaded", () => {
@@ -809,7 +802,25 @@
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 const parsed = raw ? JSON.parse(raw) : [];
-                return Array.isArray(parsed) ? parsed.slice(0, MAX_RECLUTADORES) : [];
+                if (!Array.isArray(parsed)) return [];
+                const unicos = new Map();
+                parsed.forEach((item) => {
+                    const nombre = String(item?.nombre || '').trim();
+                    if (!nombre) return;
+                    const clave = nombre.toLocaleLowerCase();
+                    if (!unicos.has(clave)) {
+                        unicos.set(clave, {
+                            ...item,
+                            nombre,
+                            team: String(item?.team || '').trim() || 'Team 1',
+                        });
+                    }
+                });
+                const resultado = Array.from(unicos.values()).slice(0, MAX_RECLUTADORES);
+                if (resultado.length !== parsed.length || resultado.some((item, index) => item.team !== parsed[index]?.team)) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
+                }
+                return resultado;
             } catch (error) {
                 console.error('Error leyendo reclutadores desde localStorage:', error);
                 return [];

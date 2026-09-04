@@ -538,7 +538,7 @@
             const fechaIngreso = data.fecha_ingreso || data.fecha_registro || '';
             const salario = data.salario || '';
             const fechaInicioTexto = formatFechaLarga(fechaIngreso);
-            const fechaFinalTexto = formatFechaLarga(sumarDiasHabiles(fechaIngreso, 64));
+            const fechaFinalTexto = formatFechaLarga(sumarDiasHabiles(fechaIngreso, 67));
 
             setText('lbl-nombre', data.nombre_completo || data.nombre || '');
             setText('lbl-nacionalidad', data.nacionalidad || '');
