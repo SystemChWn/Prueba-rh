@@ -487,14 +487,19 @@
             return `${Number(day)} de ${meses[Number(month) - 1]} del ${year}`;
         }
 
-        function sumarDiasFecha(fechaTexto, dias) {
+        function sumarDiasHabiles(fechaTexto, diasHabiles) {
             if (!fechaTexto) return '';
             const match = String(fechaTexto).match(/^(\d{4})-(\d{2})-(\d{2})$/);
             if (!match) return String(fechaTexto);
 
             const [, year, month, day] = match;
             const fecha = new Date(Number(year), Number(month) - 1, Number(day));
-            fecha.setDate(fecha.getDate() + Number(dias || 0));
+            let diasRestantes = Number(diasHabiles || 0);
+            while (diasRestantes > 0) {
+                fecha.setDate(fecha.getDate() + 1);
+                const diaSemana = fecha.getDay();
+                if (diaSemana !== 0 && diaSemana !== 6) diasRestantes -= 1;
+            }
 
             const yyyy = fecha.getFullYear();
             const mm = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -533,7 +538,7 @@
             const fechaIngreso = data.fecha_ingreso || data.fecha_registro || '';
             const salario = data.salario || '';
             const fechaInicioTexto = formatFechaLarga(fechaIngreso);
-            const fechaFinalTexto = formatFechaLarga(sumarDiasFecha(fechaIngreso, 30));
+            const fechaFinalTexto = formatFechaLarga(sumarDiasHabiles(fechaIngreso, 64));
 
             setText('lbl-nombre', data.nombre_completo || data.nombre || '');
             setText('lbl-nacionalidad', data.nacionalidad || '');
