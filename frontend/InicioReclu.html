@@ -381,8 +381,10 @@
                         </div>
                         <br>
                         <div class="form-group-link">
-                            <label for="expiry-minutes">Tiempo límite de respuesta:</label>
-                            <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
+                            <button type="button" id="btn-generate-link" class="btn-generate">Generar y Copiar Enlace</button>
+                            <div class="link-result-box" id="link-result-container">
+                                <div style="font-size: 0.75rem; color: #28a745; margin-top: 4px; font-weight: bold;">¡Enlace copiado al portapapeles!</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -583,7 +585,8 @@
                             ],
                             borderColor: '#333',
                             borderWidth: 1,
-                            borderRadius: 4
+                            borderRadius: 4,
+                            minBarLength: 6
                         }
                     ]
                 },
@@ -591,7 +594,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true, position: 'bottom' }
+                        legend: { display: false }
                     },
                     scales: {
                         y: {
@@ -651,6 +654,39 @@
             }
         }
 
+        async function actualizarTotalIngresosMes() {
+            const elementoValor = document.getElementById('countEvaluando');
+            if (!elementoValor) return;
+
+            const mes = new Date().getMonth() + 1;
+            let total = 0;
+            try {
+                const datos = await fetchDatosGrafica(`periodo=mes&mes=${mes}`);
+                total = Array.isArray(datos)
+                    ? datos.reduce((acumulado, valor) => acumulado + Number(valor || 0), 0)
+                    : 0;
+            } catch (_) {
+                total = 0;
+            }
+
+            if (total === 0) {
+                try {
+                    const ingresos = JSON.parse(localStorage.getItem('ingresos_por_team_local') || '[]');
+                    const anio = new Date().getFullYear();
+                    total = Array.isArray(ingresos)
+                        ? ingresos.filter((item) => {
+                            const fecha = new Date(`${item.fecha}T00:00:00`);
+                            return fecha.getMonth() + 1 === mes && fecha.getFullYear() === anio;
+                        }).length
+                        : 0;
+                } catch (_) {
+                    total = 0;
+                }
+            }
+
+            elementoValor.textContent = String(total);
+        }
+
         async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Mexico_City';
             let datos = [];
@@ -682,6 +718,7 @@
                 const selectMes = document.getElementById('selectMes');
                 const mesActual = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
                 actualizarGraficaReclutadores(mesActual);
+                actualizarTotalIngresosMes();
             }
         });
 
@@ -689,6 +726,7 @@
             const selectMes = document.getElementById('selectMes');
             const mesInicial = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
             actualizarGraficaReclutadores(mesInicial);
+            actualizarTotalIngresosMes();
 
             if (selectMes) {
                 selectMes.addEventListener('change', (event) => {
@@ -701,7 +739,6 @@
     <script>
         // --- SECCIÓN 2 1/2 - GENERAR LINK ---
         const btnGenerate = document.getElementById('btn-generate-link');
-        const selectMinutes = document.getElementById('expiry-minutes');
         const inputTempId = document.getElementById('temp-employee-id');
         const linkContainer = document.getElementById('link-result-container');
 
@@ -738,9 +775,8 @@
             // <-- PREFIJO -->
             const tempEmployeeId = `TEMP - ${rawId}`;
 
-            const minutosSeleccionados = parseInt(selectMinutes.value, 10);
             const ahora = new Date();
-            const tiempoLimite = new Date(ahora.getTime() + minutosSeleccionados * 60000).getTime();
+            const tiempoLimite = new Date(ahora.getTime() + 30 * 60000).getTime();
             
             const finalLink = `${BASE_URL_COMPARTIBLE}/registro.html?temp_id=${encodeURIComponent(tempEmployeeId)}&expires=${tiempoLimite}`;
 
@@ -1034,8 +1070,10 @@
                             borderColor: '#ffffff',   // <--- Color de Linea
                             backgroundColor: '#ffffff',   // <--- Color de Puntos
                             borderWidth: 3,
-                            pointRadius: 5,
+                            pointRadius: 6,
                             pointHoverRadius: 7,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
                             tension: 0.1
                         }]
                     },
