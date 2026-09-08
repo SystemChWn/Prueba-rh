@@ -304,18 +304,20 @@
                     <div class="tipo-evento-options">
                         <button type="button" class="tipo-option active" data-tipo="cumpleanos">Cumpleaños</button>
                         <button type="button" class="tipo-option" data-tipo="evento">Evento</button>
-                        <button type="button" class="tipo-option" data-tipo="reunion">Reunión</button>
+                        <button type="button" class="tipo-option" data-tipo="aviso">Aviso</button>
                     </div>
-                    <label for="evento-titulo">Título</label>
+                    <label id="evento-titulo-label" for="evento-titulo">Título</label>
                     <input id="evento-titulo" type="text" placeholder="Nombre de la junta o evento">
-                    <label>Fecha</label>
-                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                    <div id="campos-fecha-evento">
+                        <label>Fecha</label>
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
                         <select id="evento-dia" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
                             <option value="">Día</option>
                         </select>
                         <select id="evento-mes" style="flex:1; padding:10px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
                             <option value="">Mes</option>
                         </select>
+                        </div>
                     </div>
                     <div id="campos-hora-evento">
                         <label for="evento-inicio">Hora inicial</label>
@@ -326,6 +328,10 @@
                     <div id="campo-asistentes">
                         <label for="evento-asistentes">Quiénes ingresarán</label>
                         <textarea id="evento-asistentes" placeholder="Agrega los nombres separados"></textarea>
+                    </div>
+                    <div id="campo-aviso" style="display:none;">
+                        <label for="evento-aviso">Texto del aviso</label>
+                        <textarea id="evento-aviso" placeholder="Escribe el aviso para el personal"></textarea>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" id="btn-cancelar-evento">Cancelar</button>
@@ -417,7 +423,7 @@
             var eventosCompartidosCache = [];
             var EVENTO_TIPO_CUMPLEANOS = 'cumpleanos';
             var EVENTO_TIPO_EVENTO = 'evento';
-            var EVENTO_TIPO_REUNION = 'reunion';
+            var EVENTO_TIPO_AVISO = 'aviso';
 
             var MESES = [
                 { value: '01', label: 'Enero' },
@@ -503,7 +509,7 @@
                     startTime: String(evt.startTime || evt.start_time || '').trim(),
                     endTime: String(evt.endTime || evt.end_time || '').trim(),
                     asistentes: String(evt.asistentes || '').trim(),
-                    tipo: String(evt.tipo || EVENTO_TIPO_REUNION).trim().toLowerCase() || EVENTO_TIPO_REUNION,
+                    tipo: String(evt.tipo || EVENTO_TIPO_EVENTO).trim().toLowerCase() || EVENTO_TIPO_EVENTO,
                     descripcion: String(evt.descripcion || '').trim(),
                 };
             }
@@ -546,7 +552,7 @@
 
             function getSelectedEventType() {
                 var selected = document.querySelector('.tipo-option.active');
-                return selected ? selected.getAttribute('data-tipo') : EVENTO_TIPO_REUNION;
+                return selected ? selected.getAttribute('data-tipo') : EVENTO_TIPO_EVENTO;
             }
 
             function actualizarBotonesTipoEvento(tipoEvento) {
@@ -558,10 +564,16 @@
 
             function actualizarCamposTipoEvento(tipoEvento) {
                 var tipo = tipoEvento || getSelectedEventType();
-                var mostrarHoras = tipo === EVENTO_TIPO_EVENTO || tipo === EVENTO_TIPO_REUNION;
-                var mostrarAsistentes = tipo === EVENTO_TIPO_REUNION;
+                var mostrarHoras = tipo === EVENTO_TIPO_EVENTO;
+                var mostrarAsistentes = false;
+                var mostrarAviso = tipo === EVENTO_TIPO_AVISO;
+                var mostrarFecha = tipo !== EVENTO_TIPO_AVISO;
                 var camposHorasEl = document.getElementById('campos-hora-evento');
                 var campoAsistentesEl = document.getElementById('campo-asistentes');
+                var campoAvisoEl = document.getElementById('campo-aviso');
+                var camposFechaEl = document.getElementById('campos-fecha-evento');
+                var tituloLabelEl = document.getElementById('evento-titulo-label');
+                var tituloEl = document.getElementById('evento-titulo');
 
                 actualizarBotonesTipoEvento(tipo);
                 if (camposHorasEl) {
@@ -570,6 +582,10 @@
                 if (campoAsistentesEl) {
                     campoAsistentesEl.style.display = mostrarAsistentes ? 'block' : 'none';
                 }
+                if (campoAvisoEl) campoAvisoEl.style.display = mostrarAviso ? 'block' : 'none';
+                if (camposFechaEl) camposFechaEl.style.display = mostrarFecha ? 'block' : 'none';
+                if (tituloLabelEl) tituloLabelEl.style.display = mostrarAviso ? 'none' : 'block';
+                if (tituloEl) tituloEl.style.display = mostrarAviso ? 'none' : 'block';
             }
 
             function obtenerListaAsistentes(valor) {
@@ -608,8 +624,8 @@
                 return {
                     cumpleanos: 'Cumpleaños',
                     evento: 'Evento',
-                    reunion: 'Reunión'
-                }[evt.tipo || EVENTO_TIPO_REUNION] || 'Reunión';
+                    aviso: 'Aviso'
+                }[evt.tipo || EVENTO_TIPO_EVENTO] || 'Evento';
             }
 
             function getTipoColor(tipo) {
@@ -617,7 +633,7 @@
                     festividad: { background: '#2e8b57', border: '#1f6f42', text: '#fff' },
                     cumpleanos: { background: '#bfefff', border: '#4db8ff', text: '#00283a' },
                     evento: { background: '#4f46e5', border: '#4338ca', text: '#fff' },
-                    reunion: { background: '#8b5cf6', border: '#7c3aed', text: '#fff' }
+                    aviso: { background: '#f59e0b', border: '#d97706', text: '#171717' }
                 }[tipo] || { background: '#ff8c00', border: '#ff8c00', text: '#000' };
             }
 
@@ -641,7 +657,7 @@
                     return sameYear;
                 }).map(function(evt) {
                     var isBirthday = evt.tipo === EVENTO_TIPO_CUMPLEANOS;
-                    var tipo = isBirthday ? 'cumpleanos' : (evt.tipo || EVENTO_TIPO_REUNION);
+                    var tipo = isBirthday ? 'cumpleanos' : (evt.tipo || EVENTO_TIPO_EVENTO);
                     var monthDay = evt.monthDay || evt.date || '';
                     var colors = getTipoColor(tipo);
                     var fechaRender = getEventDateForYear(monthDay, year);
@@ -681,26 +697,32 @@
                 document.getElementById('evento-inicio').value = '';
                 document.getElementById('evento-fin').value = '';
                 document.getElementById('evento-asistentes').value = '';
+                document.getElementById('evento-aviso').value = '';
                 document.getElementById('btn-eliminar-evento').style.display = 'none';
                 document.querySelector('#modal-evento .modal-panel h3').innerText = 'Crear evento';
-                var tipoDefault = EVENTO_TIPO_REUNION;
+                var tipoDefault = EVENTO_TIPO_CUMPLEANOS;
                 actualizarCamposTipoEvento(tipoDefault);
             }
 
             function validarEventoForm() {
                 var tipo = getSelectedEventType();
                 var titulo = document.getElementById('evento-titulo').value.trim();
+                var aviso = document.getElementById('evento-aviso').value.trim();
                 var dia = document.getElementById('evento-dia').value;
                 var mes = document.getElementById('evento-mes').value;
                 var inicio = document.getElementById('evento-inicio').value;
                 var fin = document.getElementById('evento-fin').value;
 
-                if (!titulo || !dia || !mes) {
+                if (tipo === EVENTO_TIPO_AVISO && !aviso) {
+                    alert('Escribe el texto del aviso.');
+                    return false;
+                }
+                if (tipo !== EVENTO_TIPO_AVISO && (!titulo || !dia || !mes)) {
                     alert('Completa título, día y mes.');
                     return false;
                 }
 
-                if (tipo !== EVENTO_TIPO_CUMPLEANOS) {
+                if (tipo !== EVENTO_TIPO_CUMPLEANOS && tipo !== EVENTO_TIPO_AVISO) {
                     if (!inicio || !fin) {
                         alert('Completa hora inicial y hora final.');
                         return false;
@@ -721,12 +743,14 @@
             async function saveEventoFromForm() {
                 var tipo = getSelectedEventType();
                 var titulo = document.getElementById('evento-titulo').value.trim();
-                var dia = document.getElementById('evento-dia').value;
-                var mes = document.getElementById('evento-mes').value;
+                var aviso = document.getElementById('evento-aviso').value.trim();
+                var dia = document.getElementById('evento-dia').value || pad2(new Date().getDate());
+                var mes = document.getElementById('evento-mes').value || pad2(new Date().getMonth() + 1);
                 var monthDay = buildEventMonthDay(dia, mes);
-                var inicio = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-inicio').value;
-                var fin = tipo === EVENTO_TIPO_CUMPLEANOS ? '' : document.getElementById('evento-fin').value;
-                var asistentes = tipo === EVENTO_TIPO_REUNION ? document.getElementById('evento-asistentes').value.trim() : '';
+                var inicio = tipo === EVENTO_TIPO_CUMPLEANOS || tipo === EVENTO_TIPO_AVISO ? '' : document.getElementById('evento-inicio').value;
+                var fin = tipo === EVENTO_TIPO_CUMPLEANOS || tipo === EVENTO_TIPO_AVISO ? '' : document.getElementById('evento-fin').value;
+                var asistentes = '';
+                var tituloGuardado = tipo === EVENTO_TIPO_AVISO ? 'Aviso RH' : titulo;
                 var eventos = cleanExpiredCustomEvents();
 
                 if (editingEventId) {
@@ -734,25 +758,25 @@
                         if (evt.id !== editingEventId) return evt;
                         return {
                             id: editingEventId,
-                            title: titulo,
+                            title: tituloGuardado,
                             monthDay: monthDay,
                             startTime: inicio,
                             endTime: fin,
                             asistentes: asistentes,
                             tipo: tipo,
-                            descripcion: 'Evento editado desde Agenda',
+                            descripcion: tipo === EVENTO_TIPO_AVISO ? aviso : 'Evento editado desde Agenda',
                         };
                     });
                 } else {
                     eventos.push({
                         id: 'evt-' + Date.now(),
-                        title: titulo,
+                        title: tituloGuardado,
                         monthDay: monthDay,
                         startTime: inicio,
                         endTime: fin,
                         asistentes: asistentes,
                         tipo: tipo,
-                        descripcion: 'Evento creado desde Agenda',
+                        descripcion: tipo === EVENTO_TIPO_AVISO ? aviso : 'Evento creado desde Agenda',
                     });
                 }
 
@@ -805,11 +829,13 @@
                     html += '<div class="evento-item">No hay eventos guardados para este mes.</div>';
                 } else {
                     html += eventosPersonalizados.map(function(evt) {
-                            var tipo = evt.tipo || EVENTO_TIPO_REUNION;
+                            var tipo = evt.tipo || EVENTO_TIPO_EVENTO;
                             var tipoLabel = getTipoLabel(evt);
                             var colors = getTipoColor(tipo === EVENTO_TIPO_CUMPLEANOS ? 'cumpleanos' : tipo);
                             var horario = evt.startTime && evt.endTime ? ' · ' + evt.startTime + ' - ' + evt.endTime : '';
-                            var asistentesHtml = renderizarAsistentes(evt.asistentes);
+                            var asistentesHtml = tipo === EVENTO_TIPO_AVISO
+                                ? '<div style="margin-top:8px; white-space:pre-wrap;">' + escapeHtml(evt.descripcion) + '</div>'
+                                : renderizarAsistentes(evt.asistentes);
                             var fechaEtiqueta = formatDayMonthLabel(evt.monthDay || evt.date || '');
                             return '<div class="evento-item" style="border-left:4px solid ' + colors.border + '; background:rgba(255,255,255,0.04);">' +
                                 '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
@@ -857,7 +883,7 @@
                 if (!evento) return;
 
                 editingEventId = eventId;
-                var tipo = evento.tipo || EVENTO_TIPO_REUNION;
+                var tipo = evento.tipo || EVENTO_TIPO_EVENTO;
                 actualizarCamposTipoEvento(tipo);
                 document.getElementById('evento-titulo').value = evento.title;
                 var fechaEdit = getDiaMesFromEventValue(evento.monthDay || evento.date || '');
@@ -866,6 +892,7 @@
                 document.getElementById('evento-inicio').value = evento.startTime || '';
                 document.getElementById('evento-fin').value = evento.endTime || '';
                 document.getElementById('evento-asistentes').value = evento.asistentes || '';
+                document.getElementById('evento-aviso').value = evento.tipo === EVENTO_TIPO_AVISO ? evento.descripcion : '';
                 document.querySelector('#modal-evento .modal-panel h3').innerText = 'Editar evento';
                 document.getElementById('btn-eliminar-evento').style.display = 'inline-block';
                 abrirModalEvento();

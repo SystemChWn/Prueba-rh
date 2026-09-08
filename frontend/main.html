@@ -144,9 +144,8 @@
 
             <div class="dashboard-card card-avisos">
                 <h3>AVISOS DE RH</h3>
-                <div class="scrollable-content" style="font-size: 0.9rem; color: #ddd; line-height: 1.5;">
-                    <p style="margin: 0 0 8px 0;">• Recuerda registrar tu asistencia a la hora de entrada.</p>
-                    <p style="margin: 0;">• Entrega de documentos pendientes en oficinas de RH.</p>
+                <div id="avisos-rh-content" class="scrollable-content" style="font-size: 0.9rem; color: #ddd; line-height: 1.5;">
+                    <p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>
                 </div>
             </div>
         </div>
@@ -289,6 +288,24 @@
                 .replace(/'/g, '&#39;');
         }
 
+        async function cargarAvisosRh() {
+            const contenedor = document.getElementById('avisos-rh-content');
+            try {
+                const respuesta = await fetch('/api/shared-events');
+                if (!respuesta.ok) throw new Error('No se pudieron cargar los avisos.');
+                const datos = await respuesta.json();
+                const avisos = (Array.isArray(datos.eventos) ? datos.eventos : [])
+                    .filter((evento) => String(evento.tipo || '').toLowerCase() === 'aviso')
+                    .map((evento) => String(evento.descripcion || '').trim())
+                    .filter(Boolean);
+                contenedor.innerHTML = avisos.length
+                    ? avisos.map((aviso) => `<p style="margin: 0 0 8px 0; white-space: pre-wrap;">• ${escaparHtml(aviso)}</p>`).join('')
+                    : '<p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>';
+            } catch (_) {
+                contenedor.innerHTML = '<p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>';
+            }
+        }
+
         async function cargarCumpleanosMes() {
             const contenedor = document.getElementById('birthdays-content');
 
@@ -349,6 +366,7 @@
             contenedor.innerHTML = html || '<div style="font-size: 0.9rem; color: #aaa;">No hay cumpleaños este mes.</div>';
         }
         cargarEmpleadosReales();
+        cargarAvisosRh();
 
         if (window.DataManager) {
             window.DataManager.subscribeVistas(() => {

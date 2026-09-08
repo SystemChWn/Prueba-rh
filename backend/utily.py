@@ -1015,7 +1015,7 @@ def asegurar_tabla_eventos_compartidos(cur):
             start_time VARCHAR(5),
             end_time VARCHAR(5),
             asistentes TEXT,
-            tipo VARCHAR(20) NOT NULL DEFAULT 'reunion',
+            tipo VARCHAR(20) NOT NULL DEFAULT 'evento',
             descripcion TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -1030,7 +1030,7 @@ def normalizar_evento_compartido(payload):
     start_time = str((payload or {}).get('startTime') or (payload or {}).get('start_time') or '').strip()
     end_time = str((payload or {}).get('endTime') or (payload or {}).get('end_time') or '').strip()
     asistentes = str((payload or {}).get('asistentes') or '').strip()
-    tipo = str((payload or {}).get('tipo') or 'reunion').strip().lower() or 'reunion'
+    tipo = str((payload or {}).get('tipo') or 'evento').strip().lower() or 'evento'
     descripcion = str((payload or {}).get('descripcion') or '').strip()
 
     if not evento_id:
@@ -1044,8 +1044,8 @@ def normalizar_evento_compartido(payload):
     if end_time and not re.match(r'^\d{2}:\d{2}$', end_time):
         raise ValueError('endTime debe tener formato HH:MM.')
 
-    if tipo not in {'cumpleanos', 'evento', 'reunion'}:
-        tipo = 'reunion'
+    if tipo not in {'cumpleanos', 'evento', 'aviso'}:
+        tipo = 'evento'
 
     return {
         'id': evento_id,
@@ -1077,7 +1077,7 @@ def listar_eventos_compartidos(cur):
             'startTime': row[3] or '',
             'endTime': row[4] or '',
             'asistentes': row[5] or '',
-            'tipo': row[6] or 'reunion',
+            'tipo': row[6] or 'evento',
             'descripcion': row[7] or '',
         }
         for row in rows
