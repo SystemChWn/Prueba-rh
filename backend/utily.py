@@ -817,6 +817,7 @@ def obtener_ingresos(empresa=None):
                            ingresos_puesto.no_empleado,
                            ingresos_puesto.empresa
                         , {fecha_select} AS fecha_ingreso
+                        , r.fecha_nacimiento
                         , COALESCE(NULLIF(UPPER(TRIM(r.estatus)), ''), 'ACTIVO') AS estatus
                         , ingresos_puesto.area
                         , ingresos_puesto.puesto
@@ -836,9 +837,10 @@ def obtener_ingresos(empresa=None):
                 'no_empleado': row[2],
                 'empresa': row[3],
                 'fecha_ingreso': row[4].strftime('%Y-%m-%d') if row[4] else None,
-                'estatus': row[5] or 'ACTIVO',
-                'area': row[6] or '',
-                'puesto': row[7] or '',
+                'fecha_nacimiento': row[5].strftime('%Y-%m-%d') if row[5] else None,
+                'estatus': row[6] or 'ACTIVO',
+                'area': row[7] or '',
+                'puesto': row[8] or '',
             }
             for row in rows
         ]

@@ -164,14 +164,46 @@
         </div>
     </main>
 
+    <script src="data-manager.js"></script>
     <script>
-        function obtenerFechasSemanaCalendario() {
+        function convertirFecha(valor) {
+            const texto = String(valor || '').trim();
+            if (!texto) return null;
+
+            let partes = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (partes) {
+                return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+            }
+
+            partes = texto.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
+            if (partes) {
+                return new Date(Number(partes[3]), Number(partes[2]) - 1, Number(partes[1]));
+            }
+
+            return null;
+        }
+
+        function esCheongWoon(empleado) {
+            return String(empleado.empresa || '').trim().toUpperCase() === 'CHEONG WOON';
+        }
+
+        function obtenerNombreEmpleado(empleado) {
+            return String(empleado.nombre || empleado.nombre_completo || 'Sin nombre').trim();
+        }
+
+        function obtenerRangoSemana() {
             const ahora = new Date();
             const diaSemana = ahora.getDay();
-            const diffLunes = ahora.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-            const lunes = new Date(new Date().setDate(diffLunes));
+            const lunes = new Date(ahora);
+            lunes.setHours(0, 0, 0, 0);
+            lunes.setDate(ahora.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1));
             const viernes = new Date(lunes);
             viernes.setDate(lunes.getDate() + 4);
+            return { lunes, viernes };
+        }
+
+        function obtenerFechasSemanaCalendario() {
+            const { lunes, viernes } = obtenerRangoSemana();
             
             const mesesCortos = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
             const mesLunes = mesesCortos[lunes.getMonth()];
@@ -186,6 +218,27 @@
             return mesesLargos[ahora.getMonth()];
         }
 
+        async function cargarEmpleadosReales() {
+            try {
+                const respuesta = await fetch('/api/obtener-empleados/CHEONG_WOON');
+                if (!respuesta.ok) throw new Error('No se pudieron cargar los empleados.');
+
+                const empleados = await respuesta.json();
+                if (window.DataManager && Array.isArray(empleados)) {
+                    window.DataManager.upsertMany(empleados.map((empleado) => ({
+                        ...empleado,
+                        empresa: 'CHEONG WOON',
+                        nombre_completo: empleado.nombre || '',
+                    })));
+                }
+            } catch (_) {
+                // Mantener la última información local si el servidor no está disponible.
+            }
+
+            cargarIngresosSemana();
+            cargarCumpleanosMes();
+        }
+
         document.getElementById('birthday-title').textContent = `CUMPLEAÑEROS DE ${obtenerMesActualMayusculas()}`;
 
         document.getElementById('week-range').textContent = obtenerFechasSemanaCalendario();
@@ -193,14 +246,22 @@
         function cargarIngresosSemana() {
             const col1 = document.getElementById('columna-1');
             const col2 = document.getElementById('columna-2');
-            
-            // Ejemplo con varios nombres (pueden ser 10, 12, etc.)
-            const personasIngresadas = [
-                "Carlos Pérez", "María Gómez", "Juan López", 
-                "Ana Torres", "Luis Ramírez", "Sofía Martínez",
-                "Ricardo Morales", "Elena Castillo", "Jorge Herrera",
-                "Patricia Rojas"
-            ];
+
+            const empleados = window.DataManager ? window.DataManager.getEmpleados() : [];
+            const { lunes, viernes } = obtenerRangoSemana();
+            const personasIngresadas = empleados
+                .filter((empleado) => {
+                    const fechaIngreso = convertirFecha(empleado.fecha_ingreso || empleado.fecha_registro);
+                    return esCheongWoon(empleado) && fechaIngreso && fechaIngreso >= lunes && fechaIngreso <= viernes;
+                })
+                .sort((a, b) => convertirFecha(a.fecha_ingreso || a.fecha_registro) - convertirFecha(b.fecha_ingreso || b.fecha_registro))
+                .map(obtenerNombreEmpleado);
+
+            if (!personasIngresadas.length) {
+                col1.innerHTML = '<div style="font-size: 0.85rem; color: #aaa; padding: 2px 0;">No hay ingresos esta semana.</div>';
+                col2.innerHTML = '';
+                return;
+            }
 
             const mitad = Math.ceil(personasIngresadas.length / 2);
             const grupo1 = personasIngresadas.slice(0, mitad);
@@ -219,31 +280,83 @@
             col1.innerHTML = html1;
             col2.innerHTML = html2;
         }
-        cargarIngresosSemana();
+        function escaparHtml(valor) {
+            return String(valor || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-        function cargarCumpleanosMes() {
+        async function cargarCumpleanosMes() {
             const contenedor = document.getElementById('birthdays-content');
-            
-            const cumpleanerosMes = [
-                { nombre: "Carlos Gómez", fecha: "3 de Agosto" },
-                { nombre: "Ana Cristina Hernández", fecha: "12 de Agosto" },
-                { nombre: "Mario Vazquez", fecha: "14 de Agosto" },
-                { nombre: "Lucía Fernández", fecha: "19 de Agosto" },
-                { nombre: "Roberto Díaz", fecha: "27 de Agosto" }
-            ];
+
+            const ahora = new Date();
+            const cumpleanerosEmpleados = (window.DataManager ? window.DataManager.getEmpleados() : [])
+                .filter((empleado) => {
+                    const fechaNacimiento = convertirFecha(empleado.fecha_nacimiento);
+                    return esCheongWoon(empleado) && fechaNacimiento && fechaNacimiento.getMonth() === ahora.getMonth();
+                })
+                .sort((a, b) => convertirFecha(a.fecha_nacimiento).getDate() - convertirFecha(b.fecha_nacimiento).getDate())
+                .map((empleado) => {
+                    const fecha = convertirFecha(empleado.fecha_nacimiento);
+                    return {
+                        nombre: obtenerNombreEmpleado(empleado),
+                        dia: fecha.getDate(),
+                        fecha: `${fecha.getDate()} de ${obtenerMesActualMayusculas().toLowerCase()}`,
+                    };
+                });
+
+            let cumpleanerosCalendario = [];
+            try {
+                const respuesta = await fetch('/api/shared-events');
+                if (respuesta.ok) {
+                    const datos = await respuesta.json();
+                    cumpleanerosCalendario = (Array.isArray(datos.eventos) ? datos.eventos : [])
+                        .filter((evento) => String(evento.tipo || '').toLowerCase() === 'cumpleanos')
+                        .map((evento) => {
+                            const partes = String(evento.monthDay || evento.month_day || '').match(/^(\d{2})-(\d{2})$/);
+                            if (!partes || Number(partes[2]) - 1 !== ahora.getMonth()) return null;
+                            return {
+                                nombre: String(evento.title || '').trim() || 'Cumpleaños',
+                                dia: Number(partes[1]),
+                                fecha: `${Number(partes[1])} de ${obtenerMesActualMayusculas().toLowerCase()}`,
+                            };
+                        })
+                        .filter(Boolean);
+                }
+            } catch (_) {
+                // El calendario es complementario; los cumpleaños de empleados siguen disponibles.
+            }
+
+            const cumpleanerosMes = [...cumpleanerosEmpleados, ...cumpleanerosCalendario]
+                .sort((a, b) => {
+                    const diaA = a.dia || convertirFecha(a.fecha_nacimiento)?.getDate() || 0;
+                    const diaB = b.dia || convertirFecha(b.fecha_nacimiento)?.getDate() || 0;
+                    return diaA - diaB;
+                });
 
             let html = "";
             cumpleanerosMes.forEach(c => {
                 html += `
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.06); padding: 12px 15px; border-radius: 8px; flex-shrink: 0;">
-                        <span style="font-size: 0.9rem;">${c.nombre}</span>
-                        <span style="color: #ffffff; font-weight: bold; font-size: 0.9rem;">${c.fecha}</span>
+                        <span style="font-size: 0.9rem;">${escaparHtml(c.nombre)}</span>
+                        <span style="color: #ffffff; font-weight: bold; font-size: 0.9rem;">${escaparHtml(c.fecha)}</span>
                     </div>
                 `;
             });
-            contenedor.innerHTML = html;
+            contenedor.innerHTML = html || '<div style="font-size: 0.9rem; color: #aaa;">No hay cumpleaños este mes.</div>';
         }
-        cargarCumpleanosMes();
+        cargarEmpleadosReales();
+
+        if (window.DataManager) {
+            window.DataManager.subscribeVistas(() => {
+                document.getElementById('week-range').textContent = obtenerFechasSemanaCalendario();
+                document.getElementById('birthday-title').textContent = `CUMPLEAÑEROS DE ${obtenerMesActualMayusculas()}`;
+                cargarEmpleadosReales();
+            });
+        }
     </script>
 </body>
 </html>
