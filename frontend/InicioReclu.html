@@ -849,11 +849,12 @@
         });
     </script>
     <script>
-        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO (LOCAL STORAGE, como el calendario) ---
+        // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO ---
         const MAX_RECLUTADORES = 10;
         const MAX_PERSONAS_POR_EQUIPO = 3;
         const DEFAULT_TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5'];
-        const STORAGE_KEY = 'reclutamiento_personal_local';
+        const API_BASES_RECLUTADORES = ['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'];
+        let reclutadoresCache = [];
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -872,37 +873,60 @@
         }
 
         function leerReclutadores() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                const parsed = raw ? JSON.parse(raw) : [];
-                if (!Array.isArray(parsed)) return [];
-                const unicos = new Map();
-                parsed.forEach((item) => {
-                    const nombre = String(item?.nombre || '').trim();
-                    if (!nombre) return;
-                    const clave = nombre.toLocaleLowerCase();
-                    if (!unicos.has(clave)) {
-                        unicos.set(clave, {
-                            ...item,
-                            nombre,
-                            team: String(item?.team || '').trim() || 'Team 1',
-                        });
-                    }
-                });
-                const resultado = Array.from(unicos.values()).slice(0, MAX_RECLUTADORES);
-                if (resultado.length !== parsed.length || resultado.some((item, index) => item.team !== parsed[index]?.team)) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
-                }
-                return resultado;
-            } catch (error) {
-                console.error('Error leyendo reclutadores desde localStorage:', error);
-                return [];
-            }
+            return reclutadoresCache.slice();
         }
 
-        function guardarReclutadores(reclutadores) {
-            const lista = Array.isArray(reclutadores) ? reclutadores.slice(0, MAX_RECLUTADORES) : [];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+        async function requestReclutadores(endpoint, options = {}) {
+            let ultimoError = null;
+            for (const base of API_BASES_RECLUTADORES) {
+                try {
+                    const respuesta = await fetch(`${base}${endpoint}`, {
+                        ...options,
+                        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+                    });
+                    const texto = await respuesta.text();
+                    let datos = {};
+                    try { datos = texto ? JSON.parse(texto) : {}; } catch (_) { datos = {}; }
+                    if (respuesta.ok) return datos;
+                    ultimoError = new Error(datos.error || texto || `Error ${respuesta.status}`);
+                } catch (error) {
+                    ultimoError = error;
+                }
+            }
+            throw ultimoError || new Error('No se pudo conectar con el servidor.');
+        }
+
+        async function cargarReclutadores() {
+            try {
+                const datos = await requestReclutadores('/api/personal-reclutamiento');
+                reclutadoresCache = Array.isArray(datos) ? datos : [];
+                const registrosAnteriores = JSON.parse(localStorage.getItem('reclutamiento_personal_local') || '[]');
+                if (Array.isArray(registrosAnteriores) && registrosAnteriores.length) {
+                    const nombresActuales = new Set(reclutadoresCache.map((item) => String(item.nombre || '').trim().toLowerCase()));
+                    const pendientes = registrosAnteriores
+                        .filter((item) => {
+                            const nombre = String(item?.nombre || '').trim();
+                            return nombre && !nombresActuales.has(nombre.toLowerCase());
+                        })
+                        .slice(0, Math.max(0, MAX_RECLUTADORES - reclutadoresCache.length));
+                    if (pendientes.length) {
+                        await Promise.all(pendientes.map((item) => requestReclutadores('/api/personal-reclutamiento', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                nombre: String(item.nombre).trim(),
+                                team: String(item.team || 'Team 1').trim() || 'Team 1',
+                            }),
+                        })));
+                        const datosActualizados = await requestReclutadores('/api/personal-reclutamiento');
+                        reclutadoresCache = Array.isArray(datosActualizados) ? datosActualizados : reclutadoresCache;
+                    }
+                    localStorage.removeItem('reclutamiento_personal_local');
+                }
+                renderReclutadores();
+            } catch (error) {
+                console.error('Error cargando personal de reclutamiento:', error);
+                alert('No se pudo cargar el personal de reclutamiento.');
+            }
         }
 
         function getAllTeamOptions() {
@@ -966,9 +990,10 @@
 
             const teamDeleteButton = columna.querySelector('.team-remover');
             teamDeleteButton.addEventListener('click', () => {
-                const reclutadores = leerReclutadores().filter((elemento) => elemento.team !== team);
-                guardarReclutadores(reclutadores);
-                renderReclutadores();
+                const miembros = leerReclutadores().filter((elemento) => elemento.team === team);
+                Promise.all(miembros.map((miembro) => requestReclutadores(`/api/personal-reclutamiento/${miembro.id}`, { method: 'DELETE' })))
+                    .then(cargarReclutadores)
+                    .catch((error) => alert(`No se pudo eliminar el equipo: ${error.message}`));
             });
 
             teamsContainer.appendChild(columna);
@@ -989,9 +1014,9 @@
             `;
 
             item.querySelector('.btn-remover-miembro').addEventListener('click', () => {
-                const reclutadores = leerReclutadores().filter((elemento) => String(elemento.id) !== String(id));
-                guardarReclutadores(reclutadores);
-                renderReclutadores();
+                requestReclutadores(`/api/personal-reclutamiento/${id}`, { method: 'DELETE' })
+                    .then(cargarReclutadores)
+                    .catch((error) => alert(`No se pudo eliminar a la persona: ${error.message}`));
             });
 
             listaMiembros.appendChild(item);
@@ -1051,22 +1076,20 @@
                 return;
             }
 
-            reclutadores.push({
-                id: Date.now(),
-                nombre: nombre,
-                team: teamSeleccionado,
-                fecha_registro: new Date().toISOString().slice(0, 10)
+            requestReclutadores('/api/personal-reclutamiento', {
+                method: 'POST',
+                body: JSON.stringify({ nombre, team: teamSeleccionado }),
+            }).then(() => {
+                modal.style.display = 'none';
+                modalRecruiterInput.value = '';
+                cargarReclutadores();
+            }).catch((error) => {
+                alert(`No se pudo guardar el personal: ${error.message}`);
             });
-
-            guardarReclutadores(reclutadores);
-            modal.style.display = 'none';
-            modalRecruiterInput.value = '';
-            renderReclutadores();
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            actualizarSelectorTeams();
-            renderReclutadores();
+            cargarReclutadores();
         });
     </script>
     <script>
