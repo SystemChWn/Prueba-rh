@@ -292,11 +292,11 @@
             const contenedor = document.getElementById('avisos-rh-content');
             try {
                 const currentHost = window.location.hostname;
-                const apiBases = [`http://${currentHost}:8001`, '/api'];
+                const apiBases = ['', `http://${currentHost}:8001`, 'http://localhost:8001'];
                 let datos = null;
                 for (const base of apiBases) {
                     try {
-                        const endpoint = base === '/api' ? '/api/shared-events' : `${base}/api/shared-events`;
+                        const endpoint = `${base}/api/shared-events`;
                         const respuesta = await fetch(endpoint);
                         if (respuesta.ok) {
                             datos = await respuesta.json();
