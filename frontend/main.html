@@ -76,10 +76,6 @@
             flex: 1;
         }
 
-        .card-avisos {
-            flex: 1;
-        }
-
         .card-cumpleanos {
             flex: 1;
             height: 100%;
@@ -142,12 +138,6 @@
                 </div>
             </div>
 
-            <div class="dashboard-card card-avisos">
-                <h3>AVISOS</h3>
-                <div id="avisos-rh-content" class="scrollable-content" style="font-size: 0.9rem; color: #ddd; line-height: 1.5;">
-                    <p style="margin: 0; color: #aaa;">No hay avisos.</p>
-                </div>
-            </div>
         </div>
 
         <!-- Columna Derecha -->
@@ -288,37 +278,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        async function cargarAvisosRh() {
-            const contenedor = document.getElementById('avisos-rh-content');
-            try {
-                const currentHost = window.location.hostname;
-                const apiBases = ['', `http://${currentHost}:8001`, 'http://localhost:8001'];
-                let datos = null;
-                for (const base of apiBases) {
-                    try {
-                        const endpoint = `${base}/api/shared-events`;
-                        const respuesta = await fetch(endpoint);
-                        if (respuesta.ok) {
-                            datos = await respuesta.json();
-                            break;
-                        }
-                    } catch (_) {
-                        // Intentar la siguiente ruta disponible.
-                    }
-                }
-                if (!datos) throw new Error('No se pudieron cargar los avisos.');
-                const avisos = (Array.isArray(datos.eventos) ? datos.eventos : [])
-                    .filter((evento) => String(evento.tipo || '').toLowerCase() === 'aviso')
-                    .map((evento) => String(evento.descripcion || '').trim())
-                    .filter(Boolean);
-                contenedor.innerHTML = avisos.length
-                    ? avisos.map((aviso) => `<p style="margin: 0 0 8px 0; white-space: pre-wrap;">• ${escaparHtml(aviso)}</p>`).join('')
-                    : '<p style="margin: 0; color: #aaa;">No hay avisos.</p>';
-            } catch (_) {
-                contenedor.innerHTML = '<p style="margin: 0; color: #aaa;">No hay avisos.</p>';
-            }
-        }
-
         async function cargarCumpleanosMes() {
             const contenedor = document.getElementById('birthdays-content');
 
@@ -379,7 +338,6 @@
             contenedor.innerHTML = html || '<div style="font-size: 0.9rem; color: #aaa;">No hay cumpleaños este mes.</div>';
         }
         cargarEmpleadosReales();
-        cargarAvisosRh();
 
         if (window.DataManager) {
             window.DataManager.subscribeVistas(() => {
