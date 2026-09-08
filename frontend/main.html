@@ -143,9 +143,9 @@
             </div>
 
             <div class="dashboard-card card-avisos">
-                <h3>AVISOS DE RH</h3>
+                <h3>AVISOS</h3>
                 <div id="avisos-rh-content" class="scrollable-content" style="font-size: 0.9rem; color: #ddd; line-height: 1.5;">
-                    <p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>
+                    <p style="margin: 0; color: #aaa;">No hay avisos.</p>
                 </div>
             </div>
         </div>
@@ -291,18 +291,31 @@
         async function cargarAvisosRh() {
             const contenedor = document.getElementById('avisos-rh-content');
             try {
-                const respuesta = await fetch('/api/shared-events');
-                if (!respuesta.ok) throw new Error('No se pudieron cargar los avisos.');
-                const datos = await respuesta.json();
+                const currentHost = window.location.hostname;
+                const apiBases = [`http://${currentHost}:8001`, '/api'];
+                let datos = null;
+                for (const base of apiBases) {
+                    try {
+                        const endpoint = base === '/api' ? '/api/shared-events' : `${base}/api/shared-events`;
+                        const respuesta = await fetch(endpoint);
+                        if (respuesta.ok) {
+                            datos = await respuesta.json();
+                            break;
+                        }
+                    } catch (_) {
+                        // Intentar la siguiente ruta disponible.
+                    }
+                }
+                if (!datos) throw new Error('No se pudieron cargar los avisos.');
                 const avisos = (Array.isArray(datos.eventos) ? datos.eventos : [])
                     .filter((evento) => String(evento.tipo || '').toLowerCase() === 'aviso')
                     .map((evento) => String(evento.descripcion || '').trim())
                     .filter(Boolean);
                 contenedor.innerHTML = avisos.length
                     ? avisos.map((aviso) => `<p style="margin: 0 0 8px 0; white-space: pre-wrap;">• ${escaparHtml(aviso)}</p>`).join('')
-                    : '<p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>';
+                    : '<p style="margin: 0; color: #aaa;">No hay avisos.</p>';
             } catch (_) {
-                contenedor.innerHTML = '<p style="margin: 0; color: #aaa;">No hay avisos de RH.</p>';
+                contenedor.innerHTML = '<p style="margin: 0; color: #aaa;">No hay avisos.</p>';
             }
         }
 
