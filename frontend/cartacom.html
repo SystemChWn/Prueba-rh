@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carta Compromiso - CWN</title>
+    <style>
+        body {
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Times New Roman', Times, serif, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 10pt;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+
+        #btn-descargar-contrato {
+            background-color: #3182ce;
+            color: white;
+        }
+
+        #btn-regresar {
+            background-color: #3182ce;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .declaracion-item {
+            margin: 4px 0;
+            padding-left: 35px;
+            text-indent: -35px;
+        }
+        
+        .declaracion-item strong {
+            display: inline-block;
+            width: 35px;
+        }
+
+        .page {
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 2.54cm 2.84cm 2.0cm 2.5cm; 
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #1a202c;
+            text-align: justify;
+            overflow: visible; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Distribuye el contenido y manda el número al fondo */
+        }
+
+        /* Estilo limpio para el número de página */
+        .page-number {
+            text-align: right;
+            font-size: 12pt;
+            color: #000000;
+            font-family: 'Times New Roman', Times, serif, sans-serif;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+
+        @media print {
+            @page {
+                size: letter;
+                margin: 0;
+            }
+
+            html,
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }
+            .controls {
+                display: none;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                height: 27.94cm;
+                page-break-after: always;
+                break-after: page;
+                break-inside: avoid;
+            }
+        }
+
+        .linea-decorativa {
+            border: none;
+            height: 1.5px;
+            background: #000000;
+            margin: 50px 5px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+    <div class="controls">
+        <a id="btn-regresar" class="btn" href="#">Regresar</a>
+        <button id="btn-descargar-contrato" class="btn">Descargar / Imprimir Contrato</button>
+    </div>
+
+    <div class="page" id="contrato-page-1">
+        <p style="text-align: justify; font-size: 10pt; margin-bottom: 8px;">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div style="max-width: 250px;">
+                <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl" alt="Cheong Woon Mexico" style="width: 100%; height: auto;">
+            </div>
+        </div>
+        <div style="text-align: right; font-size: 0.95rem; font-weight: 500;">
+            Apodaca, Nuevo León a <span id="lbl-fecha-actual"></span>
+        </div>
+
+        <h3 style="margin: 15px 0 10px 0; font-size: 1rem;">CARTA COMPROMISO</h3>
+
+        <p style="text-align: justify; margin: 0 0 12px 0; line-height: 1.4;">
+            Por medio de la presente yo <strong><span id="lbl-nombre" style="text-transform: uppercase;">____________________</span></strong> me comprometo a llegar puntualmente. Principalmente <strong>NO FALTAR</strong> a las instalaciones de <strong>TRABAJO</strong> para llevar a cabo mis labores diarias, también me comprometo a asistir en mi horario estipulado o bien asistir el fin de semana cuando se me requiera, así mismo consiente de los efectos legales que puede ocasionarme el no asistir puntualmente a mi trabajo. Y en dado caso llegue a necesitar faltar tendré que presentar justificante del IMSS para hacer oficial mi justificación.
+        </p>
+
+        <p style="text-align: justify; margin: 0 0 12px 0; line-height: 1.4;">
+            Estoy de acuerdo que de incumplir este compromiso será suspensión en forma automática.
+        </p>
+
+        <p style="text-align: justify; margin: 0 0 35px 0; line-height: 1.4;">
+            Consciente de lo anterior firmo de conformidad.
+        </p>
+
+        <!-- Firma del empleado centrada -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <p style="margin: 0;">____________________________________________________</p>
+            <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 0.9rem;">FIRMA DEL EMPLEADO</p>
+        </div>
+
+        <!-- Firmas inferiores (Supervisor y Recursos Humanos) -->
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <div style="width: 45%; text-align: center;">
+                <p style="margin: 0;">______________________________________</p>
+                <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Supervisor / Jefe directo</p>
+            </div>
+            <div style="width: 45%; text-align: center;">
+                <p style="margin: 0;">______________________________________</p>
+                <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Recursos Humanos</p>
+            </div>
+        </div>
+
+
+
+    <script src="data-manager.js"></script>
+    <script>
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id') || localStorage.getItem('ultimoRegistroId') || '';
+
+        function buildEmpleadoEndpoint(idValue) {
+            const encodedId = encodeURIComponent(idValue);
+            const bases = API_BASES.map((baseUrl) => `${baseUrl}/api/obtener-empleado/${encodedId}`);
+            return bases.filter((value, index, arr) => arr.indexOf(value) === index);
+        }
+
+        function tieneDatosCompletos(data) {
+            if (!data || typeof data !== 'object') return false;
+            const camposClave = ['nacionalidad', 'edad', 'genero', 'estado_civil', 'curp', 'rfc', 'calle', 'colonia', 'municipio', 'estado', 'codigo_postal', 'nombre_completo'];
+            return camposClave.some((campo) => {
+                const valor = data[campo];
+                return valor !== null && valor !== undefined && String(valor).trim() !== '';
+            });
+        }
+
+        function getEmployeeRecordFromCache() {
+            const gafeteData = (() => {
+                try {
+                    const gafeteRaw = localStorage.getItem('gafeteData');
+                    if (!gafeteRaw) return null;
+                    const parsed = JSON.parse(gafeteRaw);
+                    return parsed && typeof parsed === 'object' ? parsed : null;
+                } catch (_) {
+                    return null;
+                }
+            })();
+
+            try {
+                const manager = window.DataManager;
+                if (manager && typeof manager.getEmpleados === 'function') {
+                    const empleados = manager.getEmpleados() || [];
+                    let encontrado = null;
+                    if (idEmpleado) {
+                        encontrado = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado))
+                            || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
+                    }
+
+                    if (encontrado && tieneDatosCompletos(encontrado)) {
+                        return {
+                            ...(encontrado || {}),
+                            ...(gafeteData || {}),
+                            nombre_completo: encontrado.nombre_completo || encontrado.nombre || gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                            curp: encontrado.curp || gafeteData?.curp || '',
+                            fecha_ingreso: encontrado.fecha_ingreso || encontrado.fecha_registro || gafeteData?.fecha_ingreso || '',
+                            puesto: encontrado.puesto || gafeteData?.puesto || gafeteData?.area || '',
+                        };
+                    }
+                }
+            } catch (_) {
+                // continuar con fallback
+            }
+
+            try {
+                const raw = localStorage.getItem('rh_empleados_v1');
+                if (!raw) return null;
+
+                const empleados = JSON.parse(raw);
+                if (!Array.isArray(empleados)) return null;
+
+                let encontrado = null;
+                if (idEmpleado) {
+                    encontrado = empleados.find((item) => String(item.registro_id || '') === String(idEmpleado))
+                        || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase());
+                }
+
+                if (!encontrado || !tieneDatosCompletos(encontrado)) {
+                    return null;
+                }
+
+                return {
+                    ...(encontrado || {}),
+                    ...(gafeteData || {}),
+                    nombre_completo: encontrado.nombre_completo || encontrado.nombre || gafeteData?.nombre_completo || gafeteData?.nombre || '',
+                    curp: encontrado.curp || gafeteData?.curp || '',
+                    fecha_ingreso: encontrado.fecha_ingreso || encontrado.fecha_registro || gafeteData?.fecha_ingreso || '',
+                    puesto: encontrado.puesto || gafeteData?.puesto || gafeteData?.area || '',
+                };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        const btnRegresar = document.getElementById('btn-regresar');
+        if (btnRegresar) {
+            if (idEmpleado) {
+                btnRegresar.href = `empleado.html?registro_id=${encodeURIComponent(idEmpleado)}`;
+            } else {
+                btnRegresar.href = 'empleado.html';
+            }
+        }
+
+        // Función auxiliar para formatear los nombres: toma las últimas 2 palabras como apellidos y las pasa al inicio
+        function formatearNombreApellidosTexto(texto) {
+            if (!texto) return '';
+            let textoLimpio = String(texto).trim();
+            let palabras = textoLimpio.split(/\s+/);
+
+            if (palabras.length <= 2) {
+                return textoLimpio.toUpperCase();
+            }
+
+            let apellidos = palabras.slice(-2).join(' ');
+            let nombres = palabras.slice(0, -2).join(' ');
+
+            return `${apellidos} ${nombres}`.toUpperCase();
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            // Si el campo es el nombre, aplicamos la regla de reordenamiento de apellidos
+            if (id === 'lbl-nombre' || id === 'lbl-nombre-firma') {
+                el.textContent = formatearNombreApellidosTexto(value);
+            } else {
+                el.textContent = value === null || value === undefined || value === '' ? '' : String(value);
+            }
+        }
+
+        function hasValue(value) {
+            return value !== null && value !== undefined && String(value).trim() !== '';
+        }
+
+        function getMissingRequiredFields(data) {
+            const required = ['nacionalidad', 'edad', 'genero', 'estado_civil', 'curp', 'rfc', 'calle', 'colonia', 'municipio', 'estado', 'codigo_postal'];
+            return required.filter((field) => !hasValue(data?.[field]));
+        }
+
+        function buildDomicilio(data) {
+            const parts = [
+                data.calle,
+                data.num_ext,
+                data.num_int ? `Int. ${data.num_int}` : '',
+                data.colonia,
+                data.municipio,
+                data.estado,
+                data.codigo_postal ? `C.P. ${data.codigo_postal}` : ''
+            ].filter(Boolean);
+            return parts.join(', ');
+        }
+
+        function formatFechaLarga(fechaTexto) {
+            if (!fechaTexto) return '';
+            const match = String(fechaTexto).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return String(fechaTexto);
+
+            const [, year, month, day] = match;
+            const meses = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            return `${Number(day)} de ${meses[Number(month) - 1]} del ${year}`;
+        }
+
+        function sumarDiasHabiles(fechaTexto, diasHabiles) {
+            if (!fechaTexto) return '';
+            const match = String(fechaTexto).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return String(fechaTexto);
+
+            const [, year, month, day] = match;
+            const fecha = new Date(Number(year), Number(month) - 1, Number(day));
+            let diasRestantes = Number(diasHabiles || 0);
+            while (diasRestantes > 0) {
+                fecha.setDate(fecha.getDate() + 1);
+                const diaSemana = fecha.getDay();
+                if (diaSemana !== 0 && diaSemana !== 6) diasRestantes -= 1;
+            }
+
+            const yyyy = fecha.getFullYear();
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function numeroALetras(numero) {
+            const valor = Number(String(numero || '').replace(/[^0-9.-]/g, ''));
+            if (!Number.isFinite(valor)) return '';
+            const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+            const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+            const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+            const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+
+            function convertirHasta999(n) {
+                if (n < 10) return unidades[n];
+                if (n < 20) return especiales[n - 10];
+                if (n < 100) {
+                    const dec = Math.floor(n / 10);
+                    const uni = n % 10;
+                    if (uni === 0) return decenas[dec];
+                    return `${decenas[dec]} y ${unidades[uni]}`;
+                }
+                const cen = Math.floor(n / 100);
+                const rem = n % 100;
+                if (rem === 0) return centenas[cen];
+                return `${centenas[cen]} ${convertirHasta999(rem)}`;
+            }
+
+            if (valor === 0) return 'cero';
+            return convertirHasta999(Math.trunc(valor));
+        }
+
+        function aplicarDatosContrato(data) {
+            const fechaIngreso = data.fecha_ingreso || data.fecha_registro || '';
+            const salario = data.salario || '';
+            const fechaInicioTexto = formatFechaLarga(fechaIngreso);
+            const fechaFinalTexto = formatFechaLarga(sumarDiasHabiles(fechaIngreso, 67));
+
+            setText('lbl-nombre', data.nombre_completo || data.nombre || '');
+            setText('lbl-nacionalidad', data.nacionalidad || '');
+            setText('lbl-edad', data.edad || '');
+            setText('lbl-genero', data.genero || '');
+            setText('estado-civil', data.estado_civil || '');
+            setText('lbl-curp', data.curp || '');
+            setText('lbl-rfc', data.rfc || '');
+            setText('lbl-domicilio', buildDomicilio(data));
+            setText('lbl-puesto', data.puesto || '');
+            setText('lbl-fecha-inicio', fechaInicioTexto);
+            setText('lbl-fecha-final', fechaFinalTexto);
+            setText('lbl-fecha-final-2', fechaFinalTexto);
+            setText('lbl-salario-num', salario);
+            setText('lbl-salario-letra', numeroALetras(salario));
+            setText('lbl-periodo', data.pago || '');
+            setText('lbl-correo', data.correo || '');
+            setText('lbl-fecha-firma', fechaInicioTexto);
+            setText('lbl-nombre-firma', data.nombre_completo || data.nombre || '');
+        }
+
+        async function cargarEmpleadoContrato() {
+            const cached = getEmployeeRecordFromCache();
+            if (cached) {
+                aplicarDatosContrato(cached);
+            }
+
+            if (!idEmpleado) {
+                return;
+            }
+
+            const needsBackend = !cached || getMissingRequiredFields(cached).length > 0;
+            if (!needsBackend) {
+                return;
+            }
+
+            const endpoints = buildEmpleadoEndpoint(idEmpleado);
+            let ultimoError = null;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) {
+                        ultimoError = new Error(`HTTP ${response.status}`);
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    aplicarDatosContrato({ ...(cached || {}), ...data });
+                    return;
+                } catch (error) {
+                    ultimoError = error;
+                }
+            }
+
+            console.warn('No se pudo cargar el empleado para el contrato:', ultimoError);
+        }
+
+        const btnDescargar = document.getElementById('btn-descargar-contrato');
+        if (btnDescargar) {
+            btnDescargar.addEventListener('click', () => {
+                window.print();
+            });
+        }
+
+        cargarEmpleadoContrato();
+    </script>
+</body>
+</html>
