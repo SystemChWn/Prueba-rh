@@ -8,7 +8,7 @@
             background-color: #e2e8f0;
             margin: 0;
             padding: 20px;
-            font-family: 'Times New Roman', Times, serif, sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -58,7 +58,7 @@
             background: white;
             width: 21.6cm;
             height: 27.9cm;
-            padding: 2.54cm 2.84cm 2.0cm 2.5cm; 
+            padding: 3.54cm 3.84cm 3.0cm 3.5cm; 
             margin: 10mm auto;
             box-sizing: border-box;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -70,7 +70,7 @@
             overflow: visible; 
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Distribuye el contenido y manda el número al fondo */
+            justify-content: flex-start; /* Distribuye el contenido y manda el número al fondo */
         }
 
         /* Estilo limpio para el número de página */
@@ -78,7 +78,7 @@
             text-align: right;
             font-size: 12pt;
             color: #000000;
-            font-family: 'Times New Roman', Times, serif, sans-serif;
+            font-family: Arial, sans-serif;
             margin-top: auto;
             padding-top: 10px;
         }
@@ -126,50 +126,56 @@
         <button id="btn-descargar-contrato" class="btn">Descargar / Imprimir Contrato</button>
     </div>
 
-    <div class="page" id="contrato-page-1">
-        <p style="text-align: justify; font-size: 10pt; margin-bottom: 8px;">
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <div style="max-width: 250px;">
+    <div class="page" id="contrato-page-1" style="line-height: 1.2; font-size: 10pt;">
+        
+        <!-- Logo y Fecha -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px;">
+            <div style="max-width: 270px;">
                 <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl" alt="Cheong Woon Mexico" style="width: 100%; height: auto;">
             </div>
         </div>
-        <div style="text-align: right; font-size: 0.95rem; font-weight: 500;">
+        <div style="text-align: right; font-weight: 500; margin-bottom: 70px;">
             Apodaca, Nuevo León a <span id="lbl-fecha-actual"></span>
         </div>
 
-        <h3 style="margin: 15px 0 10px 0; font-size: 1rem;">CARTA COMPROMISO</h3>
-
-        <p style="text-align: justify; margin: 0 0 12px 0; line-height: 1.4;">
+        <!-- Título -->
+        <div style="margin-bottom: 30px;">
+            <h3 style="margin: 0; font-size: 1rem;">CARTA COMPROMISO</h3>
+        </div>
+        
+        <!-- Párrafo Principal -->
+        <div style="margin-bottom: 15px; text-align: justify;">
             Por medio de la presente yo <strong><span id="lbl-nombre" style="text-transform: uppercase;">____________________</span></strong> me comprometo a llegar puntualmente. Principalmente <strong>NO FALTAR</strong> a las instalaciones de <strong>TRABAJO</strong> para llevar a cabo mis labores diarias, también me comprometo a asistir en mi horario estipulado o bien asistir el fin de semana cuando se me requiera, así mismo consiente de los efectos legales que puede ocasionarme el no asistir puntualmente a mi trabajo. Y en dado caso llegue a necesitar faltar tendré que presentar justificante del IMSS para hacer oficial mi justificación.
-        </p>
+        </div>
 
-        <p style="text-align: justify; margin: 0 0 12px 0; line-height: 1.4;">
+        <!-- Acuerdo de incumplimiento -->
+        <div style="margin-bottom: 15px;">
             Estoy de acuerdo que de incumplir este compromiso será suspensión en forma automática.
-        </p>
+        </div>
 
-        <p style="text-align: justify; margin: 0 0 35px 0; line-height: 1.4;">
+        <!-- Firma de conformidad -->
+        <div style="margin-bottom: 130px;">
             Consciente de lo anterior firmo de conformidad.
-        </p>
-
+        </div>
+        
         <!-- Firma del empleado centrada -->
-        <div style="text-align: center; margin-bottom: 30px;">
-            <p style="margin: 0;">____________________________________________________</p>
-            <p style="margin: 5px 0 0 0; font-weight: bold; font-size: 0.9rem;">FIRMA DEL EMPLEADO</p>
+        <div style="text-align: center; margin-bottom: 110px;">
+            <div style="margin: 0;">____________________________________________________</div>
+            <div style="margin-top: 1px; font-size: 0.9rem;">Firma del Empleado</div>
         </div>
 
         <!-- Firmas inferiores (Supervisor y Recursos Humanos) -->
-        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; margin-top: 0;">
             <div style="width: 45%; text-align: center;">
-                <p style="margin: 0;">______________________________________</p>
-                <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Supervisor / Jefe directo</p>
+                <div style="margin: 0;">______________________________________</div>
+                <div style="margin-top: 1px; font-size: 0.9rem;">Supervisor / Jefe directo</div>
             </div>
             <div style="width: 45%; text-align: center;">
-                <p style="margin: 0;">______________________________________</p>
-                <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Recursos Humanos</p>
+                <div style="margin: 0;">______________________________________</div>
+                <div style="margin-top: 1px; font-size: 0.9rem;">Recursos Humanos</div>
             </div>
         </div>
-
+    </div>
 
 
     <script src="data-manager.js"></script>
