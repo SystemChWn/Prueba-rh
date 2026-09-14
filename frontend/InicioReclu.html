@@ -812,7 +812,15 @@
     <script>
         // --- SECCIÓN 2 2/2 - PERSONAL DE RECLUTAMIENTO ---
         const MAX_RECLUTADORES = 10;
-        const API_BASES_RECLUTADORES = ['', `http://${window.location.hostname}:8001`, 'http://localhost:8001'];
+        const API_BASES_RECLUTADORES = Array.from(new Set([
+            window.location.protocol === 'http:' || window.location.protocol === 'https:' ? '' : null,
+            window.location.hostname ? `http://${window.location.hostname}:8001` : null,
+            window.location.hostname ? `http://${window.location.hostname}:8000` : null,
+            'http://localhost:8001',
+            'http://localhost:8000',
+            'http://127.0.0.1:8001',
+            'http://127.0.0.1:8000',
+        ].filter((base) => base !== null)));
         let reclutadoresCache = [];
         const modal = document.getElementById('personalModal');
         const openModalBtn = document.getElementById('openModalBtn');
@@ -970,7 +978,10 @@
                 modalRecruiterInput.value = '';
                 cargarReclutadores();
             }).catch((error) => {
-                alert(`No se pudo guardar el personal: ${error.message}`);
+                const detalle = error?.message === 'Failed to fetch'
+                    ? 'No se pudo conectar con el backend. Verifica que Docker esté iniciado y abre la página en http://localhost:3001.'
+                    : error.message;
+                alert(`No se pudo guardar el personal: ${detalle}`);
             });
         });
 

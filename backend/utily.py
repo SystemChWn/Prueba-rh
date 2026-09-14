@@ -1729,13 +1729,13 @@ def obtener_reclutadores():
                 cur.execute("""
                     SELECT id, nombre,
                           CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                              THEN team ELSE 'Team 1' END,
+                              THEN team ELSE 'Team 1' END AS team,
                           fecha_registro, TRUE AS puede_eliminar
                     FROM personal_reclutamiento
                     UNION ALL
                           SELECT NULL, TRIM(nombre_reclutador),
                               CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END,
+                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END AS team,
                               MAX(fecha_registro), FALSE
                     FROM encuesta_reclutamiento
                     WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
@@ -1981,12 +1981,12 @@ def obtener_nombres_reclutadores():
                 cur.execute("""
                           SELECT nombre,
                               CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                THEN team ELSE 'Team 1' END
+                                  THEN team ELSE 'Team 1' END AS team
                           FROM personal_reclutamiento
                     UNION
                           SELECT DISTINCT TRIM(nombre_reclutador),
                               CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                THEN TRIM(team_reclutador) ELSE 'Team 1' END
+                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END AS team
                     FROM encuesta_reclutamiento
                     WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
                     ORDER BY nombre ASC, team ASC
