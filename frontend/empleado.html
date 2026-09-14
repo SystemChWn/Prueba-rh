@@ -2414,8 +2414,7 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         }
 
         function bindTabButtons() {
-            document.querySelectorAll('.tab-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
+            const activarTab = (btn) => {
                     document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
                     document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active-tab'));
                     document.querySelectorAll('.tabs-panel').forEach((p) => p.classList.remove('active'));
@@ -2430,8 +2429,19 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                     expediente.classList.remove('solo-contenido');
                     employeeTop.classList.remove('solo-contenido');
                     syncButtons();
+            };
+
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    activarTab(btn);
                 });
             });
+
+            const tabSolicitada = new URLSearchParams(window.location.search).get('tab');
+            if (tabSolicitada) {
+                const btnSolicitado = document.querySelector(`.tab-btn[data-tab="${tabSolicitada}"]`);
+                if (btnSolicitado) activarTab(btnSolicitado);
+            }
         }
 
         const employeeIncidentsKey = 'rh_employee_incidents_v1';
