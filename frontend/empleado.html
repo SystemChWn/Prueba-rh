@@ -1503,7 +1503,7 @@
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('suspension')">Suspensión</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('entrada-salida')">Entrada/Salida</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('indisciplina')">Indisciplina</button>
-                                    <button class="incidencia-option" type="button" onclick="abrirIncidencia('carta-suspension')">Generar Carta Compromiso</button>
+                                    <button class="incidencia-option" type="button" onclick="abrirCartaCompromiso()">Carta Compromiso</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('vacaciones')">Vacaciones</button>
                                     <button class="incidencia-option" type="button" onclick="abrirIncidencia('incapacidad')">Incapacidades</button>
                                 </div>
@@ -1559,12 +1559,6 @@
                                 </div>                         
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
-
-                            <div id="form-carta-suspension" style="display:none;">
-                                <script>
-                                    window.location.href = "cartacom.html";
-                                </script>
-                            </div>
 
                             <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
@@ -2671,12 +2665,19 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 incapacidad: 'Incapacidades',
             };
             document.getElementById('incidencia-modal-title').textContent = titles[tipo] || 'Incidencia';
-            document.querySelectorAll('#modal-incidencia form, #form-carta-suspension').forEach((form) => {
+            document.querySelectorAll('#modal-incidencia form').forEach((form) => {
                 form.style.display = 'none';
             });
             const form = document.getElementById(`form-${tipo}`);
             if (form) form.style.display = 'block';
             document.getElementById('modal-incidencia').style.display = 'flex';
+        }
+
+        function abrirCartaCompromiso() {
+            const destino = registroId
+                ? `cartacom.html?registro_id=${encodeURIComponent(registroId)}`
+                : 'cartacom.html';
+            window.location.href = destino;
         }
 
         function cerrarIncidencia() {
