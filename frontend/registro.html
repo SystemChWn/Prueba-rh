@@ -1017,10 +1017,6 @@
             window.reclutadoresDisponibles = locales;
             actualizarSelectsImportados();
 
-            if (locales.length) {
-                return true;
-            }
-
             const urls = obtenerUrlsApi();
             let ultimoError = null;
 
@@ -1033,19 +1029,27 @@
 
                     const data = await response.json();
                     const nombresApi = Array.isArray(data)
-                        ? data.map((nombre) => String(nombre || '').trim())
-                            .filter((nombre) => nombre)
+                        ? data.map((item) => {
+                            if (typeof item === 'string') {
+                                return { nombre: item.trim(), team: 'Team 1' };
+                            }
+                            return {
+                                nombre: String(item?.nombre || '').trim(),
+                                team: String(item?.team || 'Team 1').trim() || 'Team 1',
+                            };
+                        }).filter((item) => item.nombre)
                         : [];
 
                     if (nombresApi.length) {
-                        window.reclutadoresDisponibles = nombresApi.map((nombre) => ({
+                        window.reclutadoresDisponibles = nombresApi.map((item) => ({
                             id: Date.now() + Math.random(),
-                            nombre,
+                            nombre: item.nombre,
+                            team: item.team,
                             ingresos: 0,
                         }));
                         guardarReclutadoresLocales(window.reclutadoresDisponibles);
                     } else {
-                        window.reclutadoresDisponibles = [];
+                        window.reclutadoresDisponibles = locales;
                     }
 
                     actualizarSelectsImportados();
@@ -1056,7 +1060,9 @@
             }
 
             console.error('No se pudieron cargar reclutadores:', ultimoError);
-            return false;
+            window.reclutadoresDisponibles = locales;
+            actualizarSelectsImportados();
+            return locales.length > 0;
         }
 
         async function abrirEncuesta() {

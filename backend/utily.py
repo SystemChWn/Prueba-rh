@@ -1704,6 +1704,7 @@ def api_datos_grafica():
 # ===== ENDPOINTS PARA PERSONAL DE RECLUTAMIENTO =====
 
 MAX_RECLUTADORES = 10
+TEAMS_RECLUTAMIENTO = {f'Team {numero}' for numero in range(1, 6)}
 
 
 @app.route('/api/personal-reclutamiento', methods=['GET'])
@@ -1712,15 +1713,40 @@ def obtener_reclutadores():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # Asegurar que la columna team existe
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+                        id SERIAL PRIMARY KEY,
+                        nombre VARCHAR(100) NOT NULL UNIQUE,
+                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
+                        fecha_registro DATE DEFAULT CURRENT_DATE
+                    )
+                """)
                 cur.execute("""
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
                 
                 cur.execute("""
-                    SELECT id, nombre, team, fecha_registro
+                    SELECT id, nombre,
+                          CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
+                              THEN team ELSE 'Team 1' END,
+                          fecha_registro, TRUE AS puede_eliminar
                     FROM personal_reclutamiento
+                    UNION ALL
+                          SELECT NULL, TRIM(nombre_reclutador),
+                              CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
+                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END,
+                              MAX(fecha_registro), FALSE
+                    FROM encuesta_reclutamiento
+                    WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM personal_reclutamiento p
+                          WHERE LOWER(TRIM(p.nombre)) = LOWER(TRIM(encuesta_reclutamiento.nombre_reclutador))
+                      )
+                    GROUP BY TRIM(nombre_reclutador),
+                            CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
+                                THEN TRIM(team_reclutador) ELSE 'Team 1' END
                     ORDER BY team ASC, nombre ASC
                     LIMIT %s
                 """, (MAX_RECLUTADORES,))
@@ -1732,6 +1758,7 @@ def obtener_reclutadores():
                 'nombre': row[1],
                 'team': row[2] or 'Team 1',
                 'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
+                'puede_eliminar': row[4],
             }
             for row in rows
         ]
@@ -1753,11 +1780,20 @@ def guardar_reclutador():
     
     if not nombre:
         return jsonify({'error': 'El nombre es obligatorio'}), 400
+    if team not in TEAMS_RECLUTAMIENTO:
+        return jsonify({'error': 'El team debe ser Team 1, Team 2, Team 3, Team 4 o Team 5'}), 400
     
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # Asegurar que la columna team existe
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+                        id SERIAL PRIMARY KEY,
+                        nombre VARCHAR(100) NOT NULL UNIQUE,
+                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
+                        fecha_registro DATE DEFAULT CURRENT_DATE
+                    )
+                """)
                 cur.execute("""
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
@@ -1827,6 +1863,8 @@ def actualizar_reclutador(reclutador_id):
     
     if not nombre and not team:
         return jsonify({'error': 'Debe proporcionar nombre o team'}), 400
+    if team and team not in TEAMS_RECLUTAMIENTO:
+        return jsonify({'error': 'El team debe ser Team 1, Team 2, Team 3, Team 4 o Team 5'}), 400
     
     try:
         with get_db_connection() as conn:
@@ -1927,16 +1965,39 @@ def obtener_nombres_reclutadores():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # Asegurar que la columna team existe
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+                        id SERIAL PRIMARY KEY,
+                        nombre VARCHAR(100) NOT NULL UNIQUE,
+                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
+                        fecha_registro DATE DEFAULT CURRENT_DATE
+                    )
+                """)
                 cur.execute("""
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
                 
-                cur.execute("SELECT nombre FROM personal_reclutamiento ORDER BY nombre ASC")
+                cur.execute("""
+                          SELECT nombre,
+                              CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
+                                THEN team ELSE 'Team 1' END
+                          FROM personal_reclutamiento
+                    UNION
+                          SELECT DISTINCT TRIM(nombre_reclutador),
+                              CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
+                                THEN TRIM(team_reclutador) ELSE 'Team 1' END
+                    FROM encuesta_reclutamiento
+                    WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
+                    ORDER BY nombre ASC, team ASC
+                """)
                 rows = cur.fetchall()
         
-        nombres = [row[0] for row in rows if row[0]]
+        nombres = [
+            {'nombre': row[0], 'team': row[1] or 'Team 1'}
+            for row in rows
+            if row[0]
+        ]
         return jsonify(nombres), 200
     except Exception as e:
         print(f"Error en /api/reclutadores-nombres: {e}")
