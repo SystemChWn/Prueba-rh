@@ -191,7 +191,7 @@
 
     <script src="access-control.js"></script>
     <script>
-        function verificarAcceso() {
+        async function verificarAcceso() {
             const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
             const errorMsg = document.getElementById('mensajeError');
@@ -201,7 +201,7 @@
                 ['control_asistencias', 'captura.html'],
             ];
 
-            const usuarioRegistrado = window.AccessControlUsers.authenticate(u, p);
+            const usuarioRegistrado = await window.AccessControlUsers.authenticate(u, p);
             if (usuarioRegistrado) {
                 const tieneAccesoSistema = Array.isArray(usuarioRegistrado.permisos) && usuarioRegistrado.permisos.includes('sistemas');
                 const accesos = tieneAccesoSistema
@@ -255,7 +255,7 @@
                 }
             }
 
-            function actualizarSelectorSistemas() {
+            async function actualizarSelectorSistemas() {
                 const usuario = String(user.value || '').trim();
                 const password = String(pass.value || '').trim();
                 const destinosSistemas = [
@@ -269,7 +269,7 @@
 
                 if (!usuario || !password) return;
 
-                const usuarioRegistrado = window.AccessControlUsers.authenticate(usuario, password);
+                const usuarioRegistrado = await window.AccessControlUsers.authenticate(usuario, password);
                 if (!usuarioRegistrado) return;
 
                 const tieneAccesoSistema = Array.isArray(usuarioRegistrado.permisos) && usuarioRegistrado.permisos.includes('sistemas');
