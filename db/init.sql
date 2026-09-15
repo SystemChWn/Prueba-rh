@@ -32,16 +32,8 @@ CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     fuente              VARCHAR(50),
     fecha_registro      DATE DEFAULT CURRENT_DATE,
     nombre_reclutador   VARCHAR(50),
-    team_reclutador     VARCHAR(100),
     nombre_empleado     VARCHAR(200),
     detalle             TEXT
-);
-
-CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-    id                  SERIAL PRIMARY KEY,
-    nombre              VARCHAR(100) NOT NULL UNIQUE,
-    team                VARCHAR(100) NOT NULL DEFAULT 'Team 1',
-    fecha_registro      DATE DEFAULT CURRENT_DATE
 );
 
 CREATE TABLE IF NOT EXISTS ingresos_puesto (

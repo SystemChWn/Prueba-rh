@@ -13,10 +13,13 @@ from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from io import BytesIO
 import requests
+from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 CORS(app)
+
+load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env')), override=True)
 
 
 def is_db_write_locked():
@@ -295,12 +298,17 @@ def obtener_ruta_documento(empresa, file_name):
 
 
 def get_db_connection():
+    host = os.getenv("POSTGRES_HOST", "postgres")
+    if host == "postgres" and not os.path.exists("/.dockerenv"):
+        host = "localhost"
+
     return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST", "postgres"),
+        host=host,
         port=os.getenv("POSTGRES_PORT", "5432"),
         database=os.getenv("POSTGRES_DB", "rh_system"),
         user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
+        options="-c lc_messages=C",
     )
 
 
@@ -1649,15 +1657,14 @@ def api_datos_grafica():
 
                     query = """
                         SELECT
-                            p.nombre,
+                                                        TRIM(e.nombre_reclutador),
                             COUNT(e.id) AS total
-                        FROM personal_reclutamiento p
-                        LEFT JOIN encuesta_reclutamiento e
-                          ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(p.nombre))
-                         AND EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
-                         AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
-                        GROUP BY p.nombre
-                        ORDER BY total DESC, p.nombre ASC
+                                                FROM encuesta_reclutamiento e
+                                                WHERE NULLIF(TRIM(e.nombre_reclutador), '') IS NOT NULL
+                                                    AND EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
+                                                    AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
+                                                GROUP BY TRIM(e.nombre_reclutador)
+                                                ORDER BY total DESC, TRIM(e.nombre_reclutador) ASC
                     """
                     cur.execute(query, (tz, mes, tz, tz))
                     filas = cur.fetchall()
@@ -1698,246 +1705,10 @@ def api_datos_grafica():
 
 # ===== ENDPOINTS PARA PERSONAL DE RECLUTAMIENTO =====
 
-MAX_RECLUTADORES = 10
-TEAMS_RECLUTAMIENTO = {f'Team {numero}' for numero in range(1, 6)}
-
-
-@app.route('/api/personal-reclutamiento', methods=['GET'])
-def obtener_reclutadores():
-    """Obtiene la lista de personal de reclutamiento activo por nombre."""
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-                        id SERIAL PRIMARY KEY,
-                        nombre VARCHAR(100) NOT NULL UNIQUE,
-                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
-                        fecha_registro DATE DEFAULT CURRENT_DATE
-                    )
-                """)
-                cur.execute("""
-                    ALTER TABLE personal_reclutamiento 
-                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
-                """)
-
-                cur.execute("""
-                    SELECT id, nombre, fecha_registro, TRUE AS puede_eliminar
-                    FROM personal_reclutamiento
-                    UNION ALL
-                    SELECT NULL, TRIM(nombre_reclutador), MAX(fecha_registro), FALSE
-                    FROM encuesta_reclutamiento
-                    WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
-                      AND NOT EXISTS (
-                          SELECT 1
-                          FROM personal_reclutamiento p
-                          WHERE LOWER(TRIM(p.nombre)) = LOWER(TRIM(encuesta_reclutamiento.nombre_reclutador))
-                      )
-                    GROUP BY TRIM(nombre_reclutador)
-                    ORDER BY nombre ASC
-                    LIMIT %s
-                """, (MAX_RECLUTADORES,))
-                rows = cur.fetchall()
-
-        data = [
-            {
-                'id': row[0],
-                'nombre': row[1],
-                'fecha_registro': row[2].strftime('%Y-%m-%d') if row[2] else None,
-                'puede_eliminar': row[3],
-            }
-            for row in rows
-        ]
-        return jsonify(data), 200
-    except Exception as e:
-        print(f"Error en /api/personal-reclutamiento GET: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/personal-reclutamiento', methods=['POST'])
-def guardar_reclutador():
-    """Guarda un nuevo personal de reclutamiento por nombre."""
-    payload = request.get_json(silent=True) or {}
-
-    nombre = (payload.get('nombre') or '').strip()
-    team = 'Team 1'
-
-    if not nombre:
-        return jsonify({'error': 'El nombre es obligatorio'}), 400
-
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-                        id SERIAL PRIMARY KEY,
-                        nombre VARCHAR(100) NOT NULL UNIQUE,
-                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
-                        fecha_registro DATE DEFAULT CURRENT_DATE
-                    )
-                """)
-                cur.execute("""
-                    ALTER TABLE personal_reclutamiento 
-                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
-                """)
-
-                cur.execute("SELECT COUNT(*) FROM personal_reclutamiento")
-                total_actual = cur.fetchone()[0] or 0
-                if total_actual >= MAX_RECLUTADORES:
-                    conn.rollback()
-                    return jsonify({
-                        'error': f'Solo puedes registrar hasta {MAX_RECLUTADORES} personas de reclutamiento.'
-                    }), 400
-
-                cur.execute("SELECT id FROM personal_reclutamiento WHERE nombre = %s", (nombre,))
-                if cur.fetchone():
-                    conn.commit()
-                    return jsonify({'error': 'Este reclutador ya existe'}), 409
-
-                cur.execute("""
-                    INSERT INTO personal_reclutamiento (nombre, team, fecha_registro)
-                    VALUES (%s, %s, CURRENT_DATE)
-                    RETURNING id, nombre, team, fecha_registro
-                """, (nombre, team))
-
-                row = cur.fetchone()
-                conn.commit()
-
-        if row:
-            return jsonify({
-                'id': row[0],
-                'nombre': row[1],
-                'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
-            }), 201
-        return jsonify({'error': 'Error al guardar'}), 500
-    except Exception as e:
-        print(f"Error en /api/personal-reclutamiento POST: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/personal-reclutamiento/<int:reclutador_id>', methods=['DELETE'])
-def eliminar_reclutador(reclutador_id):
-    """Elimina un personal de reclutamiento"""
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
-                conn.commit()
-        
-        return jsonify({'ok': True}), 200
-    except Exception as e:
-        print(f"Error en /api/personal-reclutamiento DELETE: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/personal-reclutamiento/<int:reclutador_id>', methods=['PUT'])
-def actualizar_reclutador(reclutador_id):
-    """Actualiza un personal de reclutamiento"""
-    payload = request.get_json(silent=True) or {}
-    
-    nombre = (payload.get('nombre') or '').strip()
-    team = (payload.get('team') or '').strip()
-    
-    if not nombre and not team:
-        return jsonify({'error': 'Debe proporcionar nombre o team'}), 400
-    if team and team not in TEAMS_RECLUTAMIENTO:
-        return jsonify({'error': 'El team debe ser Team 1, Team 2, Team 3, Team 4 o Team 5'}), 400
-    
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                updates = []
-                values = []
-                
-                if nombre:
-                    updates.append("nombre = %s")
-                    values.append(nombre)
-                if team:
-                    updates.append("team = %s")
-                    values.append(team)
-                
-                values.append(reclutador_id)
-                
-                cur.execute(
-                    f"UPDATE personal_reclutamiento SET {', '.join(updates)} WHERE id = %s RETURNING id, nombre, team",
-                    values
-                )
-                row = cur.fetchone()
-                conn.commit()
-        
-        if row:
-            return jsonify({
-                'id': row[0],
-                'nombre': row[1],
-                'team': row[2],
-            }), 200
-        return jsonify({'error': 'Reclutador no encontrado'}), 404
-    except Exception as e:
-        print(f"Error en /api/personal-reclutamiento PUT: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/api/ingresos-por-team', methods=['GET'])
 def obtener_ingresos_por_team():
-    """Obtiene el count de ingresos agrupados por team"""
-    mes = int(request.args.get('mes', str(datetime.now().month)))
-    tz = request.args.get('tz', 'America/Mexico_City')
-    
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                # Asegurar que la columna team existe
-                cur.execute("""
-                    ALTER TABLE personal_reclutamiento 
-                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
-                """)
-                
-                cur.execute("""
-                                        WITH teams AS (
-                                                SELECT DISTINCT team
-                                                FROM personal_reclutamiento
-                                                WHERE team IS NOT NULL AND TRIM(team) <> ''
-                                                UNION
-                                                SELECT DISTINCT team_reclutador
-                                                FROM encuesta_reclutamiento
-                                                WHERE team_reclutador IS NOT NULL AND TRIM(team_reclutador) <> ''
-                                        ),
-                                        ingresos AS (
-                                                SELECT COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team)) AS team,
-                                                             COUNT(*) AS total
-                                                FROM encuesta_reclutamiento e
-                                                LEFT JOIN personal_reclutamiento pr
-                                                    ON LOWER(TRIM(COALESCE(e.nombre_reclutador, ''))) = LOWER(TRIM(pr.nombre))
-                                                WHERE EXTRACT(MONTH FROM timezone(%s, e.fecha_registro)) = %s
-                                                    AND EXTRACT(YEAR FROM timezone(%s, e.fecha_registro)) = EXTRACT(YEAR FROM timezone(%s, now()))
-                                                    AND COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team)) IS NOT NULL
-                                                GROUP BY COALESCE(NULLIF(TRIM(e.team_reclutador), ''), TRIM(pr.team))
-                                        )
-                                        SELECT teams.team, COALESCE(ingresos.total, 0) AS total
-                                        FROM teams
-                                        LEFT JOIN ingresos ON ingresos.team = teams.team
-                                        ORDER BY total DESC, teams.team ASC
-                                """, (tz, mes, tz, tz))
-                
-                rows = cur.fetchall()
-        
-        data = [
-            {
-                'team': row[0],
-                'total': int(row[1] or 0),
-            }
-            for row in rows
-        ]
-        return jsonify(data), 200
-    except Exception as e:
-        print(f"Error en /api/ingresos-por-team: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    """Ruta heredada; las métricas por Team ya no forman parte del sistema."""
+    return jsonify([]), 200
 
 
 @app.route('/api/reclutadores-nombres', methods=['GET'])
@@ -1950,13 +1721,8 @@ def obtener_nombres_reclutadores():
                     CREATE TABLE IF NOT EXISTS personal_reclutamiento (
                         id SERIAL PRIMARY KEY,
                         nombre VARCHAR(100) NOT NULL UNIQUE,
-                        team VARCHAR(100) NOT NULL DEFAULT 'Team 1',
                         fecha_registro DATE DEFAULT CURRENT_DATE
                     )
-                """)
-                cur.execute("""
-                    ALTER TABLE personal_reclutamiento 
-                    ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
 
                 cur.execute("""

@@ -752,8 +752,6 @@
                 detalle = `Reclutador CW: ${nombreReclutador}`;
             }
 
-            sincronizarReclutadorLocal(nombreReclutador);
-
             const encuestaForm = new FormData();
             encuestaForm.append('curp', registro.curp || '');
             encuestaForm.append('fuente', fuenteParaEnviar || '');
@@ -827,210 +825,8 @@
         })();
     </script>
     <script>
-        //ENCUESTA RECLUTAMIENTO
-        window.reclutadoresDisponibles = [];
-        const RECLUTAMIENTO_STORAGE_KEY = 'reclutamiento_personal_local';
-
-        function normalizarReclutador(item) {
-            if (typeof item === 'string') {
-                const nombre = item.trim();
-                return nombre ? { id: Date.now(), nombre, ingresos: 0 } : null;
-            }
-
-            const nombre = String(item?.nombre || '').trim();
-            if (!nombre) return null;
-
-            return {
-                id: item?.id || Date.now(),
-                nombre,
-                ingresos: Number(item?.ingresos || 0),
-            };
-        }
-
-        function leerReclutadoresLocales() {
-            try {
-                const guardados = localStorage.getItem(RECLUTAMIENTO_STORAGE_KEY);
-                if (guardados) {
-                    const datos = JSON.parse(guardados);
-                    if (Array.isArray(datos)) {
-                        return datos.map(normalizarReclutador).filter(Boolean);
-                    }
-                }
-
-                const legacy = localStorage.getItem('reclutadores');
-                if (!legacy) return [];
-                const datosLegacy = JSON.parse(legacy);
-                if (!Array.isArray(datosLegacy)) return [];
-                return datosLegacy.map(normalizarReclutador).filter(Boolean);
-            } catch (error) {
-                return [];
-            }
-        }
-
-        function guardarReclutadoresLocales(nombres) {
-            try {
-                const lista = (nombres || []).map(normalizarReclutador).filter(Boolean);
-                localStorage.setItem(RECLUTAMIENTO_STORAGE_KEY, JSON.stringify(lista));
-                localStorage.setItem('reclutadores', JSON.stringify(lista));
-            } catch (error) {
-                console.warn('No se pudieron guardar reclutadores locales:', error);
-            }
-        }
-
-        function normalizarNombreReclutador(nombre) {
-            return String(nombre || '')
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .trim()
-                .replace(/\s+/g, ' ')
-                .toLocaleLowerCase();
-        }
-
-        function sincronizarReclutadorLocal(nombre) {
-            const nombreNormal = String(nombre || '').trim();
-            if (!nombreNormal) return;
-
-            const reclutadores = leerReclutadoresLocales();
-            const index = reclutadores.findIndex((item) => String(item?.nombre || '').trim().toLowerCase() === nombreNormal.toLowerCase());
-
-            if (index >= 0) {
-                reclutadores[index] = {
-                    ...reclutadores[index],
-                    nombre: nombreNormal,
-                    ingresos: Number(reclutadores[index]?.ingresos || 0) + 1,
-                };
-            } else {
-                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1 });
-            }
-
-            guardarReclutadoresLocales(reclutadores);
-            window.reclutadoresDisponibles = reclutadores;
-        }
-
-        function poblarSelectReclutadores(selectEl, textoVacio) {
-            if (!selectEl) return;
-
-            selectEl.innerHTML = '';
-            const opcionDefault = document.createElement('option');
-            opcionDefault.value = '';
-            opcionDefault.textContent = textoVacio;
-            selectEl.appendChild(opcionDefault);
-
-            if (!window.reclutadoresDisponibles.length) {
-                const opcionVacia = document.createElement('option');
-                opcionVacia.value = '';
-                opcionVacia.textContent = 'No hay nombres disponibles';
-                opcionVacia.disabled = true;
-                selectEl.appendChild(opcionVacia);
-                return;
-            }
-
-            window.reclutadoresDisponibles.forEach((entry) => {
-                const nombre = typeof entry === 'string' ? entry : (entry?.nombre || '');
-                if (!nombre) return;
-
-                const option = document.createElement('option');
-                option.value = nombre;
-                option.textContent = nombre;
-                selectEl.appendChild(option);
-            });
-
-            if (selectEl.id === 'nombre-reclutador') {
-                const valorPrevio = selectEl.getAttribute('data-valor-previo');
-                if (valorPrevio) {
-                    selectEl.value = valorPrevio;
-                }
-            }
-        }
-
-        function obtenerUrlsApi() {
-            const candidates = [];
-            const origin = window.location.origin;
-
-            if (origin) {
-                candidates.push(`${origin}/api/reclutadores-nombres`);
-            }
-
-            candidates.push('/api/reclutadores-nombres');
-            return Array.from(new Set(candidates));
-        }
-
-        function actualizarSelectsImportados() {
-            const selects = Array.from(document.querySelectorAll('select[id="nombre-reclutador"]'));
-            selects.forEach((selectActual) => {
-                const valorPrevio = selectActual.value || selectActual.getAttribute('data-valor-previo') || '';
-                selectActual.setAttribute('data-valor-previo', valorPrevio);
-                poblarSelectReclutadores(selectActual, 'Selecciona un nombre');
-            });
-        }
-
-        async function cargarReclutadoresSeleccionables() {
-            const locales = leerReclutadoresLocales();
-            window.reclutadoresDisponibles = locales;
-            actualizarSelectsImportados();
-
-            const urls = obtenerUrlsApi();
-            let ultimoError = null;
-
-            for (const url of urls) {
-                try {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (!response.ok) {
-                        throw new Error('No se pudieron cargar los nombres');
-                    }
-
-                    const data = await response.json();
-                    const nombresApi = Array.isArray(data)
-                        ? data.map((item) => {
-                            if (typeof item === 'string') {
-                                return { nombre: item.trim() };
-                            }
-                            return {
-                                nombre: String(item?.nombre || '').trim(),
-                            };
-                        }).filter((item) => item.nombre)
-                        : [];
-
-                    if (nombresApi.length) {
-                        window.reclutadoresDisponibles = nombresApi.map((item) => ({
-                            id: Date.now() + Math.random(),
-                            nombre: item.nombre,
-                            ingresos: 0,
-                        }));
-                        guardarReclutadoresLocales(window.reclutadoresDisponibles);
-                    } else {
-                        window.reclutadoresDisponibles = locales;
-                    }
-
-                    actualizarSelectsImportados();
-                    return true;
-                } catch (error) {
-                    ultimoError = error;
-                }
-            }
-
-            console.error('No se pudieron cargar reclutadores:', ultimoError);
-            window.reclutadoresDisponibles = locales;
-            actualizarSelectsImportados();
-            return locales.length > 0;
-        }
-
-        async function abrirEncuesta() {
-            const modal = document.getElementById('modal-encuesta');
-            if (modal) {
-                modal.style.display = 'flex';
-            }
-            await cargarReclutadoresSeleccionables();
-        }
-
-        window.addEventListener('storage', (event) => {
-            if (event.key === RECLUTAMIENTO_STORAGE_KEY || event.key === 'reclutadores') {
-                window.reclutadoresDisponibles = leerReclutadoresLocales();
-                actualizarSelectsImportados();
-            }
-        });
-
-        async function mostrarCampos() {
+        // ENCUESTA RECLUTAMIENTO
+        function mostrarCampos() {
             const fuente = document.getElementById('fuente').value;
             const div = document.getElementById('div-dinamico');
             div.innerHTML = "";
@@ -1047,8 +843,7 @@
                 `;
             } else if (fuente === "Facebook") {
                 div.innerHTML = `<label>¿Quién te atendió?</label>
-                                <select id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;"></select>`;
-                await cargarReclutadoresSeleccionables();
+                                <input type="text" id="nombre-reclutador" placeholder="Escribe el nombre" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
             } else if (fuente === "Recomendación") {
                 div.innerHTML = `<label>Nombre del empleado que te recomendó:</label>
                                 <input type="text" id="nombre-empleado" placeholder="Nombre completo" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
@@ -1062,14 +857,9 @@
 
             if (sub === "CW") {
                 detalle.innerHTML = `<label>Nombre de la persona de reclutamiento:</label>
-                                    <select id="nombre-reclutador" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;"></select>`;
-                await cargarReclutadoresSeleccionables();
+                                    <input type="text" id="nombre-reclutador" placeholder="Escribe el nombre" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
             }
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            cargarReclutadoresSeleccionables();
-        });
 
     </script>
     <script>
