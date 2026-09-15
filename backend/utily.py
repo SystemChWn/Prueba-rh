@@ -298,7 +298,7 @@ def get_db_connection():
     return psycopg2.connect(
         host=os.getenv("POSTGRES_HOST", "postgres"),
         port=os.getenv("POSTGRES_PORT", "5432"),
-        database=os.getenv("POSTGRES_DB", "rh-system"),
+        database=os.getenv("POSTGRES_DB", "rh_system"),
         user=os.getenv("POSTGRES_USER", "rh_app"),
         password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     )
@@ -719,20 +719,15 @@ def guardar_encuesta():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("""
-                    ALTER TABLE encuesta_reclutamiento
-                    ADD COLUMN IF NOT EXISTS team_reclutador VARCHAR(100)
-                """)
                 cur.execute(
                     """
                     INSERT INTO encuesta_reclutamiento
-                        (fuente, fecha_registro, nombre_reclutador, team_reclutador, nombre_empleado, detalle)
-                    VALUES (%s, now(), %s, %s, %s, %s)
+                        (fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
+                    VALUES (%s, now(), %s, %s, %s)
                     """,
                     (
                         fuente_norm,
                         (datos.get('nombre_reclutador') or '').strip(),
-                        (datos.get('team_reclutador') or '').strip(),
                         (datos.get('nombre_empleado') or '').strip(),
                         (datos.get('detalle') or '').strip(),
                     )
@@ -1709,7 +1704,7 @@ TEAMS_RECLUTAMIENTO = {f'Team {numero}' for numero in range(1, 6)}
 
 @app.route('/api/personal-reclutamiento', methods=['GET'])
 def obtener_reclutadores():
-    """Obtiene la lista de personal de reclutamiento con sus teams"""
+    """Obtiene la lista de personal de reclutamiento activo por nombre."""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -1725,18 +1720,12 @@ def obtener_reclutadores():
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
-                
+
                 cur.execute("""
-                    SELECT id, nombre,
-                          CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                              THEN team ELSE 'Team 1' END AS team,
-                          fecha_registro, TRUE AS puede_eliminar
+                    SELECT id, nombre, fecha_registro, TRUE AS puede_eliminar
                     FROM personal_reclutamiento
                     UNION ALL
-                          SELECT NULL, TRIM(nombre_reclutador),
-                              CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END AS team,
-                              MAX(fecha_registro), FALSE
+                    SELECT NULL, TRIM(nombre_reclutador), MAX(fecha_registro), FALSE
                     FROM encuesta_reclutamiento
                     WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
                       AND NOT EXISTS (
@@ -1744,21 +1733,18 @@ def obtener_reclutadores():
                           FROM personal_reclutamiento p
                           WHERE LOWER(TRIM(p.nombre)) = LOWER(TRIM(encuesta_reclutamiento.nombre_reclutador))
                       )
-                    GROUP BY TRIM(nombre_reclutador),
-                            CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                THEN TRIM(team_reclutador) ELSE 'Team 1' END
-                    ORDER BY team ASC, nombre ASC
+                    GROUP BY TRIM(nombre_reclutador)
+                    ORDER BY nombre ASC
                     LIMIT %s
                 """, (MAX_RECLUTADORES,))
                 rows = cur.fetchall()
-        
+
         data = [
             {
                 'id': row[0],
                 'nombre': row[1],
-                'team': row[2] or 'Team 1',
-                'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
-                'puede_eliminar': row[4],
+                'fecha_registro': row[2].strftime('%Y-%m-%d') if row[2] else None,
+                'puede_eliminar': row[3],
             }
             for row in rows
         ]
@@ -1772,17 +1758,15 @@ def obtener_reclutadores():
 
 @app.route('/api/personal-reclutamiento', methods=['POST'])
 def guardar_reclutador():
-    """Guarda un nuevo personal de reclutamiento"""
+    """Guarda un nuevo personal de reclutamiento por nombre."""
     payload = request.get_json(silent=True) or {}
-    
+
     nombre = (payload.get('nombre') or '').strip()
-    team = (payload.get('team') or 'Team 1').strip()
-    
+    team = 'Team 1'
+
     if not nombre:
         return jsonify({'error': 'El nombre es obligatorio'}), 400
-    if team not in TEAMS_RECLUTAMIENTO:
-        return jsonify({'error': 'El team debe ser Team 1, Team 2, Team 3, Team 4 o Team 5'}), 400
-    
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -1806,28 +1790,25 @@ def guardar_reclutador():
                     return jsonify({
                         'error': f'Solo puedes registrar hasta {MAX_RECLUTADORES} personas de reclutamiento.'
                     }), 400
-                
-                # Verificar si ya existe
+
                 cur.execute("SELECT id FROM personal_reclutamiento WHERE nombre = %s", (nombre,))
                 if cur.fetchone():
                     conn.commit()
                     return jsonify({'error': 'Este reclutador ya existe'}), 409
-                
-                # Insertar nuevo
+
                 cur.execute("""
                     INSERT INTO personal_reclutamiento (nombre, team, fecha_registro)
                     VALUES (%s, %s, CURRENT_DATE)
                     RETURNING id, nombre, team, fecha_registro
                 """, (nombre, team))
-                
+
                 row = cur.fetchone()
                 conn.commit()
-        
+
         if row:
             return jsonify({
                 'id': row[0],
                 'nombre': row[1],
-                'team': row[2] or 'Team 1',
                 'fecha_registro': row[3].strftime('%Y-%m-%d') if row[3] else None,
             }), 201
         return jsonify({'error': 'Error al guardar'}), 500
@@ -1961,7 +1942,7 @@ def obtener_ingresos_por_team():
 
 @app.route('/api/reclutadores-nombres', methods=['GET'])
 def obtener_nombres_reclutadores():
-    """Obtiene solo los nombres de los reclutadores para los selectores"""
+    """Obtiene solo los nombres de los reclutadores activos."""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -1977,27 +1958,19 @@ def obtener_nombres_reclutadores():
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team VARCHAR(100) DEFAULT 'Team 1'
                 """)
-                
+
                 cur.execute("""
-                          SELECT nombre,
-                              CASE WHEN team IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                  THEN team ELSE 'Team 1' END AS team
-                          FROM personal_reclutamiento
+                    SELECT nombre
+                    FROM personal_reclutamiento
                     UNION
-                          SELECT DISTINCT TRIM(nombre_reclutador),
-                              CASE WHEN TRIM(team_reclutador) IN ('Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5')
-                                  THEN TRIM(team_reclutador) ELSE 'Team 1' END AS team
+                    SELECT DISTINCT TRIM(nombre_reclutador)
                     FROM encuesta_reclutamiento
                     WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
-                    ORDER BY nombre ASC, team ASC
+                    ORDER BY nombre ASC
                 """)
                 rows = cur.fetchall()
-        
-        nombres = [
-            {'nombre': row[0], 'team': row[1] or 'Team 1'}
-            for row in rows
-            if row[0]
-        ]
+
+        nombres = [row[0] for row in rows if row[0]]
         return jsonify(nombres), 200
     except Exception as e:
         print(f"Error en /api/reclutadores-nombres: {e}")

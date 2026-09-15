@@ -43,7 +43,7 @@
             font-weight: bold;
         }
 
-/* RECUADROS SUPERIORES */
+        /* RECUADROS SUPERIORES */
         .metrics-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -393,16 +393,6 @@
             <div style="margin-bottom: 12px;">
                 <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Nombre:</label>
                 <input type="text" id="modalRecruiterInput" placeholder="Ingresa el nombre" style="width: 100%; padding: 8px; background: #3e3e3e; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box;">
-            </div>
-            <div style="margin-bottom: 12px;">
-                <label for="modalRecruiterTeam" style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Team:</label>
-                <select id="modalRecruiterTeam" style="width: 100%; padding: 8px; background: #3e3e3e; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box;">
-                    <option value="Team 1">Team 1</option>
-                    <option value="Team 2">Team 2</option>
-                    <option value="Team 3">Team 3</option>
-                    <option value="Team 4">Team 4</option>
-                    <option value="Team 5">Team 5</option>
-                </select>
             </div>
             <button type="button" id="saveRecruiterBtn" style="background: #28a745; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar</button>
             <h4 style="margin: 20px 0 10px; border-bottom: 1px solid #444; padding-bottom: 8px;">Personal activo</h4>
@@ -823,7 +813,6 @@
         const closeModalBtn = document.getElementById('closeModalBtn');
         const saveRecruiterBtn = document.getElementById('saveRecruiterBtn');
         const modalRecruiterInput = document.getElementById('modalRecruiterInput');
-        const modalRecruiterTeam = document.getElementById('modalRecruiterTeam');
         const modalRecruitersList = document.getElementById('modalRecruitersList');
 
         function compareTeams(a, b) {
@@ -875,7 +864,6 @@
                             method: 'POST',
                             body: JSON.stringify({
                                 nombre: String(item.nombre).trim(),
-                                team: String(item.team || 'Team 1').trim() || 'Team 1',
                             }),
                         })));
                         const datosActualizados = await requestReclutadores('/api/personal-reclutamiento');
@@ -896,21 +884,15 @@
             modalRecruitersList.innerHTML = '';
             const lista = document.createElement('div');
             lista.style.cssText = 'display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: #ccc;';
-            const teams = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5'];
-            teams.forEach((team) => {
-                const miembros = reclutadores.filter((reclutador) => (reclutador.team || 'Team 1') === team);
-                if (!miembros.length) return;
-                const encabezado = document.createElement('strong');
-                encabezado.textContent = team;
-                encabezado.style.cssText = 'color: #28a745; margin-top: 8px;';
-                lista.appendChild(encabezado);
-                miembros.forEach((reclutador) => agregarMiembroAlUI(
-                    lista,
-                    reclutador.nombre,
-                    reclutador.id,
-                    reclutador.puede_eliminar !== false
-                ));
-            });
+            reclutadores.forEach((reclutador) => agregarMiembroAlUI(
+                lista,
+                reclutador.nombre,
+                reclutador.id,
+                reclutador.puede_eliminar !== false
+            ));
+            if (!reclutadores.length) {
+                lista.innerHTML = '<span style="color: #aaa;">Sin personal activo.</span>';
+            }
             modalRecruitersList.appendChild(lista);
         }
 
@@ -937,7 +919,6 @@
         openModalBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
             modalRecruiterInput.value = '';
-            modalRecruiterTeam.value = 'Team 1';
             modalRecruiterInput.focus();
         });
 
@@ -947,7 +928,6 @@
 
         saveRecruiterBtn.addEventListener('click', function() {
             const nombre = modalRecruiterInput.value.trim();
-            const team = modalRecruiterTeam.value;
 
             if (!nombre) {
                 alert('Por favor escribe un nombre.');
@@ -968,14 +948,14 @@
 
             requestReclutadores('/api/personal-reclutamiento', {
                 method: 'POST',
-                body: JSON.stringify({ nombre, team }),
+                body: JSON.stringify({ nombre }),
             }).then(() => {
                 modal.style.display = 'none';
                 modalRecruiterInput.value = '';
                 cargarReclutadores();
             }).catch((error) => {
                 const detalle = error?.message === 'Failed to fetch'
-                    ? 'No se pudo conectar con el backend. Verifica que Docker esté iniciado y abre la página en http://localhost:3001.'
+                    ? 'No se pudo conectar con el backend. Revisa que el backend esté levantado en http://localhost:8000 o vía nginx en http://localhost:3001.'
                     : error.message;
                 alert(`No se pudo guardar el personal: ${detalle}`);
             });

@@ -743,31 +743,22 @@
             }
 
             let detalle = '';
-            let teamReclutador = null;
-            
+
             if (fuente === 'Facebook') {
                 detalle = `Reclutador: ${nombreReclutador}`;
-                teamReclutador = obtenerTeamDelReclutador(nombreReclutador);
             } else if (fuente === 'Recomendación') {
                 detalle = `Empleado recomendó: ${nombreEmpleado}`;
             } else if (fuente === 'Agencia' && subFuente === 'CW') {
                 detalle = `Reclutador CW: ${nombreReclutador}`;
-                teamReclutador = obtenerTeamDelReclutador(nombreReclutador);
             }
 
             sincronizarReclutadorLocal(nombreReclutador);
-            
-            // Registrar el ingreso por team si se encontró un reclutador con team
-            if (teamReclutador) {
-                registrarIngresosPorTeam(teamReclutador, fuenteParaEnviar, nombreReclutador);
-            }
 
             const encuestaForm = new FormData();
             encuestaForm.append('curp', registro.curp || '');
             encuestaForm.append('fuente', fuenteParaEnviar || '');
             encuestaForm.append('sub_fuente', subFuente);
             encuestaForm.append('nombre_reclutador', nombreReclutador);
-            encuestaForm.append('team_reclutador', teamReclutador || '');
             encuestaForm.append('nombre_empleado', nombreEmpleado);
             encuestaForm.append('detalle', detalle);
 
@@ -853,7 +844,6 @@
                 id: item?.id || Date.now(),
                 nombre,
                 ingresos: Number(item?.ingresos || 0),
-                team: String(item?.team || '').trim(),
             };
         }
 
@@ -887,17 +877,6 @@
             }
         }
 
-        function obtenerTeamDelReclutador(nombre) {
-            const nombreNormal = normalizarNombreReclutador(nombre);
-            if (!nombreNormal) return null;
-
-            const reclutadores = leerReclutadoresLocales();
-            const reclutador = reclutadores.find(
-                (item) => normalizarNombreReclutador(item?.nombre) === nombreNormal
-            );
-            return reclutador?.team || null;
-        }
-
         function normalizarNombreReclutador(nombre) {
             return String(nombre || '')
                 .normalize('NFD')
@@ -905,33 +884,6 @@
                 .trim()
                 .replace(/\s+/g, ' ')
                 .toLocaleLowerCase();
-        }
-
-        function registrarIngresosPorTeam(team, fuente, nombreReclutador) {
-            if (!team || !fuente) return;
-
-            try {
-                const INGRESOS_KEY = 'ingresos_por_team_local';
-                let ingresos = localStorage.getItem(INGRESOS_KEY);
-                let ingresosArray = ingresos ? JSON.parse(ingresos) : [];
-
-                if (!Array.isArray(ingresosArray)) {
-                    ingresosArray = [];
-                }
-
-                const hoy = new Date().toISOString().split('T')[0];
-                ingresosArray.push({
-                    team: team,
-                    fuente: fuente,
-                    nombre_reclutador: nombreReclutador || '',
-                    fecha: hoy,
-                    timestamp: Date.now()
-                });
-
-                localStorage.setItem(INGRESOS_KEY, JSON.stringify(ingresosArray));
-            } catch (error) {
-                console.warn('Error registrando ingresos por team:', error);
-            }
         }
 
         function sincronizarReclutadorLocal(nombre) {
@@ -948,7 +900,7 @@
                     ingresos: Number(reclutadores[index]?.ingresos || 0) + 1,
                 };
             } else {
-                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1, team: '' });
+                reclutadores.push({ id: Date.now(), nombre: nombreNormal, ingresos: 1 });
             }
 
             guardarReclutadoresLocales(reclutadores);
@@ -1031,11 +983,10 @@
                     const nombresApi = Array.isArray(data)
                         ? data.map((item) => {
                             if (typeof item === 'string') {
-                                return { nombre: item.trim(), team: 'Team 1' };
+                                return { nombre: item.trim() };
                             }
                             return {
                                 nombre: String(item?.nombre || '').trim(),
-                                team: String(item?.team || 'Team 1').trim() || 'Team 1',
                             };
                         }).filter((item) => item.nombre)
                         : [];
@@ -1044,7 +995,6 @@
                         window.reclutadoresDisponibles = nombresApi.map((item) => ({
                             id: Date.now() + Math.random(),
                             nombre: item.nombre,
-                            team: item.team,
                             ingresos: 0,
                         }));
                         guardarReclutadoresLocales(window.reclutadoresDisponibles);
