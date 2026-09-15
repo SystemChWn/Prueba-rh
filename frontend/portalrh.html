@@ -200,16 +200,28 @@
                 ['reclutamiento', 'InicioReclu.html'],
                 ['control_asistencias', 'captura.html'],
             ];
-            const systemAccess = window.SYSTEM_ACCESS || {};
+            let accesoSistema = null;
+            try {
+                const respuestaSistema = await fetch('/api/auth/system', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario: u, password: p }),
+                });
+                if (respuestaSistema.ok) {
+                    accesoSistema = await respuestaSistema.json();
+                }
+            } catch (_) {
+                accesoSistema = null;
+            }
 
-            if (u === systemAccess.usuario && p === systemAccess.password) {
+            if (accesoSistema) {
                 const destino = document.getElementById('system-destination-select').value;
                 if (!destino) {
                     errorMsg.textContent = 'Selecciona un acceso.';
                     errorMsg.style.display = 'block';
                     return;
                 }
-                sessionStorage.setItem('accesoUsuario', JSON.stringify({ usuario: 'admin', permisos: ['sistemas'] }));
+                sessionStorage.setItem('accesoUsuario', JSON.stringify(accesoSistema));
                 window.location.href = destino;
                 return;
             }
@@ -271,8 +283,6 @@
             }
 
             function actualizarSelectorSistemas() {
-                const systemAccess = window.SYSTEM_ACCESS || {};
-                const esSistemas = user.value.trim() === systemAccess.usuario && pass.value.trim() === systemAccess.password;
                 const usuarioRegistrado = window.AccessControlUsers.authenticate(user.value, pass.value);
                 const destinosSistemas = [
                     ['RH', 'iniciorh.html'],
@@ -289,9 +299,9 @@
                         return usuarioRegistrado.permisos.includes(permission);
                     })
                     : [];
-                const requiereSeleccion = esSistemas || accesosDeUsuario.length > 1;
+                const requiereSeleccion = user.value.trim().toLowerCase() === 'admin' || accesosDeUsuario.length > 1;
                 systemDestination.style.display = requiereSeleccion ? 'block' : 'none';
-                llenarDestinos(esSistemas ? destinosSistemas : accesosDeUsuario);
+                llenarDestinos(requiereSeleccion && user.value.trim().toLowerCase() === 'admin' ? destinosSistemas : accesosDeUsuario);
             }
 
             function intentarIngresarConEnter(event) {

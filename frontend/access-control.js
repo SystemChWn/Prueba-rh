@@ -1,9 +1,5 @@
 (function () {
     const storageKey = 'cwAccessUsers';
-    window.SYSTEM_ACCESS = {
-        usuario: 'admin',
-        password: 'CwSistemas!',
-    };
 
     const attendanceStorageKey = 'cwAttendanceSubmissions';
 
