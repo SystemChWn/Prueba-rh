@@ -253,7 +253,6 @@
         const API_BASES = [...new Set(['', `http://${currentHost}:${PORT}`, `http://localhost:${PORT}`])];
 
         const accessUser = JSON.parse(sessionStorage.getItem('accesoUsuario') || '{}');
-        const esAdmin = Array.isArray(accessUser.permisos) && accessUser.permisos.includes('sistemas');
         const areaResponsableCuenta = String(accessUser.area_responsable || '').trim();
         const responsableActual = String(accessUser.usuario || '').trim();
         const AREAS_DISPONIBLES = ['Almacen', 'EPS', 'Ensamble', 'Calidad', 'Compras', 'Embarques', 'Corte'];
@@ -287,48 +286,19 @@
         }
 
         function getAreaActual() {
-            if (!esAdmin) return areaResponsableCuenta;
-            const select = document.getElementById('area-select');
-            return select ? select.value : '';
+            return areaResponsableCuenta;
         }
 
         function getTurnoActual() {
-            if (!esAdmin) return calcularTurnoActual();
-            const select = document.getElementById('turno-select');
-            return select ? select.value : calcularTurnoActual();
-        }
-
-        function configurarEncabezadoAdmin() {
-            if (!esAdmin) return;
-            const estiloSelect = 'padding:4px 8px; border-radius:4px; background:#141414; color:#fff; border:1px solid #444; font-weight:bold;';
-
-            const areaSelect = document.createElement('select');
-            areaSelect.id = 'area-select';
-            areaSelect.style.cssText = estiloSelect;
-            areaSelect.innerHTML = '<option value="">Selecciona un área</option>' +
-                AREAS_DISPONIBLES.map((area) => `<option value="${area}">${area}</option>`).join('');
-            areaSelect.addEventListener('change', () => {
-                actualizarEncabezado();
-                cargarListaAsistencia();
-            });
-            document.getElementById('area-actual').replaceWith(areaSelect);
-
-            const turnoSelect = document.createElement('select');
-            turnoSelect.id = 'turno-select';
-            turnoSelect.style.cssText = estiloSelect;
-            turnoSelect.innerHTML = '<option value="DÍA">DÍA</option><option value="NOCHE">NOCHE</option>';
-            turnoSelect.value = calcularTurnoActual();
-            document.getElementById('turno-actual').replaceWith(turnoSelect);
+            return calcularTurnoActual();
         }
 
         function actualizarEncabezado() {
             const fechaEl = document.getElementById('fecha-hoy');
             const texto = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             fechaEl.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
-            if (!esAdmin) {
-                document.getElementById('area-actual').textContent = areaResponsableCuenta || 'Sin área asignada';
-                document.getElementById('turno-actual').textContent = calcularTurnoActual();
-            }
+            document.getElementById('area-actual').textContent = areaResponsableCuenta || 'Sin área asignada';
+            document.getElementById('turno-actual').textContent = calcularTurnoActual();
             document.getElementById('responsable-actual').textContent = responsableActual || '—';
         }
 
@@ -392,8 +362,7 @@
             const areaActual = getAreaActual();
 
             if (!areaActual) {
-                const mensaje = esAdmin ? 'Selecciona un área para ver la lista.' : 'No hay área asignada a este usuario.';
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${mensaje}</td></tr>`;
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay área asignada a este usuario.</td></tr>';
                 return;
             }
 
@@ -462,7 +431,6 @@
             alert('Asistencia enviada correctamente.');
         }
 
-        configurarEncabezadoAdmin();
         actualizarEncabezado();
         cargarListaAsistencia();
     </script>

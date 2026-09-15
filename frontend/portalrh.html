@@ -208,6 +208,7 @@
 
         async function autenticarSistema(usuario, password) {
             let ultimoError = null;
+            let huboRespuestaNoAutorizada = false;
             for (const url of obtenerUrlsAutenticacionSistema()) {
                 try {
                     const respuesta = await fetch(url, {
@@ -217,13 +218,19 @@
                     });
                     const datos = await respuesta.json().catch(() => ({}));
                     if (respuesta.ok) return { estado: 'autenticado', datos };
-                    if (respuesta.status === 401) return { estado: 'incorrecto' };
+                    if (respuesta.status === 401) {
+                        huboRespuestaNoAutorizada = true;
+                        continue;
+                    }
                     ultimoError = new Error(datos.error || `Error ${respuesta.status}`);
                 } catch (error) {
                     ultimoError = error;
                 }
             }
-            return { estado: 'sin_conexion', error: ultimoError };
+            return {
+                estado: huboRespuestaNoAutorizada ? 'incorrecto' : 'sin_conexion',
+                error: ultimoError,
+            };
         }
 
         async function verificarAcceso() {
@@ -294,6 +301,7 @@
             const form = document.getElementById('loginForm');
             const systemDestination = document.getElementById('system-destination');
             const destinationSelect = document.getElementById('system-destination-select');
+            let solicitudAutenticacion = 0;
 
             function llenarDestinos(destinos) {
                 const seleccionado = destinationSelect.value;
@@ -315,13 +323,33 @@
                 }
             }
 
-            function actualizarSelectorSistemas() {
-                const usuarioRegistrado = window.AccessControlUsers.authenticate(user.value, pass.value);
+            async function actualizarSelectorSistemas() {
+                const usuario = user.value.trim();
+                const password = pass.value.trim();
+                const tieneCredenciales = Boolean(usuario && password);
                 const destinosSistemas = [
                     ['RH', 'iniciorh.html'],
                     ['Reclutamiento', 'InicioReclu.html'],
                     ['Control de Asistencias', 'captura.html'],
                 ];
+                const solicitudActual = ++solicitudAutenticacion;
+                systemDestination.style.display = 'none';
+                llenarDestinos([]);
+
+                if (!tieneCredenciales) return;
+
+                if (usuario.toLowerCase() === 'admin') {
+                    const resultadoSistema = await autenticarSistema(usuario, password);
+                    if (solicitudActual !== solicitudAutenticacion || resultadoSistema.estado !== 'autenticado') {
+                        return;
+                    }
+
+                    systemDestination.style.display = 'block';
+                    llenarDestinos(destinosSistemas);
+                    return;
+                }
+
+                const usuarioRegistrado = window.AccessControlUsers.authenticate(usuario, password);
                 const accesosDeUsuario = usuarioRegistrado
                     ? destinosSistemas.filter(([label]) => {
                         const permission = {
@@ -332,9 +360,10 @@
                         return usuarioRegistrado.permisos.includes(permission);
                     })
                     : [];
-                const requiereSeleccion = user.value.trim().toLowerCase() === 'admin' || accesosDeUsuario.length > 1;
-                systemDestination.style.display = requiereSeleccion ? 'block' : 'none';
-                llenarDestinos(requiereSeleccion && user.value.trim().toLowerCase() === 'admin' ? destinosSistemas : accesosDeUsuario);
+                if (solicitudActual !== solicitudAutenticacion || accesosDeUsuario.length <= 1) return;
+
+                systemDestination.style.display = 'block';
+                llenarDestinos(accesosDeUsuario);
             }
 
             function intentarIngresarConEnter(event) {

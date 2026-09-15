@@ -1,6 +1,10 @@
 (function () {
     const storageKey = 'cwAccessUsers';
 
+    window.SYSTEM_ACCESS = {
+        usuario: 'admin',
+    };
+
     const attendanceStorageKey = 'cwAttendanceSubmissions';
 
     function getTodayIso() {
@@ -167,7 +171,7 @@
     try {
         const accessUser = JSON.parse(sessionStorage.getItem('accesoUsuario') || '{}');
         const permissions = Array.isArray(accessUser.permisos) ? accessUser.permisos : [];
-        if (!permissions.includes('sistemas') && !permissions.includes(requiredPermission)) {
+        if (!permissions.includes(requiredPermission)) {
             window.location.replace('portalrh.html');
         }
     } catch (_) {
