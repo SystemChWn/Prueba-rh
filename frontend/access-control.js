@@ -3,6 +3,7 @@
 
     window.SYSTEM_ACCESS = {
         usuario: 'admin',
+        password: 'CwSistemas!',
     };
 
     const attendanceStorageKey = 'cwAttendanceSubmissions';
@@ -150,7 +151,20 @@
             writeUsers(filteredUsers);
         },
         authenticate(usuario, password) {
-            return readUsers().find((user) => user.usuario === String(usuario).trim() && user.password === String(password).trim()) || null;
+            const usuarioSistema = String(usuario || '').trim();
+            const passwordSistema = String(password || '').trim();
+            const sistema = window.SYSTEM_ACCESS || {};
+            if (usuarioSistema === String(sistema.usuario || '').trim() && passwordSistema === String(sistema.password || '').trim()) {
+                return {
+                    usuario: sistema.usuario,
+                    password: sistema.password,
+                    permisos: ['sistemas'],
+                    area_responsable: '',
+                    nombre_notificacion: '',
+                    telefono_notificacion: '',
+                };
+            }
+            return readUsers().find((user) => user.usuario === usuarioSistema && user.password === passwordSistema) || null;
         },
     };
 
@@ -171,7 +185,7 @@
     try {
         const accessUser = JSON.parse(sessionStorage.getItem('accesoUsuario') || '{}');
         const permissions = Array.isArray(accessUser.permisos) ? accessUser.permisos : [];
-        if (!permissions.includes(requiredPermission)) {
+        if (!permissions.includes('sistemas') && !permissions.includes(requiredPermission)) {
             window.location.replace('portalrh.html');
         }
     } catch (_) {
