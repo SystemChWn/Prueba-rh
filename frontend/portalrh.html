@@ -191,6 +191,41 @@
 
     <script src="access-control.js"></script>
     <script>
+        function obtenerUrlsAutenticacionSistema() {
+            const origen = window.location.origin;
+            const urls = [];
+            if (origen && origen !== 'null') {
+                urls.push(`${origen}/api/auth/system`);
+            }
+            if (window.location.hostname) {
+                urls.push(`http://${window.location.hostname}:8001/api/auth/system`);
+                urls.push(`http://${window.location.hostname}:8000/api/auth/system`);
+            }
+            urls.push('http://localhost:8001/api/auth/system');
+            urls.push('http://localhost:8000/api/auth/system');
+            return Array.from(new Set(urls));
+        }
+
+        async function autenticarSistema(usuario, password) {
+            let ultimoError = null;
+            for (const url of obtenerUrlsAutenticacionSistema()) {
+                try {
+                    const respuesta = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ usuario, password }),
+                    });
+                    const datos = await respuesta.json().catch(() => ({}));
+                    if (respuesta.ok) return { estado: 'autenticado', datos };
+                    if (respuesta.status === 401) return { estado: 'incorrecto' };
+                    ultimoError = new Error(datos.error || `Error ${respuesta.status}`);
+                } catch (error) {
+                    ultimoError = error;
+                }
+            }
+            return { estado: 'sin_conexion', error: ultimoError };
+        }
+
         async function verificarAcceso() {
             const u = String(document.getElementById('user').value || '').trim();
             const p = String(document.getElementById('pass').value || '').trim();
@@ -200,28 +235,26 @@
                 ['reclutamiento', 'InicioReclu.html'],
                 ['control_asistencias', 'captura.html'],
             ];
-            let accesoSistema = null;
-            try {
-                const respuestaSistema = await fetch('/api/auth/system', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario: u, password: p }),
-                });
-                if (respuestaSistema.ok) {
-                    accesoSistema = await respuestaSistema.json();
+            if (u.toLowerCase() === 'admin') {
+                const resultadoSistema = await autenticarSistema(u, p);
+                if (resultadoSistema.estado === 'sin_conexion') {
+                    errorMsg.textContent = 'No se pudo conectar con el servidor de autenticación.';
+                    errorMsg.style.display = 'block';
+                    return;
                 }
-            } catch (_) {
-                accesoSistema = null;
-            }
+                if (resultadoSistema.estado !== 'autenticado') {
+                    errorMsg.textContent = 'Contraseña de administrador incorrecta.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
 
-            if (accesoSistema) {
                 const destino = document.getElementById('system-destination-select').value;
                 if (!destino) {
                     errorMsg.textContent = 'Selecciona un acceso.';
                     errorMsg.style.display = 'block';
                     return;
                 }
-                sessionStorage.setItem('accesoUsuario', JSON.stringify(accesoSistema));
+                sessionStorage.setItem('accesoUsuario', JSON.stringify(resultadoSistema.datos));
                 window.location.href = destino;
                 return;
             }
