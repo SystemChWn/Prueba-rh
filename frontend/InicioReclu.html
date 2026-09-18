@@ -5,31 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Interno Reclutamiento</title>
     <script src="access-control.js"></script>
+    <link rel="stylesheet" href="shared.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-/* Eliminar la barra de desplazamiento visualmente */
-        ::-webkit-scrollbar {
-            display: none;
-        }
-
-        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1e1e1e; border-bottom: 2px solid #444; }
-        .branding { display: flex; align-items: center; gap: 10px; }
-        .logo { width: 100px; height: 40px; border-radius: 5px; object-fit: contain; }
-
-        /* Botón Cerrar Sesión */
-        .btn-logout {
-            text-decoration: none;
-            color: #ff4b4b;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: 1px solid #ff4b4b;
-            padding: 5px 12px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .btn-logout:hover { background: #ff4b4b; color: white; }
-
         /* RECUADROS SUPERIORES */
         .metrics-container {
             display: grid;
@@ -131,10 +109,6 @@
             text-transform: uppercase;
         }
 
-        .removed-dashboard-section {
-            display: none !important;
-        }
-
         .personal-header {
             display: flex;
             justify-content: flex-start;
@@ -144,20 +118,6 @@
 
         .personal-header h3 {
             margin: 0;
-        }
-
-        /* Número de Empleado Temporal */
-        .form-group-link {
-            margin-bottom: 1px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group-link label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
         }
 
         .form-group-link .form-control {
@@ -381,7 +341,6 @@
         </div>
         <div class="metric-card">
             <h3>Generar Link de Registro</h3>
-            <p class="metric-value" id="countPendientes" style="display: none;">Esperando...</p>
             <div class="metric-link-generator">
                 <label for="temp-employee-id">N° Empleado Temporal:</label>
                 <input type="text" id="temp-employee-id" placeholder="Ingresa N°" class="form-control">
@@ -449,7 +408,6 @@
         </div>
     </main>
     <script src="data-manager.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
 // RECUADROS SUPERIORES - 1
         const fechaActual = new Date();
@@ -498,106 +456,6 @@
         
     </script>
     <script>
-// <--- SECCION 1 - GRAFICA DE INGRESOS --->
-        const ctxReclutador = null;
-        let reclutadorBarChart = null;
-
-        function crearGraficaReclutadores(datos) {
-            if (!ctxReclutador) return;
-            const labels = (datos || []).map(item => item.team || item.nombre || '');
-            const valores = (datos || []).map(item => Number(item.total || 0));
-
-            if (reclutadorBarChart) {
-                reclutadorBarChart.destroy();
-            }
-
-            reclutadorBarChart = new Chart(ctxReclutador, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Ingresos por Team',
-                            data: valores,
-                            backgroundColor: [
-                                '#4db8ff',
-                                '#28a745',
-                                '#ffc107',
-                                '#ff6b6b',
-                                '#17a2b8',
-                                '#6f42c1'
-                            ],
-                            borderColor: '#333',
-                            borderWidth: 1,
-                            borderRadius: 4,
-                            minBarLength: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 50,
-                            ticks: {
-                                color: '#ccc',
-                                stepSize: 5
-                            },
-                            grid: { color: '#444' }
-                        },
-                        x: {
-                            ticks: { color: '#ccc' },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        function obtenerDatosIngresosLocales(mes) {
-            try {
-                const INGRESOS_KEY = 'ingresos_por_team_local';
-                const ingresos = localStorage.getItem(INGRESOS_KEY);
-                const ingresosArray = ingresos ? JSON.parse(ingresos) : [];
-                if (!Array.isArray(ingresosArray)) return [];
-
-                const ahora = new Date();
-                const mesActual = mes || (ahora.getMonth() + 1);
-                const anioActual = ahora.getFullYear();
-
-                // Filtrar por mes y año
-                const ingresosDelMes = ingresosArray.filter((item) => {
-                    const fecha = new Date(item.fecha + 'T00:00:00');
-                    return fecha.getMonth() + 1 === mesActual && fecha.getFullYear() === anioActual;
-                });
-
-                // Contar ingresos por team
-                const conteo = {};
-                ingresosDelMes.forEach((item) => {
-                    const team = String(item.team || 'Sin Team').trim();
-                    conteo[team] = (conteo[team] || 0) + 1;
-                });
-
-                const teamsActivos = leerReclutadores()
-                    .map((reclutador) => String(reclutador.team || '').trim())
-                    .filter(Boolean);
-                const todosLosTeams = Array.from(new Set([...teamsActivos, ...Object.keys(conteo)])).sort(compareTeams);
-
-                return todosLosTeams.map((team) => ({
-                    team,
-                    total: conteo[team] || 0,
-                }));
-            } catch (error) {
-                console.error('Error leyendo ingresos locales:', error);
-                return [];
-            }
-        }
-
         async function actualizarTotalIngresosMes() {
             const elementoValor = document.getElementById('countEvaluando');
             if (!elementoValor) return;
@@ -631,29 +489,15 @@
             elementoValor.textContent = String(total);
         }
 
-        async function actualizarGraficaReclutadores(mes = new Date().getMonth() + 1) {
-            return;
-        }
-
         // Escuchar cambios en localStorage desde otras pestañas
         window.addEventListener('storage', (event) => {
             if (event.key === 'ingresos_por_team_local') {
-                const selectMes = document.getElementById('selectMes');
-                const mesActual = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
-                actualizarGraficaReclutadores(mesActual);
                 actualizarTotalIngresosMes();
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const selectMes = document.getElementById('selectMes');
-            const mesInicial = selectMes ? Number(selectMes.value) || (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
             actualizarTotalIngresosMes();
-
-            if (selectMes) {
-                selectMes.addEventListener('change', (event) => {
-                });
-            }
         });
     </script>
 
