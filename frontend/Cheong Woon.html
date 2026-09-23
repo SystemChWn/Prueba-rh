@@ -9,15 +9,17 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
     <style>
 /* FILTROS*/
-        .filtros-container { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: center; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 25px; }
-        .filtro-grupo { min-width: 0; display: flex; align-items: center; gap: 10px; }
-        .filtro-grupo.filtro-fechas { flex-wrap: wrap; }
-        .filtro-grupo.filtro-busqueda { flex-wrap: wrap; }
-        .filtro-grupo.filtro-busqueda #buscador { flex: 1 1 220px; width: auto !important; }
-        .filtro-grupo.filtro-excel { display: block; }
+        .filtros-container { display: grid; grid-template-columns: minmax(310px, 2fr) minmax(170px, 1fr) minmax(300px, 2fr) minmax(150px, 1fr); gap: 14px; align-items: center; background: #1e1e1e; padding: 16px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 25px; }
+        .filtro-grupo { min-width: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .filtro-grupo.filtro-fechas { min-width: 0; }
+        .filtro-grupo.filtro-fechas .filtro-input { flex: 1 1 0; width: auto; }
+        .filtro-grupo.filtro-busqueda #buscador { flex: 1 1 0; width: auto !important; }
+        .filtro-grupo.filtro-busqueda #btn-limpiar-filtros { flex: 0 0 auto; }
+        .filtro-grupo.filtro-excel { overflow: hidden; }
+        .filtro-grupo.filtro-excel .btn-subir-excel { flex: 0 0 auto; width: auto; }
         .filtro-grupo .filtro-input { min-width: 0; }
         .btn-subir-excel { width: 100%; cursor: pointer; text-align: center; box-sizing: border-box; }
-        .excel-nombre { display: block; margin-top: 6px; color: #aaa; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .excel-nombre { min-width: 0; color: #aaa; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @media (max-width: 1100px) { .filtros-container { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 650px) { .filtros-container { grid-template-columns: 1fr; } .filtro-grupo { width: 100%; } #buscador { width: 100% !important; } }
         .filtro-input { background: #121212; border: 1px solid #444; color: #fff; padding: 10px 15px; border-radius: 8px; font-size: 0.95rem; transition: all 0.3s ease; outline: none; }
