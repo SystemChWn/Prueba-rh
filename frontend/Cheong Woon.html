@@ -9,7 +9,17 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
     <style>
 /* FILTROS*/
-        .filtros-container { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 25px; }
+        .filtros-container { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: center; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 25px; }
+        .filtro-grupo { min-width: 0; display: flex; align-items: center; gap: 10px; }
+        .filtro-grupo.filtro-fechas { flex-wrap: wrap; }
+        .filtro-grupo.filtro-busqueda { flex-wrap: wrap; }
+        .filtro-grupo.filtro-busqueda #buscador { flex: 1 1 220px; width: auto !important; }
+        .filtro-grupo.filtro-excel { display: block; }
+        .filtro-grupo .filtro-input { min-width: 0; }
+        .btn-subir-excel { width: 100%; cursor: pointer; text-align: center; box-sizing: border-box; }
+        .excel-nombre { display: block; margin-top: 6px; color: #aaa; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @media (max-width: 1100px) { .filtros-container { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 650px) { .filtros-container { grid-template-columns: 1fr; } .filtro-grupo { width: 100%; } #buscador { width: 100% !important; } }
         .filtro-input { background: #121212; border: 1px solid #444; color: #fff; padding: 10px 15px; border-radius: 8px; font-size: 0.95rem; transition: all 0.3s ease; outline: none; }
         .filtro-input:focus { border-color: #007bff; box-shadow: 0 0 8px rgba(0,123,255,0.3); }
         .filtro-label { font-size: 0.85rem; margin-right: 8px; font-weight: bold; }
@@ -51,13 +61,13 @@
     </header>
     <main style="padding: 20px;">
         <div class="filtros-container">
-            <div>
+            <div class="filtro-grupo filtro-fechas">
                 <span class="filtro-label">DE:</span>
                 <input type="date" id="filtro-fecha-desde" class="filtro-input">
                 <span class="filtro-label" style="margin-left: 15px;">A:</span>
                 <input type="date" id="filtro-fecha-hasta" class="filtro-input">
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div class="filtro-grupo">
                 <span class="filtro-label">Estatus:</span>
                 <select id="filter-estatus" class="filtro-input" style="width: 180px; cursor: pointer;">
                     <option value="TODOS">Todos</option>
@@ -65,9 +75,14 @@
                     <option value="INACTIVOS">Inactivos</option>
                 </select>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div class="filtro-grupo filtro-busqueda">
                 <input type="text" id="buscador" class="filtro-input" placeholder="🔍 Buscar por nombre o # empleado..." style="width: 350px;">
                 <button id="btn-limpiar-filtros" type="button" class="filtro-input" style="width: auto; cursor: pointer;">Limpiar filtros</button>
+            </div>
+            <div class="filtro-grupo filtro-excel">
+                <input type="file" id="archivo-excel" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+                <label for="archivo-excel" class="filtro-input btn-subir-excel">Subir Excel</label>
+                <span id="excel-nombre" class="excel-nombre" aria-live="polite"></span>
             </div>
         </div>
         
@@ -104,6 +119,8 @@
         const fechaDesdeInput = document.getElementById('filtro-fecha-desde');
         const fechaHastaInput = document.getElementById('filtro-fecha-hasta');
         const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
+        const archivoExcel = document.getElementById('archivo-excel');
+        const excelNombre = document.getElementById('excel-nombre');
         let empleadosCache = [];
         let statusFilter = 'TODOS';
         let searchQuery = '';
@@ -485,6 +502,20 @@
 
         if (btnLimpiarFiltros) {
             btnLimpiarFiltros.addEventListener('click', clearFilters);
+        }
+
+        if (archivoExcel) {
+            archivoExcel.addEventListener('change', () => {
+                const archivo = archivoExcel.files && archivoExcel.files[0];
+                if (!archivo) return;
+                const esExcel = /\.(xls|xlsx)$/i.test(archivo.name);
+                if (!esExcel) {
+                    archivoExcel.value = '';
+                    if (excelNombre) excelNombre.textContent = 'Solo se aceptan archivos Excel (.xls o .xlsx).';
+                    return;
+                }
+                if (excelNombre) excelNombre.textContent = archivo.name;
+            });
         }
 
         cuerpo.addEventListener('click', (event) => {
