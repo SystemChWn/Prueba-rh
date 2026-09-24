@@ -150,7 +150,7 @@
                     const respuesta = await fetch(`${baseUrl}${endpoint}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body),
+                        body: JSON.stringify(body)                        docker compose up -d --build backend frontend,
                     });
                     const texto = await respuesta.text();
                     return { respuesta, texto };
