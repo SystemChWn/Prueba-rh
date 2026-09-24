@@ -804,6 +804,37 @@ def obtener_pendientes():
         return (f"ERROR: {str(e)}", 500)
 
 
+@app.route('/eliminar-pendiente/<int:registro_id>', methods=['DELETE'])
+@app.route('/api/eliminar-pendiente/<int:registro_id>', methods=['DELETE'])
+def eliminar_pendiente(registro_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    DELETE FROM registro
+                    WHERE id = %s
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM ingresos_puesto ip
+                          WHERE ip.registro_id = registro.id
+                      )
+                    RETURNING id
+                    """,
+                    (registro_id,),
+                )
+                eliminado = cur.fetchone()
+
+            conn.commit()
+
+        if not eliminado:
+            return ("ERROR: El registro no existe o ya tiene un ingreso asignado", 409)
+        return ("OK", 200)
+    except Exception as e:
+        print(f"Error detallado en /eliminar-pendiente: {e}")
+        return (f"ERROR: {str(e)}", 500)
+
+
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/api/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/obtener-ingresos', methods=['GET'])

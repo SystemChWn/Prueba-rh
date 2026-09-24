@@ -40,6 +40,19 @@
 
         .btn-guardar:hover { background: #28df50; color: white;}
 
+        .btn-eliminar {
+            color: #ff7b7b;
+            font-weight: bold;
+            border: 1px solid #ff4b4b;
+            padding: 5px 12px;
+            border-radius: 5px;
+            background: #2c2c2c;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-eliminar:hover { background: #ff4b4b; color: white; }
+
         .fila-error {
             outline: 2px solid #ff4b4b;
             background: rgba(255, 75, 75, 0.08);
@@ -89,12 +102,12 @@
                             <th>Nombre</th>
                             <th>Empresa</th>
                             <th>No. Empleado</th>
-                            <th>Personal</th>
                             <th>Puesto</th>
                             <th>Área</th>
                             <th>Turno</th>
                             <th>Salario</th>
                             <th>Periodo de Pago</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo-tabla">
@@ -168,13 +181,6 @@
                         </select>
                     </td>
                     <td><input class="campo-no-empleado" type="text" value="${tempId}" readonly required></td>
-                    <td>
-                        <select class="campo-personal" required>
-                            <option value="" selected>Selecciona la opcion</option>
-                            <option value="OPERATIVO">OPERATIVO</option>
-                            <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
-                        </select>
-                    </td>
                     <td><input class="campo-puesto" type="text" required></td>
                     <td>
                         <select class="campo-area" required>
@@ -186,6 +192,7 @@
                             <option value="Compras">Compras</option>
                             <option value="Embarques">Embarques</option>
                             <option value="Corte">Corte</option>
+                            <option value="Recursos Humanos">Recursos Humanos</option>
                         </select>
                     </td>
                     <td>
@@ -204,6 +211,7 @@
                             <option value="MENSUAL">MENSUAL</option>
                         </select>
                     </td>
+                    <td><button class="btn-eliminar" type="button" data-action="eliminar">Eliminar</button></td>
                 </tr>
             `;
         }
@@ -251,7 +259,7 @@
                 nombre_candidato: nombre,
                 empresa: tr.querySelector('.campo-empresa')?.value.trim() || '',
                 no_empleado: tr.querySelector('.campo-no-empleado')?.value.trim() || '',
-                personal: tr.querySelector('.campo-personal')?.value.trim() || '',
+                personal: 'OPERATIVO',
                 puesto: tr.querySelector('.campo-puesto')?.value.trim() || '',
                 area: tr.querySelector('.campo-area')?.value.trim() || '',
                 turno: tr.querySelector('.campo-turno')?.value.trim() || '',
@@ -280,7 +288,7 @@
         }
 
         function esFilaCompleta(fila) {
-            const campos = ['nombre_candidato', 'empresa', 'no_empleado', 'personal', 'puesto', 'area', 'turno', 'salario', 'pago', 'registro_id'];
+            const campos = ['nombre_candidato', 'empresa', 'no_empleado', 'puesto', 'area', 'turno', 'salario', 'pago', 'registro_id'];
 
             for (const campo of campos) {
                 if (!String(fila[campo] || '').trim()) {
@@ -358,6 +366,33 @@
         document.addEventListener('DOMContentLoaded', () => {
             cargarPendientes();
             btnGuardarDatos.addEventListener('click', guardarDatosCompletos);
+        });
+
+        async function eliminarPendiente(tr) {
+            const nombre = tr.querySelector('td:first-child')?.textContent.trim() || 'este registro';
+            if (!window.confirm(`Esta accion eliminara definitivamente a ${nombre}. ¿Deseas continuar?`)) return;
+
+            const id = tr.dataset.id || '';
+            try {
+                const { respuesta, texto } = await fetch(`${API_BASES[0]}/api/eliminar-pendiente/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                }).then(async (response) => ({ respuesta: response, texto: await response.text() }));
+
+                if (!respuesta.ok) {
+                    alert(texto || `No se pudo eliminar el registro (${respuesta.status}).`);
+                    return;
+                }
+
+                tr.remove();
+            } catch (error) {
+                alert('Error de conexión al eliminar el registro: ' + error.message);
+            }
+        }
+
+        cuerpo.addEventListener('click', (event) => {
+            const botonEliminar = event.target.closest('[data-action="eliminar"]');
+            if (!botonEliminar) return;
+            eliminarPendiente(botonEliminar.closest('tr[data-id]'));
         });
 
         cuerpo.addEventListener('change', (event) => {
