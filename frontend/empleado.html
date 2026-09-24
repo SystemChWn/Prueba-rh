@@ -1206,6 +1206,7 @@
                     <label class="file-label" for="foto-input">SUBIR FOTO</label>
                     <input id="foto-input" class="file-input" type="file" accept="image/*" />
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
+                    <button class="action-btn" id="btn-descargar-carta-imss" type="button">DESCARGAR CARTA IMSS</button>
                 </div>
                 <div id="photo-upload-status" style="width:100%; max-width:300px; margin:10px auto 0; min-height:20px; text-align:center; font-size:0.9rem; color:var(--grisc);"></div>
                 <div style="width:100%; max-width:300px; margin: 34px auto 0; display:none;">
@@ -3003,6 +3004,10 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 /*CONTRATO*/
         document.getElementById('btn-descargar-contrato').addEventListener('click', () => {
             window.location.href = `contrato.html?id=${encodeURIComponent(registroId)}`;
+        });
+
+        document.getElementById('btn-descargar-carta-imss').addEventListener('click', () => {
+            window.location.href = `cartaimss.html?id=${encodeURIComponent(registroId)}`;
         });
 
     </script>

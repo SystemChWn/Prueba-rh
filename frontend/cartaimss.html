@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carta IMSS - CWN</title>
+    <style>
+        body {
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 10pt;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+
+        #btn-descargar-contrato {
+            background-color: #3182ce;
+            color: white;
+        }
+
+        #btn-regresar {
+            background-color: #3182ce;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .page {
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 3.54cm 3.84cm 3.0cm 3.5cm; 
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #1a202c;
+            text-align: justify;
+            overflow: visible; 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        @media print {
+            @page {
+                size: letter;
+                margin: 0;
+            }
+
+            html,
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }
+            .controls {
+                display: none;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                height: 27.94cm;
+                page-break-after: always;
+                break-after: page;
+                break-inside: avoid;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+
+    <div class="controls">
+        <a id="btn-regresar" class="btn" href="#">Regresar</a>
+        <button id="btn-descargar-contrato" class="btn">Descargar / Imprimir Contrato</button>
+    </div>
+
+    <div class="page" id="contrato-page-1" style="line-height: 1.2; font-size: 10pt;">
+        
+        <!-- Logo y Fecha -->
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; text-align: center;">
+            <div style="width: 100%; font-family: 'Times New Roman', Times, serif; text-align: center; margin-bottom: 10px;">
+                <h3 style="margin: 0 0 4px; font-size: 1rem;">CHEONG WOON MEXICO, DE S.A. DE C.V.</h3>
+                <h3 style="margin: 0 0 4px; font-size: 1rem;">CARR. APODACA JUAREZ #2156</h3>
+                <h3 style="margin: 0 0 4px; font-size: 1rem;">COL. REAL HACIENDA DE HUINALA </h3>
+                <h3 style="margin: 0 0 4px; font-size: 1rem;">APODACA, N.L. C.P. 66644</h3>
+                <h3 style="margin: 0; font-size: 1rem;">RFC: CWM0206275J7</h3>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 20px;">
+            <div style="max-width: 270px; width: 70%;">
+                <img src="https://lh3.googleusercontent.com/d/1mBpzkBWEId68M9QAKUykKyHgQM-qFvOl" alt="Cheong Woon Mexico" style="width: 100%; height: auto;">
+            </div>
+            <div style="width: 90px; height: 110px; border: 1px solid #9ca3af; overflow: hidden; flex-shrink: 0;">
+                <img id="foto-empleado" src="https://lh3.googleusercontent.com/d/1RT7QfchCrWT7c2djbse7tuayVQNbRCHn=w400" alt="Foto del empleado" style="width: 100%; height: 100%; object-fit: cover; object-position: center top;">
+            </div>
+        </div>
+        <div style="text-align: right; font-weight: 500; margin-bottom: 70px;">
+            Apodaca, Nuevo León a <span id="lbl-fecha-actual"></span>
+        </div>
+
+        <!-- Título -->
+        <div style="margin-bottom: 30px;">
+            <h3 style="margin: 0; font-size: 1rem;">INSTITUTO MEXICANO DEL SEGURO SOCIAL</h3>
+            <br>
+            <h3 style="margin: 0; font-size: 1rem;">Presente.</h3>
+        </div>
+        
+        <!-- Párrafo Principal -->
+        <div style="margin-bottom: 15px; text-align: justify;">
+            Se hace constar que <strong><span id="lbl-nombre" style="text-transform: uppercase;"></span></strong> con N.S.S <strong><span id="lbl-nss" style="text-transform: uppercase;"> </span></strong> con CURP: <strong><span id="lbl-curp" style="text-transform: uppercase;"> </span></strong> quien labora en la empresa <strong>CHEONG WOON MEXICO S.A. DE C.V.</strong> desempeñando el puesto de <strong><span id="lbl-puesto" style="text-transform: uppercase;"> </span></strong>, vive en el domicilio: <strong><span id="lbl-direccion" style="text-transform: uppercase;"> </span></strong>.
+        </div>
+
+        <!-- Acuerdo de incumplimiento -->
+        <div style="margin-bottom: 15px;text-align: center;">
+            Sin más por el momento se expide la presente para los fines del interesado. 
+        </div>
+
+        <!-- Firma de conformidad -->
+        <div style="margin-bottom: 120px; text-align: center;">
+            <strong>ATENTAMENTE</strong>
+        </div>
+        
+        <!-- Firma del empleado centrada -->
+        <div style="text-align: center; margin-bottom: 110px;">
+            <div style="margin: 0;">____________________________________________________</div>
+            <div style="margin-top: 10px; font-size: 0.9rem;">Recursos Humanos - Cheong Woon</div>
+        </div>
+    </div>
+
+
+    <script src="data-manager.js"></script>
+    <script>
+        const currentHost = window.location.hostname;
+        const PORT = '8001';
+        const API_URL = `http://${currentHost}:${PORT}`;
+        const API_BASES = [API_URL, `http://localhost:${PORT}`];
+        const DEFAULT_EMPLOYEE_PHOTO = 'https://lh3.googleusercontent.com/d/1RT7QfchCrWT7c2djbse7tuayVQNbRCHn=w400';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEmpleado = urlParams.get('id') || urlParams.get('registro_id') || localStorage.getItem('ultimoRegistroId') || '';
+
+        function buildEmpleadoEndpoint(idValue) {
+            const encodedId = encodeURIComponent(idValue);
+            const bases = API_BASES.map((baseUrl) => `${baseUrl}/api/obtener-empleado/${encodedId}`);
+            return bases.filter((value, index, arr) => arr.indexOf(value) === index);
+        }
+
+        function getEmployeeRecordFromCache() {
+            try {
+                const manager = window.DataManager;
+                if (manager && typeof manager.getEmpleados === 'function') {
+                    const empleados = manager.getEmpleados() || [];
+                    return empleados.find((item) => String(item.registro_id || '') === String(idEmpleado))
+                        || empleados.find((item) => String(item.curp || '').toUpperCase() === String(idEmpleado).toUpperCase())
+                        || null;
+                }
+            } catch (_) {
+                return null;
+            }
+        }
+
+        const btnRegresar = document.getElementById('btn-regresar');
+        if (btnRegresar) {
+            if (idEmpleado) {
+                btnRegresar.href = `empleado.html?registro_id=${encodeURIComponent(idEmpleado)}&tab=asistencia`;
+            } else {
+                btnRegresar.href = 'empleado.html?tab=asistencia';
+            }
+        }
+
+        function formatearNombreApellidosTexto(texto) {
+            if (!texto) return '';
+            let textoLimpio = String(texto).trim();
+            let palabras = textoLimpio.split(/\s+/);
+
+            if (palabras.length <= 2) {
+                return textoLimpio.toUpperCase();
+            }
+
+            let apellidos = palabras.slice(-2).join(' ');
+            let nombres = palabras.slice(0, -2).join(' ');
+
+            return `${apellidos} ${nombres}`.toUpperCase();
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            const texto = value === null || value === undefined ? '' : String(value).trim();
+            el.textContent = id === 'lbl-nombre' ? formatearNombreApellidosTexto(texto) : texto;
+        }
+
+        function buildDomicilio(data) {
+            if (data.direccion) return data.direccion;
+
+            return [
+                data.calle,
+                data.num_ext ? `No. ${data.num_ext}` : '',
+                data.num_int ? `Int. ${data.num_int}` : '',
+                data.colonia,
+                data.codigo_postal ? `C.P. ${data.codigo_postal}` : '',
+                data.municipio,
+                data.estado,
+            ].filter(Boolean).join(', ');
+        }
+
+        function setFotoEmpleado(data) {
+            const foto = document.getElementById('foto-empleado');
+            if (!foto) return;
+
+            const fotoGuardada = idEmpleado ? localStorage.getItem(`foto_empleado_${idEmpleado}`) : '';
+            foto.src = data?.fotografia_base64 || fotoGuardada || DEFAULT_EMPLOYEE_PHOTO;
+        }
+
+        function aplicarDatosCarta(data) {
+            const fechaIngreso = data.fecha_ingreso || data.fecha_registro || '';
+
+            setFotoEmpleado(data);
+            setText('lbl-nombre', data.nombre_completo || data.nombre || '');
+            setText('lbl-nss', data.nss || data.imss || '');
+            setText('lbl-curp', data.curp || '');
+            setText('lbl-puesto', data.puesto || data.area || '');
+            setText('lbl-direccion', buildDomicilio(data));
+            setText('lbl-fecha-ingreso', fechaIngreso);
+        }
+
+        document.getElementById('lbl-fecha-actual').textContent = new Date().toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
+
+        async function cargarEmpleadoCarta() {
+            const cached = getEmployeeRecordFromCache();
+            if (cached) aplicarDatosCarta(cached);
+            if (!idEmpleado) return;
+
+            const endpoints = buildEmpleadoEndpoint(idEmpleado);
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    aplicarDatosCarta({ ...(cached || {}), ...data });
+                    return;
+                } catch (_) { }
+            }
+        }
+
+        const btnDescargar = document.getElementById('btn-descargar-contrato');
+        if (btnDescargar) {
+            btnDescargar.addEventListener('click', () => {
+                window.print();
+            });
+        }
+
+        cargarEmpleadoCarta();
+    </script>
+</body>
+</html>
