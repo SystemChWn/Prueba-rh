@@ -121,13 +121,7 @@
         const currentHost = window.location.hostname || '100.111.35.87';
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
-
-        const cors = require('cors');
-        app.use(cors({
-            origin: ['http://100.111.35.87:3001', 'http://localhost:3001'],
-            methods: ['GET', 'POST', 'PUT', 'DELETE'],
-            allowedHeaders: ['Content-Type']
-        }));
+        const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
         const btnGuardarDatos = document.getElementById('btn-guardar-datos');
