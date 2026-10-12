@@ -800,9 +800,12 @@ def obtener_pendientes():
         return (f"ERROR: {str(e)}", 500)
 
 
-@app.route('/eliminar-pendiente/<int:registro_id>', methods=['DELETE'])
-@app.route('/api/eliminar-pendiente/<int:registro_id>', methods=['DELETE'])
-def eliminar_pendiente(registro_id):
+@app.route('/eliminar-pendiente/<int:id>', methods=['DELETE'])
+@app.route('/api/eliminar-pendiente/<int:id>', methods=['DELETE', 'OPTIONS'])
+def eliminar_pendiente(id):
+    if request.method == 'OPTIONS':
+        return '', 204
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -817,7 +820,7 @@ def eliminar_pendiente(registro_id):
                       )
                     RETURNING id
                     """,
-                    (registro_id,),
+                    (id,),
                 )
                 eliminado = cur.fetchone()
 
