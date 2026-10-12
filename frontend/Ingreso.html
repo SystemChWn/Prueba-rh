@@ -121,7 +121,8 @@
         const currentHost = window.location.hostname || '100.111.35.87';
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
-        const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
+        const API_BASES_GET = ['', API_URL, `http://localhost:${PORT}`];
+        const API_BASES_ACTION = [API_URL, `http://localhost:${PORT}`];
 
         const cuerpo = document.getElementById('cuerpo-tabla');
         const btnGuardarDatos = document.getElementById('btn-guardar-datos');
@@ -129,7 +130,7 @@
         async function getConFallback(endpoint) {
             let ultimoErrorRed = null;
 
-            for (const baseUrl of API_BASES) {
+            for (const baseUrl of API_BASES_GET) {
                 try {
                     const respuesta = await fetch(`${baseUrl}${endpoint}`);
                     const texto = await respuesta.text();
@@ -139,13 +140,13 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES_GET.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
 
-            for (const baseUrl of API_BASES) {
+            for (const baseUrl of API_BASES_ACTION) {
                 try {
                     const respuesta = await fetch(`${baseUrl}${endpoint}`, {
                         method: 'POST',
@@ -159,14 +160,14 @@
                 }
             }
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES_ACTION.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         async function deleteConFallback(endpoint) {
             let ultimoErrorRed = null;
             let ultimaRespuesta = null;
 
-            for (const baseUrl of API_BASES) {
+            for (const baseUrl of API_BASES_ACTION) {
                 try {
                     const respuesta = await fetch(`${baseUrl}${endpoint}`, { method: 'DELETE' });
                     const texto = await respuesta.text();
@@ -179,7 +180,7 @@
 
             if (ultimaRespuesta) return ultimaRespuesta;
 
-            throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+            throw new Error(`No se pudo conectar con el servidor (${API_BASES_ACTION.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
         }
 
         function obtenerNumeroTemporal(nombre) {
