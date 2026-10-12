@@ -18,11 +18,7 @@ from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": ["http://100.111.35.87:3001", "http://localhost:3001"],
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "allow_headers": ["Content-Type", "Authorization"],
-}})
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env')), override=True)
 
@@ -801,10 +797,10 @@ def obtener_pendientes():
 
 
 @app.route('/eliminar-pendiente/<int:id>', methods=['DELETE'])
-@app.route('/api/eliminar-pendiente/<int:id>', methods=['DELETE', 'OPTIONS'])
+@app.route('/api/eliminar-pendiente/<id>', methods=['DELETE', 'OPTIONS'])
 def eliminar_pendiente(id):
     if request.method == 'OPTIONS':
-        return '', 204
+        return '', 200
 
     try:
         with get_db_connection() as conn:
@@ -830,8 +826,7 @@ def eliminar_pendiente(id):
             return ("ERROR: El registro no existe o ya tiene un ingreso asignado", 409)
         return ("OK", 200)
     except Exception as e:
-        print(f"Error detallado en /eliminar-pendiente: {e}")
-        return (f"ERROR: {str(e)}", 500)
+        return str(e), 500
 
 
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
