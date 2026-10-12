@@ -11,14 +11,21 @@ from datetime import datetime
 import psycopg2
 import openpyxl
 from flask import Flask, jsonify, request, send_from_directory, send_file
-from flask_cors import CORS
 from io import BytesIO
 import requests
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+
+@app.after_request
+def agregar_headers_cors(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+    return response
+
 
 load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env')), override=True)
 
