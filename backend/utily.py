@@ -717,9 +717,12 @@ def guardar_registro():
         return (f"ERROR: {str(e)}", 500)
 
 
-@app.route('/guardar-encuesta', methods=['POST'])
-@app.route('/api/guardar-encuesta', methods=['POST'])
+@app.route('/guardar-encuesta', methods=['POST', 'OPTIONS'])
+@app.route('/api/guardar-encuesta', methods=['POST', 'OPTIONS'])
 def guardar_encuesta():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     datos = request.form.to_dict()
     fuente = (datos.get('fuente') or '').strip()
     sub_fuente = (datos.get('sub_fuente') or '').strip()
@@ -1792,9 +1795,12 @@ def asegurar_tabla_personal_reclutamiento(cur):
     cur.execute("ALTER TABLE personal_reclutamiento ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE")
 
 
-@app.route('/api/ingresos-por-team', methods=['GET'])
+@app.route('/api/ingresos-por-team', methods=['GET', 'OPTIONS'])
 def obtener_ingresos_por_team():
     """Resume reclutamientos por persona activa y equipo para el mes consultado."""
+    if request.method == 'OPTIONS':
+        return '', 200
+
     try:
         mes = int(request.args.get('mes', str(datetime.now().month)))
         anio = int(request.args.get('anio', str(datetime.now().year)))
@@ -1852,9 +1858,12 @@ def obtener_ingresos_por_team():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/reclutadores-nombres', methods=['GET', 'POST'])
+@app.route('/api/reclutadores-nombres', methods=['GET', 'POST', 'OPTIONS'])
 def obtener_nombres_reclutadores():
     """Lista reclutadores activos y permite asignarlos a uno de los cuatro equipos."""
+    if request.method == 'OPTIONS':
+        return '', 200
+
     if request.method == 'POST':
         payload = request.get_json(silent=True) or {}
         nombre = ' '.join(str(payload.get('nombre') or '').split())
@@ -1939,8 +1948,11 @@ def obtener_nombres_reclutadores():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE'])
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE', 'OPTIONS'])
 def desactivar_reclutador(reclutador_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
