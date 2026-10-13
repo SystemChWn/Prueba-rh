@@ -938,7 +938,13 @@
             if (!container) return;
             container.replaceChildren();
 
-            for (let team = 1; team <= 4; team += 1) {
+            const teamsWithMembers = [...new Set(
+                reclutadores
+                    .map((item) => Number(item.team))
+                    .filter((team) => Number.isInteger(team) && team >= 1 && team <= 4)
+            )].sort((firstTeam, secondTeam) => firstTeam - secondTeam);
+
+            for (const team of teamsWithMembers) {
                 const members = reclutadores.filter((item) => Number(item.team) === team);
                 const group = document.createElement('section');
                 group.className = 'team-group';
@@ -948,13 +954,6 @@
                 capacity.textContent = `${members.length}/5`;
                 heading.appendChild(capacity);
                 group.appendChild(heading);
-
-                if (!members.length) {
-                    const empty = document.createElement('p');
-                    empty.className = 'recruiter-status';
-                    empty.textContent = 'Sin integrantes asignados';
-                    group.appendChild(empty);
-                }
 
                 members.forEach((member) => {
                     const row = document.createElement('div');
@@ -987,44 +986,15 @@
                 container.appendChild(group);
             }
 
-            const unassigned = reclutadores.filter((item) => !Number(item.team));
-            if (unassigned.length) {
-                const group = document.createElement('section');
-                group.className = 'team-group';
-                const heading = document.createElement('h4');
-                heading.textContent = 'Sin team';
-                group.appendChild(heading);
-                unassigned.forEach((member) => {
-                    const row = document.createElement('div');
-                    row.className = 'unassigned-member';
-                    const name = document.createElement('span');
-                    name.className = 'team-member-name';
-                    name.textContent = member.nombre;
-                    const teamSelect = document.createElement('select');
-                    teamSelect.setAttribute('aria-label', `Asignar ${member.nombre} a un team`);
-                    teamSelect.innerHTML = '<option value="">Team</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>';
-                    const assign = document.createElement('button');
-                    assign.type = 'button';
-                    assign.className = 'team-action-button';
-                    assign.textContent = 'Asignar';
-                    assign.addEventListener('click', async () => {
-                        if (!teamSelect.value) return;
-                        try {
-                            await saveRecruiter(member.nombre, teamSelect.value);
-                            await loadRecruiterDashboard();
-                            setRecruiterStatus('recruiter-roster-status', 'Team asignado.', 'success');
-                        } catch (error) {
-                            setRecruiterStatus('recruiter-roster-status', error.message, 'error');
-                        }
-                    });
-                    row.append(name, teamSelect, assign);
-                    group.appendChild(row);
-                });
-                container.appendChild(group);
+            if (!teamsWithMembers.length) {
+                const empty = document.createElement('p');
+                empty.className = 'recruiter-status';
+                empty.textContent = 'Agrega un nombre y asígnalo a un team para mostrarlo aquí.';
+                container.appendChild(empty);
             }
         }
 
-        function renderRecruiterTeamChart(equipos) {
+        function renderRecruiterTeamChart(equipos, reclutadores) {
             const canvas = document.getElementById('recruiter-team-chart');
             const status = document.getElementById('recruiter-chart-status');
             if (!canvas || !window.Chart) {
@@ -1032,17 +1002,20 @@
                 return;
             }
 
-            const resumenesTeam = Array.from({ length: 4 }, (_, index) => {
-                const numeroTeam = index + 1;
+            const teamsWithMembers = [...new Set(
+                (reclutadores || [])
+                    .map((reclutador) => Number(reclutador.team))
+                    .filter((team) => Number.isInteger(team) && team >= 1 && team <= 4)
+            )].sort((firstTeam, secondTeam) => firstTeam - secondTeam);
+            const resumenesTeam = teamsWithMembers.map((numeroTeam) => {
                 return (equipos || []).find((team) => Number(team.team) === numeroTeam)
-                    || { team: numeroTeam, total: 0, reclutadores: [] };
+                    || { team: numeroTeam, total: 0 };
             });
             const labels = resumenesTeam.map((team) => `Team ${team.team}`);
             const values = resumenesTeam.map((team) => Number(team.total || 0));
             const colors = resumenesTeam.map((team) => recruiterTeamColors[Number(team.team) - 1]);
-            const hayIntegrantes = resumenesTeam.some((team) => (team.reclutadores || []).length > 0);
             if (recruiterTeamChart) recruiterTeamChart.destroy();
-            if (status) status.textContent = hayIntegrantes ? '' : 'Asigna reclutadores a un team para ver sus resultados.';
+            if (status) status.textContent = resumenesTeam.length ? '' : 'Agrega un reclutador a un team para mostrarlo en la gráfica.';
             recruiterTeamChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -1089,8 +1062,9 @@
                     recruiterApi('/api/reclutadores-nombres'),
                     recruiterApi(`/api/ingresos-por-team?${params}`),
                 ]);
-                renderRecruiterRoster(Array.isArray(reclutadores) ? reclutadores : []);
-                renderRecruiterTeamChart(resumen.equipos || []);
+                const rosterActivo = Array.isArray(reclutadores) ? reclutadores : [];
+                renderRecruiterRoster(rosterActivo);
+                renderRecruiterTeamChart(resumen.equipos || [], rosterActivo);
                 setRecruiterStatus('recruiter-roster-status', '', '');
             } catch (error) {
                 setRecruiterStatus('recruiter-roster-status', `No se pudo cargar el personal: ${error.message}`, 'error');
