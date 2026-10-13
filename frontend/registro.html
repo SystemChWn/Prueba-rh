@@ -477,12 +477,10 @@
     </script>
     <script>
         async function finalizarRegistro() {
-            // 1. Validar campos obligatorios del formulario
             if (!validarRegistro()) {
                 return;
             }
 
-            // 2. Preparar y adjuntar la firma digital
             if (!prepararFirmaParaEnvio()) {
                 return;
             }
@@ -622,7 +620,6 @@
             return `${yy}${mm}${dd}`;
         }
 
-        // Enviar registro al servidor y luego abrir encuesta
         function validarRegistro() {
             const form = document.getElementById('registroForm');
             const required = [
@@ -668,7 +665,6 @@
                 }
             }
 
-// Acepto checkbox
             const acepto = form.elements['acepto'];
             if (!acepto || !acepto.checked) {
                 console.warn('Debe aceptar el aviso de privacidad');
@@ -780,7 +776,6 @@
             }
         }
 
-        // Hacer movible la ventana de encuesta
         (function habilitarArrastreModal() {
             const modal = document.getElementById('modal-contenido');
             const handle = document.getElementById('drag-handle');
@@ -825,6 +820,7 @@
         })();
     </script>
     <script>
+        
         // ENCUESTA RECLUTAMIENTO
         function mostrarCampos() {
             const fuente = document.getElementById('fuente').value;
