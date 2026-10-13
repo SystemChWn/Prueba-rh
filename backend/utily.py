@@ -765,15 +765,14 @@ def guardar_encuesta():
                 cur.execute(
                     """
                     INSERT INTO encuesta_reclutamiento
-                        (fuente, sub_fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
-                    VALUES (%s, %s, now(), %s, %s, %s)
+                        (fuente, sub_fuente, fecha_registro, nombre_reclutador, nombre_empleado)
+                    VALUES (%s, %s, now(), %s, %s)
                     """,
                     (
                         fuente_norm,
                         sub_fuente or None,
                         (datos.get('nombre_reclutador') or '').strip(),
                         (datos.get('nombre_empleado') or '').strip(),
-                        (datos.get('detalle') or '').strip(),
                     )
                 )
             conn.commit()
