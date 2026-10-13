@@ -507,22 +507,37 @@
             }
         }
 
-        const API_BASES = [window.location.origin, ''];
+        const registroApiHost = window.location.hostname || '100.111.35.87';
+        const API_BASES = [
+            ...(window.location.protocol === 'file:' ? [] : [window.location.origin]),
+            `http://${registroApiHost}:8001`,
+            ...(registroApiHost === 'localhost' ? [] : ['http://localhost:8001']),
+            '',
+        ].filter((baseUrl, index, bases) => bases.indexOf(baseUrl) === index);
 
         async function postConFallback(endpoint, body) {
             let ultimoErrorRed = null;
 
             for (const baseUrl of API_BASES) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 try {
                     const respuesta = await fetch(`${(baseUrl || '')}${endpoint}`, {
                         method: 'POST',
-                        body
+                        body,
+                        signal: controller.signal,
                     });
 
                     const texto = await respuesta.text();
+                    if ([403, 404].includes(respuesta.status)) {
+                        ultimoErrorRed = new Error(texto || `HTTP ${respuesta.status}`);
+                        continue;
+                    }
                     return { respuesta, texto, baseUrl };
                 } catch (errorRed) {
                     ultimoErrorRed = errorRed;
+                } finally {
+                    clearTimeout(timeoutId);
                 }
             }
 
@@ -832,11 +847,47 @@
 
             select.disabled = true;
             try {
-                const response = await fetch('/api/reclutadores-nombres', { cache: 'no-store' });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const reclutadores = await response.json();
-                const activos = (Array.isArray(reclutadores) ? reclutadores : [])
-                    .filter((item) => item.activo && Number(item.team) >= 1 && Number(item.team) <= 4);
+                let reclutadores = null;
+                let ultimoError = null;
+                for (const baseUrl of API_BASES) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    try {
+                        const response = await fetch(`${baseUrl}/api/reclutadores-nombres`, {
+                            cache: 'no-store',
+                            signal: controller.signal,
+                        });
+                        const texto = await response.text();
+                        if ([403, 404].includes(response.status)) {
+                            ultimoError = new Error(texto || `HTTP ${response.status}`);
+                            continue;
+                        }
+                        if (!response.ok) throw new Error(texto || `HTTP ${response.status}`);
+
+                        const respuesta = JSON.parse(texto || '[]');
+                        const formatoValido = Array.isArray(respuesta) && respuesta.every((item) => (
+                            item
+                            && typeof item === 'object'
+                            && item.id !== undefined
+                            && String(item.nombre || '').trim()
+                            && Number.isInteger(Number(item.team))
+                            && item.activo === true
+                        ));
+                        if (!formatoValido) {
+                            ultimoError = new Error('El backend no devuelve los datos del reclutador con team. Reinicia el backend actualizado.');
+                            continue;
+                        }
+                        reclutadores = respuesta;
+                        break;
+                    } catch (error) {
+                        ultimoError = error;
+                    } finally {
+                        clearTimeout(timeoutId);
+                    }
+                }
+                if (!reclutadores) throw ultimoError || new Error('No se pudo conectar con la API de reclutadores.');
+
+                const activos = reclutadores.filter((item) => item.activo && Number(item.team) >= 1 && Number(item.team) <= 4);
 
                 select.replaceChildren(new Option('Selecciona quién te atendió', ''));
                 activos.forEach((item) => select.add(new Option(item.nombre, item.nombre)));

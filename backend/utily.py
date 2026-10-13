@@ -1776,8 +1776,74 @@ def api_datos_grafica():
 
 @app.route('/api/ingresos-por-team', methods=['GET'])
 def obtener_ingresos_por_team():
-    """Ruta heredada; las métricas por Team ya no forman parte del sistema."""
-    return jsonify([]), 200
+    """Obtiene los reclutamientos por team para el mes solicitado."""
+    try:
+        mes = int(request.args.get('mes', str(datetime.now().month)))
+        anio = int(request.args.get('anio', str(datetime.now().year)))
+        if not 1 <= mes <= 12 or not 2000 <= anio <= 2100:
+            return jsonify({'error': 'Mes o año inválido'}), 400
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+                        id SERIAL PRIMARY KEY,
+                        nombre VARCHAR(100) NOT NULL UNIQUE,
+                        team INT DEFAULT 1,
+                        fecha_registro DATE DEFAULT CURRENT_DATE
+                    )
+                """)
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento
+                    ADD COLUMN IF NOT EXISTS team INT DEFAULT 1
+                """)
+                cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(255)
+                """)
+                cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)
+                """)
+                cur.execute("""
+                    SELECT p.id, p.nombre, COALESCE(p.team, 1), COUNT(e.id)
+                    FROM personal_reclutamiento p
+                    LEFT JOIN encuesta_reclutamiento e
+                      ON LOWER(TRIM(e.nombre_reclutador)) = LOWER(TRIM(p.nombre))
+                     AND (
+                         UPPER(TRIM(COALESCE(e.fuente, ''))) IN ('FACEBOOK', 'RECLU CW')
+                         OR (
+                             UPPER(TRIM(COALESCE(e.fuente, ''))) = 'AGENCIA'
+                             AND UPPER(TRIM(COALESCE(e.sub_fuente, ''))) = 'CW'
+                         )
+                     )
+                     AND EXTRACT(MONTH FROM e.fecha_registro) = %s
+                     AND EXTRACT(YEAR FROM e.fecha_registro) = %s
+                    WHERE COALESCE(p.team, 1) BETWEEN 1 AND 4
+                    GROUP BY p.id, p.nombre, p.team
+                    ORDER BY p.team, p.nombre
+                """, (mes, anio))
+                rows = cur.fetchall()
+
+        equipos = {team: {'team': team, 'total': 0, 'reclutadores': []} for team in range(1, 5)}
+        for reclutador_id, nombre, team, total in rows:
+            team = int(team or 1)
+            total = int(total or 0)
+            equipos[team]['total'] += total
+            equipos[team]['reclutadores'].append({
+                'id': reclutador_id,
+                'nombre': nombre,
+                'total': total,
+            })
+
+        return jsonify({
+            'mes': mes,
+            'anio': anio,
+            'equipos': list(equipos.values()),
+        }), 200
+    except Exception as e:
+        print(f"Error en /api/ingresos-por-team: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/reclutadores-nombres', methods=['GET', 'POST', 'OPTIONS'])
