@@ -775,7 +775,6 @@
             encuestaForm.append('sub_fuente', subFuente);
             encuestaForm.append('nombre_reclutador', nombreReclutador);
             encuestaForm.append('nombre_empleado', nombreEmpleado);
-            encuestaForm.append('detalle', detalle);
 
             try {
                 const { respuesta, texto } = await postConFallback('/api/guardar-encuesta', encuestaForm);
