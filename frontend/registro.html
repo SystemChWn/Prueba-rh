@@ -476,6 +476,12 @@
 
     </script>
     <script>
+        function abrirEncuesta() {
+            const modalEncuesta = document.getElementById('modal-encuesta');
+            if (modalEncuesta) modalEncuesta.style.display = 'flex';
+        }
+        window.abrirEncuesta = abrirEncuesta;
+
         async function finalizarRegistro() {
             if (!validarRegistro()) {
                 return;
@@ -492,7 +498,7 @@
                 const { respuesta, texto } = await postConFallback('/api/guardar-registro', formData);
 
                 if (respuesta.ok && (texto.startsWith('OK') || texto.includes('éxito'))) {
-                    abrirEncuesta();
+                    window.abrirEncuesta();
                 } else {
                     mostrarMensajeInferior('Error al guardar el registro: ' + (texto || 'Sin detalle'), 3000, false, true);
                 }
