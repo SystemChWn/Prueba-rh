@@ -756,10 +756,6 @@ def guardar_encuesta():
                 )
                 cur.execute(
                     "ALTER TABLE encuesta_reclutamiento "
-                    "ALTER COLUMN nombre_reclutador TYPE VARCHAR(255)"
-                )
-                cur.execute(
-                    "ALTER TABLE encuesta_reclutamiento "
                     "ADD COLUMN IF NOT EXISTS nombre_empleado VARCHAR(200)"
                 )
                 cur.execute(
@@ -1778,185 +1774,44 @@ def api_datos_grafica():
 
 # ===== ENDPOINTS PARA PERSONAL DE RECLUTAMIENTO =====
 
-def asegurar_tabla_personal_reclutamiento(cur):
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-            id SERIAL PRIMARY KEY,
-            nombre VARCHAR(100) NOT NULL UNIQUE,
-            team SMALLINT,
-            activo BOOLEAN NOT NULL DEFAULT TRUE,
-            fecha_registro DATE DEFAULT CURRENT_DATE
-        )
-    """)
-    cur.execute("ALTER TABLE personal_reclutamiento ADD COLUMN IF NOT EXISTS team SMALLINT")
-    cur.execute("ALTER TABLE personal_reclutamiento ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE")
-
-
 @app.route('/api/ingresos-por-team', methods=['GET'])
 def obtener_ingresos_por_team():
-    """Resume reclutamientos por persona activa y equipo para el mes consultado."""
-    try:
-        mes = int(request.args.get('mes', str(datetime.now().month)))
-        anio = int(request.args.get('anio', str(datetime.now().year)))
-        if not 1 <= mes <= 12 or not 2000 <= anio <= 2100:
-            return jsonify({'error': 'Mes o año inválido'}), 400
-
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                cur.execute("""
-                    ALTER TABLE encuesta_reclutamiento
-                    ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(255)
-                """)
-                cur.execute("""
-                    ALTER TABLE encuesta_reclutamiento
-                    ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)
-                """)
-                cur.execute("""
-                    SELECT p.id, p.nombre, p.team, COUNT(e.id) AS total
-                    FROM personal_reclutamiento p
-                    LEFT JOIN encuesta_reclutamiento e
-                      ON LOWER(TRIM(e.nombre_reclutador)) = LOWER(TRIM(p.nombre))
-                     AND (
-                         UPPER(TRIM(COALESCE(e.fuente, ''))) IN ('FACEBOOK', 'RECLU CW')
-                         OR (
-                             UPPER(TRIM(COALESCE(e.fuente, ''))) = 'AGENCIA'
-                             AND UPPER(TRIM(COALESCE(e.sub_fuente, ''))) = 'CW'
-                         )
-                     )
-                     AND EXTRACT(MONTH FROM e.fecha_registro) = %s
-                     AND EXTRACT(YEAR FROM e.fecha_registro) = %s
-                    WHERE p.activo = TRUE
-                      AND p.team BETWEEN 1 AND 4
-                    GROUP BY p.id, p.nombre, p.team
-                    ORDER BY p.team, p.nombre
-                """, (mes, anio))
-                rows = cur.fetchall()
-
-        equipos = {team: {'team': team, 'total': 0, 'reclutadores': []} for team in range(1, 5)}
-        for reclutador_id, nombre, team, total in rows:
-            total = int(total or 0)
-            equipos[int(team)]['total'] += total
-            equipos[int(team)]['reclutadores'].append({
-                'id': reclutador_id,
-                'nombre': nombre,
-                'total': total,
-            })
-        return jsonify({
-            'mes': mes,
-            'anio': anio,
-            'equipos': list(equipos.values()),
-        }), 200
-    except Exception as e:
-        print(f"Error en /api/ingresos-por-team: {e}")
-        return jsonify({'error': str(e)}), 500
+    """Ruta heredada; las métricas por Team ya no forman parte del sistema."""
+    return jsonify([]), 200
 
 
-@app.route('/api/reclutadores-nombres', methods=['GET', 'POST'])
+@app.route('/api/reclutadores-nombres', methods=['GET'])
 def obtener_nombres_reclutadores():
-    """Lista reclutadores activos y permite asignarlos a uno de los cuatro equipos."""
-    if request.method == 'POST':
-        payload = request.get_json(silent=True) or {}
-        nombre = ' '.join(str(payload.get('nombre') or '').split())
-        try:
-            team = int(payload.get('team'))
-        except (TypeError, ValueError):
-            return jsonify({'error': 'Selecciona un team del 1 al 4'}), 400
-        if not nombre or len(nombre) > 100:
-            return jsonify({'error': 'El nombre es obligatorio y debe tener máximo 100 caracteres'}), 400
-        if team not in range(1, 5):
-            return jsonify({'error': 'El team debe ser 1, 2, 3 o 4'}), 400
-
-        try:
-            with get_db_connection() as conn:
-                with conn.cursor() as cur:
-                    asegurar_tabla_personal_reclutamiento(cur)
-                    cur.execute("LOCK TABLE personal_reclutamiento IN EXCLUSIVE MODE")
-                    cur.execute("""
-                        SELECT id
-                        FROM personal_reclutamiento
-                        WHERE LOWER(TRIM(nombre)) = LOWER(%s)
-                        LIMIT 1
-                        FOR UPDATE
-                    """, (nombre,))
-                    existing = cur.fetchone()
-                    reclutador_id = existing[0] if existing else None
-                    cur.execute("""
-                        SELECT COUNT(*)
-                        FROM personal_reclutamiento
-                        WHERE team = %s AND activo = TRUE AND id <> %s
-                    """, (team, reclutador_id or 0))
-                    integrantes = int(cur.fetchone()[0])
-                    if integrantes >= 5:
-                        return jsonify({'error': f'El team {team} ya tiene cinco integrantes activos'}), 409
-
-                    if reclutador_id:
-                        cur.execute("""
-                            UPDATE personal_reclutamiento
-                            SET nombre = %s, team = %s, activo = TRUE
-                            WHERE id = %s
-                            RETURNING id, nombre, team, activo
-                        """, (nombre, team, reclutador_id))
-                    else:
-                        cur.execute("""
-                            INSERT INTO personal_reclutamiento (nombre, team, activo)
-                            VALUES (%s, %s, TRUE)
-                            RETURNING id, nombre, team, activo
-                        """, (nombre, team))
-                    row = cur.fetchone()
-                conn.commit()
-            return jsonify({
-                'id': row[0],
-                'nombre': row[1],
-                'team': row[2],
-                'activo': row[3],
-            }), 200
-        except Exception as e:
-            print(f"Error guardando reclutador: {e}")
-            return jsonify({'error': str(e)}), 500
-
+    """Obtiene solo los nombres de los reclutadores activos."""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
                 cur.execute("""
-                    SELECT id, nombre, team, activo
+                    CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+                        id SERIAL PRIMARY KEY,
+                        nombre VARCHAR(100) NOT NULL UNIQUE,
+                        fecha_registro DATE DEFAULT CURRENT_DATE
+                    )
+                """)
+
+                cur.execute("""
+                    SELECT nombre
                     FROM personal_reclutamiento
-                    WHERE activo = TRUE
-                    ORDER BY team NULLS LAST, nombre ASC
+                    UNION
+                    SELECT DISTINCT TRIM(nombre_reclutador)
+                    FROM encuesta_reclutamiento
+                    WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
+                    ORDER BY nombre ASC
                 """)
                 rows = cur.fetchall()
 
-        reclutadores = [
-            {'id': row[0], 'nombre': row[1], 'team': row[2], 'activo': row[3]}
-            for row in rows if row[1]
-        ]
-        return jsonify(reclutadores), 200
+        nombres = [row[0] for row in rows if row[0]]
+        return jsonify(nombres), 200
     except Exception as e:
         print(f"Error en /api/reclutadores-nombres: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE'])
-def desactivar_reclutador(reclutador_id):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                asegurar_tabla_personal_reclutamiento(cur)
-                cur.execute(
-                    "UPDATE personal_reclutamiento SET activo = FALSE WHERE id = %s RETURNING id",
-                    (reclutador_id,),
-                )
-                deleted = cur.fetchone()
-            conn.commit()
-        if not deleted:
-            return jsonify({'error': 'Reclutador no encontrado'}), 404
-        return '', 204
-    except Exception as e:
-        print(f"Error desactivando reclutador: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify([]), 500
 
 for rule in app.url_map.iter_rules():
     print(f"{rule.endpoint}: {rule.rule}")
