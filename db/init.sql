@@ -30,19 +30,10 @@ CREATE TABLE IF NOT EXISTS registro (
 CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     id                  SERIAL PRIMARY KEY,
     fuente              VARCHAR(50),
-    sub_fuente          VARCHAR(50),
     fecha_registro      DATE DEFAULT CURRENT_DATE,
-    nombre_reclutador   VARCHAR(255),
+    nombre_reclutador   VARCHAR(50),
     nombre_empleado     VARCHAR(200),
     detalle             TEXT
-);
-
-CREATE TABLE IF NOT EXISTS personal_reclutamiento (
-    id                  SERIAL PRIMARY KEY,
-    nombre              VARCHAR(100) NOT NULL UNIQUE,
-    team                SMALLINT CHECK (team BETWEEN 1 AND 4),
-    activo              BOOLEAN NOT NULL DEFAULT TRUE,
-    fecha_registro      DATE DEFAULT CURRENT_DATE
 );
 
 CREATE TABLE IF NOT EXISTS ingresos_puesto (
@@ -70,3 +61,4 @@ CREATE TABLE IF NOT EXISTS usuarios_acceso (
     created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
