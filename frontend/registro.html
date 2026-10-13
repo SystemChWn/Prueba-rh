@@ -826,7 +826,31 @@
         })();
     </script>
     <script>
-        
+        async function poblarSelectReclutadores() {
+            const select = document.getElementById('nombre-reclutador');
+            if (!select) return;
+
+            select.disabled = true;
+            try {
+                const response = await fetch('/api/reclutadores-nombres', { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const reclutadores = await response.json();
+                const activos = (Array.isArray(reclutadores) ? reclutadores : [])
+                    .filter((item) => item.activo && Number(item.team) >= 1 && Number(item.team) <= 4);
+
+                select.replaceChildren(new Option('Selecciona quién te atendió', ''));
+                activos.forEach((item) => select.add(new Option(item.nombre, item.nombre)));
+                if (!activos.length) {
+                    select.add(new Option('No hay reclutadores activos asignados a un team', ''));
+                }
+            } catch (error) {
+                select.replaceChildren(new Option('No se pudo cargar la lista de reclutadores', ''));
+                console.error('No se pudo cargar el personal de reclutamiento:', error);
+            } finally {
+                select.disabled = false;
+            }
+        }
+
         // ENCUESTA RECLUTAMIENTO
         function mostrarCampos() {
             const fuente = document.getElementById('fuente').value;
@@ -844,8 +868,11 @@
                     <div id="detalle-final" style="margin-top:10px;"></div>
                 `;
             } else if (fuente === "Facebook") {
-                div.innerHTML = `<label>¿Quién te atendió?</label>
-                                <input type="text" id="nombre-reclutador" placeholder="Escribe el nombre" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+                div.innerHTML = `<label for="nombre-reclutador">¿Quién te atendió?</label>
+                                <select id="nombre-reclutador" required style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                                    <option value="">Cargando reclutadores...</option>
+                                </select>`;
+                poblarSelectReclutadores();
             } else if (fuente === "Recomendación") {
                 div.innerHTML = `<label>Nombre del empleado que te recomendó:</label>
                                 <input type="text" id="nombre-empleado" placeholder="Nombre completo" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
@@ -858,8 +885,11 @@
             detalle.innerHTML = ""; // Limpiar
 
             if (sub === "CW") {
-                detalle.innerHTML = `<label>Nombre de la persona de reclutamiento:</label>
-                                    <input type="text" id="nombre-reclutador" placeholder="Escribe el nombre" style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">`;
+                detalle.innerHTML = `<label for="nombre-reclutador">Nombre de la persona de reclutamiento:</label>
+                                    <select id="nombre-reclutador" required style="width:100%; padding:8px; background:#121212; color:#fff; border:1px solid #444; border-radius:5px;">
+                                        <option value="">Cargando reclutadores...</option>
+                                    </select>`;
+                poblarSelectReclutadores();
             }
         }
 

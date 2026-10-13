@@ -320,6 +320,155 @@
         .legend-item { display: flex; align-items: right; gap: 8px; }
         .legend-color { width: 10px; height: 10px; border-radius: 50%; }
 
+        .recruiter-dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 0.8fr) minmax(0, 2fr);
+            gap: 15px;
+            padding: 0 10px 20px;
+        }
+
+        .recruiter-panel {
+            min-width: 0;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .recruiter-panel h3 {
+            color: #fff;
+            margin: 0 0 15px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .recruiter-form {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .recruiter-form label,
+        .team-filter label {
+            color: #ccc;
+            font-size: 0.8rem;
+        }
+
+        .recruiter-form input,
+        .recruiter-form select,
+        .unassigned-member select,
+        .team-filter select {
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 10px;
+            background: #292929;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+
+        .recruiter-form button,
+        .team-action-button {
+            min-height: 38px;
+            padding: 8px 12px;
+            background: #087f8c;
+            color: #fff;
+            border: 0;
+            border-radius: 5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .recruiter-form button:hover,
+        .team-action-button:hover { background: #086b75; }
+
+        .team-roster-list { display: grid; gap: 12px; }
+
+        .team-group {
+            padding-top: 10px;
+            border-top: 1px solid #3c3c3c;
+        }
+
+        .team-group h4 {
+            display: flex;
+            justify-content: space-between;
+            margin: 0 0 8px;
+            color: #f3c969;
+            font-size: 0.82rem;
+        }
+
+        .team-member,
+        .unassigned-member {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            color: #eee;
+            font-size: 0.84rem;
+        }
+
+        .team-member-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+        .team-member-count { color: #aaa; font-variant-numeric: tabular-nums; }
+
+        .team-remove-button {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: transparent;
+            color: #ff8f84;
+            border: 1px solid #70413c;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .recruiter-status {
+            min-height: 20px;
+            margin: 8px 0 0;
+            color: #aaa;
+            font-size: 0.8rem;
+        }
+
+        .recruiter-status[data-tone="error"] { color: #ff8f84; }
+        .recruiter-status[data-tone="success"] { color: #7bd9a8; }
+
+        .team-chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .team-chart-header h3 { margin-bottom: 0; }
+
+        .team-filter { display: flex; align-items: center; gap: 8px; }
+        .team-filter select { width: auto; min-width: 130px; }
+
+        .team-chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 480px;
+            margin-top: 16px;
+        }
+
+        .team-chart-empty {
+            margin: 0;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 850px) {
+            .recruiter-dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+            .team-chart-wrap { height: 400px; }
+        }
+
+        @media (max-width: 520px) {
+            .team-filter { width: 100%; }
+            .team-filter select { flex: 1; }
+            .team-chart-wrap { height: 360px; }
+        }
+
     </style>
 </head>
 <body>
@@ -404,6 +553,47 @@
                     <div class="legend-item"><span class="legend-color" style="background: #FFAA00;"></span> RECLU CW</div>
                     <div class="legend-item"><span class="legend-color" style="background: #FF0061;"></span> RECLU PURO</div>
                 </div>
+            </section>
+        </div>
+
+        <div class="recruiter-dashboard-grid">
+            <section class="recruiter-panel" aria-labelledby="recruiter-roster-title">
+                <h3 id="recruiter-roster-title">Personal activo por team</h3>
+                <form id="recruiter-form" class="recruiter-form">
+                    <label for="recruiter-name">Nombre del reclutador</label>
+                    <input id="recruiter-name" type="text" maxlength="100" autocomplete="name" required>
+                    <label for="recruiter-team">Team</label>
+                    <select id="recruiter-team" required>
+                        <option value="">Selecciona un team</option>
+                        <option value="1">Team 1</option>
+                        <option value="2">Team 2</option>
+                        <option value="3">Team 3</option>
+                        <option value="4">Team 4</option>
+                    </select>
+                    <button type="submit">Agregar / asignar</button>
+                </form>
+                <div id="recruiter-team-list" class="team-roster-list" aria-live="polite"></div>
+                <p id="recruiter-roster-status" class="recruiter-status" role="status"></p>
+            </section>
+
+            <section class="recruiter-panel" aria-labelledby="recruiter-chart-title">
+                <div class="team-chart-header">
+                    <h3 id="recruiter-chart-title">Personas reclutadas por team</h3>
+                    <div class="team-filter">
+                        <label for="recruiter-chart-month">Mes</label>
+                        <select id="recruiter-chart-month">
+                            <option value="1">Enero</option><option value="2">Febrero</option>
+                            <option value="3">Marzo</option><option value="4">Abril</option>
+                            <option value="5">Mayo</option><option value="6">Junio</option>
+                            <option value="7">Julio</option><option value="8">Agosto</option>
+                            <option value="9">Septiembre</option><option value="10">Octubre</option>
+                            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                        </select>
+                        <button id="btn-refresh-team-chart" class="team-action-button" type="button">Actualizar</button>
+                    </div>
+                </div>
+                <div class="team-chart-wrap"><canvas id="recruiter-team-chart"></canvas></div>
+                <p id="recruiter-chart-status" class="team-chart-empty" role="status"></p>
             </section>
         </div>
     </main>
@@ -716,6 +906,218 @@
                 });
             }
         });
+    </script>
+    <script>
+        let recruiterTeamChart = null;
+        const recruiterTeamColors = ['#21a0a8', '#f0bd4a', '#e76f51', '#85b86b'];
+
+        async function recruiterApi(url, options = {}) {
+            const response = await fetch(url, { cache: 'no-store', ...options });
+            const text = await response.text();
+            if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
+            return text ? JSON.parse(text) : null;
+        }
+
+        function setRecruiterStatus(elementId, message, tone = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            element.textContent = message;
+            element.dataset.tone = tone;
+        }
+
+        async function saveRecruiter(nombre, team) {
+            return recruiterApi('/api/reclutadores-nombres', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, team: Number(team) }),
+            });
+        }
+
+        function renderRecruiterRoster(reclutadores) {
+            const container = document.getElementById('recruiter-team-list');
+            if (!container) return;
+            container.replaceChildren();
+
+            for (let team = 1; team <= 4; team += 1) {
+                const members = reclutadores.filter((item) => Number(item.team) === team);
+                const group = document.createElement('section');
+                group.className = 'team-group';
+                const heading = document.createElement('h4');
+                heading.textContent = `Team ${team}`;
+                const capacity = document.createElement('span');
+                capacity.textContent = `${members.length}/5`;
+                heading.appendChild(capacity);
+                group.appendChild(heading);
+
+                if (!members.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'recruiter-status';
+                    empty.textContent = 'Sin integrantes asignados';
+                    group.appendChild(empty);
+                }
+
+                members.forEach((member) => {
+                    const row = document.createElement('div');
+                    row.className = 'team-member';
+                    const name = document.createElement('span');
+                    name.className = 'team-member-name';
+                    name.textContent = member.nombre;
+                    const count = document.createElement('span');
+                    count.className = 'team-member-count';
+                    count.textContent = 'Activo';
+                    const deactivate = document.createElement('button');
+                    deactivate.type = 'button';
+                    deactivate.className = 'team-remove-button';
+                    deactivate.textContent = '×';
+                    deactivate.title = `Desactivar a ${member.nombre}`;
+                    deactivate.setAttribute('aria-label', `Desactivar a ${member.nombre}`);
+                    deactivate.addEventListener('click', async () => {
+                        if (!window.confirm(`¿Desactivar a ${member.nombre}?`)) return;
+                        try {
+                            await recruiterApi(`/api/reclutadores-nombres/${encodeURIComponent(member.id)}`, { method: 'DELETE' });
+                            await loadRecruiterDashboard();
+                            setRecruiterStatus('recruiter-roster-status', 'Reclutador desactivado.', 'success');
+                        } catch (error) {
+                            setRecruiterStatus('recruiter-roster-status', error.message, 'error');
+                        }
+                    });
+                    row.append(name, count, deactivate);
+                    group.appendChild(row);
+                });
+                container.appendChild(group);
+            }
+
+            const unassigned = reclutadores.filter((item) => !Number(item.team));
+            if (unassigned.length) {
+                const group = document.createElement('section');
+                group.className = 'team-group';
+                const heading = document.createElement('h4');
+                heading.textContent = 'Sin team';
+                group.appendChild(heading);
+                unassigned.forEach((member) => {
+                    const row = document.createElement('div');
+                    row.className = 'unassigned-member';
+                    const name = document.createElement('span');
+                    name.className = 'team-member-name';
+                    name.textContent = member.nombre;
+                    const teamSelect = document.createElement('select');
+                    teamSelect.setAttribute('aria-label', `Asignar ${member.nombre} a un team`);
+                    teamSelect.innerHTML = '<option value="">Team</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>';
+                    const assign = document.createElement('button');
+                    assign.type = 'button';
+                    assign.className = 'team-action-button';
+                    assign.textContent = 'Asignar';
+                    assign.addEventListener('click', async () => {
+                        if (!teamSelect.value) return;
+                        try {
+                            await saveRecruiter(member.nombre, teamSelect.value);
+                            await loadRecruiterDashboard();
+                            setRecruiterStatus('recruiter-roster-status', 'Team asignado.', 'success');
+                        } catch (error) {
+                            setRecruiterStatus('recruiter-roster-status', error.message, 'error');
+                        }
+                    });
+                    row.append(name, teamSelect, assign);
+                    group.appendChild(row);
+                });
+                container.appendChild(group);
+            }
+        }
+
+        function renderRecruiterTeamChart(equipos) {
+            const canvas = document.getElementById('recruiter-team-chart');
+            const status = document.getElementById('recruiter-chart-status');
+            if (!canvas || !window.Chart) {
+                if (status) status.textContent = 'No se pudo cargar la gráfica.';
+                return;
+            }
+
+            const resumenesTeam = Array.from({ length: 4 }, (_, index) => {
+                const numeroTeam = index + 1;
+                return (equipos || []).find((team) => Number(team.team) === numeroTeam)
+                    || { team: numeroTeam, total: 0, reclutadores: [] };
+            });
+            const labels = resumenesTeam.map((team) => `Team ${team.team}`);
+            const values = resumenesTeam.map((team) => Number(team.total || 0));
+            const colors = resumenesTeam.map((team) => recruiterTeamColors[Number(team.team) - 1]);
+            const hayIntegrantes = resumenesTeam.some((team) => (team.reclutadores || []).length > 0);
+
+            if (recruiterTeamChart) recruiterTeamChart.destroy();
+            if (status) status.textContent = hayIntegrantes ? '' : 'Asigna reclutadores a un team para ver sus resultados.';
+            recruiterTeamChart = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Personas reclutadas',
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 3,
+                        barThickness: 30,
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { color: '#ddd', precision: 0, stepSize: 1 },
+                            grid: { color: '#383838' },
+                        },
+                        y: {
+                            ticks: { color: '#fff', autoSkip: false },
+                            grid: { display: false },
+                        },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (context) => `${context.parsed.x} personas` } },
+                    },
+                },
+            });
+        }
+
+        async function loadRecruiterDashboard() {
+            const month = document.getElementById('recruiter-chart-month');
+            const params = new URLSearchParams({
+                mes: month ? month.value : String(new Date().getMonth() + 1),
+                anio: String(new Date().getFullYear()),
+            });
+            try {
+                const [reclutadores, resumen] = await Promise.all([
+                    recruiterApi('/api/reclutadores-nombres'),
+                    recruiterApi(`/api/ingresos-por-team?${params}`),
+                ]);
+                renderRecruiterRoster(Array.isArray(reclutadores) ? reclutadores : []);
+                renderRecruiterTeamChart(resumen.equipos || []);
+                setRecruiterStatus('recruiter-roster-status', '', '');
+            } catch (error) {
+                setRecruiterStatus('recruiter-roster-status', `No se pudo cargar el personal: ${error.message}`, 'error');
+                setRecruiterStatus('recruiter-chart-status', 'No se pudieron cargar los conteos.', 'error');
+            }
+        }
+
+        document.getElementById('recruiter-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const name = document.getElementById('recruiter-name');
+            const team = document.getElementById('recruiter-team');
+            try {
+                await saveRecruiter(name.value, team.value);
+                name.value = '';
+                team.value = '';
+                await loadRecruiterDashboard();
+                setRecruiterStatus('recruiter-roster-status', 'Reclutador guardado en el team.', 'success');
+            } catch (error) {
+                setRecruiterStatus('recruiter-roster-status', error.message, 'error');
+            }
+        });
+
+        document.getElementById('recruiter-chart-month').value = String(new Date().getMonth() + 1);
+        document.getElementById('recruiter-chart-month').addEventListener('change', loadRecruiterDashboard);
+        document.getElementById('btn-refresh-team-chart').addEventListener('click', loadRecruiterDashboard);
+        loadRecruiterDashboard();
     </script>
 </body>
 </html>
