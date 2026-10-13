@@ -1057,8 +1057,12 @@
                     scales: {
                         x: {
                             beginAtZero: true,
-                            ticks: { color: '#ddd', precision: 0, stepSize: 1 },
-                            grid: { color: '#383838' },
+                            max: 100,
+                            ticks: { color: '#ddd', precision: 0, stepSize: 10 },
+                            grid: {
+                                color: (context) => context.tick && context.tick.value === 40 ? '#168cff' : '#383838',
+                                lineWidth: (context) => context.tick && context.tick.value === 40 ? 2 : 1,
+                            },
                         },
                         y: {
                             ticks: { color: '#fff', autoSkip: false },
