@@ -30,8 +30,9 @@ CREATE TABLE IF NOT EXISTS registro (
 CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     id                  SERIAL PRIMARY KEY,
     fuente              VARCHAR(50),
+    sub_fuente          VARCHAR(50),
     fecha_registro      DATE DEFAULT CURRENT_DATE,
-    nombre_reclutador   VARCHAR(50),
+    nombre_reclutador   VARCHAR(255),
     nombre_empleado     VARCHAR(200),
     detalle             TEXT
 );

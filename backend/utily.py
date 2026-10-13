@@ -751,13 +751,30 @@ def guardar_encuesta():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
+                    "ALTER TABLE encuesta_reclutamiento "
+                    "ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(255)"
+                )
+                cur.execute(
+                    "ALTER TABLE encuesta_reclutamiento "
+                    "ALTER COLUMN nombre_reclutador TYPE VARCHAR(255)"
+                )
+                cur.execute(
+                    "ALTER TABLE encuesta_reclutamiento "
+                    "ADD COLUMN IF NOT EXISTS nombre_empleado VARCHAR(200)"
+                )
+                cur.execute(
+                    "ALTER TABLE encuesta_reclutamiento "
+                    "ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)"
+                )
+                cur.execute(
                     """
                     INSERT INTO encuesta_reclutamiento
-                        (fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
-                    VALUES (%s, now(), %s, %s, %s)
+                        (fuente, sub_fuente, fecha_registro, nombre_reclutador, nombre_empleado, detalle)
+                    VALUES (%s, %s, now(), %s, %s, %s)
                     """,
                     (
                         fuente_norm,
+                        sub_fuente or None,
                         (datos.get('nombre_reclutador') or '').strip(),
                         (datos.get('nombre_empleado') or '').strip(),
                         (datos.get('detalle') or '').strip(),
