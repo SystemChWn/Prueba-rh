@@ -1157,6 +1157,7 @@
         <div class="header-left">
             <div class="company-name" id="company-name">EXPEDIENTE DIGITAL</div>
         </div>
+        <button id="btn-eliminar-empleado" class="danger-btn" type="button">Eliminar empleado</button>
         <div class="tabs">
             <button class="tab-btn active active-tab" data-tab="informacion">Información</button>
             <button class="tab-btn" data-tab="papeleria">Papelería</button>
@@ -1617,6 +1618,7 @@
         const employeeTop = document.getElementById('employee-top');
         const companyName = document.getElementById('company-name');
         const btnRegresar = document.getElementById('btn-regresar');
+        const btnEliminarEmpleado = document.getElementById('btn-eliminar-empleado');
         const photoInput = document.getElementById('foto-input');
         const photoPreview = document.getElementById('photo-preview');
         const photoPlaceholder = document.getElementById('photo-placeholder');
@@ -2865,6 +2867,26 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
 
         btnRegresar.addEventListener('click', () => {
             window.location.href = getRutaListaPorEmpresa();
+        });
+
+        btnEliminarEmpleado.addEventListener('click', async () => {
+            const nombre = fields['nombre-completo'].value.trim() || 'este empleado';
+            if (!registroId) {
+                alert('No se pudo identificar al empleado para eliminarlo.');
+                return;
+            }
+            if (!window.confirm(`¿Deseas eliminar definitivamente a ${nombre}?`)) return;
+
+            try {
+                const { respuesta, texto } = await deleteConFallback(`/api/eliminar-pendiente/${encodeURIComponent(registroId)}`);
+                if (!respuesta.ok) {
+                    alert(texto || `No se pudo eliminar el empleado (${respuesta.status}).`);
+                    return;
+                }
+                alert('Empleado eliminado correctamente.');
+            } catch (error) {
+                alert('Error de conexión al eliminar el empleado: ' + error.message);
+            }
         });
 
         photoInput.addEventListener('change', () => {
