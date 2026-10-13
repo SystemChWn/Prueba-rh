@@ -911,11 +911,33 @@
         let recruiterTeamChart = null;
         const recruiterTeamColors = ['#21a0a8', '#f0bd4a', '#e76f51', '#85b86b'];
 
+        function getRecruiterApiBases() {
+            const bases = [];
+            if (window.location.protocol !== 'file:') bases.push('');
+
+            const apiHost = window.location.hostname || '100.111.35.87';
+            bases.push(`http://${apiHost}:8001`);
+            if (apiHost !== 'localhost') bases.push('http://localhost:8001');
+            return [...new Set(bases)];
+        }
+
         async function recruiterApi(url, options = {}) {
-            const response = await fetch(url, { cache: 'no-store', ...options });
-            const text = await response.text();
-            if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
-            return text ? JSON.parse(text) : null;
+            let ultimoError = null;
+            for (const baseUrl of getRecruiterApiBases()) {
+                try {
+                    const response = await fetch(`${baseUrl}${url}`, { cache: 'no-store', ...options });
+                    const text = await response.text();
+                    if (!response.ok) {
+                        ultimoError = new Error(text || `HTTP ${response.status}`);
+                        if (![403, 404].includes(response.status)) break;
+                        continue;
+                    }
+                    return text ? JSON.parse(text) : null;
+                } catch (error) {
+                    ultimoError = error;
+                }
+            }
+            throw ultimoError || new Error('No se pudo conectar con la API de reclutadores.');
         }
 
         function setRecruiterStatus(elementId, message, tone = '') {
@@ -1063,6 +1085,17 @@
                     recruiterApi(`/api/ingresos-por-team?${params}`),
                 ]);
                 const rosterActivo = Array.isArray(reclutadores) ? reclutadores : [];
+                const formatoRosterValido = rosterActivo.every((reclutador) => (
+                    reclutador
+                    && typeof reclutador === 'object'
+                    && reclutador.id !== undefined
+                    && String(reclutador.nombre || '').trim()
+                    && Number.isInteger(Number(reclutador.team))
+                    && reclutador.activo === true
+                ));
+                if (!formatoRosterValido) {
+                    throw new Error('La API remota está desactualizada: debe devolver id, nombre, team y activo. Reinicia el backend actualizado.');
+                }
                 renderRecruiterRoster(rosterActivo);
                 renderRecruiterTeamChart(resumen.equipos || [], rosterActivo);
                 setRecruiterStatus('recruiter-roster-status', '', '');
