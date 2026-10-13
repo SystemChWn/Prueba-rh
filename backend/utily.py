@@ -1820,7 +1820,12 @@ def manejar_reclutadores():
                     
                     row = cur.fetchone()
                     conn.commit()
-                    return jsonify({'id': row[0], 'nombre': row[1], 'team': row[2]}), 201
+                    return jsonify({
+                        'id': row[0],
+                        'nombre': row[1],
+                        'team': row[2],
+                        'activo': True,
+                    }), 201
 
                 # Método GET (Listar todos)
                 cur.execute("""
@@ -1830,7 +1835,10 @@ def manejar_reclutadores():
                 """)
                 rows = cur.fetchall()
 
-        reclutadores = [{'id': row[0], 'nombre': row[1], 'team': row[2]} for row in rows if row[1]]
+        reclutadores = [
+            {'id': row[0], 'nombre': row[1], 'team': row[2], 'activo': True}
+            for row in rows if row[1]
+        ]
         return jsonify(reclutadores), 200
 
     except Exception as e:
