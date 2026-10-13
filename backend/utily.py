@@ -1780,41 +1780,84 @@ def obtener_ingresos_por_team():
     return jsonify([]), 200
 
 
-@app.route('/api/reclutadores-nombres', methods=['GET'])
-def obtener_nombres_reclutadores():
-    """Obtiene solo los nombres de los reclutadores activos."""
+@app.route('/api/reclutadores-nombres', methods=['GET', 'POST', 'OPTIONS'])
+def manejar_reclutadores():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Asegurar que la tabla exista
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS personal_reclutamiento (
                         id SERIAL PRIMARY KEY,
                         nombre VARCHAR(100) NOT NULL UNIQUE,
+                        team INT DEFAULT 1,
                         fecha_registro DATE DEFAULT CURRENT_DATE
                     )
                 """)
-
+                # Asegurar columna team por si la tabla ya existía sin ella
                 cur.execute("""
-                    SELECT nombre
+                    ALTER TABLE personal_reclutamiento 
+                    ADD COLUMN IF NOT EXISTS team INT DEFAULT 1
+                """)
+
+                if request.method == 'POST':
+                    datos = request.get_json(silent=True) or {}
+                    nombre = str(datos.get('nombre', '')).strip()
+                    team = int(datos.get('team', 1))
+
+                    if not nombre:
+                        return jsonify({'error': 'El nombre del reclutador es obligatorio.'}), 400
+
+                    cur.execute("""
+                        INSERT INTO personal_reclutamiento (nombre, team)
+                        VALUES (%s, %s)
+                        ON CONFLICT (nombre) DO UPDATE SET team = EXCLUDED.team
+                        RETURNING id, nombre, team
+                    """, (nombre, team))
+                    
+                    row = cur.fetchone()
+                    conn.commit()
+                    return jsonify({'id': row[0], 'nombre': row[1], 'team': row[2]}), 201
+
+                # Método GET (Listar todos)
+                cur.execute("""
+                    SELECT id, nombre, COALESCE(team, 1) as team
                     FROM personal_reclutamiento
-                    UNION
-                    SELECT DISTINCT TRIM(nombre_reclutador)
-                    FROM encuesta_reclutamiento
-                    WHERE NULLIF(TRIM(nombre_reclutador), '') IS NOT NULL
                     ORDER BY nombre ASC
                 """)
                 rows = cur.fetchall()
 
-        nombres = [row[0] for row in rows if row[0]]
-        return jsonify(nombres), 200
+        reclutadores = [{'id': row[0], 'nombre': row[1], 'team': row[2]} for row in rows if row[1]]
+        return jsonify(reclutadores), 200
+
     except Exception as e:
         print(f"Error en /api/reclutadores-nombres: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify([]), 500
+        return jsonify({'error': str(e)}), 500
 
-for rule in app.url_map.iter_rules():
-    print(f"{rule.endpoint}: {rule.rule}")
+
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE', 'OPTIONS'])
+def eliminar_reclutador(reclutador_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
+                eliminado = cur.rowcount
+            conn.commit()
+
+        if not eliminado:
+            return jsonify({'error': 'Reclutador no encontrado.'}), 404
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"Error al eliminar reclutador: {e}")
+        return jsonify({'error': str(e)}), 500
 #-----------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
