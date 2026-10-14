@@ -36,19 +36,19 @@ services:
       - backend
     ports:
       - "3001:80"
-# Nuevo servicio para WhatsApp por QR
+  # Nuevo servicio de WhatsApp
   evolution-api:
     image: atendai/evolution-api:v1.8.2
     container_name: evolution_api
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
     environment:
       - SERVER_URL=http://localhost:8080
       - DOCKER_ENV=true
       - AUTHENTICATION_API_KEY=CwSistemasSecretKey2026!
     volumes:
       - evolution_instances:/instance
-    restart: always
+    ports:
+      - "8080:8080"
 
 volumes:
   pgdata:
