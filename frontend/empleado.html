@@ -1047,6 +1047,25 @@
             padding: 8px 10px;
         }
 
+        #btn-eliminar-empleado {
+            background: transparent;
+            color: #ff4b4b;
+            border: 1px solid #ff4b4b;
+            border-radius: 5px;
+            padding: 5px 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #btn-eliminar-empleado:hover {
+            background: #ff4b4b;
+            color: var(--blanco);
+        }
+
         .name-date-stack {
             display: grid;
             gap: 8px;
@@ -2875,17 +2894,61 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 alert('No se pudo identificar al empleado para eliminarlo.');
                 return;
             }
-            if (!window.confirm(`¿Deseas eliminar definitivamente a ${nombre}?`)) return;
+            const confirmar = window.confirm(
+                `¿Eliminar definitivamente a ${nombre}? Se borrarán el expediente, el puesto asignado y sus documentos. Esta acción no se puede deshacer.`
+            );
+            if (!confirmar) return;
 
             try {
-                const { respuesta, texto } = await deleteConFallback(`/api/eliminar-pendiente/${encodeURIComponent(registroId)}`);
+                btnEliminarEmpleado.disabled = true;
+                const { respuesta, texto } = await deleteConFallback(`/api/eliminar-empleado/${encodeURIComponent(registroId)}`);
                 if (!respuesta.ok) {
                     alert(texto || `No se pudo eliminar el empleado (${respuesta.status}).`);
                     return;
                 }
+
+                const registroIdNormalizado = String(registroId);
+                const curpNormalizada = String(currentEmployeeCurp || fields['curp'].value || '').trim().toUpperCase();
+                try {
+                    const empleados = JSON.parse(localStorage.getItem('rh_empleados_v1') || '[]');
+                    if (Array.isArray(empleados)) {
+                        const restantes = empleados.filter((empleado) => (
+                            String(empleado.registro_id || '') !== registroIdNormalizado
+                            && (!curpNormalizada || String(empleado.curp || '').trim().toUpperCase() !== curpNormalizada)
+                        ));
+                        localStorage.setItem('rh_empleados_v1', JSON.stringify(restantes));
+                    }
+
+                    const incidentes = JSON.parse(localStorage.getItem('rh_employee_incidents_v1') || '{}');
+                    if (incidentes && typeof incidentes === 'object') {
+                        delete incidentes[registroIdNormalizado];
+                        if (curpNormalizada) delete incidentes[curpNormalizada];
+                        localStorage.setItem('rh_employee_incidents_v1', JSON.stringify(incidentes));
+                    }
+
+                    if (localStorage.getItem('ultimoRegistroId') === registroIdNormalizado) {
+                        localStorage.removeItem('ultimoRegistroId');
+                    }
+                    localStorage.removeItem(`foto_empleado_${registroIdNormalizado}`);
+
+                    const tempIds = JSON.parse(localStorage.getItem('rh_temp_employee_ids') || '{}');
+                    const nombreClave = nombre.trim().toLocaleLowerCase();
+                    if (tempIds && typeof tempIds === 'object' && nombreClave in tempIds) {
+                        delete tempIds[nombreClave];
+                        localStorage.setItem('rh_temp_employee_ids', JSON.stringify(tempIds));
+                    }
+                } catch (errorLocal) {
+                    console.warn('No se pudieron limpiar todos los datos locales del expediente:', errorLocal);
+                }
+                if (window.DataManager && typeof window.DataManager.actualizarVistas === 'function') {
+                    window.DataManager.actualizarVistas();
+                }
                 alert('Empleado eliminado correctamente.');
+                window.location.href = getRutaListaPorEmpresa();
             } catch (error) {
                 alert('Error de conexión al eliminar el empleado: ' + error.message);
+            } finally {
+                btnEliminarEmpleado.disabled = false;
             }
         });
 

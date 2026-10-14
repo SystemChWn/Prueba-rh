@@ -848,6 +848,69 @@ def eliminar_pendiente(id):
         return str(e), 500
 
 
+@app.route('/api/eliminar-empleado/<int:registro_id>', methods=['DELETE', 'OPTIONS'])
+def eliminar_empleado_completo(registro_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT r.curp,
+                           COALESCE((
+                               SELECT ip.empresa
+                               FROM ingresos_puesto ip
+                               WHERE ip.registro_id = r.id
+                               ORDER BY ip.id DESC
+                               LIMIT 1
+                           ), 'CHEONG WOON') AS empresa
+                    FROM registro r
+                    WHERE r.id = %s
+                    FOR UPDATE
+                    """,
+                    (registro_id,),
+                )
+                empleado = cur.fetchone()
+                if not empleado:
+                    return jsonify({'error': 'Empleado no encontrado.'}), 404
+
+                curp, empresa = empleado
+                cur.execute("DELETE FROM ingresos_puesto WHERE registro_id = %s", (registro_id,))
+                cur.execute("DELETE FROM registro WHERE id = %s RETURNING id", (registro_id,))
+                eliminado = cur.fetchone()
+
+            conn.commit()
+
+        archivos_pendientes = []
+        if curp:
+            empresa_normalizada, directorio = normalizar_empresa(empresa)
+            prefijo = f"{limpiar_fragmento(curp)}-{limpiar_fragmento(empresa_normalizada)}-"
+            try:
+                for nombre_archivo in os.listdir(directorio):
+                    ruta_archivo = os.path.join(directorio, nombre_archivo)
+                    if nombre_archivo.upper().startswith(prefijo) and os.path.isfile(ruta_archivo):
+                        try:
+                            os.remove(ruta_archivo)
+                        except OSError:
+                            archivos_pendientes.append(nombre_archivo)
+            except OSError:
+                archivos_pendientes.append(directorio)
+
+        if archivos_pendientes:
+            return jsonify({
+                'error': 'El expediente fue eliminado, pero algunos archivos heredados no pudieron borrarse.',
+                'registro_eliminado': bool(eliminado),
+                'archivos_pendientes': archivos_pendientes,
+            }), 500
+
+        return jsonify({'ok': True, 'registro_id': registro_id}), 200
+    except Exception as e:
+        print(f"Error al eliminar expediente {registro_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/api/obtener-empleados/<empresa>', methods=['GET'])
 @app.route('/obtener-ingresos', methods=['GET'])
