@@ -1995,32 +1995,6 @@ def eliminar_reclutador(reclutador_id):
         print(f"Error al eliminar reclutador: {e}")
         return jsonify({'error': str(e)}), 500
 
-# ===== PUENTE NGROK =====
-# Token secreto que inventaste en Meta
-VERIFY_TOKEN = "CwSistemas123!"
-
-@app.route('/webhook', methods=['GET', 'POST'])
-def webhook():
-    # 1. Meta valida el webhook con un método GET
-    if request.method == 'GET':
-        mode = request.args.get('hub.mode')
-        token = request.args.get('hub.verify_token')
-        challenge = request.args.get('hub.challenge')
-
-        if mode and token:
-            if mode == 'subscribe' and token == VERIFY_TOKEN:
-                print("¡Webhook verificado correctamente por Meta!")
-                return challenge, 200
-            else:
-                return "Token incorrecto", 403
-        return "Parámetros inválidos", 400
-
-    # 2. Aquí es donde llegarán los mensajes de WhatsApp en el futuro (método POST)
-    elif request.method == 'POST':
-        data = request.json
-        print("Mensaje recibido de WhatsApp:", data)
-        return jsonify({"status": "success"}), 200
-
 # =======================================================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
