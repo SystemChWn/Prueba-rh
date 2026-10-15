@@ -1,4 +1,3 @@
-
 import os
 import re
 import json
@@ -7,6 +6,7 @@ import hmac
 import tempfile
 import traceback
 import mimetypes
+from copy import copy
 from datetime import datetime
 import psycopg2
 import openpyxl
@@ -983,6 +983,167 @@ def obtener_ingresos(empresa=None):
         print(f"Error detallado: {e}")
         return (f"ERROR: {str(e)}", 500)
 
+
+@app.route('/api/exportar-empleados/<empresa>', methods=['GET'])
+def exportar_empleados(empresa):
+    empresa = (empresa or '').strip().upper()
+    if not empresa:
+        return ("ERROR: El parámetro empresa es obligatorio", 400)
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS estatus VARCHAR(20) DEFAULT 'ACTIVO'")
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fecha_inactivo TIMESTAMP")
+                cur.execute(
+                    """
+                    UPDATE registro
+                    SET fecha_inactivo = CURRENT_TIMESTAMP
+                    WHERE COALESCE(NULLIF(UPPER(TRIM(estatus)), ''), 'ACTIVO') = 'INACTIVO'
+                      AND fecha_inactivo IS NULL
+                    """
+                )
+                cur.execute(
+                    """
+                    SELECT r.fecha_registro,
+                           r.nombre_completo,
+                           r.fecha_nacimiento,
+                           r.edad,
+                           r.genero,
+                           r.estado_civil,
+                           r.nacionalidad,
+                           r.curp,
+                           r.rfc,
+                           r.nss,
+                           r.tel_movil,
+                           r.correo,
+                           r.codigo_postal,
+                           r.colonia,
+                           r.calle,
+                           r.num_ext,
+                           r.num_int,
+                           r.municipio,
+                           r.estado,
+                           r.nombre_emergencia,
+                           r.parentesco_emergencia,
+                           r.telefono_emergencia,
+                           ip.no_empleado,
+                           ip.puesto,
+                           ip.area,
+                           ip.turno,
+                           ip.salario,
+                           reclutamiento.nombre_reclutador,
+                           reclutamiento.fuente,
+                           r.estatus,
+                           r.fecha_inactivo
+                    FROM registro AS r
+                    JOIN ingresos_puesto AS ip ON ip.registro_id = r.id
+                    LEFT JOIN LATERAL (
+                        SELECT e.nombre_reclutador, e.fuente
+                        FROM encuesta_reclutamiento AS e
+                        WHERE LOWER(TRIM(COALESCE(e.nombre_empleado, ''))) =
+                              LOWER(TRIM(r.nombre_completo))
+                        ORDER BY e.fecha_registro DESC NULLS LAST, e.id DESC
+                        LIMIT 1
+                    ) AS reclutamiento ON TRUE
+                    WHERE UPPER(REPLACE(ip.empresa, ' ', '_')) = %s
+                      AND (
+                          COALESCE(NULLIF(UPPER(TRIM(r.estatus)), ''), 'ACTIVO') = 'ACTIVO'
+                          OR (
+                              COALESCE(NULLIF(UPPER(TRIM(r.estatus)), ''), 'ACTIVO') = 'INACTIVO'
+                              AND r.fecha_inactivo >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+                          )
+                      )
+                    ORDER BY r.nombre_completo ASC
+                    """,
+                    (empresa,),
+                )
+                rows = cur.fetchall()
+
+        fields = (
+            'fecha_registro', 'nombre_completo', 'fecha_nacimiento', 'edad',
+            'genero', 'estado_civil', 'nacionalidad', 'curp', 'rfc', 'nss',
+            'tel_movil', 'correo', 'codigo_postal', 'colonia', 'calle',
+            'num_ext', 'num_int', 'municipio', 'estado', 'nombre_emergencia',
+            'parentesco_emergencia', 'telefono_emergencia', 'no_empleado',
+            'puesto', 'area', 'turno', 'salario', 'nombre_reclutador', 'fuente',
+            'estatus', 'fecha_inactivo',
+        )
+        data = []
+        for row in rows:
+            empleado = dict(zip(fields, row))
+            for field in ('fecha_registro', 'fecha_nacimiento', 'fecha_inactivo'):
+                if empleado[field]:
+                    empleado[field] = empleado[field].isoformat()
+            data.append(empleado)
+
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Empleados'
+        columnas = (
+            ('fecha_registro', 'fecha_registro'),
+            ('nombre_completo', 'nombre_completo'),
+            ('fecha_nacimiento', 'fecha_nacimiento'),
+            ('edad', 'edad'),
+            ('genero', 'genero'),
+            ('estado_civil', 'estado_civil'),
+            ('nacionalidad', 'nacionalidad'),
+            ('curp', 'curp'),
+            ('rfc', 'rfc'),
+            ('nss', 'nss'),
+            ('tel_movil', 'tel_movil'),
+            ('correo', 'correo'),
+            ('codigo_postal', 'codigo_postal'),
+            ('colonia', 'colonia'),
+            ('calle', 'calle'),
+            ('num_ext', 'num_ext'),
+            ('num_int', 'num_int'),
+            ('municipio', 'municipio'),
+            ('estado', 'estado'),
+            ('nombre_emergencia', 'nombre_emergencia'),
+            ('parentesco_emergencia', 'parentesco_emergencia'),
+            ('telefono_emergencia', 'telefono_emergencia'),
+            ('no_empleado', 'no_empleado'),
+            ('puesto', 'puesto'),
+            ('area', 'area'),
+            ('turno', 'turno'),
+            ('salario', 'salario'),
+            ('nombre_reclutador', 'nombre_reclutador'),
+            ('fuente', 'fuente'),
+        )
+        worksheet.append([titulo for _, titulo in columnas])
+
+        for empleado in data:
+            worksheet.append([empleado.get(campo) for campo, _ in columnas])
+            if empleado.get('estatus') == 'INACTIVO':
+                for cell in worksheet[worksheet.max_row]:
+                    font = copy(cell.font)
+                    font.color = 'FFFF0000'
+                    font.underline = 'single'
+                    cell.font = font
+
+        worksheet.freeze_panes = 'A2'
+        worksheet.auto_filter.ref = worksheet.dimensions
+        for column_cells in worksheet.columns:
+            column_letter = column_cells[0].column_letter
+            max_length = max(len(str(cell.value or '')) for cell in column_cells)
+            worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 32)
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        filename = f"empleados_{empresa.lower()}_{datetime.now():%Y%m%d}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+    except Exception as e:
+        print(f"Error al exportar empleados: {e}")
+        return (f"ERROR: {str(e)}", 500)
+
+
 @app.route('/obtener-empleado/<int:registro_id>', methods=['GET'])
 def obtener_empleado(registro_id):
     try:
@@ -1011,8 +1172,17 @@ def actualizar_empleado(registro_id):
             with conn.cursor() as cur:
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS estatus VARCHAR(20) DEFAULT 'ACTIVO'")
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fecha_inactivo TIMESTAMP")
                 cols_registro = obtener_columnas(cur, 'registro')
                 cols_ingresos = obtener_columnas(cur, 'ingresos_puesto')
+
+                cur.execute(
+                    "SELECT COALESCE(NULLIF(UPPER(TRIM(estatus)), ''), 'ACTIVO') "
+                    "FROM registro WHERE id = %s FOR UPDATE",
+                    (registro_id,),
+                )
+                estado_actual = cur.fetchone()
+                estado_actual = estado_actual[0] if estado_actual else None
 
                 nombre_ext, nombre_int = separar_numeracion(payload.get('numeracion'))
                 municipio, estado, codigo_postal = separar_ubicacion(payload.get('ubicacion'))
@@ -1064,6 +1234,18 @@ def actualizar_empleado(registro_id):
                     cur.execute(
                         f"UPDATE registro SET {', '.join(registro_updates)} WHERE id = %s",
                         registro_values,
+                    )
+
+                estatus_nuevo = str(payload.get('estatus') or '').strip().upper()
+                if estatus_nuevo == 'INACTIVO' and estado_actual != 'INACTIVO':
+                    cur.execute(
+                        "UPDATE registro SET fecha_inactivo = CURRENT_TIMESTAMP WHERE id = %s",
+                        (registro_id,),
+                    )
+                elif estatus_nuevo == 'ACTIVO' and estado_actual == 'INACTIVO':
+                    cur.execute(
+                        "UPDATE registro SET fecha_inactivo = NULL WHERE id = %s",
+                        (registro_id,),
                     )
 
                 cur.execute(
@@ -1664,8 +1846,8 @@ SET fuente = CASE
   WHEN UPPER(COALESCE(fuente, '')) LIKE '%POSTEO%' THEN 'POSTEO'
   WHEN UPPER(COALESCE(fuente, '')) LIKE '%VOLANTE%' THEN 'VOLANTE'
   WHEN UPPER(COALESCE(fuente, '')) LIKE '%RECOM%' THEN 'RECOMENDACION'
-  WHEN UPPER(COALESCE(fuente, '')) LIKE '%AGENCIA%' AND (UPPER(COALESCE(fuente, '')) LIKE '%CW%' OR UPPER(COALESCE(fuente, '')) LIKE '% C W%') THEN 'RECLU CW'
-  WHEN UPPER(COALESCE(fuente, '')) LIKE '%AGENCIA%' AND UPPER(COALESCE(fuente, '')) LIKE '%PURO%' THEN 'RECLU PURO'
+  WHEN UPPER(COALESCE(fuente, '')) LIKE '%AGENCIA%' AND (UPPER(COALESCE(fuente, '')) LIKE '%CW%' OR UPPER(COALESCE(fuente, '')) LIKE '%% C W%%') THEN 'RECLU CW'
+  WHEN UPPER(COALESCE(fuente, '')) LIKE '%AGENCIA%' AND UPPER(COALESCE(fuente, '')) LIKE '%%PURO%%' THEN 'RECLU PURO'
   WHEN UPPER(COALESCE(fuente, '')) LIKE '%CW%' THEN 'RECLU CW'
   WHEN UPPER(COALESCE(fuente, '')) LIKE '%PURO%' THEN 'RECLU PURO'
   ELSE UPPER(TRIM(COALESCE(fuente, 'OTRO')))

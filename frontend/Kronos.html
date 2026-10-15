@@ -28,9 +28,9 @@
         .filtro-grupo.filtro-busqueda #buscador { flex: 1 1 220px; width: auto !important; }
         .filtro-grupo.filtro-busqueda #buscador { flex: 1 1 0; }
         .filtro-grupo.filtro-excel { overflow: hidden; }
-        .filtro-grupo.filtro-excel .btn-subir-excel { flex: 0 0 auto; width: auto; }
+        .filtro-grupo.filtro-excel .btn-descargar-excel { flex: 0 0 auto; width: auto; }
         .filtro-grupo .filtro-input { min-width: 0; }
-        .btn-subir-excel { cursor: pointer; text-align: center; box-sizing: border-box; }
+        .btn-descargar-excel { cursor: pointer; text-align: center; box-sizing: border-box; }
         .excel-nombre { min-width: 0; color: #aaa; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @media (max-width: 1100px) { .filtros-container { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 650px) { .filtros-container { grid-template-columns: 1fr; } .filtro-grupo { width: 100%; } #buscador { width: 100% !important; } }
@@ -110,9 +110,7 @@
                 <button id="btn-limpiar-filtros" type="button" class="filtro-input" style="width: auto; cursor: pointer;">Limpiar filtros</button>
             </div>
             <div class="filtro-grupo filtro-excel">
-                <input type="file" id="archivo-excel" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-                <label for="archivo-excel" class="filtro-input btn-subir-excel">Subir Excel</label>
-                <span id="excel-nombre" class="excel-nombre" aria-live="polite"></span>
+                <button id="btn-descargar-excel" type="button" class="filtro-input btn-descargar-excel">Descargar Excel</button>
             </div>
         </div>
         
@@ -146,8 +144,7 @@
         const fechaDesdeInput = document.getElementById('filtro-fecha-desde');
         const fechaHastaInput = document.getElementById('filtro-fecha-hasta');
         const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
-        const archivoExcel = document.getElementById('archivo-excel');
-        const excelNombre = document.getElementById('excel-nombre');
+        const btnDescargarExcel = document.getElementById('btn-descargar-excel');
         let empleadosCache = [];
         let statusFilter = 'TODOS';
         let searchQuery = '';
@@ -157,8 +154,6 @@
             if (fechaHastaInput) fechaHastaInput.value = '';
             if (filterEstatus) filterEstatus.value = 'TODOS';
             if (buscador) buscador.value = '';
-            if (archivoExcel) archivoExcel.value = '';
-            if (excelNombre) excelNombre.textContent = '';
             statusFilter = 'TODOS';
             searchQuery = '';
             renderTabla();
@@ -233,6 +228,32 @@
                 }
             }
             throw new Error(`No se pudo conectar con el servidor (${API_BASES.join(' | ')}): ${ultimoErrorRed ? ultimoErrorRed.message : 'Error desconocido de red'}`);
+        }
+
+        async function descargarExcelEmpleados(empresa) {
+            for (const baseUrl of API_BASES) {
+                try {
+                    const respuesta = await fetch(`${baseUrl}/api/exportar-empleados/${encodeURIComponent(empresa)}`);
+                    if (!respuesta.ok) {
+                        throw new Error(`Error ${respuesta.status}: ${await respuesta.text()}`);
+                    }
+                    const archivo = await respuesta.blob();
+                    const url = URL.createObjectURL(archivo);
+                    const enlace = document.createElement('a');
+                    const fecha = new Date();
+                    const fechaArchivo = `${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, '0')}${String(fecha.getDate()).padStart(2, '0')}`;
+                    enlace.href = url;
+                    enlace.download = `empleados_${empresa.toLowerCase()}_${fechaArchivo}.xlsx`;
+                    enlace.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    return;
+                } catch (error) {
+                    if (error instanceof TypeError) continue;
+                    alert(`No se pudo descargar el Excel: ${error.message}`);
+                    return;
+                }
+            }
+            alert('No se pudo conectar con el servidor para descargar el Excel.');
         }
 
         async function postConFallback(endpoint, body) {
@@ -357,17 +378,9 @@
             btnLimpiarFiltros.addEventListener('click', clearFilters);
         }
 
-        archivoExcel.addEventListener('change', () => {
-            const archivo = archivoExcel.files && archivoExcel.files[0];
-            if (!archivo) return;
-            const esExcel = /\.(xls|xlsx)$/i.test(archivo.name);
-            if (!esExcel) {
-                archivoExcel.value = '';
-                excelNombre.textContent = 'Solo se aceptan archivos Excel (.xls o .xlsx).';
-                return;
-            }
-            excelNombre.textContent = archivo.name;
-        });
+        if (btnDescargarExcel) {
+            btnDescargarExcel.addEventListener('click', () => descargarExcelEmpleados('KRONOS'));
+        }
 
         cuerpo.addEventListener('click', (event) => {
             const btn = event.target.closest('.btn-estatus');
