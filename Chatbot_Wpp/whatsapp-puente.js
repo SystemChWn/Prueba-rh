@@ -12,6 +12,20 @@ wppconnect
     },
     headless: true,
     devtools: false,
+    // Agregamos opciones de Puppeteer para evitar errores de compatibilidad y sandbox en Linux
+    puppeteerOptions: {
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    },
+    // Forzamos el uso de la versión más reciente para evitar fallos por obsolescencia
+    whatsappVersion: undefined,
   })
   .then((client) => start(client))
   .catch((error) => {
