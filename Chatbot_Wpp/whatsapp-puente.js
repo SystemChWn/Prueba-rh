@@ -5,14 +5,13 @@ wppconnect
   .create({
     session: 'kiosco-cheongwoon',
     catchQR: (base64Qr, asciiQR) => {
-      console.log(asciiQR); // Muestra el código QR en texto directamente en la terminal
+      console.log(asciiQR);
     },
     statusFind: (statusSession) => {
       console.log('Estado de la sesión: ', statusSession);
     },
     headless: true,
     devtools: false,
-    // Agregamos opciones de Puppeteer para evitar errores de compatibilidad y sandbox en Linux
     puppeteerOptions: {
       args: [
         '--no-sandbox',
@@ -24,8 +23,8 @@ wppconnect
         '--disable-gpu'
       ]
     },
-    // Forzamos el uso de la versión más reciente para evitar fallos por obsolescencia
-    whatsappVersion: undefined,
+    // Forzamos una versión estable anterior que sí inyecta wapi.js correctamente sin timeout
+    whatsappVersion: '2.3000.1013554286',
   })
   .then((client) => start(client))
   .catch((error) => {
