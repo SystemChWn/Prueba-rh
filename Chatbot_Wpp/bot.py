@@ -72,11 +72,11 @@ def buscar_colaborador(nombre, numero_empleado):
         FROM registro AS r
         JOIN ingresos_puesto AS i ON i.registro_id = r.id
         WHERE i.no_empleado::text = %s
-          AND LOWER(r.nombre_completo) LIKE LOWER(%s)
+          AND LOWER(TRIM(r.nombre_completo)) = LOWER(TRIM(%s))
           {filtro_estatus}
         LIMIT 1
         """,
-        (numero_empleado, f"%{nombre}%"),
+        (numero_empleado, nombre),
       )
       return cur.fetchone()
 
@@ -101,8 +101,12 @@ def enviar_respuesta(destinatario, texto):
   access_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "").strip()
 
   if not phone_number_id or not access_token:
-    logger.info("WhatsApp en modo local; destino=%s, mensaje=%s", destinatario, texto)
-    return jsonify({"status": "simulated", "message": texto}), 200
+    print(
+      f"[WHATSAPP SIMULADO] Destino: {destinatario}\n"
+      f"[WHATSAPP SIMULADO] Mensaje:\n{texto}",
+      flush=True,
+    )
+    return jsonify({"status": "simulated", "success": True, "message": texto}), 200
 
   recipient = re.sub(r"\D", "", destinatario)
   api_version = os.getenv("WHATSAPP_API_VERSION", "v23.0")
@@ -205,12 +209,14 @@ def webhook_whatsapp():
       )
 
     if not colaborador:
-      estado["paso"] = "esperando_nombre"
-      estado.pop("nombre_capturado", None)
+      SESSIONS[remitente] = {"paso": "menu_principal"}
       return enviar_respuesta(
         remitente,
         "No encontramos una coincidencia activa con esos datos.\n\n"
-        "Vuelve a escribir tu nombre completo para intentarlo otra vez.",
+        "Menú principal:\n"
+        "1. Personal Activo\n"
+        "2. Quiero ser parte del Equipo\n\n"
+        "Envía el número de la opción deseada.",
       )
 
     estado.update(
