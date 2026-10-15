@@ -22,7 +22,7 @@ def conectar_db():
     port=os.getenv("POSTGRES_PORT", "5432"),
     database=os.getenv("POSTGRES_DB", "rh_system"),
     user=os.getenv("POSTGRES_USER", "rh_app"),
-    password=os.getenv("POSTGRES_PASSWORD", ""),
+    password=os.getenv("POSTGRES_PASSWORD", "S1s73m4s!"),
     connect_timeout=5,
     options="-c lc_messages=C",
   )
