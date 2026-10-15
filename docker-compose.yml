@@ -13,6 +13,7 @@ services:
       retries: 5
 
   backend:
+    image: rh-system-backend:local
     build: ./backend
     restart: unless-stopped
     # env_file: .env
@@ -26,6 +27,26 @@ services:
       - ./backend/uploads:/app/uploads
     ports:
       - "8001:8000"
+
+  chatbot:
+    image: rh-system-backend:local
+    restart: unless-stopped
+    command: ["python", "/app/Chatbot_Wpp/bot.py"]
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      PORT: "5000"
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v23.0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./Chatbot_Wpp:/app/Chatbot_Wpp:ro
+    ports:
+      - "5000:5000"
 
   frontend:
     build: ./frontend
