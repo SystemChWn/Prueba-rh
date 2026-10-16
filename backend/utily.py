@@ -1108,8 +1108,6 @@ def exportar_empleados(empresa):
             ('area', 'area'),
             ('turno', 'turno'),
             ('salario', 'salario'),
-            ('nombre_reclutador', 'nombre_reclutador'),
-            ('fuente', 'fuente'),
         )
         worksheet.append([titulo for _, titulo in columnas])
 
