@@ -978,11 +978,8 @@
         }
 
         async function saveRecruiter(nombre, team, recruiterId = null) {
-            const editing = recruiterId !== null;
-            return recruiterApi(editing
-                ? `/api/reclutadores-nombres/${encodeURIComponent(recruiterId)}`
-                : '/api/reclutadores-nombres', {
-                method: editing ? 'PUT' : 'POST',
+            return recruiterApi('/api/reclutadores-nombres', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, telefono: document.getElementById('recruiter-phone').value.trim(), team: Number(team) }),
             });
