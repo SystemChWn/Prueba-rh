@@ -89,14 +89,14 @@ def obtener_contactos_reclutamiento():
     with conn.cursor() as cur:
       cur.execute(
         """
-        SELECT telefono
+        SELECT TRIM(telefono)
         FROM personal_reclutamiento
         WHERE telefono IS NOT NULL
-          AND BTRIM(telefono) <> ''
-        ORDER BY id
+          AND NULLIF(TRIM(telefono), '') IS NOT NULL
+        ORDER BY id ASC
         """
       )
-      return [row[0] for row in cur.fetchall()]
+      return [row[0] for row in cur.fetchall() if row[0]]
 
 
 def enviar_respuesta(destinatario, texto):
