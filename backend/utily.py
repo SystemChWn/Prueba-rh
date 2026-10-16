@@ -2160,14 +2160,14 @@ def manejar_reclutadores():
 
                 # Método GET (Listar todos)
                 cur.execute("""
-                    SELECT id, nombre, COALESCE(team, 1) as team
+                    SELECT id, nombre, COALESCE(team, 1) as team, telefono
                     FROM personal_reclutamiento
                     ORDER BY nombre ASC
                 """)
                 rows = cur.fetchall()
 
         reclutadores = [
-            {'id': row[0], 'nombre': row[1], 'team': row[2], 'activo': True}
+            {'id': row[0], 'nombre': row[1], 'team': row[2], 'telefono': row[3], 'activo': True}
             for row in rows if row[1]
         ]
         return jsonify(reclutadores), 200
@@ -2196,6 +2196,29 @@ def eliminar_reclutador(reclutador_id):
         return jsonify({'ok': True}), 200
     except Exception as e:
         print(f"Error al eliminar reclutador: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>/telefono', methods=['DELETE', 'OPTIONS'])
+def eliminar_telefono_reclutador(reclutador_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE personal_reclutamiento SET telefono = NULL WHERE id = %s",
+                    (reclutador_id,),
+                )
+                actualizado = cur.rowcount
+            conn.commit()
+
+        if not actualizado:
+            return jsonify({'error': 'Reclutador no encontrado.'}), 404
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"Error al eliminar teléfono del reclutador: {e}")
         return jsonify({'error': str(e)}), 500
 
 # =======================================================

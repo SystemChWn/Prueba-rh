@@ -407,9 +407,23 @@
             font-size: 0.84rem;
         }
 
+        .team-member { flex-wrap: wrap; }
+
         .team-member-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 
+        .team-member-phone { color: #bbb; }
+
         .team-member-count { color: #aaa; font-variant-numeric: tabular-nums; }
+
+        .team-edit-button {
+            min-height: 28px;
+            padding: 4px 8px;
+            background: #292929;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 
         .team-remove-button {
             width: 28px;
@@ -572,7 +586,9 @@
                         <option value="3">Team 3</option>
                         <option value="4">Team 4</option>
                     </select>
-                    <button type="submit">Agregar / asignar</button>
+                    <button id="recruiter-submit-button" type="submit">Agregar / asignar</button>
+                    <button id="recruiter-cancel-edit" type="button" hidden>Cancelar edición</button>
+                    <button id="recruiter-delete-phone" type="button" hidden>Eliminar teléfono</button>
                 </form>
                 <div id="recruiter-team-list" class="team-roster-list" aria-live="polite"></div>
                 <p id="recruiter-roster-status" class="recruiter-status" role="status"></p>
@@ -911,6 +927,7 @@
     </script>
     <script>
         let recruiterTeamChart = null;
+        let editingRecruiterId = null;
         const recruiterTeamColors = ['#21a0a8', '#f0bd4a', '#e76f51', '#85b86b'];
 
         function getRecruiterApiBases() {
@@ -949,6 +966,17 @@
             element.dataset.tone = tone;
         }
 
+        function resetRecruiterForm() {
+            editingRecruiterId = null;
+            document.getElementById('recruiter-name').value = '';
+            document.getElementById('recruiter-name').readOnly = false;
+            document.getElementById('recruiter-phone').value = '';
+            document.getElementById('recruiter-team').value = '';
+            document.getElementById('recruiter-submit-button').textContent = 'Agregar / asignar';
+            document.getElementById('recruiter-cancel-edit').hidden = true;
+            document.getElementById('recruiter-delete-phone').hidden = true;
+        }
+
         async function saveRecruiter(nombre, team) {
             return recruiterApi('/api/reclutadores-nombres', {
                 method: 'POST',
@@ -985,9 +1013,27 @@
                     const name = document.createElement('span');
                     name.className = 'team-member-name';
                     name.textContent = member.nombre;
+                    const phone = document.createElement('span');
+                    phone.className = 'team-member-phone';
+                    phone.textContent = member.telefono || 'Teléfono no registrado';
                     const count = document.createElement('span');
                     count.className = 'team-member-count';
                     count.textContent = 'Activo';
+                    const edit = document.createElement('button');
+                    edit.type = 'button';
+                    edit.className = 'team-edit-button';
+                    edit.textContent = 'Editar';
+                    edit.addEventListener('click', () => {
+                        editingRecruiterId = member.id;
+                        document.getElementById('recruiter-name').value = member.nombre;
+                        document.getElementById('recruiter-name').readOnly = true;
+                        document.getElementById('recruiter-phone').value = member.telefono || '';
+                        document.getElementById('recruiter-team').value = String(member.team);
+                        document.getElementById('recruiter-submit-button').textContent = 'Guardar cambios';
+                        document.getElementById('recruiter-cancel-edit').hidden = false;
+                        document.getElementById('recruiter-delete-phone').hidden = !member.telefono;
+                        document.getElementById('recruiter-phone').focus();
+                    });
                     const deactivate = document.createElement('button');
                     deactivate.type = 'button';
                     deactivate.className = 'team-remove-button';
@@ -1004,7 +1050,7 @@
                             setRecruiterStatus('recruiter-roster-status', error.message, 'error');
                         }
                     });
-                    row.append(name, count, deactivate);
+                    row.append(name, phone, count, edit, deactivate);
                     group.appendChild(row);
                 });
                 container.appendChild(group);
@@ -1114,15 +1160,29 @@
         document.getElementById('recruiter-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             const name = document.getElementById('recruiter-name');
-            const phone = document.getElementById('recruiter-phone');
             const team = document.getElementById('recruiter-team');
+            const isEditing = editingRecruiterId !== null;
             try {
                 await saveRecruiter(name.value, team.value);
-                name.value = '';
-                phone.value = '';
-                team.value = '';
+                resetRecruiterForm();
                 await loadRecruiterDashboard();
-                setRecruiterStatus('recruiter-roster-status', 'Reclutador guardado en el team.', 'success');
+                setRecruiterStatus('recruiter-roster-status', isEditing ? 'Cambios guardados.' : 'Reclutador guardado en el team.', 'success');
+            } catch (error) {
+                setRecruiterStatus('recruiter-roster-status', error.message, 'error');
+            }
+        });
+
+        document.getElementById('recruiter-cancel-edit').addEventListener('click', resetRecruiterForm);
+        document.getElementById('recruiter-delete-phone').addEventListener('click', async () => {
+            if (editingRecruiterId === null) return;
+            const recruiterId = editingRecruiterId;
+            const recruiterName = document.getElementById('recruiter-name').value;
+            if (!window.confirm(`¿Eliminar el teléfono de ${recruiterName}?`)) return;
+            try {
+                await recruiterApi(`/api/reclutadores-nombres/${encodeURIComponent(recruiterId)}/telefono`, { method: 'DELETE' });
+                resetRecruiterForm();
+                await loadRecruiterDashboard();
+                setRecruiterStatus('recruiter-roster-status', 'Teléfono eliminado.', 'success');
             } catch (error) {
                 setRecruiterStatus('recruiter-roster-status', error.message, 'error');
             }
