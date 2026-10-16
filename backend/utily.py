@@ -2178,6 +2178,34 @@ def eliminar_reclutador(reclutador_id):
         return jsonify({'error': str(e)}), 500
 
 # =======================================================
+@app.route('/api/exportar-excel', methods=['GET'])
+def exportar_excel():
+    try:
+        # 1. Crear el libro de Excel con openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Reporte"
+        
+        # Ejemplo de datos
+        ws.append(["ID", "Nombre", "Empresa"])
+        ws.append([1, "Ejemplo", "Cheong Woon"])
+
+        # 2. Guardar en memoria
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        # 3. Enviar como archivo descargable
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='reporte_personal.xlsx'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# =======================================================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=True)
