@@ -2179,6 +2179,55 @@ def manejar_reclutadores():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['PUT', 'OPTIONS'])
+def actualizar_reclutador(reclutador_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    datos = request.get_json(silent=True) or {}
+    telefono = str(datos.get('telefono', '')).strip()
+    try:
+        team = int(datos.get('team', 1))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'El team debe ser un número válido.'}), 400
+
+    if not telefono:
+        return jsonify({'error': 'El teléfono del reclutador es obligatorio.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE personal_reclutamiento SET telefono = %s WHERE id = %s",
+                    (telefono, reclutador_id),
+                )
+                actualizado = cur.rowcount
+                if actualizado:
+                    cur.execute(
+                        "UPDATE personal_reclutamiento SET team = %s WHERE id = %s",
+                        (team, reclutador_id),
+                    )
+                    cur.execute(
+                        "SELECT id, nombre, team, telefono FROM personal_reclutamiento WHERE id = %s",
+                        (reclutador_id,),
+                    )
+                    row = cur.fetchone()
+            conn.commit()
+
+        if not actualizado:
+            return jsonify({'error': 'Reclutador no encontrado.'}), 404
+        return jsonify({
+            'id': row[0],
+            'nombre': row[1],
+            'team': row[2],
+            'telefono': row[3],
+            'activo': True,
+        }), 200
+    except Exception as e:
+        print(f"Error al actualizar reclutador: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE', 'OPTIONS'])
 def eliminar_reclutador(reclutador_id):
     if request.method == 'OPTIONS':

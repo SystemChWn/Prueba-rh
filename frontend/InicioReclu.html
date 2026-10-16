@@ -977,9 +977,12 @@
             document.getElementById('recruiter-delete-phone').hidden = true;
         }
 
-        async function saveRecruiter(nombre, team) {
-            return recruiterApi('/api/reclutadores-nombres', {
-                method: 'POST',
+        async function saveRecruiter(nombre, team, recruiterId = null) {
+            const editing = recruiterId !== null;
+            return recruiterApi(editing
+                ? `/api/reclutadores-nombres/${encodeURIComponent(recruiterId)}`
+                : '/api/reclutadores-nombres', {
+                method: editing ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, telefono: document.getElementById('recruiter-phone').value.trim(), team: Number(team) }),
             });
@@ -1163,7 +1166,7 @@
             const team = document.getElementById('recruiter-team');
             const isEditing = editingRecruiterId !== null;
             try {
-                await saveRecruiter(name.value, team.value);
+                await saveRecruiter(name.value, team.value, editingRecruiterId);
                 resetRecruiterForm();
                 await loadRecruiterDashboard();
                 setRecruiterStatus('recruiter-roster-status', isEditing ? 'Cambios guardados.' : 'Reclutador guardado en el team.', 'success');
