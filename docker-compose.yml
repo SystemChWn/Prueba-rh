@@ -46,7 +46,7 @@ services:
     volumes:
       - ./Chatbot_Wpp:/app/Chatbot_Wpp:ro
     ports:
-      - "5000:5000"
+      - "5002:5000"
 
   frontend:
     build: ./frontend
