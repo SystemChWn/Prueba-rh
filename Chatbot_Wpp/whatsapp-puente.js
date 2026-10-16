@@ -42,7 +42,7 @@ function start(client) {
     console.log(`Mensaje recibido de ${message.from}: ${message.body}`);
 
     try {
-      const respuestaFlask = await axios.post('http://localhost:5000/webhook-whatsapp', {
+      const respuestaFlask = await axios.post('http://localhost:5002/webhook-whatsapp', {
         sender: message.from,
         text: message.body
       });
