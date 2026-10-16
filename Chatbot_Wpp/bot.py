@@ -176,12 +176,12 @@ def webhook_whatsapp():
       except psycopg2.Error:
         logger.exception("No se pudieron consultar contactos de reclutamiento")
         contactos = []
-      texto_contactos = "\n".join(
-        f"Contacto {indice}: {telefono}"
-        for indice, telefono in enumerate(contactos, start=1)
-      )
       texto_respuesta = "Para recibir orientación, ponte en contacto con nuestro equipo de Reclutamiento."
-      if texto_contactos:
+      if contactos:
+        texto_contactos = "\n".join(
+          f"Contacto {indice}: {telefono}"
+          for indice, telefono in enumerate(contactos, start=1)
+        )
         texto_respuesta += f"\n\n{texto_contactos}"
       texto_respuesta += "\n\n¡Gracias por tu interés en formar parte de Cheong Woon México! 😊"
       SESSIONS.pop(remitente, None)
