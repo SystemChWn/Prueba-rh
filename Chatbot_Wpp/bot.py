@@ -86,14 +86,14 @@ def obtener_contactos_reclutamiento():
     with conn.cursor() as cur:
       cur.execute(
         """
-        SELECT nombre_notificacion, telefono_notificacion
-        FROM usuarios_acceso
-        WHERE telefono_notificacion IS NOT NULL
-          AND telefono_notificacion <> ''
-        LIMIT 2
+        SELECT telefono
+        FROM personal_reclutamiento
+        WHERE telefono IS NOT NULL
+          AND BTRIM(telefono) <> ''
+        ORDER BY id
         """
       )
-      return cur.fetchall()
+      return [row[0] for row in cur.fetchall()]
 
 
 def enviar_respuesta(destinatario, texto):
@@ -176,15 +176,16 @@ def webhook_whatsapp():
       except psycopg2.Error:
         logger.exception("No se pudieron consultar contactos de reclutamiento")
         contactos = []
-      texto_contactos = "".join(f"• {nombre}: {telefono}\n" for nombre, telefono in contactos)
-      if not texto_contactos:
-        texto_contactos = "• Departamento de Reclutamiento Cheong Woon\n"
-      SESSIONS.pop(remitente, None)
-      return enviar_respuesta(
-        remitente,
-        "Puedes comunicarte directamente con Reclutamiento:\n\n"
-        f"{texto_contactos}\nEscribe HOLA para volver al inicio.",
+      texto_contactos = "\n".join(
+        f"Contacto {indice}: {telefono}"
+        for indice, telefono in enumerate(contactos, start=1)
       )
+      texto_respuesta = "Para recibir orientación, ponte en contacto con nuestro equipo de Reclutamiento."
+      if texto_contactos:
+        texto_respuesta += f"\n\n{texto_contactos}"
+      texto_respuesta += "\n\n¡Gracias por tu interés en formar parte de Cheong Woon México! 😊"
+      SESSIONS.pop(remitente, None)
+      return enviar_respuesta(remitente, texto_respuesta)
     return enviar_respuesta(remitente, "Opción no válida. Envía 1 o 2.")
 
   if estado["paso"] == "esperando_nombre":
