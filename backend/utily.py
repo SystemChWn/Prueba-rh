@@ -2110,21 +2110,30 @@ def manejar_reclutadores():
                     ALTER TABLE personal_reclutamiento 
                     ADD COLUMN IF NOT EXISTS team INT DEFAULT 1
                 """)
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento
+                    ADD COLUMN IF NOT EXISTS telefono VARCHAR(30)
+                """)
 
                 if request.method == 'POST':
                     datos = request.get_json(silent=True) or {}
                     nombre = str(datos.get('nombre', '')).strip()
+                    telefono = str(datos.get('telefono', '')).strip()
                     team = int(datos.get('team', 1))
 
                     if not nombre:
                         return jsonify({'error': 'El nombre del reclutador es obligatorio.'}), 400
+                    if not telefono:
+                        return jsonify({'error': 'El teléfono del reclutador es obligatorio.'}), 400
 
                     cur.execute("""
-                        INSERT INTO personal_reclutamiento (nombre, team)
-                        VALUES (%s, %s)
-                        ON CONFLICT (nombre) DO UPDATE SET team = EXCLUDED.team
+                        INSERT INTO personal_reclutamiento (nombre, team, telefono)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (nombre) DO UPDATE SET
+                            team = EXCLUDED.team,
+                            telefono = COALESCE(NULLIF(EXCLUDED.telefono, ''), personal_reclutamiento.telefono)
                         RETURNING id, nombre, team
-                    """, (nombre, team))
+                    """, (nombre, team, telefono))
                     
                     row = cur.fetchone()
                     conn.commit()

@@ -562,6 +562,8 @@
                 <form id="recruiter-form" class="recruiter-form">
                     <label for="recruiter-name">Nombre del reclutador</label>
                     <input id="recruiter-name" type="text" maxlength="100" autocomplete="name" required>
+                    <label for="recruiter-phone">Teléfono</label>
+                    <input id="recruiter-phone" type="tel" maxlength="30" autocomplete="tel" required>
                     <label for="recruiter-team">Team</label>
                     <select id="recruiter-team" required>
                         <option value="">Selecciona un team</option>
@@ -951,7 +953,7 @@
             return recruiterApi('/api/reclutadores-nombres', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, team: Number(team) }),
+                body: JSON.stringify({ nombre, telefono: document.getElementById('recruiter-phone').value.trim(), team: Number(team) }),
             });
         }
 
@@ -1112,10 +1114,12 @@
         document.getElementById('recruiter-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             const name = document.getElementById('recruiter-name');
+            const phone = document.getElementById('recruiter-phone');
             const team = document.getElementById('recruiter-team');
             try {
                 await saveRecruiter(name.value, team.value);
                 name.value = '';
+                phone.value = '';
                 team.value = '';
                 await loadRecruiterDashboard();
                 setRecruiterStatus('recruiter-roster-status', 'Reclutador guardado en el team.', 'success');

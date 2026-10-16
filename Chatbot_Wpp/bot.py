@@ -135,11 +135,11 @@ def bienvenida(remitente):
   SESSIONS[remitente] = {"paso": "menu_principal"}
   return enviar_respuesta(
     remitente,
-    "¡Hola! Bienvenido al asistente de Cheong Woon Mexico.\n\n"
-    "Selecciona una de estas opciones:\n\n"
-    "1. Personal Activo\n"
-    "2. Quiero ser parte del Equipo\n\n"
-    "Envía el número de la opción deseada.",
+    "¡Hola! 👋 Te damos la bienvenida a Cheong Woon México.\n\n"
+    "Para continuar, selecciona una de las siguientes opciones:\n\n"
+    "1. Ya formo parte de la empresa\n"
+    "2. Busco una oportunidad laboral\n\n"
+    "Responde con el número de tu elección para continuar.",
   )
 
 
@@ -168,7 +168,7 @@ def webhook_whatsapp():
       estado["paso"] = "esperando_nombre"
       return enviar_respuesta(
         remitente,
-        "PERSONAL ACTIVO\n\nPor favor, escribe tu nombre completo:",
+        "PERSONAL ACTIVO\n\nIngresa tu  NOMBRE COMPLETO:",
       )
     if mensaje == "2":
       try:
