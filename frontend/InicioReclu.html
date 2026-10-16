@@ -978,10 +978,16 @@
         }
 
         async function saveRecruiter(nombre, team, recruiterId = null) {
-            return recruiterApi('/api/reclutadores-nombres', {
-                method: 'POST',
+            const url = recruiterId ? `/api/reclutadores-nombres/${recruiterId}` : '/api/reclutadores-nombres';
+            const method = recruiterId ? 'PUT' : 'POST';
+            return recruiterApi(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, telefono: document.getElementById('recruiter-phone').value.trim(), team: Number(team) }),
+                body: JSON.stringify({
+                    nombre,
+                    telefono: document.getElementById('recruiter-phone').value.trim(),
+                    team: Number(team),
+                }),
             });
         }
 
