@@ -4,12 +4,15 @@ from logging import getLogger
 
 import psycopg2
 import requests
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 logger = getLogger(__name__)
 SESSIONS = {}
 WHATSAPP_API_TIMEOUT = 15
+
+load_dotenv(override=True);
 
 
 def conectar_db():
