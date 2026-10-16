@@ -2032,12 +2032,21 @@ def obtener_ingresos_por_team():
                         id SERIAL PRIMARY KEY,
                         nombre VARCHAR(100) NOT NULL UNIQUE,
                         team INT DEFAULT 1,
-                        fecha_registro DATE DEFAULT CURRENT_DATE
+                        fecha_registro DATE DEFAULT CURRENT_DATE,
+                        telefono VARCHAR(50)
                     )
                 """)
                 cur.execute("""
                     ALTER TABLE personal_reclutamiento
                     ADD COLUMN IF NOT EXISTS team INT DEFAULT 1
+                """)
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento
+                    ADD COLUMN IF NOT EXISTS telefono VARCHAR(50)
+                """)
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento
+                    ALTER COLUMN telefono TYPE VARCHAR(50)
                 """)
                 cur.execute("""
                     ALTER TABLE encuesta_reclutamiento
@@ -2102,7 +2111,8 @@ def manejar_reclutadores():
                         id SERIAL PRIMARY KEY,
                         nombre VARCHAR(100) NOT NULL UNIQUE,
                         team INT DEFAULT 1,
-                        fecha_registro DATE DEFAULT CURRENT_DATE
+                        fecha_registro DATE DEFAULT CURRENT_DATE,
+                        telefono VARCHAR(50)
                     )
                 """)
                 # Asegurar columna team por si la tabla ya existía sin ella
@@ -2112,7 +2122,11 @@ def manejar_reclutadores():
                 """)
                 cur.execute("""
                     ALTER TABLE personal_reclutamiento
-                    ADD COLUMN IF NOT EXISTS telefono VARCHAR(30)
+                    ADD COLUMN IF NOT EXISTS telefono VARCHAR(50)
+                """)
+                cur.execute("""
+                    ALTER TABLE personal_reclutamiento
+                    ALTER COLUMN telefono TYPE VARCHAR(50)
                 """)
 
                 if request.method == 'POST':

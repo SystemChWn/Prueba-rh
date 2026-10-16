@@ -62,3 +62,16 @@ CREATE TABLE IF NOT EXISTS usuarios_acceso (
     updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS personal_reclutamiento (
+    id              SERIAL PRIMARY KEY,
+    nombre          VARCHAR(100) NOT NULL UNIQUE,
+    team            INT DEFAULT 1,
+    fecha_registro  DATE DEFAULT CURRENT_DATE,
+    telefono        VARCHAR(50)
+);
+
+ALTER TABLE personal_reclutamiento
+    ADD COLUMN IF NOT EXISTS telefono VARCHAR(50);
+ALTER TABLE personal_reclutamiento
+    ALTER COLUMN telefono TYPE VARCHAR(50);
+
