@@ -2179,10 +2179,25 @@ def manejar_reclutadores():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['POST', 'PUT', 'OPTIONS'])
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['POST', 'PUT', 'DELETE', 'OPTIONS'])
 def actualizar_reclutador(reclutador_id):
     if request.method == 'OPTIONS':
         return '', 200
+
+    if request.method == 'DELETE':
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
+                    eliminado = cur.rowcount
+                conn.commit()
+
+            if not eliminado:
+                return jsonify({'error': 'Reclutador no encontrado.'}), 404
+            return jsonify({'ok': True}), 200
+        except Exception as e:
+            print(f"Error al eliminar reclutador: {e}")
+            return jsonify({'error': str(e)}), 500
 
     datos = request.get_json(silent=True) or {}
     telefono = str(datos.get('telefono', '')).strip()
@@ -2225,26 +2240,6 @@ def actualizar_reclutador(reclutador_id):
         }), 200
     except Exception as e:
         print(f"Error al actualizar reclutador: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['DELETE', 'OPTIONS'])
-def eliminar_reclutador(reclutador_id):
-    if request.method == 'OPTIONS':
-        return '', 200
-
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM personal_reclutamiento WHERE id = %s", (reclutador_id,))
-                eliminado = cur.rowcount
-            conn.commit()
-
-        if not eliminado:
-            return jsonify({'error': 'Reclutador no encontrado.'}), 404
-        return jsonify({'ok': True}), 200
-    except Exception as e:
-        print(f"Error al eliminar reclutador: {e}")
         return jsonify({'error': str(e)}), 500
 
 
