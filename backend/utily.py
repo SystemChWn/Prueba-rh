@@ -2179,7 +2179,7 @@ def manejar_reclutadores():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['PUT', 'OPTIONS'])
+@app.route('/api/reclutadores-nombres/<int:reclutador_id>', methods=['POST', 'PUT', 'OPTIONS'])
 def actualizar_reclutador(reclutador_id):
     if request.method == 'OPTIONS':
         return '', 200
