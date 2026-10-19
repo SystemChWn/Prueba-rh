@@ -760,19 +760,36 @@ def guardar_encuesta():
                 )
                 cur.execute(
                     "ALTER TABLE encuesta_reclutamiento "
+                    "ADD COLUMN IF NOT EXISTS registro_id INTEGER REFERENCES registro(id)"
+                )
+                cur.execute(
+                    "ALTER TABLE encuesta_reclutamiento "
                     "ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)"
                 )
                 cur.execute(
                     """
+                    SELECT id
+                    FROM registro
+                    WHERE UPPER(TRIM(curp)) = UPPER(TRIM(%s))
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    ((datos.get('curp') or '').strip(),),
+                )
+                registro = cur.fetchone()
+                registro_id = registro[0] if registro else None
+                cur.execute(
+                    """
                     INSERT INTO encuesta_reclutamiento
-                        (fuente, sub_fuente, fecha_registro, nombre_reclutador, nombre_empleado)
-                    VALUES (%s, %s, now(), %s, %s)
+                        (fuente, sub_fuente, fecha_registro, nombre_reclutador, nombre_empleado, registro_id)
+                    VALUES (%s, %s, now(), %s, %s, %s)
                     """,
                     (
                         fuente_norm,
                         sub_fuente or None,
                         (datos.get('nombre_reclutador') or '').strip(),
                         (datos.get('nombre_empleado') or '').strip(),
+                        registro_id,
                     )
                 )
             conn.commit()
@@ -2112,14 +2129,18 @@ def exportar_reclutamiento():
                     ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)
                 """)
                 cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS registro_id INTEGER REFERENCES registro(id)
+                """)
+                cur.execute("""
                     SELECT e.fecha_registro,
                            COALESCE(ip.no_empleado, ''),
-                           COALESCE(NULLIF(TRIM(e.nombre_empleado), ''), r.nombre_completo, ''),
+                           COALESCE(r.nombre_completo, ''),
                            COALESCE(NULLIF(TRIM(e.nombre_reclutador), ''), ''),
                            p.team
                     FROM encuesta_reclutamiento AS e
                     LEFT JOIN registro AS r
-                      ON LOWER(TRIM(r.nombre_completo)) = LOWER(TRIM(e.nombre_empleado))
+                      ON r.id = e.registro_id
                     LEFT JOIN LATERAL (
                         SELECT puesto.no_empleado
                         FROM ingresos_puesto AS puesto
@@ -2149,13 +2170,25 @@ def exportar_reclutamiento():
         worksheet.title = 'Reclutamiento'
 
         # Cabeceras de la tabla
-        encabezados = ['Fecha Registro', 'No. Empleado', 'Nombre Completo', 'Reclutador', 'Team']
+        encabezados = ['Fecha de registro', 'Mes', 'Número de empleado', 'Nombre completo', 'Nombre del reclutador', 'Team de reclutamiento']
         worksheet.append(encabezados)
 
         # Agregar filas de datos
+        nombres_meses = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+        ]
         for fila in filas:
-            fecha_str = fila[0].isoformat() if fila[0] else ''
-            worksheet.append([fecha_str, fila[1], fila[2], fila[3], fila[4]])
+            worksheet.append([
+                fila[0],
+                nombres_meses[fila[0].month - 1] if fila[0] else '',
+                fila[1],
+                fila[2],
+                fila[3],
+                f'Team {fila[4]}' if fila[4] else '',
+            ])
+            if fila[0]:
+                worksheet.cell(row=worksheet.max_row, column=1).number_format = 'dd/mm/yyyy'
 
         # Dar formato visual básico (congelar paneles y ajustar columnas)
         worksheet.freeze_panes = 'A2'

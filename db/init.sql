@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     fecha_registro      DATE DEFAULT CURRENT_DATE,
     nombre_reclutador   VARCHAR(50),
     nombre_empleado     VARCHAR(200),
-    detalle             TEXT
+    detalle             TEXT,
+    registro_id         INTEGER REFERENCES registro(id)
 );
 
 CREATE TABLE IF NOT EXISTS ingresos_puesto (
