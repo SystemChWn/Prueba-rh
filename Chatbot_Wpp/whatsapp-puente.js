@@ -23,7 +23,6 @@ wppconnect
         '--disable-gpu'
       ]
     },
-    // Forzamos una versión estable anterior que sí inyecta wapi.js correctamente sin timeout
     whatsappVersion: '2.3000.1013554286',
   })
   .then((client) => start(client))

@@ -6,6 +6,7 @@
     <title>Control Interno Reclutamiento</title>
     <script src="access-control.js"></script>
     <link rel="stylesheet" href="shared.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* RECUADROS SUPERIORES */
@@ -607,7 +608,7 @@
                             <option value="9">Septiembre</option><option value="10">Octubre</option>
                             <option value="11">Noviembre</option><option value="12">Diciembre</option>
                         </select>
-                        <button id="btn-refresh-team-chart" class="team-action-button" type="button">Actualizar</button>
+                        <button id="btn-refresh-team-chart" class="team-action-button" type="button">Descargar Excel</button>
                     </div>
                 </div>
                 <div class="team-chart-wrap"><canvas id="recruiter-team-chart"></canvas></div>
@@ -1196,7 +1197,50 @@
 
         document.getElementById('recruiter-chart-month').value = String(new Date().getMonth() + 1);
         document.getElementById('recruiter-chart-month').addEventListener('change', loadRecruiterDashboard);
-        document.getElementById('btn-refresh-team-chart').addEventListener('click', loadRecruiterDashboard);
+        document.getElementById('btn-refresh-team-chart').addEventListener('click', async () => {
+            const month = document.getElementById('recruiter-chart-month').value;
+            const year = new Date().getFullYear();
+            const params = new URLSearchParams({ mes: month, anio: String(year) });
+            try {
+                const registros = await recruiterApi(`/api/exportar-reclutamiento?${params}`);
+                const filas = [[
+                    'Fecha de registro',
+                    'Mes',
+                    'Número de empleado',
+                    'Nombre completo',
+                    'Nombre del reclutador',
+                    'Team de reclutamiento',
+                ]];
+                (Array.isArray(registros) ? registros : []).forEach((registro) => {
+                    const [yearPart, monthPart, dayPart] = (registro.fecha_registro || '').split('-').map(Number);
+                    const fecha = yearPart && monthPart && dayPart
+                        ? new Date(Date.UTC(yearPart, monthPart - 1, dayPart))
+                        : '';
+                    const nombreMes = fecha
+                        ? fecha.toLocaleDateString('es-MX', { month: 'long', timeZone: 'UTC' })
+                        : '';
+                    filas.push([
+                        fecha,
+                        nombreMes ? nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) : '',
+                        registro.no_empleado || '',
+                        registro.nombre_completo || '',
+                        registro.nombre_reclutador || '',
+                        registro.team ? `Team ${registro.team}` : '',
+                    ]);
+                });
+
+                const hoja = XLSX.utils.aoa_to_sheet(filas);
+                for (let fila = 2; fila <= filas.length; fila += 1) {
+                    const celdaFecha = hoja[`A${fila}`];
+                    if (celdaFecha && celdaFecha.v instanceof Date) celdaFecha.z = 'dd/mm/yyyy';
+                }
+                const libro = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(libro, hoja, 'Reclutamiento');
+                XLSX.writeFile(libro, `reclutamiento_${year}_${month.padStart(2, '0')}.xlsx`);
+            } catch (error) {
+                window.alert(`No se pudo descargar el Excel: ${error.message}`);
+            }
+        });
         loadRecruiterDashboard();
     </script>
 </body>

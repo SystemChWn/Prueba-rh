@@ -2097,6 +2097,67 @@ def obtener_ingresos_por_team():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/exportar-reclutamiento', methods=['GET'])
+def exportar_reclutamiento():
+    try:
+        mes = int(request.args.get('mes', str(datetime.now().month)))
+        anio = int(request.args.get('anio', str(datetime.now().year)))
+        if not 1 <= mes <= 12 or not 2000 <= anio <= 2100:
+            return jsonify({'error': 'Mes o año inválido'}), 400
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS sub_fuente VARCHAR(50)
+                """)
+                cur.execute("""
+                    SELECT e.fecha_registro,
+                           COALESCE(ip.no_empleado, ''),
+                           COALESCE(NULLIF(TRIM(e.nombre_empleado), ''), r.nombre_completo, ''),
+                           COALESCE(NULLIF(TRIM(e.nombre_reclutador), ''), ''),
+                           p.team
+                    FROM encuesta_reclutamiento AS e
+                    LEFT JOIN registro AS r
+                      ON LOWER(TRIM(r.nombre_completo)) = LOWER(TRIM(e.nombre_empleado))
+                    LEFT JOIN LATERAL (
+                        SELECT puesto.no_empleado
+                        FROM ingresos_puesto AS puesto
+                        WHERE puesto.registro_id = r.id
+                        ORDER BY puesto.id DESC
+                        LIMIT 1
+                    ) AS ip ON TRUE
+                    LEFT JOIN personal_reclutamiento AS p
+                      ON LOWER(TRIM(p.nombre)) = LOWER(TRIM(e.nombre_reclutador))
+                    WHERE EXTRACT(MONTH FROM e.fecha_registro) = %s
+                      AND EXTRACT(YEAR FROM e.fecha_registro) = %s
+                      AND NULLIF(TRIM(e.nombre_reclutador), '') IS NOT NULL
+                      AND (
+                          UPPER(TRIM(COALESCE(e.fuente, ''))) IN ('FACEBOOK', 'RECLU CW')
+                          OR (
+                              UPPER(TRIM(COALESCE(e.fuente, ''))) = 'AGENCIA'
+                              AND UPPER(TRIM(COALESCE(e.sub_fuente, ''))) = 'CW'
+                          )
+                      )
+                    ORDER BY e.fecha_registro, e.nombre_empleado
+                """, (mes, anio))
+                filas = cur.fetchall()
+
+        return jsonify([
+            {
+                'fecha_registro': fila[0].isoformat() if fila[0] else '',
+                'no_empleado': fila[1],
+                'nombre_completo': fila[2],
+                'nombre_reclutador': fila[3],
+                'team': fila[4],
+            }
+            for fila in filas
+        ]), 200
+    except Exception as e:
+        print(f"Error en /api/exportar-reclutamiento: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/reclutadores-nombres', methods=['GET', 'POST', 'OPTIONS'])
 def manejar_reclutadores():
     if request.method == 'OPTIONS':
