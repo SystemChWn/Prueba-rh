@@ -1205,7 +1205,6 @@
                 let response = null;
                 let errorUltimo = null;
 
-                // Intentar con las bases de API disponibles (igual que recruiterApi)
                 for (const baseUrl of getRecruiterApiBases()) {
                     try {
                         const targetUrl = `${baseUrl}/api/exportar-reclutamiento?${params.toString()}`;
@@ -1220,41 +1219,17 @@
                     throw new Error(response ? await response.text() : (errorUltimo ? errorUltimo.message : 'Error de conexión'));
                 }
 
-                const registros = await response.json();
-                const filas = [[
-                    'Fecha de registro',
-                    'Mes',
-                    'Número de empleado',
-                    'Nombre completo',
-                    'Nombre del reclutador',
-                    'Team de reclutamiento',
-                ]];
-                (Array.isArray(registros) ? registros : []).forEach((registro) => {
-                    const [yearPart, monthPart, dayPart] = (registro.fecha_registro || '').split('-').map(Number);
-                    const fecha = yearPart && monthPart && dayPart
-                        ? new Date(Date.UTC(yearPart, monthPart - 1, dayPart))
-                        : '';
-                    const nombreMes = fecha
-                        ? fecha.toLocaleDateString('es-MX', { month: 'long', timeZone: 'UTC' })
-                        : '';
-                    filas.push([
-                        fecha,
-                        nombreMes ? nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) : '',
-                        registro.no_empleado || '',
-                        registro.nombre_completo || '',
-                        registro.nombre_reclutador || '',
-                        registro.team ? `Team ${registro.team}` : '',
-                    ]);
-                });
+                // Obtener el archivo binario directamente del backend
+                const blob = await response.blob();
+                const urlBlob = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = urlBlob;
+                a.download = `reclutamiento_${year}_${month.padStart(2, '0')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(urlBlob);
 
-                const hoja = XLSX.utils.aoa_to_sheet(filas);
-                for (let fila = 2; fila <= filas.length; fila += 1) {
-                    const celdaFecha = hoja[`A${fila}`];
-                    if (celdaFecha && celdaFecha.v instanceof Date) celdaFecha.z = 'dd/mm/yyyy';
-                }
-                const libro = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(libro, hoja, 'Reclutamiento');
-                XLSX.writeFile(libro, `reclutamiento_${year}_${month.padStart(2, '0')}.xlsx`);
             } catch (error) {
                 window.alert(`No se pudo descargar el Excel: ${error.message}`);
             }
