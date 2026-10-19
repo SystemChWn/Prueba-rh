@@ -1202,8 +1202,7 @@
             const year = new Date().getFullYear();
             const params = new URLSearchParams({ mes: month, anio: String(year) });
             try {
-                const exportUrl = new URL('/api/exportar-reclutamiento', window.location.origin);
-                exportUrl.port = '8000';
+                const exportUrl = new URL('/api/exportar-reclutamiento', window.location.href);
                 exportUrl.search = params.toString();
                 const response = await fetch(exportUrl, { cache: 'no-store' });
                 if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
