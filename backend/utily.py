@@ -2143,16 +2143,42 @@ def exportar_reclutamiento():
                 """, (mes, anio))
                 filas = cur.fetchall()
 
-        return jsonify([
-            {
-                'fecha_registro': fila[0].isoformat() if fila[0] else '',
-                'no_empleado': fila[1],
-                'nombre_completo': fila[2],
-                'nombre_reclutador': fila[3],
-                'team': fila[4],
-            }
-            for fila in filas
-        ]), 200
+        # Crear el archivo Excel con openpyxl
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Reclutamiento'
+
+        # Cabeceras de la tabla
+        encabezados = ['Fecha Registro', 'No. Empleado', 'Nombre Completo', 'Reclutador', 'Team']
+        worksheet.append(encabezados)
+
+        # Agregar filas de datos
+        for fila in filas:
+            fecha_str = fila[0].isoformat() if fila[0] else ''
+            worksheet.append([fecha_str, fila[1], fila[2], fila[3], fila[4]])
+
+        # Dar formato visual básico (congelar paneles y ajustar columnas)
+        worksheet.freeze_panes = 'A2'
+        if worksheet.dimensions:
+            worksheet.auto_filter.ref = worksheet.dimensions
+
+        for column_cells in worksheet.columns:
+            column_letter = column_cells[0].column_letter
+            max_length = max(len(str(cell.value or '')) for cell in column_cells)
+            worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 32)
+
+        # Guardar en memoria y retornar como archivo descargable
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        filename = f"reporte_reclutamiento_{mes}_{anio}.xlsx"
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
     except Exception as e:
         print(f"Error en /api/exportar-reclutamiento: {e}")
         return jsonify({'error': str(e)}), 500
