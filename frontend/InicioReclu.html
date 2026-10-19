@@ -1202,10 +1202,24 @@
             const year = new Date().getFullYear();
             const params = new URLSearchParams({ mes: month, anio: String(year) });
             try {
-                const exportUrl = new URL('/api/exportar-reclutamiento', window.location.href);
-                exportUrl.search = params.toString();
-                const response = await fetch(exportUrl, { cache: 'no-store' });
-                if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+                let response = null;
+                let errorUltimo = null;
+
+                // Intentar con las bases de API disponibles (igual que recruiterApi)
+                for (const baseUrl of getRecruiterApiBases()) {
+                    try {
+                        const targetUrl = `${baseUrl}/api/exportar-reclutamiento?${params.toString()}`;
+                        response = await fetch(targetUrl, { cache: 'no-store' });
+                        if (response.ok) break;
+                    } catch (e) {
+                        errorUltimo = e;
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error(response ? await response.text() : (errorUltimo ? errorUltimo.message : 'Error de conexión'));
+                }
+
                 const registros = await response.json();
                 const filas = [[
                     'Fecha de registro',
