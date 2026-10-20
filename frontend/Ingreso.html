@@ -102,8 +102,8 @@
                             <th>Nombre</th>
                             <th>Empresa</th>
                             <th>No. Empleado</th>
-                            <th>Puesto</th>
                             <th>Área</th>
+                            <th>Puesto</th>
                             <th>Turno</th>
                             <th>Salario</th>
                             <th>Periodo de Pago</th>
@@ -126,6 +126,28 @@
 
         const cuerpo = document.getElementById('cuerpo-tabla');
         const btnGuardarDatos = document.getElementById('btn-guardar-datos');
+        const puestosPorArea = {
+            'EPS': [
+                'AYUDANTE GENERAL', 'ALMACENISTA', 'BLOCK', 'CALDERA', 'CAPTURISTA',
+                'CUARTO DE SECADO', 'GERENTE', 'JEFE', 'LIDER', 'LIDER DE CUARTO DE SECADO',
+                'MANTENIMIENTO', 'MOLDERO', 'MONTACARGUISTA', 'MONTADOR', 'OPERARIO',
+                'PRE-EXPANSION', 'REPARACION', 'STAFF', 'SUPERVISOR', 'TECNICO', 'CORTE',
+            ],
+            'ASSY': [
+                'AYUDANTE GENERAL', 'CHOFER', 'COMEDOR', 'INSPECTOR DE CALIDAD', 'JARDINERO',
+                'LIMPIEZA', 'RECLUTAMIENTO', 'SEGURIDAD', 'SOLDADOR', 'CAPTURISTA', 'GERENTE',
+                'OPERARIO', 'STAFF', 'SUPERVISOR',
+            ],
+            'EPS CUTTING': ['AYUDANTE GENERAL', 'GERENTE', 'MANTENIMIENTO', 'CORTE'],
+            'EMBARQUE': ['AYUDANTE GENERAL', 'CAPTURISTA', 'GERENTE', 'OPERARIO', 'STAFF'],
+            'MATERIAL': ['AYUDANTE GENERAL', 'GERENTE', 'STAFF', 'AYUDANTE'],
+            'CALIDAD': [
+                'INSPECTOR DE CALIDAD', 'OQC SISTEMA', 'CAPTURISTA', 'GERENTE',
+                'JEFE', 'LIDER', 'STAFF', 'SUPERVISOR',
+            ],
+            'RECURSOS HUMANOS': ['GERENTE', 'STAFF', 'AYUDANTE'],
+            'EPS ALMACEN': ['CAPTURISTA', 'GERENTE', 'LIDER', 'STAFF', 'AYUDANTE'],
+        };
 
         async function getConFallback(endpoint) {
             let ultimoErrorRed = null;
@@ -205,17 +227,22 @@
                         </select>
                     </td>
                     <td><input class="campo-no-empleado" type="text" value="${tempId}" readonly required></td>
-                    <td><input class="campo-puesto" type="text" required></td>
                     <td>
                         <select class="campo-area" required>
                             <option value="" selected>Selecciona la opcion</option>
                             <option value="EPS">EPS</option>
                             <option value="ASSY">ASSY</option>
                             <option value="EPS CUTTING">EPS CUTTING</option>
-                            <option value="CALIDAD">CALIDAD</option>
                             <option value="EMBARQUE">EMBARQUE</option>
                             <option value="MATERIAL">MATERIAL</option>
+                            <option value="CALIDAD">CALIDAD</option>
+                            <option value="RECURSOS HUMANOS">RECURSOS HUMANOS</option>
                             <option value="EPS ALMACEN">EPS ALMACEN</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="campo-puesto" required disabled>
+                            <option value="" selected>Selecciona primero el área</option>
                         </select>
                     </td>
                     <td>
@@ -238,6 +265,29 @@
                 </tr>
             `;
         }
+
+        cuerpo.addEventListener('change', (event) => {
+            if (!event.target.matches('.campo-area')) return;
+
+            const puestoSelect = event.target.closest('tr')?.querySelector('.campo-puesto');
+            if (!puestoSelect) return;
+
+            puestoSelect.replaceChildren();
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = event.target.value ? 'Selecciona un puesto' : 'Selecciona primero el área';
+            placeholder.selected = true;
+            puestoSelect.appendChild(placeholder);
+
+            const puestos = puestosPorArea[event.target.value] || [];
+            puestos.forEach((puesto) => {
+                const option = document.createElement('option');
+                option.value = puesto;
+                option.textContent = puesto;
+                puestoSelect.appendChild(option);
+            });
+            puestoSelect.disabled = puestos.length === 0;
+        });
 
         function deduplicarCandidatosPendientes(candidatos) {
             const vistos = new Map();
