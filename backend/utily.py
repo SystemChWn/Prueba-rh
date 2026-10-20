@@ -2146,20 +2146,9 @@ def exportar_reclutamiento():
                 """)
                 cur.execute("""
                     SELECT e.fecha_registro,
-                           COALESCE(ip.no_empleado, ''),
-                           COALESCE(r.nombre_completo, ''),
                            COALESCE(NULLIF(TRIM(e.nombre_reclutador), ''), ''),
                            p.team
                     FROM encuesta_reclutamiento AS e
-                    LEFT JOIN registro AS r
-                      ON r.id = e.registro_id
-                    LEFT JOIN LATERAL (
-                        SELECT puesto.no_empleado
-                        FROM ingresos_puesto AS puesto
-                        WHERE puesto.registro_id = r.id
-                        ORDER BY puesto.id DESC
-                        LIMIT 1
-                    ) AS ip ON TRUE
                     LEFT JOIN personal_reclutamiento AS p
                       ON LOWER(TRIM(p.nombre)) = LOWER(TRIM(e.nombre_reclutador))
                     WHERE EXTRACT(MONTH FROM e.fecha_registro) = %s
@@ -2182,7 +2171,7 @@ def exportar_reclutamiento():
         worksheet.title = 'Reclutamiento'
 
         # Cabeceras de la tabla
-        encabezados = ['Fecha de registro', 'Mes', 'Número de empleado', 'Nombre completo', 'Nombre del reclutador', 'Team de reclutamiento']
+        encabezados = ['Fecha de registro', 'Mes', 'Nombre del reclutador', 'Team de reclutamiento']
         worksheet.append(encabezados)
 
         # Agregar filas de datos
@@ -2195,9 +2184,7 @@ def exportar_reclutamiento():
                 fila[0],
                 nombres_meses[fila[0].month - 1] if fila[0] else '',
                 fila[1],
-                fila[2],
-                fila[3],
-                f'Team {fila[4]}' if fila[4] else '',
+                f'Team {fila[2]}' if fila[2] else '',
             ])
             if fila[0]:
                 worksheet.cell(row=worksheet.max_row, column=1).number_format = 'dd/mm/yyyy'
