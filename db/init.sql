@@ -34,8 +34,18 @@ CREATE TABLE IF NOT EXISTS encuesta_reclutamiento (
     nombre_reclutador   VARCHAR(50),
     nombre_empleado     VARCHAR(200),
     detalle             TEXT,
-    registro_id         INTEGER REFERENCES registro(id)
+    registro_id         INTEGER,
+    CONSTRAINT encuesta_reclutamiento_registro_id_fkey
+        FOREIGN KEY (registro_id) REFERENCES registro(id) ON DELETE SET NULL
 );
+
+ALTER TABLE encuesta_reclutamiento
+    ALTER COLUMN registro_id DROP NOT NULL;
+ALTER TABLE encuesta_reclutamiento
+    DROP CONSTRAINT IF EXISTS encuesta_reclutamiento_registro_id_fkey;
+ALTER TABLE encuesta_reclutamiento
+    ADD CONSTRAINT encuesta_reclutamiento_registro_id_fkey
+        FOREIGN KEY (registro_id) REFERENCES registro(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS ingresos_puesto (
     id                  SERIAL PRIMARY KEY,
