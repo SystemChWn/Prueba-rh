@@ -553,6 +553,15 @@ def obtener_columnas(cur, tabla):
 
 
 def obtener_empleado_dict(cur, registro_id):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS chatbot_credenciales (
+            registro_id INTEGER PRIMARY KEY REFERENCES registro(id) ON DELETE CASCADE,
+            contrasena TEXT NOT NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     cols_registro = obtener_columnas(cur, 'registro')
 
     fecha_col = None
@@ -599,9 +608,11 @@ def obtener_empleado_dict(cur, registro_id):
             ip.area,
             ip.turno,
             ip.salario,
-            ip.pago
+            ip.pago,
+            cc.contrasena
         FROM registro r
         LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
+        LEFT JOIN chatbot_credenciales cc ON cc.registro_id = r.id
         WHERE r.id = %s
         LIMIT 1
         """,
@@ -646,6 +657,7 @@ def obtener_empleado_dict(cur, registro_id):
         'turno': row[30],
         'salario': row[31],
         'pago': row[32],
+        'contrasena_chatbot': row[33],
     }
 
 def separar_numeracion(valor):

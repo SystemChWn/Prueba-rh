@@ -49,9 +49,22 @@ def extraer_mensaje(data):
   return None, None
 
 
-def buscar_colaborador(nombre, numero_empleado):
+def asegurar_tabla_credenciales(cur):
+  cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS chatbot_credenciales (
+      registro_id INTEGER PRIMARY KEY REFERENCES registro(id) ON DELETE CASCADE,
+      contrasena TEXT NOT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """
+  )
+
+
+def buscar_colaborador(numero_empleado):
   with conectar_db() as conn:
     with conn.cursor() as cur:
+      asegurar_tabla_credenciales(cur)
       cur.execute(
         """
         SELECT EXISTS (
@@ -71,17 +84,34 @@ def buscar_colaborador(nombre, numero_empleado):
       )
       cur.execute(
         f"""
-        SELECT r.nombre_completo, i.no_empleado, i.puesto, i.area, i.turno
+        SELECT r.id, r.nombre_completo, i.no_empleado, i.puesto, i.area, i.turno,
+               c.contrasena
         FROM registro AS r
         JOIN ingresos_puesto AS i ON i.registro_id = r.id
+        LEFT JOIN chatbot_credenciales AS c ON c.registro_id = r.id
         WHERE i.no_empleado::text = %s
-          AND LOWER(TRIM(r.nombre_completo)) = LOWER(TRIM(%s))
           {filtro_estatus}
         LIMIT 1
         """,
-        (numero_empleado, nombre),
+        (numero_empleado,),
       )
       return cur.fetchone()
+
+
+def guardar_contrasena_colaborador(registro_id, contrasena):
+  with conectar_db() as conn:
+    with conn.cursor() as cur:
+      asegurar_tabla_credenciales(cur)
+      cur.execute(
+        """
+        INSERT INTO chatbot_credenciales (registro_id, contrasena)
+        VALUES (%s, %s)
+        ON CONFLICT (registro_id) DO UPDATE
+        SET contrasena = EXCLUDED.contrasena,
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (registro_id, contrasena),
+      )
 
 
 def obtener_contactos_reclutamiento():
@@ -138,11 +168,11 @@ def bienvenida(remitente):
   SESSIONS[remitente] = {"paso": "menu_principal"}
   return enviar_respuesta(
     remitente,
-    "¡Hola! 👋 Te damos la bienvenida a Cheong Woon México.\n\n"
-    "Para continuar, selecciona una de las siguientes opciones:\n\n"
-    "1. Ya formo parte de la empresa\n"
-    "2. Busco una oportunidad laboral\n\n"
-    "Responde con el número de tu elección para continuar.",
+    "¡Hola! Bienvenido al asistente de Cheong Woon Mexico.\n\n"
+    "Selecciona una de estas opciones:\n\n"
+    "1. Personal Activo\n"
+    "2. Quiero ser parte del Equipo\n\n"
+    "Envía el número de la opción deseada.",
   )
 
 
@@ -168,10 +198,10 @@ def webhook_whatsapp():
 
   if estado["paso"] == "menu_principal":
     if mensaje == "1":
-      estado["paso"] = "esperando_nombre"
+      estado["paso"] = "esperando_numero_empleado"
       return enviar_respuesta(
         remitente,
-        "PERSONAL ACTIVO\n\nIngresa tu  NOMBRE COMPLETO:",
+        "Ingresa tu número de empleado:",
       )
     if mensaje == "2":
       try:
@@ -191,20 +221,12 @@ def webhook_whatsapp():
       return enviar_respuesta(remitente, texto_respuesta)
     return enviar_respuesta(remitente, "Opción no válida. Envía 1 o 2.")
 
-  if estado["paso"] == "esperando_nombre":
-    if len(mensaje) < 3:
-      return enviar_respuesta(remitente, "Escribe tu nombre completo para continuar.")
-    estado["nombre_capturado"] = mensaje
-    estado["paso"] = "esperando_numero_empleado"
-    return enviar_respuesta(
-      remitente,
-      f"Gracias, {mensaje}.\n\nAhora ingresa tu número de empleado:",
-    )
-
   if estado["paso"] == "esperando_numero_empleado":
     numero_empleado = mensaje.strip()
+    if not numero_empleado:
+      return enviar_respuesta(remitente, "Ingresa un número de empleado válido.")
     try:
-      colaborador = buscar_colaborador(estado["nombre_capturado"], numero_empleado)
+      colaborador = buscar_colaborador(numero_empleado)
     except psycopg2.Error:
       logger.exception("Error al validar los datos del colaborador")
       return enviar_respuesta(
@@ -216,33 +238,49 @@ def webhook_whatsapp():
       SESSIONS[remitente] = {"paso": "menu_principal"}
       return enviar_respuesta(
         remitente,
-        "No encontramos una coincidencia activa con esos datos.\n\n"
+        "No encontramos un empleado activo con ese número.\n\n"
         "Menú principal:\n"
         "1. Personal Activo\n"
         "2. Quiero ser parte del Equipo\n\n"
         "Envía el número de la opción deseada.",
       )
 
-    estado.update(
-      {
-        "paso": "menu_colaborador",
-        "nombre_real": colaborador[0],
-        "no_empleado": colaborador[1],
-        "puesto": colaborador[2],
-        "area": colaborador[3],
-        "turno": colaborador[4],
-      }
-    )
+    estado.update({
+      "registro_id": colaborador[0],
+      "nombre_real": colaborador[1],
+      "no_empleado": colaborador[2],
+      "puesto": colaborador[3],
+      "area": colaborador[4],
+      "turno": colaborador[5],
+    })
+    if not colaborador[6]:
+      estado["paso"] = "creando_contrasena"
+      return enviar_respuesta(
+        remitente,
+        f"Acceso confirmado. Bienvenido, {colaborador[1]}.\n\n"
+        "Crea una contraseña personal de al menos 8 caracteres:",
+      )
+    estado["contrasena_esperada"] = colaborador[6]
+    estado["paso"] = "esperando_contrasena"
+    return enviar_respuesta(remitente, "Ingresa tu contraseña personal para continuar.")
+
+  if estado["paso"] == "creando_contrasena":
+    if len(mensaje) < 8:
+      return enviar_respuesta(remitente, "La contraseña debe tener al menos 8 caracteres. Intenta crear otra:")
+    try:
+      guardar_contrasena_colaborador(estado["registro_id"], mensaje)
+    except psycopg2.Error:
+      logger.exception("No se pudo guardar la contraseña del colaborador")
+      return enviar_respuesta(remitente, "No pudimos guardar tu contraseña. Intenta de nuevo más tarde.")
     return enviar_respuesta(
       remitente,
-      f"Acceso confirmado. Bienvenido, {colaborador[0]}.\n\n"
-      "Selecciona una opción:\n"
-      "1. Ruta asignada\n"
-      "2. Vacaciones\n"
-      "3. Aviso de privacidad\n"
-      "4. Solicitar entrada o salida\n\n"
-      "Envía 0 para volver al menú principal.",
+      "Tu contraseña quedó guardada.\n\n" + mensaje_menu_colaborador(estado),
     )
+
+  if estado["paso"] == "esperando_contrasena":
+    if mensaje != estado["contrasena_esperada"]:
+      return enviar_respuesta(remitente, "La contraseña no coincide. Inténtalo de nuevo o envía 0 para volver al menú principal.")
+    return enviar_respuesta(remitente, mensaje_menu_colaborador(estado))
 
   if estado["paso"] == "menu_colaborador":
     respuestas = {
@@ -262,16 +300,24 @@ def webhook_whatsapp():
         " con las políticas internas de Cheong Woon Mexico.\n\n"
         "Envía 0 para volver."
       ),
-      "4": (
-        "Para solicitar entrada o salida, dirígete con tu supervisor de"
-        " área.\n\nEnvía 0 para volver."
-      ),
     }
     if mensaje in respuestas:
       return enviar_respuesta(remitente, respuestas[mensaje])
-    return enviar_respuesta(remitente, "Opción no válida. Envía un número del 1 al 4, o 0.")
+    return enviar_respuesta(remitente, "Opción no válida. Envía un número del 1 al 3, o 0.")
 
   return bienvenida(remitente)
+
+
+def mensaje_menu_colaborador(estado):
+  estado["paso"] = "menu_colaborador"
+  return (
+    f"Acceso confirmado. Bienvenido, {estado['nombre_real']}.\n\n"
+    "Selecciona una opción:\n"
+    "1. Ruta asignada\n"
+    "2. Vacaciones\n"
+    "3. Aviso de privacidad\n\n"
+    "Envía 0 para volver al menú principal."
+  )
 
 
 if __name__ == "__main__":

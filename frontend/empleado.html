@@ -1227,6 +1227,11 @@
                     <input id="foto-input" class="file-input" type="file" accept="image/*" />
                     <button class="action-btn" id="btn-descargar-contrato" type="button">DESCARGAR CONTRATO</button>
                     <button class="action-btn" id="btn-descargar-carta-imss" type="button">DESCARGAR CARTA IMSS</button>
+                    <div style="width:100%; max-width:300px; margin:16px auto 0; text-align:left;">
+                        <label class="muted" for="contrasena-chatbot">Contraseña del chatbot</label>
+                        <input id="contrasena-chatbot" class="editable-control" type="password" readonly autocomplete="off" style="width:100%; margin-top:6px;" />
+                        <button id="btn-ver-contrasena-chatbot" class="secondary-btn" type="button" style="margin-top:8px;">Mostrar contraseña</button>
+                    </div>
                 </div>
                 <div id="photo-upload-status" style="width:100%; max-width:300px; margin:10px auto 0; min-height:20px; text-align:center; font-size:0.9rem; color:var(--grisc);"></div>
                 <div style="width:100%; max-width:300px; margin: 34px auto 0; display:none;">
@@ -1648,6 +1653,8 @@
         const btnGuardar = document.getElementById('btn-guardar');
         const btnCancelar = document.getElementById('btn-cancelar');
         const fechaIngresoEl = document.getElementById('fecha-ingreso');
+        const contrasenaChatbotEl = document.getElementById('contrasena-chatbot');
+        const btnVerContrasenaChatbot = document.getElementById('btn-ver-contrasena-chatbot');
         const photoUploadStatus = document.getElementById('photo-upload-status');
         const DEFAULT_NEW_EMPLOYEE_PHOTO = 'https://lh3.googleusercontent.com/d/1RT7QfchCrWT7c2djbse7tuayVQNbRCHn=w400';
 
@@ -1681,6 +1688,14 @@
             'salario': document.getElementById('salario'),
             'pago': document.getElementById('pago'),
         };
+
+        if (btnVerContrasenaChatbot) {
+            btnVerContrasenaChatbot.addEventListener('click', () => {
+                const mostrar = contrasenaChatbotEl.type === 'password';
+                contrasenaChatbotEl.type = mostrar ? 'text' : 'password';
+                btnVerContrasenaChatbot.textContent = mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña';
+            });
+        }
 
         let originalData = null;
         let editMode = false;
@@ -2362,6 +2377,13 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 document.title = `${data.nombre_completo || 'Empleado'} - ${empresa}`;
 
                 fillFields(data);
+                if (contrasenaChatbotEl) {
+                    contrasenaChatbotEl.value = data.contrasena_chatbot || '';
+                    contrasenaChatbotEl.placeholder = data.contrasena_chatbot ? '' : 'Sin contraseña asignada';
+                    if (btnVerContrasenaChatbot) {
+                        btnVerContrasenaChatbot.disabled = !data.contrasena_chatbot;
+                    }
+                }
                 refreshEdadDependiente();
                 const fotoEmpleado = data.fotografia_base64 || DEFAULT_NEW_EMPLOYEE_PHOTO;
                 setPhotoPreviewFromUrl(fotoEmpleado);

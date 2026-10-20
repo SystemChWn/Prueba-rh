@@ -51,6 +51,12 @@ CREATE TABLE IF NOT EXISTS ingresos_puesto (
     registro_id         INTEGER REFERENCES registro(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS chatbot_credenciales (
+    registro_id         INTEGER PRIMARY KEY REFERENCES registro(id) ON DELETE CASCADE,
+    contrasena          TEXT NOT NULL,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS usuarios_acceso (
     id                      SERIAL PRIMARY KEY,
     usuario                 VARCHAR(100) NOT NULL UNIQUE,
