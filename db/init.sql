@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS registro (
     genero                  VARCHAR(30),
     estado_civil            VARCHAR(30),
     nacionalidad            VARCHAR(60),
+    procedencia             VARCHAR(150),
     curp                    VARCHAR(18),
     rfc                     VARCHAR(13),
     nss                     VARCHAR(20),

@@ -553,6 +553,7 @@ def obtener_columnas(cur, tabla):
 
 
 def obtener_empleado_dict(cur, registro_id):
+    cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS procedencia VARCHAR(150)")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS chatbot_credenciales (
@@ -572,6 +573,7 @@ def obtener_empleado_dict(cur, registro_id):
 
     fecha_select = f"r.{fecha_col} AS fecha_ingreso" if fecha_col else "NULL::timestamp AS fecha_ingreso"
     fotografia_select = "r.fotografia_base64 AS fotografia_base64" if 'fotografia_base64' in cols_registro else "NULL::text AS fotografia_base64"
+    procedencia_select = "r.procedencia AS procedencia" if 'procedencia' in cols_registro else "NULL::text AS procedencia"
 
     cur.execute(
         f"""
@@ -583,6 +585,7 @@ def obtener_empleado_dict(cur, registro_id):
             r.genero,
             r.estado_civil,
             r.nacionalidad,
+            {procedencia_select},
             r.curp,
             r.rfc,
             r.nss,
@@ -631,33 +634,34 @@ def obtener_empleado_dict(cur, registro_id):
         'genero': row[4],
         'estado_civil': row[5],
         'nacionalidad': row[6],
-        'curp': row[7],
-        'rfc': row[8],
-        'nss': row[9],
-        'tel_movil': row[10],
-        'correo': row[11],
-        'codigo_postal': row[12],
-        'colonia': row[13],
-        'calle': row[14],
-        'num_ext': row[15],
-        'num_int': row[16],
-        'municipio': row[17],
-        'estado': row[18],
-        'nombre_emergencia': row[19],
-        'parentesco_emergencia': row[20],
-        'telefono_emergencia': row[21],
-        'firma_archivo': row[22],
-        'fotografia_base64': row[23],
-        'fecha_ingreso': row[24].strftime('%Y-%m-%d') if row[24] else None,
-        'empresa': row[25],
-        'no_empleado': row[26],
-        'personal': row[27],
-        'puesto': row[28],
-        'area': row[29],
-        'turno': row[30],
-        'salario': row[31],
-        'pago': row[32],
-        'contrasena_chatbot': row[33],
+        'procedencia': row[7],
+        'curp': row[8],
+        'rfc': row[9],
+        'nss': row[10],
+        'tel_movil': row[11],
+        'correo': row[12],
+        'codigo_postal': row[13],
+        'colonia': row[14],
+        'calle': row[15],
+        'num_ext': row[16],
+        'num_int': row[17],
+        'municipio': row[18],
+        'estado': row[19],
+        'nombre_emergencia': row[20],
+        'parentesco_emergencia': row[21],
+        'telefono_emergencia': row[22],
+        'firma_archivo': row[23],
+        'fotografia_base64': row[24],
+        'fecha_ingreso': row[25].strftime('%Y-%m-%d') if row[25] else None,
+        'empresa': row[26],
+        'no_empleado': row[27],
+        'personal': row[28],
+        'puesto': row[29],
+        'area': row[30],
+        'turno': row[31],
+        'salario': row[32],
+        'pago': row[33],
+        'contrasena_chatbot': row[34],
     }
 
 def separar_numeracion(valor):
@@ -701,16 +705,16 @@ def guardar_registro():
 
         query = """
         INSERT INTO registro (
-            nombre_completo, fecha_nacimiento, edad, genero, estado_civil, nacionalidad,
+            nombre_completo, fecha_nacimiento, edad, genero, estado_civil, nacionalidad, procedencia,
             curp, rfc, nss, tel_movil, correo, codigo_postal, colonia, calle,
             num_ext, num_int, municipio, estado, nombre_emergencia,
             parentesco_emergencia, telefono_emergencia, firma_archivo, fotografia_base64
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         values = (
             datos.get('nombre'), datos.get('fecha_nac'), datos.get('edad'), datos.get('genero'),
-            datos.get('edo_civil'), datos.get('nacionalidad'), datos.get('curp'), datos.get('rfc'),
+            datos.get('edo_civil'), datos.get('nacionalidad'), datos.get('procedencia'), datos.get('curp'), datos.get('rfc'),
             datos.get('nss'), datos.get('tel_movil'), datos.get('correo'), datos.get('cp'),
             datos.get('colonia'), datos.get('calle'), datos.get('num_ext'), datos.get('num_int'),
             datos.get('municipio'), datos.get('estado'), datos.get('nom_eme1'), datos.get('par_eme1'),
@@ -720,6 +724,7 @@ def guardar_registro():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS procedencia VARCHAR(150)")
                 cur.execute(query, values)
             conn.commit()
 
@@ -1198,6 +1203,7 @@ def actualizar_empleado(registro_id):
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fotografia_base64 TEXT")
+                cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS procedencia VARCHAR(150)")
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS estatus VARCHAR(20) DEFAULT 'ACTIVO'")
                 cur.execute("ALTER TABLE registro ADD COLUMN IF NOT EXISTS fecha_inactivo TIMESTAMP")
                 cols_registro = obtener_columnas(cur, 'registro')
@@ -1227,6 +1233,8 @@ def actualizar_empleado(registro_id):
                     'edad': payload.get('edad'),
                     'genero': payload.get('genero'),
                     'estado_civil': payload.get('estado_civil'),
+                    'nacionalidad': payload.get('nacionalidad'),
+                    'procedencia': payload.get('procedencia'),
                     'curp': payload.get('curp'),
                     'rfc': payload.get('rfc'),
                     'nss': payload.get('nss'),
@@ -1252,7 +1260,8 @@ def actualizar_empleado(registro_id):
                 registro_updates = []
                 registro_values = []
                 for campo, valor in registro_map.items():
-                    if campo in cols_registro and valor not in (None, ''):
+                    es_campo_opcional_editable = campo in {'nacionalidad', 'procedencia'} and campo in payload
+                    if campo in cols_registro and (valor not in (None, '') or es_campo_opcional_editable):
                         registro_updates.append(f"{campo} = %s")
                         registro_values.append(valor)
 

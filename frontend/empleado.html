@@ -811,6 +811,7 @@
         }
 
         .row-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+        .row-5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
         .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
         .row-2-contact { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; }
         .row-2-wide { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 12px; }
@@ -1137,6 +1138,7 @@
             }
 
             .row-4,
+            .row-5,
             .row-3,
             .row-2-wide,
             .row-2-contact {
@@ -1157,6 +1159,7 @@
             .name-actions { order: 2; width: 100%; justify-content: flex-end; }
             .layout,
             .row-4,
+            .row-5,
             .row-3,
             .row-2-wide,
             .row-2-contact,
@@ -1253,7 +1256,7 @@
 
                         <div class="info-card section-divider">
                             <span class="label">DATOS PERSONALES</span>
-                            <div class="row-4">
+                            <div class="row-5">
                                 <div><div class="muted">Fecha de nacimiento</div><input id="fecha-nacimiento" class="editable-control" type="date" readonly /></div>
                                 <div><div class="muted">Edad</div><input id="edad" class="editable-control" type="text" readonly /></div>
                                 <div>
@@ -1275,6 +1278,7 @@
                                         <option value="UNIÓN LIBRE">UNIÓN LIBRE</option>
                                     </select>
                                 </div>
+                                <div><div class="muted">Nacionalidad</div><input id="nacionalidad" class="editable-control" type="text" readonly /></div>
                             </div>
                         </div>
 
@@ -1287,9 +1291,10 @@
                         </div>
 
                         <div class="info-card">
-                            <div class="row-2-wide">
+                            <div class="row-3">
                                 <div><div class="muted">Teléfono móvil</div><input id="tel-movil" class="editable-control" type="text" readonly /></div>
                                 <div><div class="muted">Correo electrónico</div><input id="correo" class="editable-control" type="email" readonly /></div>
+                                <div><div class="muted">¿De dónde vienes?</div><input id="procedencia" class="editable-control" type="text" readonly /></div>
                             </div>
                         </div>
 
@@ -1339,27 +1344,20 @@
 
                         <div class="info-card section-divider">
                             <span class="label">PUESTO ASIGNADO</span>
-                            <div class="row-4">
+                            <div class="row-3">
                                 <div><div class="muted">No. Empleado</div><input id="no-empleado" class="editable-control" type="text" readonly /></div>
-                                <div>
-                                    <div class="muted">Personal</div>
-                                    <select id="personal" class="editable-control" disabled>
-                                        <option value="">Selecciona la opcion</option>
-                                        <option value="OPERATIVO">OPERATIVO</option>
-                                        <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
-                                    </select>
-                                </div>
-                                <div><div class="muted">Puesto</div><input id="puesto" class="editable-control" type="text" readonly /></div>
+                                <div><div class="muted">Puesto</div><select id="puesto" class="editable-control" disabled><option value="">Selecciona primero el área</option></select></div>
                                 <div><div class="muted">Área</div>
                                     <select id="area" class="editable-control" disabled>
                                         <option value="">Selecciona la opcion</option>
-                                        <option value="Almacen">Almacen</option>
                                         <option value="EPS">EPS</option>
-                                        <option value="Ensamble">Ensamble</option>
-                                        <option value="Calidad">Calidad</option>
-                                        <option value="Compras">Compras</option>
-                                        <option value="Embarques">Embarques</option>
-                                        <option value="Corte">Corte</option>
+                                        <option value="ASSY">ASSY</option>
+                                        <option value="EPS CUTTING">EPS CUTTING</option>
+                                        <option value="EMBARQUE">EMBARQUE</option>
+                                        <option value="MATERIAL">MATERIAL</option>
+                                        <option value="CALIDAD">CALIDAD</option>
+                                        <option value="RECURSOS HUMANOS">RECURSOS HUMANOS</option>
+                                        <option value="EPS ALMACEN">EPS ALMACEN</option>
                                     </select>
                                 </div>
                             </div>
@@ -1665,11 +1663,13 @@
             'edad': document.getElementById('edad'),
             'genero': document.getElementById('genero'),
             'estado-civil': document.getElementById('estado-civil'),
+            'nacionalidad': document.getElementById('nacionalidad'),
             'curp': document.getElementById('curp'),
             'rfc': document.getElementById('rfc'),
             'nss': document.getElementById('nss'),
             'tel-movil': document.getElementById('tel-movil'),
             'correo': document.getElementById('correo'),
+            'procedencia': document.getElementById('procedencia'),
             'cp': document.getElementById('cp'),
             'calle': document.getElementById('calle'),
             'num-ext': document.getElementById('num-ext'),
@@ -1681,7 +1681,6 @@
             'emergencia-parentesco': document.getElementById('emergencia-parentesco'),
             'emergencia-telefono': document.getElementById('emergencia-telefono'),
             'no-empleado': document.getElementById('no-empleado'),
-            'personal': document.getElementById('personal'),
             'puesto': document.getElementById('puesto'),
             'area': document.getElementById('area'),
             'turno': document.getElementById('turno'),
@@ -1763,6 +1762,45 @@
             selectEl.value = normalized;
         }
 
+        const puestosPorArea = {
+            'EPS': [
+                'AYUDANTE GENERAL', 'ALMACENISTA', 'BLOCK', 'CALDERA', 'CAPTURISTA',
+                'CUARTO DE SECADO', 'GERENTE', 'JEFE', 'LIDER', 'LIDER DE CUARTO DE SECADO',
+                'MANTENIMIENTO', 'MOLDERO', 'MONTACARGUISTA', 'MONTADOR', 'OPERARIO',
+                'PRE-EXPANSION', 'REPARACION', 'STAFF', 'SUPERVISOR', 'TECNICO', 'CORTE',
+            ],
+            'ASSY': [
+                'AYUDANTE GENERAL', 'CHOFER', 'COMEDOR', 'INSPECTOR DE CALIDAD', 'JARDINERO',
+                'LIMPIEZA', 'RECLUTAMIENTO', 'SEGURIDAD', 'SOLDADOR', 'CAPTURISTA', 'GERENTE',
+                'OPERARIO', 'STAFF', 'SUPERVISOR',
+            ],
+            'EPS CUTTING': ['AYUDANTE GENERAL', 'GERENTE', 'MANTENIMIENTO', 'CORTE'],
+            'EMBARQUE': ['AYUDANTE GENERAL', 'CAPTURISTA', 'GERENTE', 'OPERARIO', 'STAFF'],
+            'MATERIAL': ['AYUDANTE GENERAL', 'GERENTE', 'STAFF', 'AYUDANTE'],
+            'CALIDAD': [
+                'INSPECTOR DE CALIDAD', 'OQC SISTEMA', 'CAPTURISTA', 'GERENTE',
+                'JEFE', 'LIDER', 'STAFF', 'SUPERVISOR',
+            ],
+            'RECURSOS HUMANOS': ['GERENTE', 'STAFF', 'AYUDANTE'],
+            'EPS ALMACEN': ['CAPTURISTA', 'GERENTE', 'LIDER', 'STAFF', 'AYUDANTE'],
+        };
+
+        function syncPuestos(area, puestoActual = '') {
+            const puestoSelect = fields['puesto'];
+            const opciones = puestosPorArea[area] || [];
+            puestoSelect.replaceChildren(new Option(area ? 'Selecciona un puesto' : 'Selecciona primero el área', ''));
+            opciones.forEach((puesto) => puestoSelect.add(new Option(puesto, puesto)));
+
+            const puestoNormalizado = getDisplayValue(puestoActual).trim();
+            if (puestoNormalizado && !opciones.includes(puestoNormalizado)) {
+                puestoSelect.add(new Option(puestoNormalizado, puestoNormalizado));
+            }
+            puestoSelect.value = puestoNormalizado;
+            puestoSelect.disabled = opciones.length === 0 && !puestoNormalizado;
+        }
+
+        fields['area'].addEventListener('change', () => syncPuestos(fields['area'].value));
+
         function getRutaListaPorEmpresa() {
             const empresa = (companyName.textContent || '').toUpperCase();
             if (empresa.includes('KRONOS')) return 'Kronos.html';
@@ -1824,11 +1862,13 @@
             fields['edad'].value = getDisplayValue(data.edad);
             setSelectValue(fields['genero'], data.genero);
             setSelectValue(fields['estado-civil'], data.estado_civil);
+            fields['nacionalidad'].value = getDisplayValue(data.nacionalidad);
             fields['curp'].value = getDisplayValue(data.curp).toUpperCase();
             fields['rfc'].value = getDisplayValue(data.rfc).toUpperCase();
             fields['nss'].value = getDisplayValue(data.nss);
             fields['tel-movil'].value = getDisplayValue(data.tel_movil);
             fields['correo'].value = getDisplayValue(data.correo);
+            fields['procedencia'].value = getDisplayValue(data.procedencia);
             fields['cp'].value = getDisplayValue(data.codigo_postal);
             fields['calle'].value = getDisplayValue(data.calle);
             fields['num-ext'].value = getDisplayValue(data.num_ext);
@@ -1840,9 +1880,8 @@
             setSelectValue(fields['emergencia-parentesco'], data.parentesco_emergencia);
             fields['emergencia-telefono'].value = getDisplayValue(data.telefono_emergencia);
             fields['no-empleado'].value = getDisplayValue(data.no_empleado);
-            setSelectValue(fields['personal'], data.personal);
-            fields['puesto'].value = getDisplayValue(data.puesto);
             setSelectValue(fields['area'], data.area);
+            syncPuestos(data.area, data.puesto);
             setSelectValue(fields['turno'], data.turno);
             fields['salario'].value = getDisplayValue(data.salario);
             setSelectValue(fields['pago'], data.pago);
@@ -2037,10 +2076,12 @@
                 edad: fields['edad'].value.trim(),
                 genero: fields['genero'].value.trim(),
                 estado_civil: fields['estado-civil'].value.trim(),
+                nacionalidad: fields['nacionalidad'].value.trim(),
                 rfc: fields['rfc'].value.trim().toUpperCase(),
                 nss: fields['nss'].value.trim(),
                 tel_movil: fields['tel-movil'].value.trim(),
                 correo: fields['correo'].value.trim(),
+                procedencia: fields['procedencia'].value.trim(),
                 codigo_postal: fields['cp'].value.trim(),
                 calle: fields['calle'].value.trim(),
                 num_ext: fields['num-ext'].value.trim(),
@@ -2052,7 +2093,6 @@
                 parentesco_emergencia: fields['emergencia-parentesco'].value.trim(),
                 telefono_emergencia: fields['emergencia-telefono'].value.trim(),
                 no_empleado: fields['no-empleado'].value.trim(),
-                personal: fields['personal'].value.trim(),
                 puesto: fields['puesto'].value.trim(),
                 area: fields['area'].value.trim(),
                 turno: fields['turno'].value.trim(),
@@ -2412,11 +2452,13 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 edad: fields['edad'].value.trim(),
                 genero: fields['genero'].value.trim(),
                 estado_civil: fields['estado-civil'].value.trim(),
+                nacionalidad: fields['nacionalidad'].value.trim(),
                 curp: fields['curp'].value.trim().toUpperCase(),
                 rfc: fields['rfc'].value.trim().toUpperCase(),
                 nss: fields['nss'].value.trim(),
                 tel_movil: fields['tel-movil'].value.trim(),
                 correo: fields['correo'].value.trim(),
+                procedencia: fields['procedencia'].value.trim(),
                 calle: fields['calle'].value.trim(),
                 numeracion: `${fields['num-ext'].value.trim()} / ${fields['num-int'].value.trim()}`,
                 colonia: fields['colonia'].value.trim(),
@@ -2425,7 +2467,6 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 emergencia_parentesco: fields['emergencia-parentesco'].value.trim(),
                 emergencia_telefono: fields['emergencia-telefono'].value.trim(),
                 no_empleado: fields['no-empleado'].value.trim(),
-                personal: fields['personal'].value.trim(),
                 puesto: fields['puesto'].value.trim(),
                 area: fields['area'].value.trim(),
                 turno: fields['turno'].value.trim(),
