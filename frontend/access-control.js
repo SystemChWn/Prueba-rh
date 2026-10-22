@@ -175,7 +175,6 @@
         'Kronos.html': 'recursos_humanos',
         'asistencia.html': 'recursos_humanos',
         'InicioReclu.html': 'reclutamiento',
-        'captura.html': 'control_asistencias',
     };
 
     const pageName = window.location.pathname.split('/').pop() || '';

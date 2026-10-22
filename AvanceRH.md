@@ -82,10 +82,6 @@ Monitoreo `asistencia.html`:
 
 ✓ Visualización y consulta de checadas y puntualidad del personal por fecha, área y turno.
 
-# Captura de Eventos `captura.html`:
-
-✓ Formulario operativo para el registro puntual de justificantes, permisos, horas extras y vacaciones.
-
 ## Kiosco Interactivo y Bot de WhatsApp
 Servidor de WhatsApp `bot.py`:
 
