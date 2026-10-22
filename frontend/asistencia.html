@@ -528,73 +528,6 @@
             </div>
         </div>
 
-        <!-- RECUADROS INFERIORES -->
-        <div class="half-container">
-            <div class="half-card">
-                <h3>ENVÍO DE ASISTENCIA DEL ÁREA</h3>
-                <p class="fecha-hoy"><span id="current-date"></span></p>
-                <p class="fecha-hoy" style="display: flex; justify-content: space-between; align-items: center; gap: 20px; font-size: 15px;">
-                    <span><strong>Turno:</strong> <span id="turno-global"></span></span>
-                    <button id="btn-exportar-excel" type="button" class="btn btn-primary" onclick="exportarAsistenciaExcel()">Descargar Excel</button>
-                </p>
-                <br>
-                <div class="table-responsive">
-                    <table class="asistencia-status-table">
-                        <thead>
-                            <tr>
-                                <th>Responsable</th>
-                                <th>Departamento</th>
-                                <th>Discrepancias</th>
-                                <th>Registro</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-envio-asistencia-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="content-section split-section">
-                <div class="sub-box">
-                    <h3>Envío de Reporte Manual</h3>
-                    <div class="filtros-fila">
-                        <div class="form-group flex-1">
-                            <label for="periodicidad">Periodicidad:</label>
-                            <select id="periodicidad" class="form-control" onchange="cambiarFiltrosReporte()">
-                                <option value="diario">Diario</option>
-                                <option value="semanal">Semanal</option>
-                                <option value="mensual">Mensual</option>
-                            </select>
-                        </div>
-                        <div id="filtro-dinamico" class="form-group flex-2"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="correo-manual">Correo Electrónico:</label>
-                        <input type="email" id="correo-manual" class="form-control">
-                    </div>
-                    <div class="botones-accion">
-                        <button type="button" class="btn btn-secondary">Vista Previa</button>
-                        <button type="button" class="btn btn-primary">Enviar Reporte</button>
-                    </div>
-                </div>
-
-                <div class="sub-box">
-                    <h3>Envío Automático</h3>
-                    <div class="form-group input-group">
-                        <input type="email" id="nuevo-correo-auto" class="form-control">
-                        <button type="button" class="btn btn-primary" onclick="agregarCorreoAuto()">Agregar</button>
-                    </div>
-                    <div class="tags-container">
-                        <label>Destinatarios Automáticos:</label>
-                        <ul id="lista-correos-auto" class="correo-list">
-                            <li class="correo-item">
-                                <span>supervisor@empresa.com</span>
-                                <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">✖</button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- SCRIPTS DE CONTROL -->
@@ -1024,10 +957,6 @@
             listaCorreos.appendChild(nuevoItem);
             inputCorreo.value = '';
         }
-
-        window.onload = function() {
-            cambiarFiltrosReporte();
-        };
 
         function cambiarFiltrosReporte() {
             const periodicidad = document.getElementById('periodicidad').value;
