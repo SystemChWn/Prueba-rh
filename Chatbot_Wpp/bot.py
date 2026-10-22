@@ -19,7 +19,7 @@ def conectar_db():
   host = os.getenv("POSTGRES_HOST", "postgres")
   if host == "postgres" and not os.path.exists("/.dockerenv"):
     host = "localhost"
-
+termun
   return psycopg2.connect(
     host=host,
     port=os.getenv("POSTGRES_PORT", "5432"),
