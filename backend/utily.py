@@ -205,8 +205,7 @@ def incidencias_empleado(registro_id):
                 asegurar_tabla_incidencias(cur)
                 cur.execute(
                     """
-                    SELECT r.nombre_completo, r.tel_movil, r.nombre_emergencia,
-                           r.telefono_emergencia, ip.no_empleado
+                    SELECT ip.no_empleado
                     FROM registro AS r
                     LEFT JOIN ingresos_puesto AS ip ON ip.registro_id = r.id
                     WHERE r.id = %s
@@ -218,19 +217,17 @@ def incidencias_empleado(registro_id):
                 empleado = cur.fetchone()
                 if not empleado:
                     return jsonify({'error': 'No se encontró al empleado.'}), 404
-                nombre, telefono, nombre_emergencia, telefono_emergencia, no_empleado = empleado
+                no_empleado = empleado[0]
                 if not no_empleado:
                     return jsonify({'error': 'El empleado no tiene un número de empleado registrado.'}), 409
 
                 cur.execute(
                     """
                     INSERT INTO incidencias_chatbot (
-                        registro_id, no_empleado, tipo, motivo, fecha_inicio,
-                        fecha_reingreso, telefono_colaborador, nombre_contacto_emergencia,
-                        telefono_contacto_emergencia, estado_colaborador,
-                        estado_contacto_emergencia
+                        registro_id, no_empleado, tipo, motivo, fecha_inicio, fecha_reingreso,
+                        estado_colaborador, estado_contacto_emergencia
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'no_aplica', 'no_aplica')
+                    VALUES (%s, %s, %s, %s, %s, %s, 'no_aplica', 'no_aplica')
                     RETURNING id, tipo, motivo, fecha_inicio, fecha_reingreso,
                               consecutivo_indisciplina, estado_contacto_emergencia,
                               contacto_programado_at, created_at
@@ -242,9 +239,6 @@ def incidencias_empleado(registro_id):
                         motivo or tipo,
                         fecha_inicio,
                         fecha_reingreso,
-                        telefono,
-                        nombre_emergencia,
-                        telefono_emergencia,
                     ),
                 )
                 incidencia = serializar_incidencia(cur.fetchone())

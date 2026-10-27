@@ -11,6 +11,8 @@ class FakeCursor:
         self.result = None
         self.rows = []
         self.inserted = None
+        self.insert_sql = ""
+        self.delete_sql = ""
 
     def __enter__(self):
         return self
@@ -21,9 +23,10 @@ class FakeCursor:
     def execute(self, query, params=None):
         if 'FROM information_schema.columns' in query:
             self.result = ('YES',)
-        elif 'SELECT r.nombre_completo, r.tel_movil' in query:
-            self.result = ('Ana Colaboradora', '8112345678', 'Contacto', '8111223344', '1001')
+        elif 'SELECT ip.no_empleado' in query:
+            self.result = ('1001',)
         elif 'INSERT INTO incidencias_chatbot' in query:
+            self.insert_sql = query
             self.inserted = params
             self.result = (
                 17,
@@ -51,6 +54,7 @@ class FakeCursor:
                 )
             ]
         elif 'DELETE FROM incidencias_chatbot' in query:
+            self.delete_sql = query
             self.result = (17,) if params == (17, 1) else None
         else:
             self.result = None
@@ -112,6 +116,9 @@ class IncidenciasApiTests(unittest.TestCase):
             date(2026, 11, 1),
             date(2026, 11, 3),
         ))
+        self.assertEqual(len(self.cursor.inserted), 6)
+        self.assertNotIn('telefono_contacto_emergencia', self.cursor.insert_sql)
+        self.assertNotIn('nombre_contacto_emergencia', self.cursor.insert_sql)
 
     def test_get_returns_database_incident_history(self):
         with patch.object(utily, 'get_db_connection', return_value=self.connection):
@@ -127,6 +134,36 @@ class IncidenciasApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()['ok'])
+        self.assertIn("tipo NOT IN ('suspension', 'indisciplina')", self.cursor.delete_sql)
+        self.assertIn("estado_contacto_emergencia != 'pendiente'", self.cursor.delete_sql)
+
+    def test_chatbot_managed_incidence_still_uses_backend_proxy(self):
+        datos = {'tipo': 'indisciplina', 'no_empleado': '1001', 'motivo': 'Defectos'}
+
+        class FakeResponse:
+            status_code = 201
+
+            @staticmethod
+            def json():
+                return {'status': 'sent', 'incidencia_id': 42}
+
+        with (
+            patch.dict(os.environ, {
+                'CHATBOT_INTERNAL_URL': 'http://chatbot:5000',
+                'CHATBOT_INTERNAL_TOKEN': 'private-token',
+            }),
+            patch.object(utily.requests, 'post', return_value=FakeResponse()) as post,
+        ):
+            response = self.client.post('/api/incidencias', json=datos)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()['incidencia_id'], 42)
+        post.assert_called_once_with(
+            'http://chatbot:5000/api/internal/incidencias',
+            json=datos,
+            headers={'X-Internal-Token': 'private-token'},
+            timeout=30,
+        )
 
 
 if __name__ == '__main__':
