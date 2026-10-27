@@ -280,17 +280,32 @@ def asegurar_tabla_incidencias(cur):
       fecha_reingreso DATE,
       consecutivo_indisciplina INTEGER,
       telefono_colaborador VARCHAR(30) NOT NULL,
-      nombre_contacto_emergencia VARCHAR(255),
-      telefono_contacto_emergencia VARCHAR(30),
       estado_colaborador VARCHAR(20) NOT NULL DEFAULT 'pendiente',
-      respuesta_colaborador_at TIMESTAMP,
       estado_contacto_emergencia VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+      respuesta_colaborador_at TIMESTAMP,
       contacto_programado_at TIMESTAMP,
       contacto_enviado_at TIMESTAMP,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
     """
   )
+  for nombre_columna in ("nombre_contacto_emergencia", "telefono_contacto_emergencia"):
+    cur.execute(
+      f"""
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'incidencias_chatbot'
+            AND column_name = '{nombre_columna}'
+        ) THEN
+          ALTER TABLE incidencias_chatbot ADD COLUMN {nombre_columna} TEXT;
+        END IF;
+      END $$;
+      """
+    )
 
 
 def fecha_incidente(valor, campo, requerida=False):
@@ -817,6 +832,35 @@ def webhook_whatsapp():
     return enviar_respuesta(remitente, "Opción no válida. Envía un número del 1 al 3, o 0.")
 
   return bienvenida(remitente)
+
+
+@app.route("/api/incidencias", methods=["POST"])
+def guardar_incidencia_publica():
+  datos = request.get_json(silent=True)
+  if not isinstance(datos, dict):
+    return jsonify({"error": "Se requiere un objeto JSON."}), 400
+  try:
+    resultado = registrar_incidencia(datos)
+  except ValueError as error:
+    return jsonify({"error": str(error)}), 400
+  except LookupError as error:
+    return jsonify({"error": str(error)}), 404
+  except ErrorEnvioWhatsApp as error:
+    respuesta = {"error": str(error)}
+    if error.incidencia_id is not None:
+      respuesta["incidencia_id"] = error.incidencia_id
+    return jsonify(respuesta), 502
+  except psycopg2.Error:
+    logger.exception("No se pudo registrar la incidencia")
+    return jsonify({"error": "No se pudo guardar la incidencia."}), 500
+
+  return jsonify({
+    "status": "sent",
+    "incidencia_id": resultado["incidencia_id"],
+    "nombre_empleado": resultado["nombre_empleado"],
+    "consecutivo_indisciplina": resultado["consecutivo_indisciplina"],
+    "contacto_emergencia_programado": resultado["contacto_emergencia_programado"],
+  }), 201
 
 
 @app.route("/api/internal/incidencias", methods=["POST"])

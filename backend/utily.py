@@ -86,6 +86,204 @@ def registrar_incidencia_chatbot():
     return jsonify(resultado), respuesta.status_code
 
 
+def asegurar_tabla_incidencias(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS incidencias_chatbot (
+            id BIGSERIAL PRIMARY KEY,
+            registro_id INTEGER NOT NULL REFERENCES registro(id) ON DELETE CASCADE,
+            no_empleado VARCHAR(50) NOT NULL,
+            tipo VARCHAR(40) NOT NULL,
+            motivo TEXT NOT NULL,
+            fecha_inicio DATE,
+            fecha_reingreso DATE,
+            consecutivo_indisciplina INTEGER,
+            telefono_colaborador VARCHAR(30),
+            nombre_contacto_emergencia VARCHAR(255),
+            telefono_contacto_emergencia VARCHAR(30),
+            estado_colaborador VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+            respuesta_colaborador_at TIMESTAMP,
+            estado_contacto_emergencia VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+            contacto_programado_at TIMESTAMP,
+            contacto_enviado_at TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cur.execute(
+        """
+        SELECT is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'incidencias_chatbot'
+          AND column_name = 'telefono_colaborador'
+        """
+    )
+    columna_telefono = cur.fetchone()
+    if columna_telefono and columna_telefono[0] == 'NO':
+        cur.execute(
+            "ALTER TABLE incidencias_chatbot ALTER COLUMN telefono_colaborador DROP NOT NULL"
+        )
+
+
+def serializar_incidencia(row):
+    return {
+        'id': row[0],
+        'type': row[1],
+        'motivo': row[2] or '',
+        'fecha_inicio': row[3].isoformat() if row[3] else None,
+        'fecha_reingreso': row[4].isoformat() if row[4] else None,
+        'consecutivo_indisciplina': row[5],
+        'estado_contacto_emergencia': row[6],
+        'contacto_programado_at': row[7].isoformat() if row[7] else None,
+        'createdAt': row[8].isoformat() if row[8] else None,
+    }
+
+
+@app.route('/api/empleados/<int:registro_id>/incidencias', methods=['GET', 'POST'])
+def incidencias_empleado(registro_id):
+    if request.method == 'GET':
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    asegurar_tabla_incidencias(cur)
+                    cur.execute(
+                        """
+                        SELECT id, tipo, motivo, fecha_inicio, fecha_reingreso,
+                               consecutivo_indisciplina, estado_contacto_emergencia,
+                               contacto_programado_at, created_at
+                        FROM incidencias_chatbot
+                        WHERE registro_id = %s
+                        ORDER BY created_at ASC, id ASC
+                        """,
+                        (registro_id,),
+                    )
+                    incidencias = [serializar_incidencia(row) for row in cur.fetchall()]
+            return jsonify({'incidencias': incidencias}), 200
+        except psycopg2.Error as error:
+            print(f"Error al consultar incidencias del empleado {registro_id}: {error}")
+            return jsonify({'error': 'No se pudieron consultar las incidencias.'}), 500
+
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({'error': 'Se requiere un objeto JSON.'}), 400
+
+    tipo = str(datos.get('tipo') or '').strip()
+    if tipo not in {'entrada-salida', 'vacaciones', 'incapacidad'}:
+        return jsonify({'error': 'El tipo de incidencia debe registrarse por el flujo correspondiente.'}), 400
+
+    motivo = str(datos.get('motivo') or '').strip()
+    if len(motivo) > 1000:
+        return jsonify({'error': 'El motivo no puede superar 1000 caracteres.'}), 400
+    if tipo == 'entrada-salida' and not motivo:
+        return jsonify({'error': 'El motivo de entrada o salida es obligatorio.'}), 400
+
+    def fecha_payload(valor, nombre):
+        if not valor:
+            return None
+        try:
+            return datetime.strptime(str(valor), '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError(f'La fecha {nombre} no tiene un formato válido.')
+
+    try:
+        fecha_inicio = fecha_payload(datos.get('fecha_inicio'), 'inicial')
+        fecha_reingreso = fecha_payload(datos.get('fecha_reingreso'), 'final')
+        if tipo == 'entrada-salida':
+            fecha_inicio = fecha_inicio or datetime.now().date()
+            fecha_reingreso = fecha_inicio
+        elif not fecha_inicio or not fecha_reingreso:
+            return jsonify({'error': 'Las fechas inicial y final son obligatorias.'}), 400
+        if fecha_inicio and fecha_reingreso and fecha_reingreso < fecha_inicio:
+            return jsonify({'error': 'La fecha final no puede ser anterior a la inicial.'}), 400
+    except ValueError as error:
+        return jsonify({'error': str(error)}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_incidencias(cur)
+                cur.execute(
+                    """
+                    SELECT r.nombre_completo, r.tel_movil, r.nombre_emergencia,
+                           r.telefono_emergencia, ip.no_empleado
+                    FROM registro AS r
+                    LEFT JOIN ingresos_puesto AS ip ON ip.registro_id = r.id
+                    WHERE r.id = %s
+                    ORDER BY ip.id DESC NULLS LAST
+                    LIMIT 1
+                    """,
+                    (registro_id,),
+                )
+                empleado = cur.fetchone()
+                if not empleado:
+                    return jsonify({'error': 'No se encontró al empleado.'}), 404
+                nombre, telefono, nombre_emergencia, telefono_emergencia, no_empleado = empleado
+                if not no_empleado:
+                    return jsonify({'error': 'El empleado no tiene un número de empleado registrado.'}), 409
+
+                cur.execute(
+                    """
+                    INSERT INTO incidencias_chatbot (
+                        registro_id, no_empleado, tipo, motivo, fecha_inicio,
+                        fecha_reingreso, telefono_colaborador, nombre_contacto_emergencia,
+                        telefono_contacto_emergencia, estado_colaborador,
+                        estado_contacto_emergencia
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'no_aplica', 'no_aplica')
+                    RETURNING id, tipo, motivo, fecha_inicio, fecha_reingreso,
+                              consecutivo_indisciplina, estado_contacto_emergencia,
+                              contacto_programado_at, created_at
+                    """,
+                    (
+                        registro_id,
+                        str(no_empleado),
+                        tipo,
+                        motivo or tipo,
+                        fecha_inicio,
+                        fecha_reingreso,
+                        telefono,
+                        nombre_emergencia,
+                        telefono_emergencia,
+                    ),
+                )
+                incidencia = serializar_incidencia(cur.fetchone())
+            conn.commit()
+        return jsonify({'incidencia': incidencia}), 201
+    except psycopg2.Error as error:
+        print(f"Error al guardar incidencia del empleado {registro_id}: {error}")
+        return jsonify({'error': 'No se pudo guardar la incidencia.'}), 500
+
+
+@app.route('/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>', methods=['DELETE'])
+def eliminar_incidencia_empleado(registro_id, incidencia_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_incidencias(cur)
+                cur.execute(
+                    """
+                    DELETE FROM incidencias_chatbot
+                    WHERE id = %s
+                      AND registro_id = %s
+                      AND tipo NOT IN ('suspension', 'indisciplina')
+                      AND estado_contacto_emergencia != 'pendiente'
+                    RETURNING id
+                    """,
+                    (incidencia_id, registro_id),
+                )
+                eliminada = cur.fetchone()
+            conn.commit()
+        if not eliminada:
+            return jsonify({
+                'error': 'La incidencia no existe o no se puede eliminar porque forma parte de un aviso de WhatsApp.'
+            }), 409
+        return jsonify({'ok': True}), 200
+    except psycopg2.Error as error:
+        print(f"Error al eliminar incidencia {incidencia_id}: {error}")
+        return jsonify({'error': 'No se pudo eliminar la incidencia.'}), 500
+
+
 DEFAULT_DOCS_ROOT = os.getenv(
     "EMPLOYEE_DOCS_ROOT",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),

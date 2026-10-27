@@ -1630,9 +1630,9 @@
         }
 
         const params = new URLSearchParams(window.location.search);
-        const registroId = params.get('registro_id') || params.get('id') || localStorage.getItem('ultimoRegistroId') || getFallbackRegistroId();
-        if (registroId) {
-            localStorage.setItem('ultimoRegistroId', String(registroId));
+        const registroId = params.get('registro_id') || params.get('id') || getFallbackRegistroId();
+        if (!registroId) {
+            console.warn('No se encontró un registro_id válido para cargar el empleado.');
         }
 
         const statusBox = document.getElementById('status-box');
@@ -2529,54 +2529,83 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             }
         }
 
-        const employeeIncidentsKey = 'rh_employee_incidents_v1';
-
-        function readEmployeeIncidents() {
-            try {
-                const incidents = JSON.parse(localStorage.getItem(employeeIncidentsKey) || '{}');
-                return incidents && typeof incidents === 'object' ? incidents : {};
-            } catch (_) {
-                return {};
-            }
-        }
+        let employeeIncidents = [];
 
         function getEmployeeIncidentList() {
-            const incidents = readEmployeeIncidents();
-            const key = String(registroId || currentEmployeeCurp || '').trim();
-            return Array.isArray(incidents[key]) ? incidents[key] : [];
+            return employeeIncidents;
         }
 
-        function saveEmployeeIncident(incident) {
-            const incidents = readEmployeeIncidents();
-            const key = String(registroId || currentEmployeeCurp || '').trim();
-            if (!key) return;
-            if (!Array.isArray(incidents[key])) incidents[key] = [];
-            incidents[key].push({ ...incident, createdAt: new Date().toISOString() });
-            localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
+        function mapEmployeeIncident(record) {
+            const titles = {
+                suspension: 'Suspensión',
+                'entrada-salida': 'Entrada/Salida',
+                indisciplina: 'Indisciplina',
+                vacaciones: 'Vacaciones',
+                incapacidad: 'Incapacidad',
+                carta_compromiso: 'Carta compromiso',
+                baja_confirmada: 'Baja confirmada',
+            };
+            const startDate = record.fecha_inicio;
+            let endDate = record.fecha_reingreso;
+            if (record.type === 'suspension' && endDate) {
+                const returnDate = new Date(`${endDate}T00:00:00`);
+                returnDate.setDate(returnDate.getDate() - 1);
+                endDate = [
+                    returnDate.getFullYear(),
+                    String(returnDate.getMonth() + 1).padStart(2, '0'),
+                    String(returnDate.getDate()).padStart(2, '0'),
+                ].join('-');
+            }
+            const incidentDates = startDate && endDate
+                ? getDateRange(startDate, endDate)
+                : (record.type === 'indisciplina' && record.createdAt
+                    ? [record.createdAt.slice(0, 10)]
+                    : []);
+            const detail = record.type === 'entrada-salida'
+                ? record.motivo
+                : `${record.motivo}${startDate && endDate ? ` (${formatIncidentDate(startDate)} a ${formatIncidentDate(endDate)})` : ''}`;
+
+            return {
+                id: record.id,
+                type: record.type,
+                title: titles[record.type] || record.type,
+                detail,
+                incidentDates,
+                suspendedDates: record.type === 'suspension' ? incidentDates : [],
+                createdAt: record.createdAt,
+                emergencyPending: record.estado_contacto_emergencia === 'pendiente',
+            };
         }
 
-        function readIncidentFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve({
-                    name: file.name,
-                    type: file.type || 'application/octet-stream',
-                    dataUrl: reader.result,
-                });
-                reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function deleteEmployeeIncident(index) {
-            if (!window.confirm('¿Deseas eliminar esta notificación?')) return;
-            const incidents = readEmployeeIncidents();
-            const key = String(registroId || currentEmployeeCurp || '').trim();
-            if (!Array.isArray(incidents[key]) || !incidents[key][index]) return;
-            incidents[key].splice(index, 1);
-            localStorage.setItem(employeeIncidentsKey, JSON.stringify(incidents));
+        async function cargarIncidenciasEmpleado() {
+            if (!registroId) {
+                throw new Error('No se pudo identificar al empleado para consultar sus incidencias.');
+            }
+            const respuesta = await fetch(`/api/empleados/${encodeURIComponent(registroId)}/incidencias`);
+            const resultado = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(resultado.error || 'No se pudieron consultar las incidencias.');
+            }
+            employeeIncidents = (resultado.incidencias || []).map(mapEmployeeIncident);
             renderEmployeeNotifications();
             renderAttendanceCalendar();
+        }
+
+        async function deleteEmployeeIncident(incidenciaId) {
+            if (!window.confirm('¿Deseas eliminar esta notificación?')) return;
+            try {
+                const respuesta = await fetch(
+                    `/api/empleados/${encodeURIComponent(registroId)}/incidencias/${encodeURIComponent(incidenciaId)}`,
+                    { method: 'DELETE' },
+                );
+                const resultado = await respuesta.json();
+                if (!respuesta.ok) {
+                    throw new Error(resultado.error || 'No se pudo eliminar la incidencia.');
+                }
+                await cargarIncidenciasEmpleado();
+            } catch (error) {
+                alert(error.message || 'No se pudo eliminar la incidencia.');
+            }
         }
 
         function formatIncidentDate(dateValue) {
@@ -2633,10 +2662,10 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             }
 
             const groupedIncidents = new Map();
-            incidents.slice().reverse().forEach((incident, reverseIndex) => {
-                const dayKey = incident.createdAt ? new Date(incident.createdAt).toLocaleDateString('en-CA') : `legacy-${reverseIndex}`;
+            incidents.slice().reverse().forEach((incident) => {
+                const dayKey = incident.createdAt ? new Date(incident.createdAt).toLocaleDateString('en-CA') : `incident-${incident.id}`;
                 if (!groupedIncidents.has(dayKey)) groupedIncidents.set(dayKey, []);
-                groupedIncidents.get(dayKey).push({ incident, reverseIndex });
+                groupedIncidents.get(dayKey).push(incident);
             });
 
             groupedIncidents.forEach((group, dayKey) => {
@@ -2644,19 +2673,22 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 dayGroup.className = 'notification-day-group';
                 const dayHeading = document.createElement('div');
                 dayHeading.className = 'notification-day-heading';
-                dayHeading.textContent = formatNotificationDay(group[0].incident.createdAt);
+                dayHeading.textContent = formatNotificationDay(group[0].createdAt);
                 dayGroup.appendChild(dayHeading);
 
-                group.forEach(({ incident, reverseIndex }) => {
+                group.forEach((incident) => {
                 const item = document.createElement('div');
                 item.className = 'notification-item';
                 item.classList.add(`type-${incident.type === 'carta-suspension' ? 'carta-compromiso' : incident.type}`);
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'notification-delete';
-                deleteButton.type = 'button';
-                deleteButton.setAttribute('aria-label', 'Eliminar notificación');
-                deleteButton.textContent = '✕';
-                deleteButton.addEventListener('click', () => deleteEmployeeIncident(incidents.length - 1 - reverseIndex));
+                if (!incident.emergencyPending && !['suspension', 'indisciplina'].includes(incident.type)) {
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'notification-delete';
+                    deleteButton.type = 'button';
+                    deleteButton.setAttribute('aria-label', 'Eliminar notificación');
+                    deleteButton.textContent = '✕';
+                    deleteButton.addEventListener('click', () => deleteEmployeeIncident(incident.id));
+                    item.appendChild(deleteButton);
+                }
                 const titleRow = document.createElement('div');
                 titleRow.className = 'notification-title-row';
                 const title = document.createElement('strong');
@@ -2668,29 +2700,12 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                 const detailText = String(incident.detail || '');
                 const dateMatch = detailText.match(/^(.*?)(?: \(([^)]+)\))$/);
                 detail.textContent = dateMatch ? dateMatch[1] : detailText;
-                item.append(deleteButton, titleRow, detail);
+                item.append(titleRow, detail);
                 if (dateMatch) {
                     const dates = document.createElement('strong');
                     dates.className = 'notification-dates';
                     dates.textContent = dateMatch[2];
                     item.appendChild(dates);
-                }
-                if (incident.file && incident.file.dataUrl) {
-                    const fileActions = document.createElement('div');
-                    fileActions.className = 'notification-file-actions';
-                    const previewLink = document.createElement('a');
-                    previewLink.className = 'notification-file-link';
-                    previewLink.href = incident.file.dataUrl;
-                    previewLink.target = '_blank';
-                    previewLink.rel = 'noopener';
-                    previewLink.textContent = 'Vista previa';
-                    const downloadLink = document.createElement('a');
-                    downloadLink.className = 'notification-file-link';
-                    downloadLink.href = incident.file.dataUrl;
-                    downloadLink.download = incident.file.name || 'archivo-incidencia';
-                    downloadLink.textContent = 'Descargar';
-                    fileActions.append(previewLink, downloadLink);
-                    item.appendChild(fileActions);
                 }
                 dayGroup.appendChild(item);
                 });
@@ -2848,21 +2863,12 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             }
 
             const motivo = config.motivo || config.motivos?.join(', ') || config.otro || '';
-            const range = config.desde ? getDateRange(config.desde, config.hasta) : [];
-            const fileInputId = {
-                suspension: 'suspension-archivo',
-                'entrada-salida': 'pase-archivo',
-                indisciplina: 'indiciplina-archivo',
-            }[tipo];
             const submitButton = event.submitter;
             if (submitButton) submitButton.disabled = true;
-            let file = null;
             try {
-                if (fileInputId) {
-                    const selectedFile = document.getElementById(fileInputId)?.files?.[0];
-                    if (selectedFile) file = await readIncidentFile(selectedFile);
-                }
-
+                const detalle = tipo === 'entrada-salida'
+                    ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${formatIncidentTime(config.hora)}. ${motivo}`
+                    : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`;
                 if (tipo === 'suspension' || tipo === 'indisciplina') {
                     const motivosIndisciplina = {
                         'SALIDAS SIN PERMISO DEL AREA': 'salidas sin permiso del area',
@@ -2909,18 +2915,26 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                     if (!respuesta.ok) {
                         throw new Error(resultado.error || 'No se pudo enviar el aviso de WhatsApp.');
                     }
+                } else {
+                    const datosIncidencia = {
+                        tipo,
+                        motivo: tipo === 'entrada-salida' ? detalle : (motivo || config.title),
+                        fecha_inicio: config.desde || '',
+                        fecha_reingreso: config.hasta || '',
+                    };
+                    const respuesta = await fetch(
+                        `/api/empleados/${encodeURIComponent(registroId)}/incidencias`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(datosIncidencia),
+                        },
+                    );
+                    const resultado = await respuesta.json();
+                    if (!respuesta.ok) {
+                        throw new Error(resultado.error || 'No se pudo guardar la incidencia.');
+                    }
                 }
-
-                saveEmployeeIncident({
-                    type: tipo,
-                    title: config.title,
-                    detail: tipo === 'entrada-salida'
-                        ? `${config.tipo === 'entrada' ? 'Entrada' : 'Salida'} a las ${formatIncidentTime(config.hora)}. ${motivo}`
-                        : `${motivo}${config.desde ? ` (${formatIncidentDate(config.desde)} a ${formatIncidentDate(config.hasta)})` : ''}`,
-                    suspendedDates: tipo === 'suspension' ? range : [],
-                    incidentDates: ['suspension', 'vacaciones', 'incapacidad'].includes(tipo) ? range : [],
-                    file: file ? { name: file.name } : null,
-                });
             } catch (error) {
                 alert(error.message || 'No se pudo guardar la incidencia.');
                 return;
@@ -2929,8 +2943,12 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             }
             event.target.reset();
             cerrarIncidencia();
-            renderEmployeeNotifications();
-            renderAttendanceCalendar();
+            try {
+                await cargarIncidenciasEmpleado();
+            } catch (error) {
+                console.error('La incidencia se guardó, pero no se pudo actualizar el historial.', error);
+                alert('La incidencia se guardó, pero no se pudo actualizar el historial. Recarga la página para consultarlo.');
+            }
         }
 
         let calendarDate = new Date();
@@ -2989,6 +3007,13 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
         document.getElementById('calendar-next')?.addEventListener('click', () => changeCalendarMonth(1));
         renderAttendanceCalendar();
         renderEmployeeNotifications();
+        cargarIncidenciasEmpleado().catch((error) => {
+            console.error('No se pudieron cargar las incidencias del empleado.', error);
+            const container = document.getElementById('notification-history-list');
+            if (container) {
+                container.textContent = error.message || 'No se pudieron cargar las incidencias.';
+            }
+        });
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && document.getElementById('modal-incidencia').style.display === 'flex') {
@@ -3033,13 +3058,6 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                             && (!curpNormalizada || String(empleado.curp || '').trim().toUpperCase() !== curpNormalizada)
                         ));
                         localStorage.setItem('rh_empleados_v1', JSON.stringify(restantes));
-                    }
-
-                    const incidentes = JSON.parse(localStorage.getItem('rh_employee_incidents_v1') || '{}');
-                    if (incidentes && typeof incidentes === 'object') {
-                        delete incidentes[registroIdNormalizado];
-                        if (curpNormalizada) delete incidentes[curpNormalizada];
-                        localStorage.setItem('rh_employee_incidents_v1', JSON.stringify(incidentes));
                     }
 
                     if (localStorage.getItem('ultimoRegistroId') === registroIdNormalizado) {

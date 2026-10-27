@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS incidencias_chatbot (
     fecha_inicio                    DATE,
     fecha_reingreso                 DATE,
     consecutivo_indisciplina        INTEGER,
-    telefono_colaborador            VARCHAR(30) NOT NULL,
+    telefono_colaborador            VARCHAR(30),
     nombre_contacto_emergencia      VARCHAR(255),
     telefono_contacto_emergencia    VARCHAR(30),
     estado_colaborador              VARCHAR(20) NOT NULL DEFAULT 'pendiente',

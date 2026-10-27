@@ -133,6 +133,8 @@ Los sufijos de los nombres corresponden al rol (`colaborador` o `emergencia`) y,
 
 Desde **Asistencia**, Recursos Humanos puede registrar suspensiones, reportes de indisciplina, cartas compromiso y bajas confirmadas. El aviso al colaborador se envía al registrar la incidencia; el aviso al contacto de emergencia se programa para 24 horas después y se cancela si el colaborador responde `Confirmo de mensaje recibido`. Para suspensiones se requieren las fechas de inicio y reingreso. El número móvil y el contacto de emergencia se consultan desde el registro del empleado. Las indisciplinas se cuentan a partir de los registros nuevos de esta función; no existe historial anterior de incidencias en la base de datos actual.
 
+El historial de incidencias del expediente de empleado se consulta y guarda en PostgreSQL mediante `incidencias_chatbot`; el frontend ya no usa `localStorage` para guardar incidencias. Las suspensiones e indisciplinas siguen pasando por el chatbot para conservar sus avisos y temporizador de 24 horas; vacaciones, incapacidades y entradas/salidas se insertan directamente desde el backend.
+
 Después de configurar las variables y aprobar las plantillas, reconstruye y levanta los servicios con `docker compose up -d --build`. Si una plantilla aún no está aprobada o el número telefónico no es válido, el registro mostrará el error del envío y no confirmará que el aviso fue enviado.
 
 ## Limitaciones conocidas
