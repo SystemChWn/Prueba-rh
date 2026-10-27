@@ -52,6 +52,40 @@ def enforce_db_write_lock():
 def health_check():
     return jsonify({'status': 'ok'}), 200
 
+
+@app.route('/api/incidencias', methods=['POST'])
+def registrar_incidencia_chatbot():
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({'error': 'Se requiere un objeto JSON.'}), 400
+
+    chatbot_url = os.getenv('CHATBOT_INTERNAL_URL', 'http://chatbot:5000').rstrip('/')
+    token = os.getenv('CHATBOT_INTERNAL_TOKEN', '').strip()
+    if not token:
+        return jsonify({
+            'error': 'Configura CHATBOT_INTERNAL_TOKEN para habilitar los avisos automáticos.'
+        }), 503
+
+    try:
+        respuesta = requests.post(
+            f'{chatbot_url}/api/internal/incidencias',
+            json=datos,
+            headers={'X-Internal-Token': token},
+            timeout=30,
+        )
+    except requests.RequestException:
+        print('Error al comunicarse con el chatbot para registrar la incidencia.')
+        return jsonify({'error': 'No se pudo contactar el servicio de WhatsApp.'}), 502
+
+    try:
+        resultado = respuesta.json()
+    except ValueError:
+        print('El chatbot respondió con un formato inesperado al registrar la incidencia.')
+        return jsonify({'error': 'El servicio de WhatsApp respondió con un formato inválido.'}), 502
+
+    return jsonify(resultado), respuesta.status_code
+
+
 DEFAULT_DOCS_ROOT = os.getenv(
     "EMPLOYEE_DOCS_ROOT",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads")),

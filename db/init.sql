@@ -68,6 +68,26 @@ CREATE TABLE IF NOT EXISTS chatbot_credenciales (
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS incidencias_chatbot (
+    id                              BIGSERIAL PRIMARY KEY,
+    registro_id                     INTEGER NOT NULL REFERENCES registro(id) ON DELETE CASCADE,
+    no_empleado                     VARCHAR(50) NOT NULL,
+    tipo                            VARCHAR(40) NOT NULL,
+    motivo                          TEXT NOT NULL,
+    fecha_inicio                    DATE,
+    fecha_reingreso                 DATE,
+    consecutivo_indisciplina        INTEGER,
+    telefono_colaborador            VARCHAR(30) NOT NULL,
+    nombre_contacto_emergencia      VARCHAR(255),
+    telefono_contacto_emergencia    VARCHAR(30),
+    estado_colaborador              VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+    respuesta_colaborador_at        TIMESTAMP,
+    estado_contacto_emergencia      VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+    contacto_programado_at          TIMESTAMP,
+    contacto_enviado_at             TIMESTAMP,
+    created_at                      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS usuarios_acceso (
     id                      SERIAL PRIMARY KEY,
     usuario                 VARCHAR(100) NOT NULL UNIQUE,
@@ -92,4 +112,3 @@ ALTER TABLE personal_reclutamiento
     ADD COLUMN IF NOT EXISTS telefono VARCHAR(50);
 ALTER TABLE personal_reclutamiento
     ALTER COLUMN telefono TYPE VARCHAR(50);
-
