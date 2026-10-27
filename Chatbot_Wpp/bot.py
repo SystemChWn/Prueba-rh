@@ -187,6 +187,8 @@ def enviar_respuesta(destinatario, texto):
     )
     response.raise_for_status()
   except requests.RequestException:
+    if "response" in locals():
+      print(f"RESPUESTA META: {response.text}", flush=True)
     logger.exception("No se pudo enviar el mensaje por WhatsApp Cloud API")
     return jsonify({"status": "send_error"}), 502
 
@@ -390,6 +392,12 @@ def registrar_incidencia(datos):
         raise LookupError("No se encontró un empleado con ese número.")
 
       registro_id, nombre, telefono, nombre_emergencia, telefono_emergencia, numero = colaborador
+      telefono_mostrado = re.sub(r"\D", "", str(telefono or ""))
+      telefono_mostrado = f"******{telefono_mostrado[-4:]}" if telefono_mostrado else "sin teléfono"
+      print(
+        f"DEBUG EMPLEADO: Nombre={nombre}, TelefonoReal={telefono_mostrado}",
+        flush=True,
+      )
       if not str(telefono or "").strip():
         raise ValueError("El colaborador no tiene un teléfono móvil registrado.")
       try:
@@ -409,13 +417,37 @@ def registrar_incidencia(datos):
         )
         consecutivo = cur.fetchone()[0] + 1
 
-      template_colaborador, parametros_colaborador = construir_mensaje_colaborador(
-        tipo,
-        motivo,
-        fecha_inicio,
-        fecha_reingreso,
-        consecutivo,
-      )
+      if tipo == "suspension":
+        mensaje_texto = (
+          f"Buen día. Te notificamos que estarás en suspensión a partir del "
+          f"{fecha_inicio.strftime('%d/%m/%Y')} por el motivo de: {motivo}, "
+          f"y regresarás a tus labores el {fecha_reingreso.strftime('%d/%m/%Y')}.\n"
+          "Confirma de mensaje recibido."
+        )
+      elif tipo == "indisciplina":
+        consecuencia = (
+          "Has acumulado tu segundo reporte, por lo que procede tu suspensión laboral."
+          if consecutivo >= 2
+          else "Se le recuerda que la acumulación de 2 reportes será motivo de suspensión."
+        )
+        mensaje_texto = (
+          f"Buen día. Te notificamos que se te ha generado un reporte de indisciplina "
+          f"por el motivo de: {motivo}.\n{consecuencia}\n"
+          "Confirma de mensaje recibido."
+        )
+      elif tipo == "carta_compromiso":
+        mensaje_texto = (
+          "Buen día. Se ha registrado tu carta compromiso en el sistema.\n"
+          "Te recordamos que si acumulas una falta más, será motivo de baja directa de la empresa.\n"
+          "Confirma de mensaje recibido."
+        )
+      else:
+        mensaje_texto = (
+          f"Buen día. Te notificamos que has sido dado de baja de la empresa "
+          f"por el motivo de: {motivo}.\n"
+          "Favor de presentarte en la oficina de Recursos Humanos para realizar el trámite final.\n"
+          "Confirma de mensaje recibido."
+        )
 
       requiere_emergencia = tipo != "baja_confirmada"
       telefono_emergencia_valido = False
@@ -451,13 +483,9 @@ def registrar_incidencia(datos):
         INSERT INTO incidencias_chatbot (
           registro_id, no_empleado, tipo, motivo, fecha_inicio, fecha_reingreso,
           consecutivo_indisciplina, telefono_colaborador, nombre_contacto_emergencia,
-          telefono_contacto_emergencia, estado_contacto_emergencia,
-          contacto_programado_at
+          telefono_contacto_emergencia, estado_contacto_emergencia
         )
-        VALUES (
-          %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-          CASE WHEN %s = 'pendiente' THEN CURRENT_TIMESTAMP + INTERVAL '24 hours' END
-        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
         (
@@ -472,13 +500,20 @@ def registrar_incidencia(datos):
           nombre_emergencia,
           telefono_emergencia,
           estado_emergencia,
-          estado_emergencia,
         ),
       )
       incidencia_id = cur.fetchone()[0]
 
   try:
-    enviar_template_whatsapp(telefono, template_colaborador, parametros_colaborador)
+    if not os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip() or not os.getenv(
+      "WHATSAPP_ACCESS_TOKEN", ""
+    ).strip():
+      raise ErrorEnvioWhatsApp(
+        "Configura WHATSAPP_PHONE_NUMBER_ID y WHATSAPP_ACCESS_TOKEN para enviar avisos."
+      )
+    _, codigo_envio = enviar_respuesta(telefono_whatsapp(telefono), mensaje_texto)
+    if codigo_envio != 200:
+      raise ErrorEnvioWhatsApp("La API de WhatsApp no confirmó el envío.")
   except ErrorEnvioWhatsApp as error:
     with conectar_db() as conn:
       with conn.cursor() as cur:
@@ -494,7 +529,16 @@ def registrar_incidencia(datos):
   with conectar_db() as conn:
     with conn.cursor() as cur:
       cur.execute(
-        "UPDATE incidencias_chatbot SET estado_colaborador = 'enviado' WHERE id = %s",
+        """
+        UPDATE incidencias_chatbot
+        SET estado_colaborador = 'enviado',
+            contacto_programado_at = CASE
+              WHEN estado_contacto_emergencia = 'pendiente'
+                THEN CURRENT_TIMESTAMP + INTERVAL '24 hours'
+              ELSE NULL
+            END
+        WHERE id = %s
+        """,
         (incidencia_id,),
       )
 

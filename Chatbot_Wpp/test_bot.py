@@ -11,6 +11,7 @@ class FakeCursor:
     self.result = None
     self.insert_sql = ""
     self.insert_params = None
+    self.schedule_sql = ""
 
   def __enter__(self):
     return self
@@ -27,6 +28,9 @@ class FakeCursor:
       self.insert_sql = query
       self.insert_params = params
       self.result = (42,)
+    elif "SET estado_colaborador = 'enviado'" in query:
+      self.schedule_sql = query
+      self.result = None
     else:
       self.result = None
 
@@ -105,10 +109,14 @@ class IncidenciaMessageTests(unittest.TestCase):
 
   def test_registration_sends_to_employee_and_schedules_emergency_for_24_hours(self):
     fake_cursor = FakeCursor()
-    enviar = Mock()
+    enviar = Mock(return_value=(None, 200))
     with (
+      patch.dict(os.environ, {
+        "WHATSAPP_PHONE_NUMBER_ID": "phone-id",
+        "WHATSAPP_ACCESS_TOKEN": "access-token",
+      }),
       patch.object(bot, "conectar_db", side_effect=lambda: FakeConnection(fake_cursor)),
-      patch.object(bot, "enviar_template_whatsapp", enviar),
+      patch.object(bot, "enviar_respuesta", enviar),
     ):
       resultado = bot.registrar_incidencia({
         "tipo": "indisciplina",
@@ -117,15 +125,16 @@ class IncidenciaMessageTests(unittest.TestCase):
         "motivo": "Defectos",
       })
 
-    enviar.assert_called_once_with(
-      "8112345678",
-      "indisciplina_segundo_colaborador",
-      ["Defectos"],
-    )
+    args = enviar.call_args.args
+    self.assertEqual(args[0], "528112345678")
+    self.assertIn("reporte de indisciplina", args[1])
+    self.assertIn("Defectos", args[1])
+    self.assertIn("segundo reporte", args[1])
     self.assertTrue(resultado["contacto_emergencia_programado"])
     self.assertEqual(fake_cursor.insert_params[6], 2)
     self.assertEqual(fake_cursor.insert_params[10], "pendiente")
-    self.assertIn("INTERVAL '24 hours'", fake_cursor.insert_sql)
+    self.assertNotIn("contacto_programado_at", fake_cursor.insert_sql)
+    self.assertIn("INTERVAL '24 hours'", fake_cursor.schedule_sql)
 
 
 class InternalEndpointTests(unittest.TestCase):
