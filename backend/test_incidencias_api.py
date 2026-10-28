@@ -1,6 +1,7 @@
 import os
 import unittest
 from datetime import date, datetime
+from io import BytesIO
 from unittest.mock import patch
 
 import utily
@@ -25,7 +26,7 @@ class FakeCursor:
             self.result = ('YES',)
         elif 'SELECT ip.no_empleado' in query:
             self.result = ('1001',)
-        elif 'INSERT INTO incidencias_chatbot' in query:
+        elif 'INSERT INTO incidencias_empleado' in query:
             self.insert_sql = query
             self.inserted = params
             self.result = (
@@ -34,9 +35,12 @@ class FakeCursor:
                 params[3],
                 params[4],
                 params[5],
-                None,
-                'no_aplica',
-                None,
+                params[6],
+                params[7],
+                params[8],
+                [],
+                params[10],
+                params[11],
                 datetime(2026, 10, 27, 10, 0),
             )
         elif 'SELECT id, tipo, motivo' in query:
@@ -47,13 +51,16 @@ class FakeCursor:
                     'Vacaciones',
                     date(2026, 11, 1),
                     date(2026, 11, 3),
+                    3,
                     None,
-                    'no_aplica',
+                    None,
+                    [],
+                    '',
                     None,
                     datetime(2026, 10, 27, 10, 0),
                 )
             ]
-        elif 'DELETE FROM incidencias_chatbot' in query:
+        elif 'DELETE FROM incidencias_empleado' in query:
             self.delete_sql = query
             self.result = (17,) if params == (17, 1) else None
         else:
@@ -94,7 +101,7 @@ class IncidenciasApiTests(unittest.TestCase):
     def tearDown(self):
         self.write_lock_patch.stop()
 
-    def test_post_persists_non_chatbot_incident_in_database(self):
+    def test_post_persists_employee_incident_in_database(self):
         with patch.object(utily, 'get_db_connection', return_value=self.connection):
             response = self.client.post(
                 '/api/empleados/1/incidencias',
@@ -116,9 +123,26 @@ class IncidenciasApiTests(unittest.TestCase):
             date(2026, 11, 1),
             date(2026, 11, 3),
         ))
-        self.assertEqual(len(self.cursor.inserted), 6)
-        self.assertNotIn('telefono_contacto_emergencia', self.cursor.insert_sql)
-        self.assertNotIn('nombre_contacto_emergencia', self.cursor.insert_sql)
+        self.assertEqual(len(self.cursor.inserted), 14)
+        self.assertIn('dias, opcion, hora, motivos, otro_motivo, archivo_nombre', self.cursor.insert_sql)
+        self.assertEqual(self.cursor.inserted[6], 3)
+
+    def test_post_persists_suspension_without_chatbot_notification(self):
+        with patch.object(utily, 'get_db_connection', return_value=self.connection):
+            response = self.client.post(
+                '/api/empleados/1/incidencias',
+                json={
+                    'tipo': 'suspension',
+                    'motivo': 'Incumplimiento',
+                    'fecha_inicio': '2026-11-01',
+                    'fecha_reingreso': '2026-11-04',
+                },
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.cursor.inserted[2], 'suspension')
+        self.assertEqual(self.cursor.inserted[6], 3)
+        self.assertEqual(self.cursor.inserted[0], 1)
 
     def test_get_returns_database_incident_history(self):
         with patch.object(utily, 'get_db_connection', return_value=self.connection):
@@ -127,6 +151,7 @@ class IncidenciasApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()['incidencias'][0]['id'], 17)
         self.assertEqual(response.get_json()['incidencias'][0]['fecha_inicio'], '2026-11-01')
+        self.assertEqual(response.get_json()['incidencias'][0]['dias'], 3)
 
     def test_delete_uses_database_record_id_and_employee_id(self):
         with patch.object(utily, 'get_db_connection', return_value=self.connection):
@@ -134,36 +159,34 @@ class IncidenciasApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()['ok'])
-        self.assertIn("tipo NOT IN ('suspension', 'indisciplina')", self.cursor.delete_sql)
-        self.assertIn("estado_contacto_emergencia != 'pendiente'", self.cursor.delete_sql)
+        self.assertIn('DELETE FROM incidencias_empleado', self.cursor.delete_sql)
 
-    def test_chatbot_managed_incidence_still_uses_backend_proxy(self):
-        datos = {'tipo': 'indisciplina', 'no_empleado': '1001', 'motivo': 'Defectos'}
-
-        class FakeResponse:
-            status_code = 201
-
-            @staticmethod
-            def json():
-                return {'status': 'sent', 'incidencia_id': 42}
-
-        with (
-            patch.dict(os.environ, {
-                'CHATBOT_INTERNAL_URL': 'http://chatbot:5000',
-                'CHATBOT_INTERNAL_TOKEN': 'private-token',
-            }),
-            patch.object(utily.requests, 'post', return_value=FakeResponse()) as post,
-        ):
-            response = self.client.post('/api/incidencias', json=datos)
+    def test_post_stores_entry_exit_fields_and_uploaded_file(self):
+        with patch.object(utily, 'get_db_connection', return_value=self.connection):
+            response = self.client.post(
+                '/api/empleados/1/incidencias',
+                data={
+                    'tipo': 'entrada-salida',
+                    'motivo': 'Entrada a las 08:15 AM. Asistencia a cita Medica',
+                    'detalles': '{"opcion":"entrada","hora":"08:15","motivos":["Asistencia a cita Medica"],"otro_motivo":"","categoria":""}',
+                    'archivo': (BytesIO(b'%PDF-1.4 test'), 'comprobante.pdf'),
+                },
+                content_type='multipart/form-data',
+            )
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.get_json()['incidencia_id'], 42)
-        post.assert_called_once_with(
-            'http://chatbot:5000/api/internal/incidencias',
-            json=datos,
-            headers={'X-Internal-Token': 'private-token'},
-            timeout=30,
+        self.assertEqual(self.cursor.inserted[7], 'entrada')
+        self.assertEqual(self.cursor.inserted[8], '08:15')
+        self.assertEqual(self.cursor.inserted[11], 'comprobante.pdf')
+        self.assertEqual(self.cursor.inserted[13], b'%PDF-1.4 test')
+
+    def test_chatbot_notification_endpoint_is_removed(self):
+        response = self.client.post(
+            '/api/incidencias',
+            json={'tipo': 'indisciplina', 'no_empleado': '1001', 'motivo': 'Defectos'},
         )
+
+        self.assertEqual(response.status_code, 404)
 
 
 if __name__ == '__main__':
