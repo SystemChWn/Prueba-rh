@@ -92,7 +92,8 @@ services:
     depends_on:
       - backend
     ports:
-      - "3001:80"
+      # Tailscale Serve termina HTTPS y reenvía al nginx local.
+      - "127.0.0.1:3001:80"
 
 volumes:
   pgdata:

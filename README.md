@@ -83,7 +83,16 @@ Prueba abrir el sitio desde un navegador (o con `curl` desde el mismo servidor):
 curl -I http://localhost:3001/
 ```
 
-Si responde `HTTP/1.1 200 OK`, el frontend está sirviendo correctamente. Desde fuera del servidor, se accede con `http://<ip-del-servidor>:3001/`.
+Si responde `HTTP/1.1 200 OK`, el frontend está sirviendo correctamente en el servidor. Para acceso remoto, usa HTTPS con Tailscale como se indica abajo.
+
+El puerto 3001 solo escucha en el propio servidor. Para acceso remoto por Tailscale, habilita MagicDNS y HTTPS en la consola de administración de Tailscale y, en el servidor `web-server`, publica el frontend por HTTPS en un puerto libre:
+
+```bash
+sudo tailscale serve --https=8443 --bg http://127.0.0.1:3001
+sudo tailscale serve status
+```
+
+Después abre `https://web-server.<nombre-de-tu-red>.ts.net:8443/portalrh.html` desde un equipo conectado al mismo tailnet. No uses la IP `100.x.x.x` por HTTP para iniciar sesión. El puerto HTTPS 8443 permite conservar otros servicios que ya usen el puerto 443.
 
 ### Comandos útiles del día a día
 
@@ -102,7 +111,7 @@ Puertos publicados en el host:
 
 | Servicio  | Puerto host | Notas |
 |-----------|-------------|-------|
-| frontend  | 3001        | nginx sirve las páginas estáticas y reenvía `/api/` al backend |
+| frontend  | 127.0.0.1:3001 | nginx local; el acceso remoto se hace por Tailscale Serve con HTTPS |
 | backend   | 127.0.0.1:8001 | API Flask (gunicorn); solo en el propio servidor, desde fuera se usa nginx |
 | chatbot   | 5002        | Webhook de WhatsApp, respuestas automáticas y contactos de Reclutamiento |
 | postgres  | 127.0.0.1:5434 | PostgreSQL para herramientas locales; el backend usa la red interna de Docker |
@@ -119,7 +128,7 @@ Para crear el primer administrador, agrega `ACCESS_ADMIN_USERNAME` y `ACCESS_ADM
 
 Si hay cuentas antiguas guardadas en el navegador, inicia sesión como administrador desde ese mismo navegador y usa **Migrar cuentas de este navegador a PostgreSQL** en “Usuarios con acceso”. La importación se hace en una sola operación y no borra la copia del navegador si falla o si hay nombres duplicados. Después de una importación correcta, el sistema solicita una confirmación aparte antes de borrar esa copia.
 
-El login remoto requiere HTTPS. La excepción de HTTP solo aplica al acceso local mediante `localhost` o `127.0.0.1`; el puerto 3001 publicado por defecto sirve HTTP, así que configura un reverse proxy con TLS antes de permitir inicios de sesión desde otros equipos. Este cambio protege las rutas de cuentas y sus páginas; no modifica la autorización de las demás APIs de datos del sistema.
+El login remoto requiere HTTPS. La excepción de HTTP solo aplica al acceso local mediante `localhost` o `127.0.0.1`. Para el acceso por Tailscale, usa `tailscale serve` como se indica arriba y configura `AUTH_COOKIE_SECURE=1` en `.env`; reinicia el backend con `docker compose up -d backend` para que la cookie de sesión solo viaje por HTTPS. El acceso directo por HTTP a la IP `100.x.x.x` no está permitido para iniciar sesión.
 
 ### Chatbot de WhatsApp
 
@@ -287,4 +296,4 @@ Las cuentas del panel viven en el servidor (tabla `usuarios_acceso`, contraseña
 - `api/datos-grafica` puede responder 500 cuando la base no tiene datos (la función termina sin devolver respuesta).
 - `api/datos-grafica?periodo=mes` aplica `timezone('America/Mexico_City', fecha_registro)` a una columna `DATE`. La fecha se toma como medianoche UTC y puede quedar en el día anterior, por lo que registros del día 1 se cuentan en el mes anterior.
 - `GET /api/reclutadores-nombres` es público (lo usa el formulario de registro) y devuelve el teléfono de cada reclutador.
-- No hay HTTPS ni dominio configurado — nginx sirve solo HTTP en el puerto 3001. Para el acceso desde otros equipos, integra este stack detrás de un reverse proxy con TLS apuntando a `localhost:3001`.
+- nginx sirve HTTP solo en `127.0.0.1:3001`; el acceso remoto seguro debe terminar TLS con Tailscale Serve o un reverse proxy confiable.
