@@ -19,7 +19,7 @@ from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
-from telegram import InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from bot.backend import ClienteBackend, ErrorBackend
@@ -402,13 +402,316 @@ async def accion_dl_reclu(update, context, estado) -> None:
                      f'reclutamiento_{dia.year}_{dia.month:02d}.xlsx')
 
 
+# --- Nuevas acciones del menú de Recursos Humanos -------------------------------------------
+
+async def accion_ev_cumple(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/shared-events')
+    eventos = (resp.datos or {}).get('eventos') or []
+    await iniciar_asistente(update, context, estado, formularios.asistente_cumpleanos(eventos, lambda: hoy(context)))
+
+
+async def accion_ev_general(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/shared-events')
+    eventos = (resp.datos or {}).get('eventos') or []
+    await iniciar_asistente(update, context, estado, formularios.asistente_evento(eventos, lambda: hoy(context)))
+
+
+async def accion_acc_nuevo(update, context, estado: EstadoUsuario) -> None:
+    await iniciar_asistente(update, context, estado, formularios.asistente_nuevo_usuario())
+
+
+async def accion_acc_editar(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/access-users')
+    usuarios = (resp.datos or {}).get('usuarios') or []
+    if not usuarios:
+        await mostrar(update, 'No hay usuarios de acceso registrados.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    await iniciar_asistente(update, context, estado, formularios.asistente_editar_usuario(usuarios))
+
+
+async def accion_acc_eliminar(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/access-users')
+    usuarios = (resp.datos or {}).get('usuarios') or []
+    if not usuarios:
+        await mostrar(update, 'No hay usuarios de acceso registrados.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    await iniciar_asistente(update, context, estado, formularios.asistente_eliminar_usuario(usuarios))
+
+
+async def accion_ingresos_pendientes(update, context, estado: EstadoUsuario) -> None:
+    respuesta = await _backend(context).peticion(update.effective_user.id, 'GET', '/api/obtener-pendientes')
+    candidatos = respuesta.datos if isinstance(respuesta.datos, list) else []
+    if not candidatos:
+        await mostrar(update, '📝 *Ingresos Pendientes*\n\nNo hay ingresos nuevos pendientes en este momento.',
+                      InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    lineas = [f'📝 *Ingresos Pendientes ({len(candidatos)})*', '', 'Candidatos en la pestaña de pendientes:']
+    for c in candidatos:
+        nombre = c.get('nombre_completo') or 'Sin nombre'
+        temp = formularios.normalizar_numero_temporal(c.get('numero_temporal')) or 'sin número'
+        lineas.append(f'• {nombre} ({temp})')
+    await mostrar(update, '\n'.join(lineas), InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+
+
+LINKS_IMPRIMIR = {
+    'print_suspension': ('Suspensión', 'https://drive.google.com/file/d/1IMw93o8y56e423HZoKVJNnE5z5b26e5A/view?usp=sharing'),
+    'print_entradasalida': ('Entrada/Salida', 'https://drive.google.com/file/d/1MjIXgFLUJAO25hNfZb0IzTFwIW4YLvU5/view?usp=sharing'),
+    'print_indisciplina': ('Indisciplina', 'https://drive.google.com/file/d/1gWuv28J-7WjbfsaOdUMSIb0Mbb6KHRqO/view?usp=sharing'),
+}
+
+
+async def accion_imprimir(update, context, estado: EstadoUsuario) -> None:
+    clave = (update.callback_query.data or '').removeprefix('m:')
+    titulo, url = LINKS_IMPRIMIR.get(clave, ('Formato', ''))
+    filas = [
+        [InlineKeyboardButton(f'🖨️ Abrir {titulo} (Google Drive)', url=url)],
+        [boton('⬅️ Formatos para Imprimir', 'm:formatos_print'), *_menu_inicio()],
+    ]
+    texto = (
+        f'🖨️ *Formato para Imprimir — {titulo}*\n\n'
+        f'Abre e imprime el formato directamente en Google Drive:'
+    )
+    await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
+
+
+async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
+    clave = (update.callback_query.data or '').removeprefix('m:')
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/obtener-pendientes')
+    candidatos = resp.datos if isinstance(resp.datos, list) else []
+    nombre_formato = 'Evaluación de Inducción' if clave == 'dia_evaluacion' else 'Registro de Inducción'
+    ruta_formato = 'formatos-lote.html?tipo=evaluacion' if clave == 'dia_evaluacion' else 'documentos/checklist.html'
+
+    if not candidatos:
+        await mostrar(update, f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy.',
+                      InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    ids = ','.join(str(c['id']) for c in candidatos if c.get('id'))
+    texto = (
+        f'📋 *Formatos del día — {nombre_formato}*\n\n'
+        f'Ingresos registrados ({len(candidatos)}):\n' +
+        '\n'.join(f"• {c.get('nombre_completo')} ({c.get('numero_temporal') or 'sin número'})" for c in candidatos) +
+        f'\n\nPuedes generar los formatos desde el panel web:\n`{ruta_formato}?ids={ids}`'
+    )
+    await mostrar(update, texto, InlineKeyboardMarkup([[boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()]]), editar=True)
+
+
+async def accion_generar_registro(update, context, estado: EstadoUsuario) -> None:
+    await iniciar_asistente(update, context, estado, formularios.asistente_generar_registro())
+
+
+async def accion_team_agregar(update, context, estado: EstadoUsuario) -> None:
+    await iniciar_asistente(update, context, estado, formularios.asistente_team_agregar())
+
+
+async def accion_team_modificar(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/reclutadores-nombres')
+    reclutadores = resp.datos if isinstance(resp.datos, list) else []
+    if not reclutadores:
+        await mostrar(update, 'No hay reclutadores registrados en el equipo.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    await iniciar_asistente(update, context, estado, formularios.asistente_team_modificar(reclutadores))
+
+
+async def accion_team_eliminar(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/reclutadores-nombres')
+    reclutadores = resp.datos if isinstance(resp.datos, list) else []
+    if not reclutadores:
+        await mostrar(update, 'No hay reclutadores registrados en el equipo.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    await iniciar_asistente(update, context, estado, formularios.asistente_team_eliminar(reclutadores))
+
+
+async def accion_dl_excel_mes(update, context, estado: EstadoUsuario) -> None:
+    await _descargar(update, context, '/api/exportar-excel', None, 'ingresos_del_mes.xlsx')
+
+
+async def accion_subir_papeleria(update, context, estado: EstadoUsuario) -> None:
+    estado.esperando = 'subir_papeleria'
+    await mostrar(
+        update,
+        '📎 *Subir Papelería*\n\nEscribe el N° de Empleado o TEMP-N° (o al menos 3 letras del nombre):',
+        InlineKeyboardMarkup([_menu_inicio()]),
+        editar=True,
+    )
+
+
+async def accion_formato_nuevo(update, context, estado: EstadoUsuario) -> None:
+    clave = (update.callback_query.data or '').removeprefix('m:')
+    tipo = 'Gafete' if 'gafete' in clave else 'Contrato Laboral'
+    backend, telegram_id = _backend(context), update.effective_user.id
+    resp = await backend.peticion(telegram_id, 'GET', '/api/obtener-pendientes')
+    candidatos = resp.datos if isinstance(resp.datos, list) else []
+    if not candidatos:
+        await mostrar(update, f'⚡ *{tipo} — Nuevo Ingreso*\n\nNo hay ingresos pendientes.',
+                      InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+    estado.lista, estado.tipo_lista = candidatos, f'formato_nuevo:{clave}'
+    filas = [
+        [boton(f"{c.get('nombre_completo') or 'Sin nombre'} ({c.get('numero_temporal') or 'sin número'})", f'c:{i}')]
+        for i, c in enumerate(candidatos[:POR_PAGINA])
+    ]
+    filas.append([boton('⬅️ Formatos', 'm:formatos_auto'), *_menu_inicio()])
+    await mostrar(update, f'⚡ Elige el candidato para generar su {tipo}:', InlineKeyboardMarkup(filas), editar=True)
+
+
+PAGINAS_FORMATOS = {
+    'gafete_existente': ('Gafete', 'documentos/maingafette.html'),
+    'cartacom_buscar': ('Carta Compromiso', 'documentos/cartacom.html'),
+    'cartaimss_buscar': ('Carta Patronal IMSS', 'documentos/cartaimss.html'),
+    'contrato_existente': ('Contrato Laboral', 'documentos/contrato.html'),
+}
+
+
+async def accion_buscar_para_formato(update, context, estado: EstadoUsuario) -> None:
+    clave = (update.callback_query.data or '').removeprefix('m:')
+    titulo, _ = PAGINAS_FORMATOS.get(clave, ('Formato', ''))
+    estado.esperando = f'buscar_formato:{clave}'
+    await mostrar(
+        update,
+        f'⚡ *{titulo}*\n\nEscribe el N° de Empleado o al menos 3 letras del nombre:',
+        InlineKeyboardMarkup([[boton('⬅️ Formatos', 'm:formatos_auto'), *_menu_inicio()]]),
+        editar=True,
+    )
+
+
+async def buscar_para_subir_papeleria(update: Update, context, estado: EstadoUsuario, texto: str) -> None:
+    params = parametros_busqueda(texto)
+    if params is None:
+        await responder(update, 'Escribe un número de empleado o al menos 3 letras del nombre.')
+        return
+    telegram_id = update.effective_user.id
+    respuesta = await _backend(context).peticion(telegram_id, 'GET', '/api/empleados/buscar', params=params)
+    empleados = list((respuesta.datos or {}).get('empleados') or [])
+    if not empleados:
+        resp_pend = await _backend(context).peticion(telegram_id, 'GET', '/api/obtener-pendientes')
+        candidatos = resp_pend.datos if isinstance(resp_pend.datos, list) else []
+        t_clean = texto.strip().upper()
+        matching = [
+            c for c in candidatos
+            if t_clean in str(c.get('numero_temporal') or '').upper() or t_clean in str(c.get('nombre_completo') or '').upper()
+        ]
+        if matching:
+            empleados = matching
+    if not empleados:
+        await responder(update, 'No encontré empleados o candidatos con ese dato. Escribe otro número o nombre.',
+                        InlineKeyboardMarkup([_menu_inicio()]))
+        return
+    estado.esperando = None
+    if len(empleados) == 1:
+        await iniciar_asistente(update, context, estado, formularios.asistente_subir_papeleria(empleados[0]))
+        return
+    filas = [
+        [boton(f'{e.get("no_empleado") or e.get("numero_temporal") or "s/n"} · {e.get("nombre_completo") or "Sin nombre"}', f'e:{i}')]
+        for i, e in enumerate(empleados[:8])
+    ]
+    filas.append([boton('⬅️ Cancelar', 'm:subir_papeleria'), *_menu_inicio()])
+    estado.lista, estado.tipo_lista = empleados, 'empleados'
+    await responder(update, f'Encontré {len(empleados)} coincidencias. Elige una:', InlineKeyboardMarkup(filas))
+
+
+async def buscar_para_formato_resultado(update: Update, context, estado: EstadoUsuario, texto: str) -> None:
+    clave = str(estado.esperando).removeprefix('buscar_formato:')
+    params = parametros_busqueda(texto)
+    if params is None:
+        await responder(update, 'Escribe un número de empleado o al menos 3 letras del nombre.')
+        return
+    telegram_id = update.effective_user.id
+    respuesta = await _backend(context).peticion(telegram_id, 'GET', '/api/empleados/buscar', params=params)
+    empleados = list((respuesta.datos or {}).get('empleados') or [])
+    if not empleados:
+        await responder(update, 'No encontré empleados con ese dato. Intenta con otro número o nombre.',
+                        InlineKeyboardMarkup([_menu_inicio()]))
+        return
+    estado.esperando = None
+    if len(empleados) == 1:
+        await mostrar_formato_empleado(update, context, estado, empleados[0], clave)
+        return
+    filas = [
+        [boton(f'{e.get("no_empleado") or "s/n"} · {e.get("nombre_completo") or "Sin nombre"}', f'e:{i}')]
+        for i, e in enumerate(empleados[:8])
+    ]
+    filas.append([boton('⬅️ Formatos', 'm:formatos_auto'), *_menu_inicio()])
+    estado.lista, estado.tipo_lista = empleados, 'empleados'
+    await responder(update, f'Encontré {len(empleados)} empleados. Elige uno:', InlineKeyboardMarkup(filas))
+
+
+async def mostrar_formato_empleado(update, context, estado, empleado: dict, clave: str) -> None:
+    titulo, pagina = PAGINAS_FORMATOS.get(clave, ('Formato', 'documentos/cartacom.html'))
+    rid = str(empleado.get('registro_id') or empleado.get('id') or '')
+    nombre = empleado.get('nombre_completo') or 'Sin nombre'
+    no_emp = empleado.get('no_empleado') or 's/n'
+    texto = (
+        f'⚡ *{titulo} — {nombre}*\n\n'
+        f'• Empleado: {nombre} ({no_emp})\n'
+        f'• Empresa: {empleado.get("empresa") or "Sin empresa"}\n'
+        f'• Puesto: {empleado.get("puesto") or "Sin puesto"}\n'
+        f'• Registro ID: `{rid}`\n\n'
+        f'Ruta para generar o imprimir en el panel web:\n`{pagina}?registro_id={rid}`'
+    )
+    filas = [[boton('⬅️ Formatos', 'm:formatos_auto'), *_menu_inicio()]]
+    await responder(update, texto, InlineKeyboardMarkup(filas))
+
+
 ACCIONES = {
+    # 1. Eventos
+    'ev_cumple': accion_ev_cumple,
+    'ev_general': accion_ev_general,
+
+    # 2. Asignar Acceso
+    'acc_nuevo': accion_acc_nuevo,
+    'acc_editar': accion_acc_editar,
+    'acc_eliminar': accion_acc_eliminar,
+
+    # 3. Ingresos Pendientes
+    'ingresos_pendientes': accion_ingresos_pendientes,
+
+    # 4. Formatos Automatizados
+    'gafete_nuevo': accion_formato_nuevo,
+    'gafete_existente': accion_buscar_para_formato,
+    'cartacom_buscar': accion_buscar_para_formato,
+    'cartaimss_buscar': accion_buscar_para_formato,
+    'contrato_nuevo': accion_formato_nuevo,
+    'contrato_existente': accion_buscar_para_formato,
+
+    # 5. Formatos para Imprimir
+    'print_suspension': accion_imprimir,
+    'print_entradasalida': accion_imprimir,
+    'print_indisciplina': accion_imprimir,
+
+    # 6. Formatos del día
+    'dia_evaluacion': accion_formatos_dia,
+    'dia_registro': accion_formatos_dia,
+
+    # 7. Listado General
+    'dl_cw': accion_dl_empresa,
+    'dl_kronos': accion_dl_empresa,
+
+    # 8. Generar Registro
+    'generar_registro': accion_generar_registro,
+
+    # 9. Personal Activo por Team
+    'team_agregar': accion_team_agregar,
+    'team_modificar': accion_team_modificar,
+    'team_eliminar': accion_team_eliminar,
+
+    # 10. Descargar Excel
+    'dl_excel_mes': accion_dl_excel_mes,
+
+    # 11. Subir Papelería
+    'subir_papeleria': accion_subir_papeleria,
+
+    # Compatibilidad con acciones base
     'buscar_empleado': accion_buscar_empleado,
     'pendientes': accion_pendientes,
     'ind_mes': accion_ind_mes,
     'ind_team': accion_ind_team,
-    'dl_cw': accion_dl_empresa,
-    'dl_kronos': accion_dl_empresa,
     'dl_reclu': accion_dl_reclu,
 }
 
@@ -549,6 +852,12 @@ async def atender_texto(update: Update, context, texto: str) -> bool:
             return True
         if estado.esperando == 'buscar':
             await buscar_texto(update, context, estado, texto)
+            return True
+        if estado.esperando == 'subir_papeleria':
+            await buscar_para_subir_papeleria(update, context, estado, texto)
+            return True
+        if estado.esperando and str(estado.esperando).startswith('buscar_formato:'):
+            await buscar_para_formato_resultado(update, context, estado, texto)
             return True
     except ErrorBackend as error:
         await responder(update, texto_error(error))

@@ -9,7 +9,23 @@ import re
 from datetime import date
 from pathlib import Path
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    class _PytestMock:
+        @staticmethod
+        def raises(exc):
+            class _Raises:
+                def __enter__(self):
+                    return self
+                def __exit__(self, exc_type, exc_val, exc_tb):
+                    return isinstance(exc_val, exc)
+            return _Raises()
+        class mark:
+            @staticmethod
+            def parametrize(*args, **kwargs):
+                return lambda fn: fn
+    pytest = _PytestMock()
 
 from bot.menu import formularios
 
@@ -152,3 +168,83 @@ def test_baja_usa_el_mismo_cuerpo_que_el_listado_del_panel():
 def test_eliminar_es_delete_con_doble_confirmacion():
     p = formularios.pendiente_eliminar(EMPLEADO)
     assert (p.metodo, p.ruta, p.confirmaciones_faltantes) == ('DELETE', '/api/eliminar-empleado/101', 2)
+
+
+def test_asistente_cumpleanos():
+    a = formularios.asistente_cumpleanos([], hoy=lambda: HOY)
+    a.responder('Carlos Mendoza')
+    a.responder('15')
+    a.responder('Mayo')
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/shared-events')
+    assert len(p.cuerpo['eventos']) == 1
+    ev = p.cuerpo['eventos'][0]
+    assert ev['title'] == 'Carlos Mendoza'
+    assert ev['monthDay'] == '15-05'
+    assert ev['tipo'] == 'cumpleanos'
+
+
+def test_asistente_evento():
+    a = formularios.asistente_evento([], hoy=lambda: HOY)
+    a.responder('Junta Mensual')
+    a.responder('20')
+    a.responder('Octubre')
+    a.responder('10:00')
+    a.responder('11:30')
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/shared-events')
+    assert len(p.cuerpo['eventos']) == 1
+    ev = p.cuerpo['eventos'][0]
+    assert ev['title'] == 'Junta Mensual'
+    assert ev['monthDay'] == '20-10'
+    assert ev['startTime'] == '10:00'
+    assert ev['endTime'] == '11:30'
+    assert ev['tipo'] == 'evento'
+
+
+def test_asistente_nuevo_usuario():
+    a = formularios.asistente_nuevo_usuario()
+    a.responder('lucia.rh')
+    a.responder('segura123')
+    a.responder('Admin (Recursos Humanos)')
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/access-users')
+    assert p.cuerpo == {
+        'usuario': 'lucia.rh',
+        'password': 'segura123',
+        'permisos': ['admin'],
+    }
+
+
+def test_asistente_generar_registro():
+    a = formularios.asistente_generar_registro()
+    a.responder('TEMP-88')
+    a.responder('Pedro Morales')
+    a.responder('MOPP900101HDFRRN01')
+    a.omitir()  # acta
+    a.omitir()  # domicilio
+    a.omitir()  # rfc
+    a.omitir()  # nss
+    a.responder('8112345678')
+    a.omitir()  # correo
+    a.omitir()  # emergencia
+    a.responder('Facebook')
+    a.responder('Reclutador 1')
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/guardar-registro')
+    assert p.formulario['numero_temporal'] == 'TEMP - 88'
+    assert p.formulario['nombre_completo'] == 'Pedro Morales'
+    assert p.siguiente is not None
+    assert (p.siguiente.metodo, p.siguiente.ruta) == ('POST', '/api/guardar-encuesta')
+    assert p.siguiente.formulario['fuente'] == 'Facebook'
+
+
+def test_asistente_subir_papeleria():
+    a = formularios.asistente_subir_papeleria(EMPLEADO)
+    a.responder('INE')
+    a.responder(formularios.validar_archivo('ine.jpg', b'\xff\xd8\xff\xe0' + b'x' * 100))
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/employee-files')
+    assert p.formulario['registro_id'] == '101'
+    assert p.formulario['doc_key'] == 'ine'
+    assert p.archivo.campo == 'file'

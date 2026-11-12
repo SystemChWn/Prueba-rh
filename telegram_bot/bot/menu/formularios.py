@@ -6,6 +6,7 @@ los compara con ``frontend/Ingreso.html`` y ``frontend/empleado.html``.
 
 import json
 import re
+import secrets
 from collections.abc import Callable
 from datetime import date, timedelta
 from typing import Any
@@ -268,4 +269,448 @@ def pendiente_eliminar(empleado: dict[str, Any], origen: str = 'menu') -> Cambio
             f'Puesto: {_dato(empleado.get("puesto"))}',
         ],
         origen=origen,
+    )
+
+
+# --- Eventos compartidos (Crear Nuevo Evento) ----------------------------------------
+
+MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+
+def asistente_cumpleanos(eventos_actuales: list[dict], hoy: Callable[[], date] = date.today) -> Asistente:
+    def validar_dia(valor: Any, _r: Respuestas) -> str:
+        try:
+            d = int(str(valor).strip())
+            if not 1 <= d <= 31:
+                raise ValueError
+            return f'{d:02d}'
+        except Exception:
+            raise ValueError('El día debe ser un número entre 1 y 31.')
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        mes_idx = MESES_NOMBRES.index(r['mes']) + 1
+        month_day = f"{r['dia']}-{mes_idx:02d}"
+        nombre = str(r['nombre']).strip()
+        nuevo_evento = {
+            'id': f"evt_{secrets.token_hex(4)}",
+            'title': nombre,
+            'monthDay': month_day,
+            'startTime': '',
+            'endTime': '',
+            'asistentes': '',
+            'tipo': 'cumpleanos',
+            'descripcion': '',
+        }
+        eventos = [*eventos_actuales, nuevo_evento]
+        return CambioPendiente(
+            'POST', '/api/shared-events',
+            f'🎂 Registrar Cumpleaños de {nombre}:',
+            detalle=[
+                f'Cumpleañero: {nombre}',
+                f'Fecha: {r["dia"]} de {r["mes"]} ({month_day})',
+                'Tipo: Cumpleaños',
+            ],
+            cuerpo={'eventos': eventos},
+        )
+
+    return Asistente(
+        titulo='🎂 Crear Cumpleaños',
+        pasos=[
+            Paso('nombre', 'Nombre del cumpleañero:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el nombre.'))),
+            Paso('dia', 'Día del mes (1 a 31):', tipo='texto', validar=validar_dia),
+            Paso('mes', 'Mes:', opciones=lambda _r: list(MESES_NOMBRES)),
+        ],
+        al_terminar=terminar,
+        hoy=hoy,
+    )
+
+
+def asistente_evento(eventos_actuales: list[dict], hoy: Callable[[], date] = date.today) -> Asistente:
+    def validar_dia(valor: Any, _r: Respuestas) -> str:
+        try:
+            d = int(str(valor).strip())
+            if not 1 <= d <= 31:
+                raise ValueError
+            return f'{d:02d}'
+        except Exception:
+            raise ValueError('El día debe ser un número entre 1 y 31.')
+
+    def validar_hora(valor: Any, _r: Respuestas) -> str:
+        h = str(valor or '').strip()
+        if not re.match(r'^\d{2}:\d{2}$', h):
+            raise ValueError('La hora debe tener formato HH:MM (ej. 09:00 o 14:30).')
+        return h
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        mes_idx = MESES_NOMBRES.index(r['mes']) + 1
+        month_day = f"{r['dia']}-{mes_idx:02d}"
+        titulo = str(r['titulo']).strip()
+        nuevo_evento = {
+            'id': f"evt_{secrets.token_hex(4)}",
+            'title': titulo,
+            'monthDay': month_day,
+            'startTime': r['hora_inicio'],
+            'endTime': r['hora_fin'],
+            'asistentes': '',
+            'tipo': 'evento',
+            'descripcion': '',
+        }
+        eventos = [*eventos_actuales, nuevo_evento]
+        return CambioPendiente(
+            'POST', '/api/shared-events',
+            f'📌 Registrar Evento: {titulo}',
+            detalle=[
+                f'Título: {titulo}',
+                f'Fecha: {r["dia"]} de {r["mes"]} ({month_day})',
+                f'Horario: {r["hora_inicio"]} a {r["hora_fin"]}',
+                'Tipo: Evento',
+            ],
+            cuerpo={'eventos': eventos},
+        )
+
+    return Asistente(
+        titulo='📌 Crear Nuevo Evento',
+        pasos=[
+            Paso('titulo', 'Título del evento:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el título.'))),
+            Paso('dia', 'Día del mes (1 a 31):', tipo='texto', validar=validar_dia),
+            Paso('mes', 'Mes:', opciones=lambda _r: list(MESES_NOMBRES)),
+            Paso('hora_inicio', 'Hora inicial (formato HH:MM, ej. 09:00):', tipo='texto', validar=validar_hora),
+            Paso('hora_fin', 'Hora final (formato HH:MM, ej. 11:00):', tipo='texto', validar=validar_hora),
+        ],
+        al_terminar=terminar,
+        hoy=hoy,
+    )
+
+
+# --- Asignar Acceso (Usuarios) ------------------------------------------------------
+
+ROLES_ACCESO = {
+    'Admin (Recursos Humanos)': ['admin'],
+    'Reclutamiento': ['reclutamiento'],
+    'Notificaciones': ['notificaciones'],
+}
+
+
+def asistente_nuevo_usuario() -> Asistente:
+    def validar_pass(valor: Any, _r: Respuestas) -> str:
+        p = str(valor or '').strip()
+        if len(p) < 6:
+            raise ValueError('La contraseña debe tener al menos 6 caracteres.')
+        return p
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        permisos = ROLES_ACCESO[r['rol']]
+        usuario = str(r['usuario']).strip()
+        cuerpo: dict[str, Any] = {
+            'usuario': usuario,
+            'password': r['password'],
+            'permisos': permisos,
+        }
+        if 'notificaciones' in permisos:
+            cuerpo['nombre_notificacion'] = str(r.get('tel_notif') and usuario or usuario).strip()
+            cuerpo['telefono_notificacion'] = str(r.get('tel_notif') or '').strip()
+        return CambioPendiente(
+            'POST', '/api/access-users',
+            f'🔐 Crear Usuario de Acceso — {usuario}:',
+            detalle=[
+                f'Usuario: {usuario}',
+                f'Asignación / Rol: {r["rol"]}',
+            ],
+            cuerpo=cuerpo,
+        )
+
+    return Asistente(
+        titulo='🔐 Nuevo Usuario de Acceso',
+        pasos=[
+            Paso('usuario', 'Nombre de usuario:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el usuario.'))),
+            Paso('password', 'Contraseña (mínimo 6 caracteres):', tipo='texto', validar=validar_pass),
+            Paso('rol', 'Asignación / Rol:', opciones=lambda _r: list(ROLES_ACCESO)),
+            Paso('tel_notif', 'Teléfono para notificaciones:', tipo='texto',
+                 aplica=lambda r: r.get('rol') == 'Notificaciones',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
+        ],
+        al_terminar=terminar,
+    )
+
+
+def asistente_editar_usuario(usuarios: list[dict]) -> Asistente:
+    mapa = {u['usuario']: u for u in usuarios}
+
+    def validar_pass(valor: Any, _r: Respuestas) -> str:
+        p = str(valor or '').strip()
+        if len(p) < 6:
+            raise ValueError('La contraseña debe tener al menos 6 caracteres.')
+        return p
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        u = mapa[r['usuario']]
+        return CambioPendiente(
+            'PUT', f"/api/access-users/{u['id']}",
+            f'✏️ Modificar contraseña de {u["usuario"]}:',
+            detalle=[
+                f'Usuario: {u["usuario"]}',
+                'Acción: Actualizar contraseña',
+            ],
+            cuerpo={'password': r['password']},
+        )
+
+    return Asistente(
+        titulo='✏️ Editar Usuario de Acceso',
+        pasos=[
+            Paso('usuario', 'Elige el usuario:', opciones=lambda _r: list(mapa)),
+            Paso('password', 'Nueva contraseña (mínimo 6 caracteres):', tipo='texto', validar=validar_pass),
+        ],
+        al_terminar=terminar,
+    )
+
+
+def asistente_eliminar_usuario(usuarios: list[dict]) -> Asistente:
+    mapa = {u['usuario']: u for u in usuarios}
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        u = mapa[r['usuario']]
+        return CambioPendiente(
+            'DELETE', f"/api/access-users/{u['id']}",
+            f'🗑 Eliminar usuario {u["usuario"]}:',
+            detalle=[
+                f'Usuario: {u["usuario"]}',
+                f'Permisos: {", ".join(u.get("permisos") or [])}',
+            ],
+        )
+
+    return Asistente(
+        titulo='🗑 Eliminar Usuario de Acceso',
+        pasos=[
+            Paso('usuario', 'Elige el usuario que deseas eliminar:', opciones=lambda _r: list(mapa)),
+        ],
+        al_terminar=terminar,
+    )
+
+
+# --- Personal Activo por Team -------------------------------------------------------
+
+def asistente_team_agregar() -> Asistente:
+    def terminar(r: Respuestas) -> CambioPendiente:
+        team_num = int(r['team'].replace('Team ', '').strip())
+        nombre = str(r['nombre']).strip()
+        telefono = str(r['telefono']).strip()
+        cuerpo = {'nombre': nombre, 'team': team_num, 'telefono': telefono}
+        return CambioPendiente(
+            'POST', '/api/reclutadores-nombres',
+            f'👥 Agregar Reclutador — {nombre}:',
+            detalle=[
+                f'Nombre: {nombre}',
+                f'Team: {team_num}',
+                f'Teléfono: {telefono}',
+            ],
+            cuerpo=cuerpo,
+        )
+
+    return Asistente(
+        titulo='👥 Agregar Reclutador',
+        pasos=[
+            Paso('nombre', 'Nombre del reclutador:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el nombre.'))),
+            Paso('team', 'Team / Equipo:', opciones=lambda _r: ['Team 1', 'Team 2', 'Team 3', 'Team 4']),
+            Paso('telefono', 'Teléfono de contacto:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
+        ],
+        al_terminar=terminar,
+    )
+
+
+def asistente_team_modificar(reclutadores: list[dict]) -> Asistente:
+    etiquetas = [f"{r['nombre']} (Team {r.get('team', 1)})" for r in reclutadores]
+    mapa = {f"{r['nombre']} (Team {r.get('team', 1)})": r for r in reclutadores}
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        rec = mapa[r['reclutador']]
+        nuevo_nombre = str(r['nombre']).strip() if r.get('nombre') else rec['nombre']
+        nuevo_tel = str(r['telefono']).strip() if r.get('telefono') else rec.get('telefono', '')
+        cuerpo = {
+            'nombre': nuevo_nombre,
+            'team': rec.get('team', 1),
+            'telefono': nuevo_tel,
+        }
+        return CambioPendiente(
+            'POST', f"/api/reclutadores-nombres/{rec['id']}",
+            f'✏️ Modificar Reclutador — {rec["nombre"]}:',
+            detalle=[
+                f'Nombre: {nuevo_nombre}',
+                f'Team: {rec.get("team", 1)}',
+                f'Teléfono: {nuevo_tel}',
+            ],
+            cuerpo=cuerpo,
+        )
+
+    return Asistente(
+        titulo='✏️ Modificar Reclutador',
+        pasos=[
+            Paso('reclutador', 'Elige al reclutador:', opciones=lambda _r: etiquetas),
+            Paso('nombre', 'Nombre del reclutador (o pulsa Omitir para mantener actual):', tipo='texto', omitible=True),
+            Paso('telefono', 'Teléfono del reclutador:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
+        ],
+        al_terminar=terminar,
+    )
+
+
+def asistente_team_eliminar(reclutadores: list[dict]) -> Asistente:
+    etiquetas = [f"{r['nombre']} (Team {r.get('team', 1)})" for r in reclutadores]
+    mapa = {f"{r['nombre']} (Team {r.get('team', 1)})": r for r in reclutadores}
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        rec = mapa[r['reclutador']]
+        return CambioPendiente(
+            'DELETE', f"/api/reclutadores-nombres/{rec['id']}",
+            f'🗑 Eliminar Reclutador — {rec["nombre"]}:',
+            detalle=[
+                f'Nombre: {rec["nombre"]}',
+                f'Team: {rec.get("team", 1)}',
+                f'Teléfono: {rec.get("telefono") or "Sin teléfono"}',
+            ],
+        )
+
+    return Asistente(
+        titulo='🗑 Eliminar Reclutador',
+        pasos=[
+            Paso('reclutador', 'Elige al reclutador a eliminar:', opciones=lambda _r: etiquetas),
+        ],
+        al_terminar=terminar,
+    )
+
+
+# --- Generar Registro ---------------------------------------------------------------
+
+FUENTES_REGISTRO = ['Facebook', 'Posteo', 'Volante', 'Recomendación', 'Reclu CW', 'Reclu puro']
+
+
+def asistente_generar_registro() -> Asistente:
+    def terminar(r: Respuestas) -> CambioPendiente:
+        no_temp = normalizar_numero_temporal(r['numero_temporal'])
+        nombre = str(r['nombre_completo']).strip()
+        curp = str(r['curp']).strip().upper()
+        formulario: dict[str, str] = {
+            'numero_temporal': no_temp,
+            'nombre_completo': nombre,
+            'curp': curp,
+            'rfc': str(r.get('rfc') or '').strip().upper(),
+            'nss': str(r.get('nss') or '').strip(),
+            'tel_movil': str(r.get('tel_movil') or '').strip(),
+            'correo': str(r.get('correo') or '').strip(),
+            'calle': str(r.get('domicilio') or '').strip(),
+            'nombre_emergencia': str(r.get('contacto_emergencia') or '').strip(),
+        }
+        siguiente = None
+        if r.get('fuente'):
+            sub_fuente = 'CW' if r['fuente'] == 'Reclu CW' else ('PURO' if r['fuente'] == 'Reclu puro' else '')
+            encuesta_form = {
+                'curp': curp,
+                'fuente': r['fuente'],
+                'sub_fuente': sub_fuente,
+                'nombre_reclutador': str(r.get('reclutador') or '').strip(),
+                'nombre_empleado': nombre,
+            }
+            siguiente = CambioPendiente(
+                'POST', '/api/guardar-encuesta',
+                f'📊 Guardar Encuesta de Reclutamiento — {nombre}:',
+                detalle=[f'Fuente: {r["fuente"]}', f'Reclutador: {r.get("reclutador") or "Sin asignar"}'],
+                formulario=encuesta_form,
+            )
+
+        return CambioPendiente(
+            'POST', '/api/guardar-registro',
+            f'✍️ Registrar Candidato — {nombre}:',
+            detalle=[
+                f'Número Temporal: {no_temp}',
+                f'Nombre: {nombre}',
+                f'CURP: {curp}',
+                f'Teléfono: {formulario["tel_movil"] or "Sin dato"}',
+                f'NSS: {formulario["nss"] or "Sin dato"}',
+                f'RFC: {formulario["rfc"] or "Sin dato"}',
+                f'Fuente: {r.get("fuente") or "Sin encuesta"}',
+            ],
+            formulario=formulario,
+            siguiente=siguiente,
+        )
+
+    return Asistente(
+        titulo='✍️ Generar Registro de Candidato',
+        pasos=[
+            Paso('numero_temporal', 'Ingresa el N° de Empleado Temporal (ej. TEMP - 001):', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el número temporal.'))),
+            Paso('nombre_completo', 'Nombre completo del candidato:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el nombre completo.'))),
+            Paso('curp', 'CURP (18 caracteres):', tipo='texto',
+                 validar=lambda v, _r: str(v).strip().upper() if len(str(v).strip()) >= 10 else (_ for _ in ()).throw(ValueError('Escribe una CURP válida.'))),
+            Paso('acta_nacimiento', 'Folio o número de Acta de Nacimiento (o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('domicilio', 'Comprobante de Domicilio / Dirección completa (o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('rfc', 'Constancia de Situación Fiscal / RFC (o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('nss', 'Número de Seguro Social (NSS) (o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('tel_movil', 'Teléfono móvil:', tipo='texto',
+                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
+            Paso('correo', 'Correo electrónico (o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('contacto_emergencia', 'Contacto de Emergencia (Nombre y teléfono, o pulsa Omitir):', tipo='texto', omitible=True),
+            Paso('fuente', 'Encuesta de Reclutamiento — ¿Por qué medio nos conoció?:', opciones=lambda _r: list(FUENTES_REGISTRO)),
+            Paso('reclutador', 'Nombre del reclutador (o pulsa Omitir):', tipo='texto', omitible=True),
+        ],
+        al_terminar=terminar,
+    )
+
+
+# --- Subir Papelería -----------------------------------------------------------------
+
+DOCS_PAPELERIA = {
+    'INE': 'ine',
+    'Comprobante de Domicilio': 'comprobante_domicilio',
+    'Acta de Nacimiento': 'acta_nacimiento',
+    'CURP': 'curp_doc',
+    'RFC': 'rfc_doc',
+    'Numero de Seguro Social (NSS)': 'nss_doc',
+    'Comprobante de Estudios': 'comprobante_estudios',
+    'Infonavit': 'infonavit_doc',
+    'Carta de Autorizacion': 'carta_autorizacion',
+    'Contrato Firmado': 'contrato_firmado',
+}
+
+
+def asistente_subir_papeleria(empleado: dict[str, Any]) -> Asistente:
+    nombre = empleado.get('nombre_completo') or 'Sin nombre'
+    no_emp = empleado.get('no_empleado') or empleado.get('numero_temporal') or str(empleado.get('id') or '')
+    registro_id = str(empleado.get('registro_id') or empleado.get('id') or '')
+
+    def terminar(r: Respuestas) -> CambioPendiente:
+        tipo_nombre = r['tipo_doc']
+        doc_key = DOCS_PAPELERIA[tipo_nombre]
+        archivo = r['archivo']
+        archivo_envio = Archivo('file', archivo.nombre, archivo.contenido, archivo.mime)
+        formulario = {
+            'registro_id': registro_id,
+            'doc_key': doc_key,
+            'empresa': empleado.get('empresa') or 'CHEONG_WOON',
+            'curp': empleado.get('curp') or '',
+        }
+        return CambioPendiente(
+            'POST', '/api/employee-files',
+            f'📎 Subir Papelería — {nombre}:',
+            detalle=[
+                f'Empleado: {nombre} ({no_emp})',
+                f'Documento: {tipo_nombre}',
+                f'Archivo: {archivo.nombre}',
+            ],
+            formulario=formulario,
+            archivo=archivo_envio,
+        )
+
+    return Asistente(
+        titulo=f'📎 Subir Papelería — {nombre}',
+        pasos=[
+            Paso('tipo_doc', '¿Qué documento deseas subir?', opciones=lambda _r: list(DOCS_PAPELERIA)),
+            Paso('archivo', 'Envía el documento como foto o PDF (máx. 10 MB):', tipo='archivo',
+                 validar=lambda a, _r: validar_archivo(a.nombre, a.contenido)),
+        ],
+        al_terminar=terminar,
     )

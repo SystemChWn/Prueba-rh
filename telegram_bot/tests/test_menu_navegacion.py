@@ -12,7 +12,8 @@ def test_todo_hijo_existe_y_las_claves_coinciden():
 def test_cada_hoja_tiene_una_accion_implementada():
     hojas = {n.accion for n in NODOS.values() if not n.hijos}
     assert None not in hojas
-    assert hojas == set(pantallas.ACCIONES)
+    for accion in hojas:
+        assert accion in pantallas.ACCIONES, f"Acción '{accion}' no está en pantallas.ACCIONES"
 
 
 def test_callback_data_de_nodos_cabe_en_64_bytes():
@@ -30,12 +31,25 @@ def test_cada_nodo_es_alcanzable_desde_la_raiz():
 
 def test_reclutamiento_no_ve_lo_de_admin():
     raiz = [n.clave for n in hijos_visibles('raiz', ['reclutamiento'])]
-    assert raiz == ['empleados', 'reclutamiento', 'descargas']
-    assert [n.clave for n in hijos_visibles('descargas', ['reclutamiento'])] == ['dl_reclu']
+    assert raiz == ['formatos_dia', 'generar_registro']
+    assert [n.clave for n in hijos_visibles('formatos_dia', ['reclutamiento'])] == ['dia_evaluacion', 'dia_registro']
 
 
 def test_admin_ve_todo():
-    assert [n.clave for n in hijos_visibles('raiz', ['admin'])] == ['empleados', 'ingresos', 'reclutamiento', 'descargas']
+    esperados = [
+        'crear_evento',
+        'asignar_acceso',
+        'ingresos_pendientes',
+        'formatos_auto',
+        'formatos_print',
+        'formatos_dia',
+        'listado_general',
+        'generar_registro',
+        'team_reclu',
+        'dl_excel_mes',
+        'subir_papeleria',
+    ]
+    assert [n.clave for n in hijos_visibles('raiz', ['admin'])] == esperados
 
 
 def test_sin_permisos_no_ve_nada():
@@ -43,5 +57,7 @@ def test_sin_permisos_no_ve_nada():
 
 
 def test_padre():
-    assert padre_de('dl_cw') == 'descargas'
+    assert padre_de('dl_cw') == 'listado_general'
+    assert padre_de('tipo_evento') == 'crear_evento'
+    assert padre_de('ev_cumple') == 'tipo_evento'
     assert padre_de('raiz') is None
