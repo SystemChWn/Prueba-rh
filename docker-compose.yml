@@ -9,7 +9,7 @@ services:
     ports:
       - "127.0.0.1:${TELEGRAM_POSTGRES_PORT:-5434}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -44,7 +44,7 @@ services:
   chatbot:
     image: rh-system-backend:local
     restart: unless-stopped
-    command: ["python", "/app/Chatbot_Wpp/bot.py"]
+    command: [ "python", "/app/Chatbot_Wpp/bot.py" ]
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
@@ -82,7 +82,7 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    profiles: ["telegram"]
+    profiles: [ "telegram" ]
 
   frontend:
     build: ./frontend
@@ -92,8 +92,7 @@ services:
     depends_on:
       - backend
     ports:
-      # Tailscale Serve termina HTTPS y reenvía al nginx local.
-      - "127.0.0.1:3001:80"
+      - "3001:80"
 
 volumes:
   pgdata:
