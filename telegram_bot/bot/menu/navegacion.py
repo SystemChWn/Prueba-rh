@@ -26,13 +26,10 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
         'crear_evento',
         'asignar_acceso',
         'ingresos_pendientes',
-        'formatos_auto',
-        'formatos_print',
         'formatos_dia',
         'listado_general',
         'generar_registro',
         'team_reclu',
-        'dl_excel_mes',
         'subir_papeleria',
     )),
 
@@ -51,57 +48,26 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     # 3. Ingresos Pendientes
     Nodo('ingresos_pendientes', '📝 Ingresos Pendientes', ADMIN, accion='ingresos_pendientes'),
 
-    # 4. Formatos Automatizados (Seleccionado)
-    Nodo('formatos_auto', '⚡ Formatos Automatizados', ADMIN, hijos=(
-        'fmt_gafete',
-        'fmt_cartacom',
-        'fmt_cartaimss',
-        'fmt_contrato',
-    )),
-    Nodo('fmt_gafete', '🪪 Gafete', ADMIN, hijos=('gafete_nuevo', 'gafete_existente')),
-    Nodo('gafete_nuevo', 'Personal Nuevo Ingreso', ADMIN, accion='gafete_nuevo'),
-    Nodo('gafete_existente', 'N° de Empleado o Nombre', ADMIN, accion='gafete_existente'),
-
-    Nodo('fmt_cartacom', '📄 Carta Compromiso', ADMIN, accion='cartacom_buscar'),
-    Nodo('fmt_cartaimss', '🏢 Carta Patronal', ADMIN, accion='cartaimss_buscar'),
-
-    Nodo('fmt_contrato', '📑 Contrato Laboral', ADMIN, hijos=('contrato_nuevo', 'contrato_existente')),
-    Nodo('contrato_nuevo', 'Personal Nuevo Ingreso', ADMIN, accion='contrato_nuevo'),
-    Nodo('contrato_existente', 'N° de Empleado o Nombre', ADMIN, accion='contrato_existente'),
-
-    # 5. Formatos para Imprimir
-    Nodo('formatos_print', '🖨️ Formatos para Imprimir', ADMIN, hijos=(
-        'print_suspension',
-        'print_entradasalida',
-        'print_indisciplina',
-    )),
-    Nodo('print_suspension', 'Suspensión', ADMIN, accion='print_suspension'),
-    Nodo('print_entradasalida', 'Entrada/Salida', ADMIN, accion='print_entradasalida'),
-    Nodo('print_indisciplina', 'Indisciplina', ADMIN, accion='print_indisciplina'),
-
-    # 6. Formatos del dia (Seleccionado)
+    # 4. Formatos del dia (Seleccionado)
     Nodo('formatos_dia', '📋 Formatos del día', TODOS, hijos=('dia_evaluacion', 'dia_registro')),
     Nodo('dia_evaluacion', 'Evaluación de Inducción', TODOS, accion='dia_evaluacion'),
     Nodo('dia_registro', 'Registro de Inducción', TODOS, accion='dia_registro'),
 
-    # 7. Listado General
+    # 5. Listado General
     Nodo('listado_general', '📑 Listado General', ADMIN, hijos=('dl_cw', 'dl_kronos')),
     Nodo('dl_cw', 'Cheong Woon', ADMIN, accion='dl_cw'),
     Nodo('dl_kronos', 'Kronos', ADMIN, accion='dl_kronos'),
 
-    # 8. Generar Registro
+    # 6. Generar Registro
     Nodo('generar_registro', '✍️ Generar Registro', TODOS, accion='generar_registro'),
 
-    # 9. Personal Activo por Team
+    # 7. Personal Activo por Team
     Nodo('team_reclu', '👥 Personal Activo por Team', ADMIN, hijos=('team_agregar', 'team_modificar', 'team_eliminar')),
     Nodo('team_agregar', '➕ Agregar', ADMIN, accion='team_agregar'),
     Nodo('team_modificar', '✏️ Modificar', ADMIN, accion='team_modificar'),
     Nodo('team_eliminar', '🗑️ Eliminar', ADMIN, accion='team_eliminar'),
 
-    # 10. Descargar Excel (Ingresos del Mes)
-    Nodo('dl_excel_mes', '📥 Descargar Excel (Ingresos del Mes)', ADMIN, accion='dl_excel_mes'),
-
-    # 11. Subir Papelería (Ingresar N°Emp o TEMP-N°)
+    # 8. Subir Papelería (Ingresar N°Emp o TEMP-N°)
     Nodo('subir_papeleria', '📎 Subir Papelería', ADMIN, accion='subir_papeleria'),
 )}
 

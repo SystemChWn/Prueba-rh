@@ -673,6 +673,7 @@ DOC_FILENAME_KEYS = {
     'infonavit_doc': 'INFONAVIT',
     'carta_autorizacion': 'CARTA_AUTORIZACION',
     'contrato_firmado': 'CONTRATO_FIRMADO',
+    'evaluacion': 'EVALUACION',
 }
 
 DOC_ALLOWED_MIME_TYPES = {

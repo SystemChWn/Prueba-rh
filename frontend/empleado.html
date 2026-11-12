@@ -1276,6 +1276,16 @@
                 <div class="photo-actions">
                     <label class="file-label" for="foto-input">SUBIR FOTO</label>
                     <input id="foto-input" class="file-input" type="file" accept="image/*" />
+                    <div id="evaluacion-container" style="width:100%; margin-top:10px;">
+                        <div id="evaluacion-subir-wrap">
+                            <label class="file-label" for="file-evaluacion" style="cursor:pointer; margin:0;">SUBIR EVALUACIÓN</label>
+                            <input id="file-evaluacion" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                        </div>
+                        <div id="evaluacion-botones-wrap" style="display:none; width:100%; gap:8px;">
+                            <button id="btn-evaluacion-preview" class="doc-btn doc-solid" type="button" data-action="preview" data-doc="evaluacion" style="flex:1; padding:12px 6px; border-radius:12px; font-weight:800; width:100%;">Vista previa</button>
+                            <button id="btn-evaluacion-delete" class="doc-btn doc-danger" type="button" data-action="delete" data-doc="evaluacion" style="flex:1; padding:12px 6px; border-radius:12px; font-weight:800; width:100%; margin-left:0;">Eliminar</button>
+                        </div>
+                    </div>
                     <div class="chatbot-password-actions" style="width:100%; max-width:300px; margin:16px auto 0; text-align:left;">
                         <label class="muted" for="contrasena-chatbot">Contraseña:</label>
                         <div class="chatbot-password-field">
@@ -1679,7 +1689,7 @@
         const PORT = '8001';
         const API_URL = `http://${currentHost}:${PORT}`;
         const API_BASES = ['', API_URL, `http://localhost:${PORT}`];
-        const DOC_KEYS = ['ine', 'comprobante_domicilio', 'acta_nacimiento', 'curp_doc', 'rfc_doc', 'nss_doc', 'comprobante_estudios', 'infonavit_doc', 'carta_autorizacion', 'contrato_firmado'];
+        const DOC_KEYS = ['ine', 'comprobante_domicilio', 'acta_nacimiento', 'curp_doc', 'rfc_doc', 'nss_doc', 'comprobante_estudios', 'infonavit_doc', 'carta_autorizacion', 'contrato_firmado', 'evaluacion'];
         const isRecruitmentLimited = document.documentElement.classList.contains('recruitment-limited');
 
         function getFallbackRegistroId() {
@@ -2001,6 +2011,18 @@
         }
 
         function hydrateDocumentButtons(docKey) {
+            if (docKey === 'evaluacion') {
+                const subirWrap = document.getElementById('evaluacion-subir-wrap');
+                const botonesWrap = document.getElementById('evaluacion-botones-wrap');
+                const fileData = documentosById['evaluacion'];
+                const hasFile = Boolean(fileData && (fileData.previewUrl || fileData.fileName));
+                if (subirWrap && botonesWrap) {
+                    subirWrap.style.display = hasFile ? 'none' : 'block';
+                    botonesWrap.style.display = hasFile ? 'flex' : 'none';
+                }
+                return;
+            }
+
             const uploadBtn = document.querySelector(`label[for="file-${docKey}"]`);
             const previewBtn = document.querySelector(`[data-action="preview"][data-doc="${docKey}"]`);
             const downloadLink = document.querySelector(`[data-action="download"][data-doc="${docKey}"]`);

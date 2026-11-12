@@ -40,13 +40,10 @@ def test_admin_ve_todo():
         'crear_evento',
         'asignar_acceso',
         'ingresos_pendientes',
-        'formatos_auto',
-        'formatos_print',
         'formatos_dia',
         'listado_general',
         'generar_registro',
         'team_reclu',
-        'dl_excel_mes',
         'subir_papeleria',
     ]
     assert [n.clave for n in hijos_visibles('raiz', ['admin'])] == esperados
