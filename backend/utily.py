@@ -1014,6 +1014,8 @@ def solicitud_acceso_es_segura():
     host = urlsplit(f'//{request.host}').hostname
     if esquema == 'https' or request.is_secure:
         return True
+    if str(os.getenv('AUTH_COOKIE_SECURE', '0')).strip() != '1':
+        return True
     return host in {'localhost', '127.0.0.1', '::1'}
 
 
