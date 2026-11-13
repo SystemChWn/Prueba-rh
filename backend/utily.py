@@ -3515,6 +3515,21 @@ def historial_registro_induccion_mes():
         return jsonify({'error': str(e)}), 500
 
 
+def _deducir_mime_type(nombre_archivo, mime_type, contenido):
+    nombre_lower = (nombre_archivo or '').lower()
+    if contenido.startswith(b'%PDF') or nombre_lower.endswith('.pdf'):
+        return 'application/pdf'
+    if contenido.startswith(b'\xff\xd8\xff') or nombre_lower.endswith(('.jpg', '.jpeg')):
+        return 'image/jpeg'
+    if contenido.startswith(b'\x89PNG') or nombre_lower.endswith('.png'):
+        return 'image/png'
+    if contenido.startswith(b'GIF') or nombre_lower.endswith('.gif'):
+        return 'image/gif'
+    if nombre_lower.endswith('.webp') or (len(contenido) > 12 and contenido[:4] == b'RIFF' and contenido[8:12] == b'WEBP'):
+        return 'image/webp'
+    return mime_type or 'application/pdf'
+
+
 @app.route('/api/registro-induccion/archivo/<int:registro_id>', methods=['GET'])
 def ver_archivo_registro_induccion(registro_id):
     """Devuelve el archivo de registro de inducción para visualización o descarga."""
@@ -3532,12 +3547,46 @@ def ver_archivo_registro_induccion(registro_id):
 
                 nombre_archivo, mime_type, archivo_base64 = row
                 contenido = base64.b64decode(archivo_base64)
-                return send_file(
+                mime_real = _deducir_mime_type(nombre_archivo, mime_type, contenido)
+
+                resp = send_file(
                     BytesIO(contenido),
-                    mimetype=mime_type or 'application/pdf',
+                    mimetype=mime_real,
                     as_attachment=False,
                     download_name=nombre_archivo
                 )
+                resp.headers['Content-Disposition'] = f'inline; filename="{nombre_archivo}"'
+                return resp
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/registro-induccion/detalle/<int:registro_id>', methods=['GET'])
+def detalle_registro_induccion(registro_id):
+    """Devuelve metadatos y data_url base64 del archivo para renderizado directo en cliente."""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute(
+                    "SELECT nombre_archivo, mime_type, archivo_base64, fecha FROM registro_induccion_diario WHERE id = %s",
+                    (registro_id,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    return jsonify({'error': 'Registro no encontrado'}), 404
+
+                nombre_archivo, mime_type, archivo_base64, fecha = row
+                contenido_bytes = base64.b64decode(archivo_base64)
+                mime_real = _deducir_mime_type(nombre_archivo, mime_type, contenido_bytes)
+
+                return jsonify({
+                    'id': registro_id,
+                    'fecha': fecha.strftime('%Y-%m-%d') if hasattr(fecha, 'strftime') else str(fecha),
+                    'nombre_archivo': nombre_archivo,
+                    'mime_type': mime_real,
+                    'data_url': f"data:{mime_real};base64,{archivo_base64}"
+                })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

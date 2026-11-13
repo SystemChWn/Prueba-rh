@@ -1036,6 +1036,8 @@
                 return `${anio}-${mes}-${dia}`;
             }
 
+            let estadoHoyCache = null;
+
             // 1. Cargar estado de hoy
             async function actualizarEstadoHoy() {
                 try {
@@ -1043,25 +1045,36 @@
                     const res = await apiFetch(`/api/registro-induccion/estado-hoy?fecha=${fechaISO}`);
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await leerJson(res);
+                    estadoHoyCache = data;
 
                     if (data.subido) {
                         bannerEl.className = 'induccion-banner banner-completado';
                         statusTextEl.textContent = 'COMPLETADO: Registro del día guardado';
-                        btnSubir.disabled = true;
+                        btnSubir.disabled = false;
+                        btnSubir.textContent = 'Ver registro';
+                        btnSubir.className = 'btn-induccion btn-subir';
+                        btnSubir.style.backgroundColor = '#15803d';
+                        btnSubir.style.color = '#ffffff';
                     } else {
                         bannerEl.className = 'induccion-banner banner-pendiente';
                         statusTextEl.textContent = 'PENDIENTE: Aún no se ha subido el registro de hoy';
                         btnSubir.disabled = false;
+                        btnSubir.textContent = 'SUBIR';
+                        btnSubir.className = 'btn-induccion btn-subir';
+                        btnSubir.style.backgroundColor = '';
+                        btnSubir.style.color = '';
                     }
                 } catch (err) {
                     console.error('Error al actualizar estado de hoy:', err);
                 }
             }
 
-            // 2. Subir archivo
+            // 2. Subir archivo / Ver registro de hoy
             if (btnSubir && inputArchivo) {
                 btnSubir.addEventListener('click', () => {
-                    if (!btnSubir.disabled) {
+                    if (estadoHoyCache && estadoHoyCache.subido && estadoHoyCache.id) {
+                        abrirModalPreview(estadoHoyCache, fechaHoy.getDate(), fechaHoy.getMonth() + 1, fechaHoy.getFullYear());
+                    } else {
                         inputArchivo.click();
                     }
                 });
@@ -1249,62 +1262,63 @@
                 modalBackdrop.style.display = 'flex';
 
                 try {
-                    const res = await apiFetch(`/api/registro-induccion/archivo/${registro.id}`);
-                    if (!res.ok) throw new Error(`No se pudo obtener el archivo (HTTP ${res.status})`);
-                    
-                    const blob = await res.blob();
-                    if (previewBlobUrlActivo) {
-                        URL.revokeObjectURL(previewBlobUrlActivo);
-                    }
-                    previewBlobUrlActivo = URL.createObjectURL(blob);
-                    const objectUrl = previewBlobUrlActivo;
+                    const res = await apiFetch(`/api/registro-induccion/detalle/${registro.id}`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const detalle = await leerJson(res);
 
-                    const nombre = (registro.nombre_archivo || 'documento').toLowerCase();
-                    const mime = (registro.mime_type || blob.type || '').toLowerCase();
+                    const dataUrl = detalle.data_url;
+                    const nombre = (detalle.nombre_archivo || registro.nombre_archivo || 'documento').toLowerCase();
+                    const mime = (detalle.mime_type || '').toLowerCase();
                     const esPdf = mime.includes('pdf') || nombre.endsWith('.pdf');
                     const esImagen = mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(nombre);
 
                     modalBody.innerHTML = '';
-                    
-                    // Barra de herramientas superior dentro del modal
+
+                    // Barra de herramientas superior
                     const barraAcciones = document.createElement('div');
-                    barraAcciones.style.cssText = 'width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 6px 12px; background: #252525; border-radius: 8px; border: 1px solid #383838; box-sizing: border-box;';
+                    barraAcciones.style.cssText = 'width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: #252525; border-radius: 8px; border: 1px solid #383838; box-sizing: border-box; flex-wrap: wrap; gap: 8px;';
                     barraAcciones.innerHTML = `
-                        <span style="font-size: 0.85rem; color: #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;">
-                            📄 <strong>${registro.nombre_archivo}</strong>
+                        <span style="font-size: 0.85rem; color: #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%;">
+                            📄 <strong>${detalle.nombre_archivo}</strong>
                         </span>
                         <div style="display: flex; gap: 8px;">
-                            <a href="${objectUrl}" target="_blank" class="btn-induccion" style="text-decoration: none; padding: 4px 10px; font-size: 0.75rem;">↗ Abrir en pestaña</a>
-                            <a href="${objectUrl}" download="${registro.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; padding: 4px 12px; font-size: 0.75rem;">⬇ Descargar</a>
+                            <a href="/api/registro-induccion/archivo/${registro.id}" target="_blank" class="btn-induccion" style="text-decoration: none; padding: 5px 12px; font-size: 0.78rem;">↗ Abrir en pestaña</a>
+                            <a href="${dataUrl}" download="${detalle.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; padding: 5px 14px; font-size: 0.78rem;">⬇ Descargar</a>
                         </div>
                     `;
                     modalBody.appendChild(barraAcciones);
 
-                    if (esPdf) {
-                        const iframe = document.createElement('iframe');
-                        iframe.src = objectUrl;
-                        iframe.style.width = '100%';
-                        iframe.style.height = '600px';
-                        iframe.style.border = 'none';
-                        iframe.style.borderRadius = '8px';
-                        iframe.style.backgroundColor = '#ffffff';
-                        modalBody.appendChild(iframe);
-                    } else if (esImagen) {
+                    if (esImagen) {
                         const img = document.createElement('img');
-                        img.src = objectUrl;
+                        img.src = dataUrl;
+                        img.alt = detalle.nombre_archivo;
                         img.style.maxWidth = '100%';
-                        img.style.maxHeight = '600px';
+                        img.style.maxHeight = '70vh';
                         img.style.display = 'block';
                         img.style.margin = '0 auto';
                         img.style.borderRadius = '8px';
+                        img.style.boxShadow = '0 4px 16px rgba(0,0,0,0.6)';
                         img.style.objectFit = 'contain';
                         modalBody.appendChild(img);
+                    } else if (esPdf) {
+                        const embedContainer = document.createElement('div');
+                        embedContainer.style.cssText = 'width: 100%; height: 70vh; min-height: 520px; background: #ffffff; border-radius: 8px; overflow: hidden;';
+                        embedContainer.innerHTML = `
+                            <object data="${dataUrl}" type="application/pdf" width="100%" height="100%" style="border: none;">
+                                <embed src="${dataUrl}" type="application/pdf" width="100%" height="100%" />
+                                <div style="text-align: center; padding: 40px; color: #111;">
+                                    <p style="font-size: 1rem; margin-bottom: 12px;">Vista previa de PDF lista.</p>
+                                    <a href="/api/registro-induccion/archivo/${registro.id}" target="_blank" class="btn-induccion btn-subir" style="text-decoration: none; display: inline-block; padding: 8px 16px;">Abrir PDF en pantalla completa</a>
+                                </div>
+                            </object>
+                        `;
+                        modalBody.appendChild(embedContainer);
                     } else {
                         const fallbackDiv = document.createElement('div');
-                        fallbackDiv.style.cssText = 'text-align: center; padding: 30px; color: #ffffff;';
+                        fallbackDiv.style.cssText = 'text-align: center; padding: 40px; color: #ffffff;';
                         fallbackDiv.innerHTML = `
-                            <p style="font-size: 0.95rem; margin-bottom: 16px;">Archivo disponible: <strong>${registro.nombre_archivo}</strong></p>
-                            <a href="${objectUrl}" download="${registro.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; display: inline-block;">⬇ Descargar archivo</a>
+                            <p style="font-size: 1rem; margin-bottom: 16px;">Archivo disponible: <strong>${detalle.nombre_archivo}</strong></p>
+                            <a href="${dataUrl}" download="${detalle.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; display: inline-block; padding: 8px 20px;">⬇ Descargar archivo</a>
                         `;
                         modalBody.appendChild(fallbackDiv);
                     }
@@ -1312,8 +1326,11 @@
                     modalBody.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: #fca5a5;">
                             <div style="font-size: 2.5rem; margin-bottom: 8px;">⚠️</div>
-                            <p style="font-size: 1rem; margin: 0 0 8px 0; font-weight: bold;">Error al cargar la vista previa</p>
+                            <p style="font-size: 1rem; margin: 0 0 8px 0; font-weight: bold;">No se pudo mostrar la vista previa</p>
                             <span style="font-size: 0.85rem; color: #9ca3af;">${err.message}</span>
+                            <div style="margin-top: 16px;">
+                                <a href="/api/registro-induccion/archivo/${registro.id}" target="_blank" class="btn-induccion btn-subir" style="text-decoration: none; display: inline-block; padding: 6px 14px;">Intentar abrir directo</a>
+                            </div>
                         </div>
                     `;
                 }
