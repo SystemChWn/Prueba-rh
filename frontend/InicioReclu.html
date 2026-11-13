@@ -1051,10 +1051,11 @@
                         bannerEl.className = 'induccion-banner banner-completado';
                         statusTextEl.textContent = 'COMPLETADO: Registro del día guardado';
                         btnSubir.disabled = false;
-                        btnSubir.textContent = 'Ver registro';
+                        btnSubir.textContent = 'Vista previa';
                         btnSubir.className = 'btn-induccion btn-subir';
                         btnSubir.style.backgroundColor = '#15803d';
                         btnSubir.style.color = '#ffffff';
+                        btnSubir.title = 'Clic para ver el archivo en otra pestaña';
                     } else {
                         bannerEl.className = 'induccion-banner banner-pendiente';
                         statusTextEl.textContent = 'PENDIENTE: Aún no se ha subido el registro de hoy';
@@ -1063,17 +1064,19 @@
                         btnSubir.className = 'btn-induccion btn-subir';
                         btnSubir.style.backgroundColor = '';
                         btnSubir.style.color = '';
+                        btnSubir.title = 'Subir archivo de registro de inducción';
                     }
                 } catch (err) {
                     console.error('Error al actualizar estado de hoy:', err);
                 }
             }
 
-            // 2. Subir archivo / Ver registro de hoy
+            // 2. Subir archivo / Vista previa de hoy
             if (btnSubir && inputArchivo) {
                 btnSubir.addEventListener('click', () => {
                     if (estadoHoyCache && estadoHoyCache.subido && estadoHoyCache.id) {
-                        abrirModalPreview(estadoHoyCache, fechaHoy.getDate(), fechaHoy.getMonth() + 1, fechaHoy.getFullYear());
+                        const previewUrl = `/api/registro-induccion/archivo/${estadoHoyCache.id}`;
+                        window.open(previewUrl, '_blank', 'noopener');
                     } else {
                         inputArchivo.click();
                     }
