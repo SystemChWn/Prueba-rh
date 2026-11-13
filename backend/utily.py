@@ -3375,6 +3375,172 @@ def exportar_excel():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# =======================================================
+# REGISTRO DE INDUCCIÓN DIARIO
+# =======================================================
+
+def _ensure_registro_induccion_schema(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS registro_induccion_diario (
+            id SERIAL PRIMARY KEY,
+            fecha DATE NOT NULL UNIQUE,
+            nombre_archivo VARCHAR(255) NOT NULL,
+            mime_type VARCHAR(100),
+            archivo_base64 TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_registro_induccion_diario_fecha ON registro_induccion_diario(fecha)")
+
+
+@app.route('/api/registro-induccion/estado-hoy', methods=['GET'])
+def estado_registro_induccion_hoy():
+    """Devuelve si el registro del día especificado (o hoy) ya fue subido."""
+    fecha_param = request.args.get('fecha')
+    if not fecha_param:
+        fecha_param = datetime.now().strftime('%Y-%m-%d')
+    try:
+        datetime.strptime(fecha_param, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Formato de fecha inválido (use YYYY-MM-DD)'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute(
+                    "SELECT id, nombre_archivo, created_at FROM registro_induccion_diario WHERE fecha = %s",
+                    (fecha_param,)
+                )
+                row = cur.fetchone()
+                if row:
+                    return jsonify({
+                        'subido': True,
+                        'fecha': fecha_param,
+                        'id': row[0],
+                        'nombre_archivo': row[1]
+                    })
+                return jsonify({
+                    'subido': False,
+                    'fecha': fecha_param,
+                    'id': None,
+                    'nombre_archivo': None
+                })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/registro-induccion/subir', methods=['POST'])
+def subir_registro_induccion():
+    """Sube o actualiza el registro de inducción para una fecha dada (por defecto hoy)."""
+    archivo = request.files.get('file')
+    if not archivo or not archivo.filename:
+        return jsonify({'error': 'El archivo es obligatorio'}), 400
+
+    fecha_param = request.form.get('fecha')
+    if not fecha_param:
+        fecha_param = datetime.now().strftime('%Y-%m-%d')
+    try:
+        datetime.strptime(fecha_param, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Formato de fecha inválido (use YYYY-MM-DD)'}), 400
+
+    nombre_archivo = secure_filename(archivo.filename) or 'registro_induccion'
+    mime_type = archivo.mimetype or 'application/octet-stream'
+    contenido = archivo.read() or b''
+    if not contenido:
+        return jsonify({'error': 'El archivo está vacío'}), 400
+
+    archivo_base64 = base64.b64encode(contenido).decode('ascii')
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute("""
+                    INSERT INTO registro_induccion_diario (fecha, nombre_archivo, mime_type, archivo_base64, created_at)
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (fecha) DO UPDATE
+                    SET nombre_archivo = EXCLUDED.nombre_archivo,
+                        mime_type = EXCLUDED.mime_type,
+                        archivo_base64 = EXCLUDED.archivo_base64,
+                        created_at = CURRENT_TIMESTAMP
+                    RETURNING id
+                """, (fecha_param, nombre_archivo, mime_type, archivo_base64))
+                registro_id = cur.fetchone()[0]
+            conn.commit()
+            return jsonify({
+                'success': True,
+                'mensaje': 'Registro del día guardado',
+                'id': registro_id,
+                'fecha': fecha_param,
+                'nombre_archivo': nombre_archivo
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/registro-induccion/historial-mes', methods=['GET'])
+def historial_registro_induccion_mes():
+    """Obtiene los días con registro subido en un mes y año dados."""
+    try:
+        mes = int(request.args.get('mes', datetime.now().month))
+        anio = int(request.args.get('anio', datetime.now().year))
+        if not 1 <= mes <= 12 or not 2000 <= anio <= 2100:
+            return jsonify({'error': 'Mes o año inválido'}), 400
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute("""
+                    SELECT id, fecha, nombre_archivo, mime_type
+                    FROM registro_induccion_diario
+                    WHERE EXTRACT(MONTH FROM fecha) = %s AND EXTRACT(YEAR FROM fecha) = %s
+                    ORDER BY fecha ASC
+                """, (mes, anio))
+                rows = cur.fetchall()
+                registros = [{
+                    'id': r[0],
+                    'fecha': r[1].strftime('%Y-%m-%d') if hasattr(r[1], 'strftime') else str(r[1]),
+                    'nombre_archivo': r[2],
+                    'mime_type': r[3]
+                } for r in rows]
+                return jsonify({
+                    'mes': mes,
+                    'anio': anio,
+                    'registros': registros
+                })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/registro-induccion/archivo/<int:registro_id>', methods=['GET'])
+def ver_archivo_registro_induccion(registro_id):
+    """Devuelve el archivo de registro de inducción para visualización o descarga."""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute(
+                    "SELECT nombre_archivo, mime_type, archivo_base64 FROM registro_induccion_diario WHERE id = %s",
+                    (registro_id,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    return jsonify({'error': 'Registro no encontrado'}), 404
+
+                nombre_archivo, mime_type, archivo_base64 = row
+                contenido = base64.b64decode(archivo_base64)
+                return send_file(
+                    BytesIO(contenido),
+                    mimetype=mime_type or 'application/pdf',
+                    as_attachment=False,
+                    download_name=nombre_archivo
+                )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # =======================================================
 # Sesión y bitácora (se registran al final para cubrir todas las rutas).
 auth.init_auth(app, lambda: get_db_connection(), normalizar_permisos, asegurar_esquema_sesion)

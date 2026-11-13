@@ -89,6 +89,303 @@
             margin-top: 2px;
         }
 
+        /* REGISTRO DE INDUCCIÓN - RECUADRO SUPERIOR */
+        .metric-card.card-induccion {
+            background: #ffffff;
+            color: #111111;
+            padding: 0;
+            border: 1px solid #777;
+            border-radius: 8px;
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            text-align: center;
+            height: auto;
+            min-height: 120px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            position: relative;
+        }
+
+        .induccion-banner {
+            width: 100%;
+            padding: 5px 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: Arial, sans-serif;
+            color: #000000;
+            box-sizing: border-box;
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+            text-align: left;
+            transition: background-color 0.3s ease;
+        }
+
+        .induccion-banner.banner-pendiente {
+            background-color: #ff6b6b;
+        }
+
+        .induccion-banner.banner-completado {
+            background-color: #9fe27c;
+        }
+
+        .induccion-body {
+            padding: 10px 14px 12px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .induccion-title {
+            font-family: Arial, sans-serif;
+            font-size: 1.15rem;
+            font-weight: 500;
+            color: #111111;
+            margin: 0;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .induccion-date {
+            font-family: Arial, sans-serif;
+            font-size: 0.95rem;
+            color: #222222;
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+
+        .induccion-actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .btn-induccion {
+            background: #ffffff;
+            color: #111111;
+            border: 1px solid #777777;
+            border-radius: 50px;
+            padding: 6px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .btn-induccion:hover:not(:disabled) {
+            background: #f2f2f2;
+            border-color: #333333;
+        }
+
+        .btn-induccion:disabled {
+            color: #b5b5b5;
+            border-color: #cccccc;
+            cursor: not-allowed;
+            background: #ffffff;
+            opacity: 0.85;
+        }
+
+        /* POPOVER CALENDARIO HISTORIAL */
+        .induccion-historial-popover {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 320px;
+            z-index: 1000;
+            background: #ffffff;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            padding: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .historial-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .historial-nav-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #000000;
+            padding: 2px 8px;
+            line-height: 1;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+
+        .historial-nav-btn:hover {
+            color: #007bff;
+            transform: scale(1.15);
+        }
+
+        .historial-mes-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .historial-mes-nombre {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #000000;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: Arial, sans-serif;
+        }
+
+        .historial-anio-label {
+            font-size: 0.72rem;
+            color: #555555;
+            font-weight: 600;
+            margin-top: 1px;
+            font-family: Arial, sans-serif;
+        }
+
+        .historial-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .historial-dia {
+            border-radius: 8px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-family: Arial, sans-serif;
+            border: none;
+            user-select: none;
+            box-sizing: border-box;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+
+        .historial-dia.dia-verde {
+            background-color: #6ed33e;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .historial-dia.dia-verde:hover {
+            transform: scale(1.08);
+            filter: brightness(0.92);
+        }
+
+        .historial-dia.dia-rojo {
+            background-color: #ff0000;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .historial-dia.dia-rojo:hover {
+            transform: scale(1.08);
+            filter: brightness(0.9);
+        }
+
+        .historial-dia.dia-gris {
+            background-color: #cbd5e1;
+            color: #64748b;
+            font-weight: normal;
+            cursor: default;
+        }
+
+        .historial-dia.dia-vacio {
+            background: transparent;
+            cursor: default;
+        }
+
+        /* MODAL VISTA PREVIA */
+        .modal-induccion-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-induccion-box {
+            background: #ffffff;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 820px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-induccion-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+
+        .modal-induccion-head h4 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: #1e293b;
+            font-family: Arial, sans-serif;
+        }
+
+        .modal-induccion-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            line-height: 1;
+            padding: 0 4px;
+        }
+
+        .modal-induccion-close:hover {
+            color: #0f172a;
+        }
+
+        .modal-induccion-content {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+        }
+
 /* DIVISIÓN EN 4 SECCIONES */
         .grid-content-4 {
             display: grid;
@@ -508,9 +805,35 @@
 
     <!-- RECUADROS SUPERIORES -->
     <div class="metrics-container">
-        <div class="metric-card">
-            <h3>Mes Actual</h3>
-            <p class="metric-value" id="mesActual">--</p>
+        <div class="metric-card card-induccion" id="card-registro-induccion">
+            <span id="mesActual" style="display: none;">--</span>
+            <div class="induccion-banner banner-pendiente" id="induccion-banner">
+                <span id="induccion-status-text">PENDIENTE: Aún no se ha subido el registro de hoy</span>
+            </div>
+            <div class="induccion-body">
+                <h2 class="induccion-title">REGISTRO DE INDUCCION</h2>
+                <div class="induccion-date" id="induccion-fecha-hoy">-- de -- ----</div>
+                <div class="induccion-actions">
+                    <button type="button" class="btn-induccion" id="btn-ver-historial-induccion">Ver historial</button>
+                    <button type="button" class="btn-induccion" id="btn-subir-induccion">SUBIR</button>
+                    <input type="file" id="input-archivo-induccion" accept=".pdf,image/*,.doc,.docx" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Calendario desplegable / Popover de Historial -->
+            <div class="induccion-historial-popover" id="induccion-historial-popover" style="display: none;">
+                <div class="historial-header">
+                    <button type="button" class="historial-nav-btn" id="historial-mes-prev" aria-label="Mes anterior">◀</button>
+                    <div class="historial-mes-wrap">
+                        <span class="historial-mes-nombre" id="historial-mes-nombre">NOVIEMBRE</span>
+                        <span class="historial-anio-label" id="historial-anio-label">2026</span>
+                    </div>
+                    <button type="button" class="historial-nav-btn" id="historial-mes-next" aria-label="Mes siguiente">▶</button>
+                </div>
+                <div class="historial-grid" id="historial-grid-dias">
+                    <!-- Días generados dinámicamente -->
+                </div>
+            </div>
         </div>
         <div class="metric-card">
             <h3>Generar Link de Registro</h3>
@@ -627,14 +950,317 @@
     </main>
     <script src="data-manager.js"></script>
     <script>
-// RECUADROS SUPERIORES - 1
-        const fechaActual = new Date();
-        const opcionesMes = { month: 'long' };
-        let nombreMes = fechaActual.toLocaleDateString('es-ES', opcionesMes);
-        
-        nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-        
-        document.getElementById('mesActual').textContent = nombreMes;
+// RECUADROS SUPERIORES - 1: REGISTRO DE INDUCCIÓN DIARIO
+        (() => {
+            const NOMBRES_MESES = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            const fechaHoy = new Date();
+            let historialMes = fechaHoy.getMonth() + 1; // 1-12
+            let historialAnio = fechaHoy.getFullYear();
+            let registrosDelMesCache = [];
+
+            // Formatear fecha para el título (ej: "13 de Noviembre 2026")
+            const elFechaHoy = document.getElementById('induccion-fecha-hoy');
+            if (elFechaHoy) {
+                const dia = fechaHoy.getDate();
+                const mesNombre = NOMBRES_MESES[fechaHoy.getMonth()];
+                elFechaHoy.textContent = `${dia} de ${mesNombre} ${fechaHoy.getFullYear()}`;
+            }
+
+            const elMesActualLegacy = document.getElementById('mesActual');
+            if (elMesActualLegacy) {
+                elMesActualLegacy.textContent = NOMBRES_MESES[fechaHoy.getMonth()];
+            }
+
+            const bannerEl = document.getElementById('induccion-banner');
+            const statusTextEl = document.getElementById('induccion-status-text');
+            const btnSubir = document.getElementById('btn-subir-induccion');
+            const inputArchivo = document.getElementById('input-archivo-induccion');
+            const btnHistorial = document.getElementById('btn-ver-historial-induccion');
+            const popoverHistorial = document.getElementById('induccion-historial-popover');
+            const btnPrevMes = document.getElementById('historial-mes-prev');
+            const btnNextMes = document.getElementById('historial-mes-next');
+            const labelMesNombre = document.getElementById('historial-mes-nombre');
+            const labelAnio = document.getElementById('historial-anio-label');
+            const gridDias = document.getElementById('historial-grid-dias');
+
+            async function apiFetch(url, options = {}) {
+                if (typeof authFetch === 'function') {
+                    return authFetch(url, options);
+                }
+                return fetch(url, options);
+            }
+
+            function fechaAISO(d) {
+                const anio = d.getFullYear();
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const dia = String(d.getDate()).padStart(2, '0');
+                return `${anio}-${mes}-${dia}`;
+            }
+
+            // 1. Cargar estado de hoy
+            async function actualizarEstadoHoy() {
+                try {
+                    const fechaISO = fechaAISO(fechaHoy);
+                    const res = await apiFetch(`/api/registro-induccion/estado-hoy?fecha=${fechaISO}`);
+                    if (!res.ok) throw new Error('Error al consultar estado');
+                    const data = await res.json();
+
+                    if (data.subido) {
+                        bannerEl.className = 'induccion-banner banner-completado';
+                        statusTextEl.textContent = 'COMPLETADO: Registro del día guardado';
+                        btnSubir.disabled = true;
+                    } else {
+                        bannerEl.className = 'induccion-banner banner-pendiente';
+                        statusTextEl.textContent = 'PENDIENTE: Aún no se ha subido el registro de hoy';
+                        btnSubir.disabled = false;
+                    }
+                } catch (err) {
+                    console.error('Error al actualizar estado de hoy:', err);
+                }
+            }
+
+            // 2. Subir archivo
+            if (btnSubir && inputArchivo) {
+                btnSubir.addEventListener('click', () => {
+                    if (!btnSubir.disabled) {
+                        inputArchivo.click();
+                    }
+                });
+
+                inputArchivo.addEventListener('change', async () => {
+                    const file = inputArchivo.files && inputArchivo.files[0];
+                    if (!file) return;
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('fecha', fechaAISO(fechaHoy));
+
+                    btnSubir.disabled = true;
+                    statusTextEl.textContent = 'Subiendo registro...';
+
+                    try {
+                        const res = await apiFetch('/api/registro-induccion/subir', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (!res.ok || !data.success) {
+                            throw new Error(data.error || 'No se pudo subir el archivo');
+                        }
+
+                        await actualizarEstadoHoy();
+                        if (popoverHistorial && popoverHistorial.style.display !== 'none') {
+                            await cargarHistorialMes(historialMes, historialAnio);
+                        }
+                    } catch (err) {
+                        alert(`Error al subir registro: ${err.message}`);
+                        await actualizarEstadoHoy();
+                    } finally {
+                        inputArchivo.value = '';
+                    }
+                });
+            }
+
+            // 3. Popover de Historial
+            if (btnHistorial && popoverHistorial) {
+                btnHistorial.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const estaAbierto = popoverHistorial.style.display !== 'none';
+                    if (estaAbierto) {
+                        popoverHistorial.style.display = 'none';
+                    } else {
+                        popoverHistorial.style.display = 'block';
+                        await cargarHistorialMes(historialMes, historialAnio);
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (popoverHistorial.style.display !== 'none' && !popoverHistorial.contains(e.target) && e.target !== btnHistorial) {
+                        popoverHistorial.style.display = 'none';
+                    }
+                });
+            }
+
+            if (btnPrevMes) {
+                btnPrevMes.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    historialMes--;
+                    if (historialMes < 1) {
+                        historialMes = 12;
+                        historialAnio--;
+                    }
+                    await cargarHistorialMes(historialMes, historialAnio);
+                });
+            }
+
+            if (btnNextMes) {
+                btnNextMes.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    historialMes++;
+                    if (historialMes > 12) {
+                        historialMes = 1;
+                        historialAnio++;
+                    }
+                    await cargarHistorialMes(historialMes, historialAnio);
+                });
+            }
+
+            async function cargarHistorialMes(mes, anio) {
+                if (labelMesNombre) labelMesNombre.textContent = NOMBRES_MESES[mes - 1].toUpperCase();
+                if (labelAnio) labelAnio.textContent = String(anio);
+                if (!gridDias) return;
+
+                gridDias.innerHTML = '<div style="grid-column: 1 / -1; padding: 12px; font-size: 0.8rem; color: #666;">Cargando...</div>';
+
+                try {
+                    const res = await apiFetch(`/api/registro-induccion/historial-mes?mes=${mes}&anio=${anio}`);
+                    if (!res.ok) throw new Error('Error al obtener historial');
+                    const data = await res.json();
+                    registrosDelMesCache = data.registros || [];
+                } catch (err) {
+                    console.error('Error en historial mes:', err);
+                    registrosDelMesCache = [];
+                }
+
+                renderizarGridDias(mes, anio);
+            }
+
+            function renderizarGridDias(mes, anio) {
+                if (!gridDias) return;
+                gridDias.innerHTML = '';
+
+                const totalDias = new Date(anio, mes, 0).getDate();
+                const hoyISO = fechaAISO(fechaHoy);
+
+                const registrosMap = {};
+                registrosDelMesCache.forEach(r => {
+                    registrosMap[r.fecha] = r;
+                });
+
+                for (let dia = 1; dia <= totalDias; dia++) {
+                    const diaStr = String(dia).padStart(2, '0');
+                    const mesStr = String(mes).padStart(2, '0');
+                    const fechaISO = `${anio}-${mesStr}-${diaStr}`;
+                    const reg = registrosMap[fechaISO];
+
+                    const btnDia = document.createElement('button');
+                    btnDia.type = 'button';
+                    btnDia.className = 'historial-dia';
+                    btnDia.textContent = String(dia);
+
+                    if (reg) {
+                        btnDia.classList.add('dia-verde');
+                        btnDia.title = `Registro guardado: ${reg.nombre_archivo}`;
+                        btnDia.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            abrirModalPreview(reg, dia, mes, anio);
+                        });
+                    } else if (fechaISO < hoyISO) {
+                        btnDia.classList.add('dia-rojo');
+                        btnDia.title = 'No se subió registro';
+                        btnDia.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            abrirModalSinRegistro(dia, mes, anio);
+                        });
+                    } else if (fechaISO === hoyISO) {
+                        btnDia.classList.add('dia-rojo');
+                        btnDia.title = 'Hoy pendiente de subir';
+                        btnDia.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            abrirModalSinRegistro(dia, mes, anio, true);
+                        });
+                    } else {
+                        btnDia.classList.add('dia-gris');
+                        btnDia.title = 'Fecha futura';
+                        btnDia.disabled = true;
+                    }
+
+                    gridDias.appendChild(btnDia);
+                }
+            }
+
+            // 4. Modal Vista Previa / Avisos
+            const modalBackdrop = document.getElementById('modal-preview-induccion');
+            const modalTitulo = document.getElementById('modal-induccion-titulo');
+            const modalBody = document.getElementById('modal-induccion-body');
+            const btnCerrarModal = document.getElementById('btn-cerrar-modal-induccion');
+
+            function cerrarModal() {
+                if (modalBackdrop) modalBackdrop.style.display = 'none';
+                if (modalBody) modalBody.innerHTML = '';
+            }
+
+            if (btnCerrarModal) btnCerrarModal.addEventListener('click', cerrarModal);
+            if (modalBackdrop) {
+                modalBackdrop.addEventListener('click', (e) => {
+                    if (e.target === modalBackdrop) cerrarModal();
+                });
+            }
+
+            function abrirModalPreview(registro, dia, mes, anio) {
+                if (!modalBackdrop || !modalBody) return;
+                const nombreMes = NOMBRES_MESES[mes - 1];
+                modalTitulo.textContent = `Registro de Inducción - ${dia} de ${nombreMes} ${anio}`;
+                modalBody.innerHTML = '';
+
+                const urlArchivo = `/api/registro-induccion/archivo/${registro.id}`;
+                const mime = (registro.mime_type || '').toLowerCase();
+                const esPdf = mime.includes('pdf') || (registro.nombre_archivo || '').toLowerCase().endsWith('.pdf');
+                const esImagen = mime.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(registro.nombre_archivo || '');
+
+                if (esPdf) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = urlArchivo;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '600px';
+                    iframe.style.border = 'none';
+                    iframe.style.borderRadius = '6px';
+                    modalBody.appendChild(iframe);
+                } else if (esImagen) {
+                    const img = document.createElement('img');
+                    img.src = urlArchivo;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '600px';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    img.style.borderRadius = '6px';
+                    modalBody.appendChild(img);
+                } else {
+                    modalBody.innerHTML = `
+                        <div style="text-align: center; padding: 30px;">
+                            <p style="font-size: 1rem; color: #333; margin-bottom: 16px;">Archivo: <strong>${registro.nombre_archivo}</strong></p>
+                            <a href="${urlArchivo}" target="_blank" class="btn-induccion" style="display: inline-block; text-decoration: none;">Descargar / Abrir Archivo</a>
+                        </div>
+                    `;
+                }
+
+                modalBackdrop.style.display = 'flex';
+            }
+
+            function abrirModalSinRegistro(dia, mes, anio, esHoy = false) {
+                if (!modalBackdrop || !modalBody) return;
+                const nombreMes = NOMBRES_MESES[mes - 1];
+                modalTitulo.textContent = `Registro de Inducción - ${dia} de ${nombreMes} ${anio}`;
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+                        <h3 style="color: #ef4444; margin: 0 0 10px 0; font-size: 1.25rem;">No se subió ningún registro</h3>
+                        <p style="color: #4b5563; font-size: 0.95rem; margin: 0;">
+                            ${esHoy 
+                                ? 'El registro de inducción de hoy todavía se encuentra pendiente.' 
+                                : `No se subió nada ese día (${dia} de ${nombreMes} de ${anio}).`}
+                        </p>
+                    </div>
+                `;
+                modalBackdrop.style.display = 'flex';
+            }
+
+            actualizarEstadoHoy();
+        })();
 
 // RECUADROS SUPERIORES - 2
 // RECUADROS SUPERIORES - 3
@@ -1245,5 +1871,17 @@
         });
         loadRecruiterDashboard();
     </script>
+    <!-- Modal de Vista Previa de Registro de Inducción -->
+    <div id="modal-preview-induccion" class="modal-induccion-backdrop" style="display: none;">
+        <div class="modal-induccion-box">
+            <div class="modal-induccion-head">
+                <h4 id="modal-induccion-titulo">Registro de Inducción</h4>
+                <button type="button" class="modal-induccion-close" id="btn-cerrar-modal-induccion">&times;</button>
+            </div>
+            <div class="modal-induccion-content" id="modal-induccion-body">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -22,6 +22,7 @@ PREFIJOS_OCULTOS = (
     '/api/access-users',
     '/api/documentos',      # también /api/documentos-db
     '/api/health',
+    '/api/registro-induccion',
     '/admin',
     '/static',
 )
