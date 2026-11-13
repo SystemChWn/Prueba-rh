@@ -3536,6 +3536,7 @@ def _deducir_mime_type(nombre_archivo, mime_type, contenido):
 def ver_archivo_registro_induccion(registro_id):
     """Devuelve el archivo de registro de inducción para visualización o descarga."""
     try:
+        descargar = request.args.get('descargar') in ('1', 'true', 'True')
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 _ensure_registro_induccion_schema(cur)
@@ -3554,11 +3555,39 @@ def ver_archivo_registro_induccion(registro_id):
                 resp = send_file(
                     BytesIO(contenido),
                     mimetype=mime_real,
-                    as_attachment=False,
+                    as_attachment=descargar,
                     download_name=nombre_archivo
                 )
-                resp.headers['Content-Disposition'] = f'inline; filename="{nombre_archivo}"'
+                disposition = 'attachment' if descargar else 'inline'
+                resp.headers['Content-Disposition'] = f'{disposition}; filename="{nombre_archivo}"'
                 return resp
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/registro-induccion/eliminar/<int:registro_id>', methods=['POST', 'DELETE'])
+@app.route('/api/registro-induccion/<int:registro_id>', methods=['DELETE'])
+def eliminar_registro_induccion(registro_id):
+    """Elimina el registro de inducción por su ID."""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                _ensure_registro_induccion_schema(cur)
+                cur.execute(
+                    "DELETE FROM registro_induccion_diario WHERE id = %s RETURNING id, fecha, nombre_archivo",
+                    (registro_id,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    return jsonify({'error': 'Registro no encontrado'}), 404
+            conn.commit()
+            return jsonify({
+                'success': True,
+                'mensaje': 'Registro de inducción eliminado correctamente',
+                'id': row[0],
+                'fecha': str(row[1]),
+                'nombre_archivo': row[2]
+            })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

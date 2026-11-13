@@ -60,6 +60,7 @@ PERMISOS_POR_ENDPOINT = {
     'historial_registro_induccion_mes': ADMIN_O_RECLUTAMIENTO,
     'ver_archivo_registro_induccion': ADMIN_O_RECLUTAMIENTO,
     'detalle_registro_induccion': ADMIN_O_RECLUTAMIENTO,
+    'eliminar_registro_induccion': ADMIN_O_RECLUTAMIENTO,
     'listar_archivos_empleado': ADMIN_O_RECLUTAMIENTO,
     'subir_archivo_empleado': ADMIN_O_RECLUTAMIENTO,
     'eliminar_archivo_empleado': ADMIN_O_RECLUTAMIENTO,
