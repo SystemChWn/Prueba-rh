@@ -344,6 +344,12 @@
             filter: brightness(1.2);
         }
 
+        .historial-dia.dia-seleccionado {
+            outline: 2px solid #38bdf8 !important;
+            outline-offset: 1px;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+        }
+
         .historial-dia.dia-gris {
             background-color: #2a2a2a;
             color: #6b7280;
@@ -860,9 +866,7 @@
                 <div class="induccion-date" id="induccion-fecha-hoy">-- de -- ----</div>
                 <div class="induccion-actions">
                     <button type="button" class="btn-induccion" id="btn-ver-historial-induccion">Ver historial</button>
-                    <button type="button" class="btn-induccion" id="btn-subir-induccion">SUBIR</button>
-                    <button type="button" class="btn-induccion btn-descargar" id="btn-descargar-induccion" style="display: none;" title="Descargar documento">⬇ Descargar</button>
-                    <button type="button" class="btn-induccion btn-eliminar" id="btn-eliminar-induccion" style="display: none;" title="Eliminar este archivo">🗑️</button>
+                    <button type="button" class="btn-induccion btn-subir" id="btn-subir-induccion">SUBIR</button>
                     <input type="file" id="input-archivo-induccion" accept=".pdf,image/*,.doc,.docx" style="display: none;">
                 </div>
             </div>
@@ -881,15 +885,21 @@
                     <!-- Días generados dinámicamente -->
                 </div>
                 <!-- Barra de acciones para el día seleccionado en el historial -->
-                <div id="historial-dia-info" style="display: none; margin-top: 10px; padding: 8px 10px; background: #252525; border-radius: 8px; border: 1px solid #383838; text-align: left;">
-                    <div style="font-size: 0.72rem; color: #9ca3af; margin-bottom: 2px;" id="historial-dia-fecha-label">--</div>
-                    <div id="historial-dia-nombre-archivo" style="font-size: 0.8rem; font-weight: 600; color: #e5e7eb; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                        <button type="button" class="btn-induccion" id="btn-historial-preview" style="padding: 4px 8px; font-size: 0.72rem; background: #15803d; color: #fff; border: none;">👁️ Ver</button>
-                        <button type="button" class="btn-induccion btn-descargar" id="btn-historial-descargar" style="padding: 4px 8px; font-size: 0.72rem;">⬇ Descargar</button>
-                        <button type="button" class="btn-induccion btn-eliminar" id="btn-historial-eliminar" style="padding: 4px 8px; font-size: 0.72rem;">🗑️ Eliminar</button>
+                <div id="historial-dia-info" style="display: none; margin-top: 10px; padding: 10px; background: #252525; border-radius: 8px; border: 1px solid #383838; text-align: left;">
+                    <div style="font-size: 0.74rem; color: #9ca3af; margin-bottom: 2px;" id="historial-dia-fecha-label">--</div>
+                    <div id="historial-dia-nombre-archivo" style="font-size: 0.82rem; font-weight: 600; color: #e5e7eb; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    <!-- Acciones cuando el día tiene documento (verde) -->
+                    <div id="historial-dia-acciones-verde" style="display: flex; gap: 6px; justify-content: flex-end;">
+                        <button type="button" class="btn-induccion" id="btn-historial-preview" style="padding: 4px 10px; font-size: 0.74rem; background: #15803d; color: #fff; border: none;">👁️ Vista previa</button>
+                        <button type="button" class="btn-induccion btn-descargar" id="btn-historial-descargar" style="padding: 4px 10px; font-size: 0.74rem;">⬇ Descargar</button>
+                        <button type="button" class="btn-induccion btn-eliminar" id="btn-historial-eliminar" style="padding: 4px 10px; font-size: 0.74rem;">🗑️ Eliminar</button>
+                    </div>
+                    <!-- Acciones cuando el día no tiene documento (rojo) -->
+                    <div id="historial-dia-acciones-rojo" style="display: none; justify-content: flex-end;">
+                        <button type="button" class="btn-induccion btn-subir" id="btn-historial-subir" style="padding: 5px 14px; font-size: 0.74rem;">SUBIR</button>
                     </div>
                 </div>
+                <input type="file" id="input-archivo-historial" accept=".pdf,image/*,.doc,.docx" style="display: none;">
             </div>
         </div>
         <div class="metric-card">
@@ -1035,8 +1045,6 @@
             const bannerEl = document.getElementById('induccion-banner');
             const statusTextEl = document.getElementById('induccion-status-text');
             const btnSubir = document.getElementById('btn-subir-induccion');
-            const btnDescargar = document.getElementById('btn-descargar-induccion');
-            const btnEliminar = document.getElementById('btn-eliminar-induccion');
             const inputArchivo = document.getElementById('input-archivo-induccion');
             const btnHistorial = document.getElementById('btn-ver-historial-induccion');
             const popoverHistorial = document.getElementById('induccion-historial-popover');
@@ -1049,10 +1057,15 @@
             const panelHistorialDiaInfo = document.getElementById('historial-dia-info');
             const labelHistorialDiaFecha = document.getElementById('historial-dia-fecha-label');
             const labelHistorialDiaNombre = document.getElementById('historial-dia-nombre-archivo');
+            const accionesVerde = document.getElementById('historial-dia-acciones-verde');
+            const accionesRojo = document.getElementById('historial-dia-acciones-rojo');
             const btnHistorialPreview = document.getElementById('btn-historial-preview');
             const btnHistorialDescargar = document.getElementById('btn-historial-descargar');
             const btnHistorialEliminar = document.getElementById('btn-historial-eliminar');
-            let regSeleccionadoHistorial = null;
+            const btnHistorialSubir = document.getElementById('btn-historial-subir');
+            const inputArchivoHistorial = document.getElementById('input-archivo-historial');
+
+            let diaSeleccionadoHistorial = null;
 
             async function apiFetch(url, options = {}) {
                 if (typeof authFetch === 'function') {
@@ -1082,7 +1095,7 @@
 
             let estadoHoyCache = null;
 
-            // 1. Cargar estado de hoy
+            // 1. Cargar estado de hoy (Tarjeta principal: solo Ver Historial y Subir)
             async function actualizarEstadoHoy() {
                 try {
                     const fechaISO = fechaAISO(fechaHoy);
@@ -1094,38 +1107,35 @@
                     if (data.subido) {
                         bannerEl.className = 'induccion-banner banner-completado';
                         statusTextEl.textContent = 'COMPLETADO: Registro del día guardado';
-                        btnSubir.disabled = false;
-                        btnSubir.textContent = 'Vista previa';
+                        btnSubir.disabled = true;
+                        btnSubir.textContent = 'SUBIR';
                         btnSubir.className = 'btn-induccion btn-subir';
-                        btnSubir.style.backgroundColor = '#15803d';
+                        btnSubir.style.backgroundColor = '#007bff';
                         btnSubir.style.color = '#ffffff';
-                        btnSubir.title = 'Clic para ver el archivo en otra pestaña';
-                        if (btnDescargar) btnDescargar.style.display = 'inline-block';
-                        if (btnEliminar) btnEliminar.style.display = 'inline-block';
+                        btnSubir.style.opacity = '0.35';
+                        btnSubir.style.cursor = 'not-allowed';
+                        btnSubir.title = 'El registro de inducción de hoy ya fue subido';
                     } else {
                         bannerEl.className = 'induccion-banner banner-pendiente';
                         statusTextEl.textContent = 'PENDIENTE: Aún no se ha subido el registro de hoy';
                         btnSubir.disabled = false;
                         btnSubir.textContent = 'SUBIR';
                         btnSubir.className = 'btn-induccion btn-subir';
-                        btnSubir.style.backgroundColor = '';
-                        btnSubir.style.color = '';
-                        btnSubir.title = 'Subir archivo de registro de inducción';
-                        if (btnDescargar) btnDescargar.style.display = 'none';
-                        if (btnEliminar) btnEliminar.style.display = 'none';
+                        btnSubir.style.backgroundColor = '#007bff';
+                        btnSubir.style.color = '#ffffff';
+                        btnSubir.style.opacity = '1';
+                        btnSubir.style.cursor = 'pointer';
+                        btnSubir.title = 'Subir archivo de registro de inducción de hoy';
                     }
                 } catch (err) {
                     console.error('Error al actualizar estado de hoy:', err);
                 }
             }
 
-            // 2. Subir archivo / Vista previa / Descargar / Eliminar de hoy
+            // 2. Subir archivo de hoy desde el recuadro principal
             if (btnSubir && inputArchivo) {
                 btnSubir.addEventListener('click', () => {
-                    if (estadoHoyCache && estadoHoyCache.subido && estadoHoyCache.id) {
-                        const previewUrl = `/api/registro-induccion/archivo/${estadoHoyCache.id}`;
-                        window.open(previewUrl, '_blank', 'noopener');
-                    } else {
+                    if (!btnSubir.disabled) {
                         inputArchivo.click();
                     }
                 });
@@ -1160,49 +1170,6 @@
                         await actualizarEstadoHoy();
                     } finally {
                         inputArchivo.value = '';
-                    }
-                });
-            }
-
-            if (btnDescargar) {
-                btnDescargar.addEventListener('click', () => {
-                    if (estadoHoyCache && estadoHoyCache.subido && estadoHoyCache.id) {
-                        const downloadUrl = `/api/registro-induccion/archivo/${estadoHoyCache.id}?descargar=1`;
-                        const a = document.createElement('a');
-                        a.href = downloadUrl;
-                        a.download = estadoHoyCache.nombre_archivo || 'registro_induccion';
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    }
-                });
-            }
-
-            if (btnEliminar) {
-                btnEliminar.addEventListener('click', async () => {
-                    if (!estadoHoyCache || !estadoHoyCache.subido || !estadoHoyCache.id) return;
-                    const nombre = estadoHoyCache.nombre_archivo || 'archivo';
-                    const seguro = confirm(`¿Estás seguro de que deseas eliminar el registro de inducción de hoy ("${nombre}")?\n\nPodrás subir el archivo correcto inmediatamente después.`);
-                    if (!seguro) return;
-
-                    try {
-                        btnEliminar.disabled = true;
-                        const res = await apiFetch(`/api/registro-induccion/eliminar/${estadoHoyCache.id}`, {
-                            method: 'POST'
-                        });
-                        const data = await leerJson(res);
-                        if (!res.ok || !data.success) {
-                            throw new Error(data.error || 'No se pudo eliminar el archivo');
-                        }
-                        alert('Registro eliminado correctamente.');
-                        await actualizarEstadoHoy();
-                        if (popoverHistorial && popoverHistorial.style.display !== 'none') {
-                            await cargarHistorialMes(historialMes, historialAnio);
-                        }
-                    } catch (err) {
-                        alert(`Error al eliminar registro: ${err.message}`);
-                    } finally {
-                        btnEliminar.disabled = false;
                     }
                 });
             }
@@ -1251,6 +1218,156 @@
                 });
             }
 
+            function marcarDiaSeleccionado(dia) {
+                if (!gridDias) return;
+                const dias = gridDias.querySelectorAll('.historial-dia');
+                dias.forEach(d => {
+                    if (d.textContent.trim() === String(dia)) {
+                        d.classList.add('dia-seleccionado');
+                    } else {
+                        d.classList.remove('dia-seleccionado');
+                    }
+                });
+            }
+
+            function mostrarAccionesHistorialVerde(reg, dia, mes, anio) {
+                if (!panelHistorialDiaInfo) return;
+                diaSeleccionadoHistorial = { dia, mes, anio, fechaISO: reg.fecha, reg };
+                const nombreMes = NOMBRES_MESES[mes - 1];
+                if (labelHistorialDiaFecha) {
+                    labelHistorialDiaFecha.textContent = `📅 ${dia} de ${nombreMes} ${anio}`;
+                }
+                if (labelHistorialDiaNombre) {
+                    labelHistorialDiaNombre.textContent = `📄 ${reg.nombre_archivo || 'Documento'}`;
+                    labelHistorialDiaNombre.style.color = '#86efac';
+                    labelHistorialDiaNombre.title = reg.nombre_archivo || '';
+                }
+                if (accionesVerde) accionesVerde.style.display = 'flex';
+                if (accionesRojo) accionesRojo.style.display = 'none';
+                panelHistorialDiaInfo.style.display = 'block';
+            }
+
+            function mostrarAccionesHistorialRojo(dia, mes, anio, fechaISO) {
+                if (!panelHistorialDiaInfo) return;
+                diaSeleccionadoHistorial = { dia, mes, anio, fechaISO, reg: null };
+                const nombreMes = NOMBRES_MESES[mes - 1];
+                if (labelHistorialDiaFecha) {
+                    labelHistorialDiaFecha.textContent = `📅 ${dia} de ${nombreMes} ${anio}`;
+                }
+                if (labelHistorialDiaNombre) {
+                    labelHistorialDiaNombre.textContent = '⚠️ Sin documento';
+                    labelHistorialDiaNombre.style.color = '#fca5a5';
+                    labelHistorialDiaNombre.title = 'No se ha subido ningún registro para este día';
+                }
+                if (accionesVerde) accionesVerde.style.display = 'none';
+                if (accionesRojo) accionesRojo.style.display = 'flex';
+                panelHistorialDiaInfo.style.display = 'block';
+            }
+
+            if (btnHistorialPreview) {
+                btnHistorialPreview.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (diaSeleccionadoHistorial && diaSeleccionadoHistorial.reg && diaSeleccionadoHistorial.reg.id) {
+                        window.open(`/api/registro-induccion/archivo/${diaSeleccionadoHistorial.reg.id}`, '_blank', 'noopener');
+                    }
+                });
+            }
+
+            if (btnHistorialDescargar) {
+                btnHistorialDescargar.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (diaSeleccionadoHistorial && diaSeleccionadoHistorial.reg && diaSeleccionadoHistorial.reg.id) {
+                        const a = document.createElement('a');
+                        a.href = `/api/registro-induccion/archivo/${diaSeleccionadoHistorial.reg.id}?descargar=1`;
+                        a.download = diaSeleccionadoHistorial.reg.nombre_archivo || 'registro_induccion';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    }
+                });
+            }
+
+            if (btnHistorialEliminar) {
+                btnHistorialEliminar.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (!diaSeleccionadoHistorial || !diaSeleccionadoHistorial.reg || !diaSeleccionadoHistorial.reg.id) return;
+                    const reg = diaSeleccionadoHistorial.reg;
+                    const nombre = reg.nombre_archivo || 'archivo';
+                    const fecha = diaSeleccionadoHistorial.fechaISO || reg.fecha;
+                    const seguro = confirm(`¿Estás seguro de que deseas eliminar el registro de inducción del día ${fecha} ("${nombre}")?`);
+                    if (!seguro) return;
+
+                    try {
+                        btnHistorialEliminar.disabled = true;
+                        const res = await apiFetch(`/api/registro-induccion/eliminar/${reg.id}`, {
+                            method: 'POST'
+                        });
+                        const data = await leerJson(res);
+                        if (!res.ok || !data.success) {
+                            throw new Error(data.error || 'No se pudo eliminar el archivo');
+                        }
+                        alert('Registro eliminado correctamente.');
+                        const dGuardado = diaSeleccionadoHistorial;
+                        await cargarHistorialMes(historialMes, historialAnio);
+                        await actualizarEstadoHoy();
+                        mostrarAccionesHistorialRojo(dGuardado.dia, dGuardado.mes, dGuardado.anio, dGuardado.fechaISO);
+                        marcarDiaSeleccionado(dGuardado.dia);
+                    } catch (err) {
+                        alert(`Error al eliminar registro: ${err.message}`);
+                    } finally {
+                        btnHistorialEliminar.disabled = false;
+                    }
+                });
+            }
+
+            if (btnHistorialSubir && inputArchivoHistorial) {
+                btnHistorialSubir.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    inputArchivoHistorial.click();
+                });
+
+                inputArchivoHistorial.addEventListener('change', async () => {
+                    const file = inputArchivoHistorial.files && inputArchivoHistorial.files[0];
+                    if (!file || !diaSeleccionadoHistorial) return;
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('fecha', diaSeleccionadoHistorial.fechaISO);
+
+                    btnHistorialSubir.disabled = true;
+                    btnHistorialSubir.textContent = 'Subiendo...';
+
+                    try {
+                        const res = await apiFetch('/api/registro-induccion/subir', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await leerJson(res);
+                        if (!res.ok || !data.success) {
+                            throw new Error(data.error || 'No se pudo subir el archivo');
+                        }
+
+                        const dGuardado = diaSeleccionadoHistorial;
+                        await cargarHistorialMes(historialMes, historialAnio);
+                        await actualizarEstadoHoy();
+
+                        const nuevoReg = {
+                            id: data.id,
+                            fecha: dGuardado.fechaISO,
+                            nombre_archivo: data.nombre_archivo || file.name
+                        };
+                        mostrarAccionesHistorialVerde(nuevoReg, dGuardado.dia, dGuardado.mes, dGuardado.anio);
+                        marcarDiaSeleccionado(dGuardado.dia);
+                    } catch (err) {
+                        alert(`Error al subir registro: ${err.message}`);
+                    } finally {
+                        inputArchivoHistorial.value = '';
+                        btnHistorialSubir.disabled = false;
+                        btnHistorialSubir.textContent = 'SUBIR';
+                    }
+                });
+            }
+
             async function cargarHistorialMes(mes, anio) {
                 if (labelMesNombre) labelMesNombre.textContent = NOMBRES_MESES[mes - 1].toUpperCase();
                 if (labelAnio) labelAnio.textContent = String(anio);
@@ -1269,77 +1386,8 @@
                 }
 
                 if (panelHistorialDiaInfo) panelHistorialDiaInfo.style.display = 'none';
-                regSeleccionadoHistorial = null;
+                diaSeleccionadoHistorial = null;
                 renderizarGridDias(mes, anio);
-            }
-
-            function mostrarAccionesHistorial(reg, dia, mes, anio) {
-                if (!panelHistorialDiaInfo) return;
-                regSeleccionadoHistorial = reg;
-                const nombreMes = NOMBRES_MESES[mes - 1];
-                if (labelHistorialDiaFecha) {
-                    labelHistorialDiaFecha.textContent = `📅 ${dia} de ${nombreMes} ${anio}`;
-                }
-                if (labelHistorialDiaNombre) {
-                    labelHistorialDiaNombre.textContent = `📄 ${reg.nombre_archivo || 'Documento'}`;
-                    labelHistorialDiaNombre.title = reg.nombre_archivo || '';
-                }
-                panelHistorialDiaInfo.style.display = 'block';
-            }
-
-            if (btnHistorialPreview) {
-                btnHistorialPreview.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (regSeleccionadoHistorial && regSeleccionadoHistorial.id) {
-                        window.open(`/api/registro-induccion/archivo/${regSeleccionadoHistorial.id}`, '_blank', 'noopener');
-                    }
-                });
-            }
-
-            if (btnHistorialDescargar) {
-                btnHistorialDescargar.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (regSeleccionadoHistorial && regSeleccionadoHistorial.id) {
-                        const a = document.createElement('a');
-                        a.href = `/api/registro-induccion/archivo/${regSeleccionadoHistorial.id}?descargar=1`;
-                        a.download = regSeleccionadoHistorial.nombre_archivo || 'registro_induccion';
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    }
-                });
-            }
-
-            if (btnHistorialEliminar) {
-                btnHistorialEliminar.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (!regSeleccionadoHistorial || !regSeleccionadoHistorial.id) return;
-                    const nombre = regSeleccionadoHistorial.nombre_archivo || 'archivo';
-                    const fecha = regSeleccionadoHistorial.fecha || '';
-                    if (!confirm(`¿Estás seguro de que deseas eliminar el registro de inducción del ${fecha} ("${nombre}")?`)) {
-                        return;
-                    }
-
-                    try {
-                        btnHistorialEliminar.disabled = true;
-                        const res = await apiFetch(`/api/registro-induccion/eliminar/${regSeleccionadoHistorial.id}`, {
-                            method: 'POST'
-                        });
-                        const data = await leerJson(res);
-                        if (!res.ok || !data.success) {
-                            throw new Error(data.error || 'No se pudo eliminar el archivo');
-                        }
-                        alert('Registro eliminado correctamente.');
-                        if (panelHistorialDiaInfo) panelHistorialDiaInfo.style.display = 'none';
-                        regSeleccionadoHistorial = null;
-                        await cargarHistorialMes(historialMes, historialAnio);
-                        await actualizarEstadoHoy();
-                    } catch (err) {
-                        alert(`Error al eliminar registro: ${err.message}`);
-                    } finally {
-                        btnHistorialEliminar.disabled = false;
-                    }
-                });
             }
 
             function renderizarGridDias(mes, anio) {
@@ -1365,30 +1413,33 @@
                     btnDia.className = 'historial-dia';
                     btnDia.textContent = String(dia);
 
+                    if (diaSeleccionadoHistorial && diaSeleccionadoHistorial.dia === dia && diaSeleccionadoHistorial.mes === mes && diaSeleccionadoHistorial.anio === anio) {
+                        btnDia.classList.add('dia-seleccionado');
+                    }
+
                     if (reg) {
                         btnDia.classList.add('dia-verde');
-                        btnDia.title = `Registro guardado: ${reg.nombre_archivo} (Clic para ver vista previa)`;
+                        btnDia.title = `Registro guardado: ${reg.nombre_archivo} (Clic para ver opciones)`;
                         btnDia.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            mostrarAccionesHistorial(reg, dia, mes, anio);
-                            const previewUrl = `/api/registro-induccion/archivo/${reg.id}`;
-                            window.open(previewUrl, '_blank', 'noopener');
+                            marcarDiaSeleccionado(dia);
+                            mostrarAccionesHistorialVerde(reg, dia, mes, anio);
                         });
                     } else if (fechaISO < hoyISO) {
                         btnDia.classList.add('dia-rojo');
-                        btnDia.title = 'No se subió registro';
+                        btnDia.title = 'No se subió registro (Clic para ver opciones)';
                         btnDia.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (panelHistorialDiaInfo) panelHistorialDiaInfo.style.display = 'none';
-                            abrirModalSinRegistro(dia, mes, anio);
+                            marcarDiaSeleccionado(dia);
+                            mostrarAccionesHistorialRojo(dia, mes, anio, fechaISO);
                         });
                     } else if (fechaISO === hoyISO) {
                         btnDia.classList.add('dia-rojo');
-                        btnDia.title = 'Hoy pendiente de subir';
+                        btnDia.title = 'Hoy pendiente de subir (Clic para subir)';
                         btnDia.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (panelHistorialDiaInfo) panelHistorialDiaInfo.style.display = 'none';
-                            abrirModalSinRegistro(dia, mes, anio, true);
+                            marcarDiaSeleccionado(dia);
+                            mostrarAccionesHistorialRojo(dia, mes, anio, fechaISO);
                         });
                     } else {
                         btnDia.classList.add('dia-gris');
