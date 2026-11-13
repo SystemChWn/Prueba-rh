@@ -89,36 +89,41 @@
             margin-top: 2px;
         }
 
-        /* REGISTRO DE INDUCCIÓN - RECUADRO SUPERIOR (ADAPTADO A ESTÉTICA DARK) */
+        /* REGISTRO DE INDUCCIÓN - RECUADRO SUPERIOR (MISMO TAMAÑO QUE LOS DEMÁS: 120PX) */
         .metric-card.card-induccion {
-            background: #1e1e1e;
-            color: #ffffff;
-            padding: 0;
-            border: 1px solid #333;
-            border-radius: 12px;
-            overflow: visible;
+            position: relative;
+            align-self: center;
+            height: 120px;
+            max-height: 120px;
+            min-height: 120px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: stretch;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 0;
             text-align: center;
-            height: 120px;
-            min-height: 120px;
-            position: relative;
             box-sizing: border-box;
+            overflow: visible;
         }
 
         .induccion-banner {
             width: 100%;
-            padding: 4px 8px;
-            font-size: 0.72rem;
+            padding: 3px 6px;
+            font-size: 0.68rem;
             font-weight: 600;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
             box-sizing: border-box;
             border-top-left-radius: 11px;
             border-top-right-radius: 11px;
             text-align: center;
+            line-height: 1.2;
             transition: background-color 0.3s ease, color 0.3s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .induccion-banner.banner-pendiente {
@@ -134,36 +139,39 @@
         }
 
         .induccion-body {
-            padding: 6px 12px 10px 12px;
+            padding: 4px 10px 8px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 2px;
             flex: 1;
+            box-sizing: border-box;
         }
 
         .induccion-title {
             color: #aaa;
             margin: 0;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 0.5px;
             text-align: center;
+            line-height: 1.2;
         }
 
         .induccion-date {
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #ffffff;
-            margin: 2px 0 6px 0;
+            margin: 1px 0 4px 0;
             text-align: center;
+            line-height: 1.2;
         }
 
         .induccion-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
             align-items: center;
             width: 100%;
@@ -174,10 +182,11 @@
             color: #e5e7eb;
             border: 1px solid #4b5563;
             border-radius: 6px;
-            padding: 4px 12px;
-            font-size: 0.78rem;
+            padding: 3px 10px;
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
+            line-height: 1.2;
             transition: background 0.2s, border-color 0.2s, color 0.2s;
             outline: none;
         }
@@ -192,7 +201,7 @@
             background-color: #007bff;
             color: #ffffff;
             border: none;
-            padding: 5px 14px;
+            padding: 4px 12px;
             font-weight: bold;
         }
 
@@ -1008,6 +1017,18 @@
                 return fetch(url, options);
             }
 
+            async function leerJson(res) {
+                const ctype = (res.headers.get('content-type') || '').toLowerCase();
+                if (ctype.includes('application/json')) {
+                    return res.json();
+                }
+                const text = await res.text();
+                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('404 Not Found')) {
+                    throw new Error(`Ruta no encontrada en backend (HTTP ${res.status}). Reconstruye el servicio backend.`);
+                }
+                throw new Error(text || `Error HTTP ${res.status}`);
+            }
+
             function fechaAISO(d) {
                 const anio = d.getFullYear();
                 const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -1020,8 +1041,8 @@
                 try {
                     const fechaISO = fechaAISO(fechaHoy);
                     const res = await apiFetch(`/api/registro-induccion/estado-hoy?fecha=${fechaISO}`);
-                    if (!res.ok) throw new Error('Error al consultar estado');
-                    const data = await res.json();
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await leerJson(res);
 
                     if (data.subido) {
                         bannerEl.className = 'induccion-banner banner-completado';
@@ -1061,7 +1082,7 @@
                             method: 'POST',
                             body: formData
                         });
-                        const data = await res.json();
+                        const data = await leerJson(res);
                         if (!res.ok || !data.success) {
                             throw new Error(data.error || 'No se pudo subir el archivo');
                         }
@@ -1133,7 +1154,7 @@
                 try {
                     const res = await apiFetch(`/api/registro-induccion/historial-mes?mes=${mes}&anio=${anio}`);
                     if (!res.ok) throw new Error('Error al obtener historial');
-                    const data = await res.json();
+                    const data = await leerJson(res);
                     registrosDelMesCache = data.registros || [];
                 } catch (err) {
                     console.error('Error en historial mes:', err);
