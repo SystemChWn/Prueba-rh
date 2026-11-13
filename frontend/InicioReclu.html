@@ -1223,10 +1223,15 @@
             const modalTitulo = document.getElementById('modal-induccion-titulo');
             const modalBody = document.getElementById('modal-induccion-body');
             const btnCerrarModal = document.getElementById('btn-cerrar-modal-induccion');
+            let previewBlobUrlActivo = null;
 
             function cerrarModal() {
                 if (modalBackdrop) modalBackdrop.style.display = 'none';
                 if (modalBody) modalBody.innerHTML = '';
+                if (previewBlobUrlActivo) {
+                    URL.revokeObjectURL(previewBlobUrlActivo);
+                    previewBlobUrlActivo = null;
+                }
             }
 
             if (btnCerrarModal) btnCerrarModal.addEventListener('click', cerrarModal);
@@ -1236,44 +1241,82 @@
                 });
             }
 
-            function abrirModalPreview(registro, dia, mes, anio) {
+            async function abrirModalPreview(registro, dia, mes, anio) {
                 if (!modalBackdrop || !modalBody) return;
                 const nombreMes = NOMBRES_MESES[mes - 1];
                 modalTitulo.textContent = `Registro de Inducción - ${dia} de ${nombreMes} ${anio}`;
-                modalBody.innerHTML = '';
+                modalBody.innerHTML = '<div style="color: #9ca3af; padding: 40px; text-align: center; font-size: 0.95rem;">Cargando vista previa del documento...</div>';
+                modalBackdrop.style.display = 'flex';
 
-                const urlArchivo = `/api/registro-induccion/archivo/${registro.id}`;
-                const mime = (registro.mime_type || '').toLowerCase();
-                const esPdf = mime.includes('pdf') || (registro.nombre_archivo || '').toLowerCase().endsWith('.pdf');
-                const esImagen = mime.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(registro.nombre_archivo || '');
+                try {
+                    const res = await apiFetch(`/api/registro-induccion/archivo/${registro.id}`);
+                    if (!res.ok) throw new Error(`No se pudo obtener el archivo (HTTP ${res.status})`);
+                    
+                    const blob = await res.blob();
+                    if (previewBlobUrlActivo) {
+                        URL.revokeObjectURL(previewBlobUrlActivo);
+                    }
+                    previewBlobUrlActivo = URL.createObjectURL(blob);
+                    const objectUrl = previewBlobUrlActivo;
 
-                if (esPdf) {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = urlArchivo;
-                    iframe.style.width = '100%';
-                    iframe.style.height = '600px';
-                    iframe.style.border = 'none';
-                    iframe.style.borderRadius = '6px';
-                    modalBody.appendChild(iframe);
-                } else if (esImagen) {
-                    const img = document.createElement('img');
-                    img.src = urlArchivo;
-                    img.style.maxWidth = '100%';
-                    img.style.maxHeight = '600px';
-                    img.style.display = 'block';
-                    img.style.margin = '0 auto';
-                    img.style.borderRadius = '6px';
-                    modalBody.appendChild(img);
-                } else {
+                    const nombre = (registro.nombre_archivo || 'documento').toLowerCase();
+                    const mime = (registro.mime_type || blob.type || '').toLowerCase();
+                    const esPdf = mime.includes('pdf') || nombre.endsWith('.pdf');
+                    const esImagen = mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(nombre);
+
+                    modalBody.innerHTML = '';
+                    
+                    // Barra de herramientas superior dentro del modal
+                    const barraAcciones = document.createElement('div');
+                    barraAcciones.style.cssText = 'width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 6px 12px; background: #252525; border-radius: 8px; border: 1px solid #383838; box-sizing: border-box;';
+                    barraAcciones.innerHTML = `
+                        <span style="font-size: 0.85rem; color: #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;">
+                            📄 <strong>${registro.nombre_archivo}</strong>
+                        </span>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="${objectUrl}" target="_blank" class="btn-induccion" style="text-decoration: none; padding: 4px 10px; font-size: 0.75rem;">↗ Abrir en pestaña</a>
+                            <a href="${objectUrl}" download="${registro.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; padding: 4px 12px; font-size: 0.75rem;">⬇ Descargar</a>
+                        </div>
+                    `;
+                    modalBody.appendChild(barraAcciones);
+
+                    if (esPdf) {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = objectUrl;
+                        iframe.style.width = '100%';
+                        iframe.style.height = '600px';
+                        iframe.style.border = 'none';
+                        iframe.style.borderRadius = '8px';
+                        iframe.style.backgroundColor = '#ffffff';
+                        modalBody.appendChild(iframe);
+                    } else if (esImagen) {
+                        const img = document.createElement('img');
+                        img.src = objectUrl;
+                        img.style.maxWidth = '100%';
+                        img.style.maxHeight = '600px';
+                        img.style.display = 'block';
+                        img.style.margin = '0 auto';
+                        img.style.borderRadius = '8px';
+                        img.style.objectFit = 'contain';
+                        modalBody.appendChild(img);
+                    } else {
+                        const fallbackDiv = document.createElement('div');
+                        fallbackDiv.style.cssText = 'text-align: center; padding: 30px; color: #ffffff;';
+                        fallbackDiv.innerHTML = `
+                            <p style="font-size: 0.95rem; margin-bottom: 16px;">Archivo disponible: <strong>${registro.nombre_archivo}</strong></p>
+                            <a href="${objectUrl}" download="${registro.nombre_archivo}" class="btn-induccion btn-subir" style="text-decoration: none; display: inline-block;">⬇ Descargar archivo</a>
+                        `;
+                        modalBody.appendChild(fallbackDiv);
+                    }
+                } catch (err) {
                     modalBody.innerHTML = `
-                        <div style="text-align: center; padding: 30px;">
-                            <p style="font-size: 1rem; color: #333; margin-bottom: 16px;">Archivo: <strong>${registro.nombre_archivo}</strong></p>
-                            <a href="${urlArchivo}" target="_blank" class="btn-induccion" style="display: inline-block; text-decoration: none;">Descargar / Abrir Archivo</a>
+                        <div style="text-align: center; padding: 40px; color: #fca5a5;">
+                            <div style="font-size: 2.5rem; margin-bottom: 8px;">⚠️</div>
+                            <p style="font-size: 1rem; margin: 0 0 8px 0; font-weight: bold;">Error al cargar la vista previa</p>
+                            <span style="font-size: 0.85rem; color: #9ca3af;">${err.message}</span>
                         </div>
                     `;
                 }
-
-                modalBackdrop.style.display = 'flex';
             }
 
             function abrirModalSinRegistro(dia, mes, anio, esHoy = false) {
