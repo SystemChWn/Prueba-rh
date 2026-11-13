@@ -1205,10 +1205,11 @@
 
                     if (reg) {
                         btnDia.classList.add('dia-verde');
-                        btnDia.title = `Registro guardado: ${reg.nombre_archivo}`;
+                        btnDia.title = `Registro guardado: ${reg.nombre_archivo} (Clic para ver vista previa)`;
                         btnDia.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            abrirModalPreview(reg, dia, mes, anio);
+                            const previewUrl = `/api/registro-induccion/archivo/${reg.id}`;
+                            window.open(previewUrl, '_blank', 'noopener');
                         });
                     } else if (fechaISO < hoyISO) {
                         btnDia.classList.add('dia-rojo');
@@ -1358,6 +1359,24 @@
             }
 
             actualizarEstadoHoy();
+
+            function sincronizarAlturaCardInduccion() {
+                const card = document.getElementById('card-registro-induccion');
+                const otras = document.querySelectorAll('.metrics-container .metric-card:not(.card-induccion)');
+                if (card && otras.length > 0) {
+                    const ref = otras[otras.length - 1];
+                    const h = ref.offsetHeight || ref.clientHeight || (ref.getBoundingClientRect && ref.getBoundingClientRect().height);
+                    if (h && h > 60) {
+                        card.style.height = `${h}px`;
+                        card.style.minHeight = `${h}px`;
+                        card.style.maxHeight = `${h}px`;
+                    }
+                }
+            }
+            window.addEventListener('resize', sincronizarAlturaCardInduccion);
+            setTimeout(sincronizarAlturaCardInduccion, 50);
+            setTimeout(sincronizarAlturaCardInduccion, 250);
+            setTimeout(sincronizarAlturaCardInduccion, 1000);
         })();
 
 // RECUADROS SUPERIORES - 2
