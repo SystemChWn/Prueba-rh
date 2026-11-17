@@ -187,7 +187,7 @@ class EscanearDocumentoTests(unittest.TestCase):
     def test_rejects_unknown_document_type_before_calling_openai(self, post_openai):
         response = self.client.post(
             '/api/escanear-documento',
-            data={'tipo_documento': 'INE'},
+            data={'tipo_documento': 'Pasaporte'},
         )
 
         self.assertEqual(response.status_code, 400)

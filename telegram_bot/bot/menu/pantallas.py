@@ -501,7 +501,14 @@ async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
 
 
 async def accion_generar_registro(update, context, estado: EstadoUsuario) -> None:
-    await iniciar_asistente(update, context, estado, formularios.asistente_generar_registro())
+    backend, telegram_id = _backend(context), update.effective_user.id
+    reclutadores: list[str] = []
+    try:
+        resp = await backend.peticion(telegram_id, 'GET', '/api/reclutadores-nombres')
+        reclutadores = [str(r).strip() for r in (resp.datos or []) if str(r).strip()]
+    except Exception:
+        reclutadores = []
+    await iniciar_asistente(update, context, estado, formularios.asistente_generar_registro(reclutadores))
 
 
 async def accion_team_agregar(update, context, estado: EstadoUsuario) -> None:
@@ -740,8 +747,15 @@ def teclado_asistente(asistente: Asistente) -> InlineKeyboardMarkup:
 
 def texto_paso(asistente: Asistente, aviso: str | None = None) -> str:
     actual, total = asistente.numero_de_paso()
-    texto = f'{asistente.titulo}\nPaso {actual} de {total}\n\n{asistente.paso.pregunta}'
-    return f'⚠️ {aviso}\n\n{texto}' if aviso else texto
+    paso = asistente.paso
+    preg = paso.pregunta if paso else ''
+    texto_preg = preg(asistente.respuestas) if callable(preg) else preg
+    texto = f'{asistente.titulo}\nPaso {actual} de {total}\n\n{texto_preg}'
+    if not aviso:
+        return texto
+    if aviso.startswith(('⚠️', '✅', 'ℹ️', '📋')):
+        return f'{aviso}\n\n{texto}'
+    return f'⚠️ {aviso}\n\n{texto}'
 
 
 async def iniciar_asistente(update, context, estado: EstadoUsuario, asistente: Asistente) -> None:
@@ -835,9 +849,25 @@ async def archivo_asistente(update: Update, context, estado: EstadoUsuario) -> N
         formularios.validar_archivo(nombre, b'')  # tipo antes de descargar
         archivo = await context.bot.get_file(file_id)
         contenido = bytes(await archivo.download_as_bytearray())
-        estado.asistente.responder(formularios.validar_archivo(nombre, contenido))
+        archivo_valido = formularios.validar_archivo(nombre, contenido)
+
+        paso_actual = estado.asistente.paso
+        escanear_tipo = getattr(paso_actual, 'escanear_como', None) if paso_actual else None
+        if escanear_tipo:
+            await responder(update, f'🔍 Analizando imagen ({escanear_tipo})…')
+            tipo_doc = documentos.tipo_por_texto(escanear_tipo)
+            leidos = await documentos.escanear(_backend(context), update.effective_user.id, tipo_doc, archivo_valido)
+            if not leidos:
+                raise ValueError(
+                    f'No fue posible leer datos de «{escanear_tipo}». '
+                    'Verifica que la foto esté completa, con buena luz y nítida, o pulsa «Omitir».'
+                )
+            estado.asistente.responder({'archivo': archivo_valido, 'datos': leidos})
+            aviso = formularios.formatear_resultado_escaneo(escanear_tipo, leidos, estado.asistente.respuestas)
+        else:
+            estado.asistente.responder(archivo_valido)
     except ValueError as error:
-        aviso = str(error)
+        aviso = f'⚠️ {error}'
     await avanzar_asistente(update, estado, editar=False, aviso=aviso)
 
 

@@ -218,18 +218,19 @@ def test_asistente_nuevo_usuario():
 
 def test_asistente_generar_registro():
     a = formularios.asistente_generar_registro()
-    a.responder('TEMP-88')
-    a.responder('Pedro Morales')
-    a.responder('MOPP900101HDFRRN01')
-    a.omitir()  # acta
-    a.omitir()  # domicilio
-    a.omitir()  # rfc
-    a.omitir()  # nss
-    a.responder('8112345678')
-    a.omitir()  # correo
-    a.omitir()  # emergencia
-    a.responder('Facebook')
-    a.responder('Reclutador 1')
+    a.omitir()  # doc_acta
+    a.omitir()  # doc_domicilio
+    a.omitir()  # doc_ine
+    a.omitir()  # doc_csf
+    a.omitir()  # doc_nss
+    a.responder('Pedro Morales')  # nombre_manual
+    a.responder('MOPP900101HDFRRN01')  # curp_manual
+    a.omitir()  # domicilio_manual
+    a.responder('8112345678')  # tel_movil
+    a.omitir()  # nom_eme
+    a.responder('Facebook')  # fuente
+    a.responder('Reclutador 1')  # reclutador
+    a.responder('TEMP-88')  # numero_temporal
     p = a.construir()
     assert (p.metodo, p.ruta) == ('POST', '/api/guardar-registro')
     assert p.formulario['numero_temporal'] == 'TEMP - 88'
@@ -237,6 +238,56 @@ def test_asistente_generar_registro():
     assert p.siguiente is not None
     assert (p.siguiente.metodo, p.siguiente.ruta) == ('POST', '/api/guardar-encuesta')
     assert p.siguiente.formulario['fuente'] == 'Facebook'
+
+
+def test_asistente_generar_registro_con_escaneo():
+    a = formularios.asistente_generar_registro(['Reclu A', 'Reclu B'])
+    # Simulamos lectura de Acta de Nacimiento
+    a.responder({
+        'archivo': formularios.validar_archivo('acta.jpg', b'\xff\xd8\xff\xe0' + b'x' * 100),
+        'datos': {
+            'nombre_completo': 'Juan Pérez López',
+            'curp': 'PELJ900101HDFRRN01',
+            'genero': 'MASCULINO',
+            'fecha_nac': '1990-01-01',
+            'lugar_nacimiento': 'Toluca, Estado de México',
+        }
+    })
+    # Simulamos lectura de Comprobante de Domicilio propio
+    a.responder({
+        'archivo': formularios.validar_archivo('luz.jpg', b'\xff\xd8\xff\xe0' + b'x' * 100),
+        'datos': {
+            'nombre_propietario': 'Juan Pérez López',
+            'calle': 'Av. Juárez',
+            'num_ext': '123',
+            'colonia': 'Centro',
+            'municipio': 'Toluca',
+            'estado': 'México',
+            'cp': '50000',
+        }
+    })
+    # Como el propietario es el mismo, no pregunta parentesco y salta a INE
+    a.omitir()  # doc_ine
+    a.omitir()  # doc_csf
+    a.omitir()  # doc_nss
+    # Como ya tiene nombre, curp y domicilio de las fotos, no los pide de nuevo
+    a.responder('7221234567')  # tel_movil
+    a.responder('María López')  # nom_eme
+    a.responder('Madre')  # par_eme
+    a.responder('7229876543')  # tel_eme
+    a.responder('Recomendación')  # fuente
+    a.responder('Reclu A')  # reclutador
+    a.responder('TEMP - 005')  # numero_temporal
+    p = a.construir()
+    assert (p.metodo, p.ruta) == ('POST', '/api/guardar-registro')
+    assert p.formulario['nombre_completo'] == 'Juan Pérez López'
+    assert p.formulario['curp'] == 'PELJ900101HDFRRN01'
+    assert p.formulario['genero'] == 'MASCULINO'
+    assert p.formulario['procedencia'] == 'Toluca, Estado de México'
+    assert p.formulario['calle'] == 'Av. Juárez'
+    assert p.formulario['nom_eme1'] == 'María López'
+    assert p.formulario['par_eme1'] == 'Madre'
+    assert p.formulario['tel_eme1'] == '7229876543'
 
 
 def test_asistente_subir_papeleria():

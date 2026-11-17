@@ -19,7 +19,7 @@ Respuestas = dict[str, Any]
 @dataclass
 class Paso:
     campo: str
-    pregunta: str
+    pregunta: str | Callable[[Respuestas], str]
     #: 'opciones' | 'texto' | 'fecha' | 'archivo'
     tipo: str = 'opciones'
     opciones: Callable[[Respuestas], list[str]] | None = None
@@ -27,6 +27,7 @@ class Paso:
     validar: Callable[[Any, Respuestas], Any] | None = None
     omitible: bool = False
     aplica: Callable[[Respuestas], bool] = lambda _r: True
+    escanear_como: str | None = None
 
 
 @dataclass

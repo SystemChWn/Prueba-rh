@@ -588,75 +588,367 @@ def asistente_team_eliminar(reclutadores: list[dict]) -> Asistente:
 FUENTES_REGISTRO = ['Facebook', 'Posteo', 'Volante', 'Recomendación', 'Reclu CW', 'Reclu puro']
 
 
-def asistente_generar_registro() -> Asistente:
+def _comparar_cadenas(a: Any, b: Any) -> bool:
+    if not a or not b:
+        return True
+    sa = normalizar(a).replace(' ', '')
+    sb = normalizar(b).replace(' ', '')
+    return sa == sb or sa in sb or sb in sa
+
+
+def _obtener_datos_doc(r: Respuestas, clave: str) -> dict[str, str]:
+    val = r.get(clave)
+    if isinstance(val, dict):
+        return val.get('datos') or {}
+    return {}
+
+
+def _obtener_nombre_candidato(r: Respuestas) -> str:
+    for doc in ('doc_acta', 'doc_ine', 'doc_csf', 'doc_nss'):
+        nombre = _obtener_datos_doc(r, doc).get('nombre_completo')
+        if nombre:
+            return nombre
+    return str(r.get('nombre_manual') or '').strip()
+
+
+def _obtener_curp(r: Respuestas) -> str:
+    for doc in ('doc_acta', 'doc_ine', 'doc_csf', 'doc_nss'):
+        curp = _obtener_datos_doc(r, doc).get('curp')
+        if curp:
+            return curp
+    return str(r.get('curp_manual') or '').strip().upper()
+
+
+def _obtener_propietario(r: Respuestas) -> str:
+    return _obtener_datos_doc(r, 'doc_domicilio').get('nombre_propietario') or 'el titular del comprobante'
+
+
+def _necesita_parentesco(r: Respuestas) -> bool:
+    prop = _obtener_datos_doc(r, 'doc_domicilio').get('nombre_propietario')
+    if not prop:
+        return False
+    cand = _obtener_nombre_candidato(r)
+    if cand and _comparar_cadenas(prop, cand):
+        r['parentesco_propietario'] = 'Propio'
+        return False
+    return True
+
+
+def _tiene_nombre(r: Respuestas) -> bool:
+    return bool(_obtener_nombre_candidato(r))
+
+
+def _tiene_curp(r: Respuestas) -> bool:
+    return bool(_obtener_curp(r))
+
+
+def _tiene_domicilio(r: Respuestas) -> bool:
+    for doc in ('doc_domicilio', 'doc_ine', 'doc_csf'):
+        datos = _obtener_datos_doc(r, doc)
+        if datos.get('calle') or datos.get('colonia') or datos.get('cp'):
+            return True
+    return bool(r.get('domicilio_manual'))
+
+
+def formatear_resultado_escaneo(tipo: str, leidos: dict[str, str], r: Respuestas) -> str:
+    lineas = [f'✅ **{tipo} analizada con éxito:**']
+    if tipo == 'Acta de Nacimiento':
+        if leidos.get('nombre_completo'):
+            lineas.append(f'• **Nombre:** {leidos["nombre_completo"]}')
+        if leidos.get('curp'):
+            lineas.append(f'• **CURP:** {leidos["curp"]}')
+        if leidos.get('genero'):
+            lineas.append(f'• **Sexo:** {leidos["genero"]}')
+        if leidos.get('fecha_nac'):
+            lineas.append(f'• **Fecha nac.:** {leidos["fecha_nac"]}')
+        if leidos.get('lugar_nacimiento'):
+            lineas.append(f'• **Lugar nac.:** {leidos["lugar_nacimiento"]}')
+
+    elif tipo == 'Comprobante de Domicilio':
+        prop = leidos.get('nombre_propietario')
+        cand = _obtener_nombre_candidato(r)
+        if prop:
+            coincide = _comparar_cadenas(prop, cand) if cand else False
+            tag = ' (Coincide con candidato ✅)' if coincide else ' (Se solicitará parentesco ℹ️)'
+            lineas.append(f'• **Titular:** {prop}{tag}')
+        partes_dir = filter(None, [
+            leidos.get('calle'),
+            f"Ext. {leidos['num_ext']}" if leidos.get('num_ext') else None,
+            f"Int. {leidos['num_int']}" if leidos.get('num_int') else None,
+            f"Col. {leidos['colonia']}" if leidos.get('colonia') else None,
+            f"C.P. {leidos['cp']}" if leidos.get('cp') else None,
+            leidos.get('municipio'),
+            leidos.get('estado'),
+        ])
+        dir_txt = ', '.join(partes_dir)
+        if dir_txt:
+            lineas.append(f'• **Dirección:** {dir_txt}')
+
+    elif tipo == 'INE':
+        acta_datos = _obtener_datos_doc(r, 'doc_acta')
+        dom_datos = _obtener_datos_doc(r, 'doc_domicilio')
+
+        if leidos.get('nombre_completo'):
+            acta_nom = acta_datos.get('nombre_completo')
+            comp = ' (Coincide con Acta ✅)' if acta_nom and _comparar_cadenas(acta_nom, leidos['nombre_completo']) else (f' (⚠️ Difiere de Acta: {acta_nom})' if acta_nom else '')
+            lineas.append(f'• **Nombre:** {leidos["nombre_completo"]}{comp}')
+
+        if leidos.get('curp'):
+            acta_c = acta_datos.get('curp')
+            comp = ' (Coincide con Acta ✅)' if acta_c and acta_c.strip().upper() == leidos['curp'].strip().upper() else (f' (⚠️ Difiere de Acta: {acta_c})' if acta_c else '')
+            lineas.append(f'• **CURP:** {leidos["curp"]}{comp}')
+
+        if leidos.get('genero'):
+            acta_g = acta_datos.get('genero')
+            comp = ' (Coincide con Acta ✅)' if acta_g and _comparar_cadenas(acta_g, leidos['genero']) else ''
+            lineas.append(f'• **Sexo:** {leidos["genero"]}{comp}')
+
+        if leidos.get('fecha_nac'):
+            acta_f = acta_datos.get('fecha_nac')
+            comp = ' (Coincide con Acta ✅)' if acta_f and acta_f == leidos['fecha_nac'] else (f' (⚠️ Difiere de Acta: {acta_f})' if acta_f else '')
+            lineas.append(f'• **Fecha nac.:** {leidos["fecha_nac"]}{comp}')
+
+        if leidos.get('calle') or leidos.get('cp'):
+            comp_dom = ' (Coincide con Comprobante ✅)' if dom_datos.get('calle') and _comparar_cadenas(dom_datos.get('calle'), leidos.get('calle')) else ''
+            lineas.append(f'• **Domicilio INE:** {leidos.get("calle", "")} CP {leidos.get("cp", "")}{comp_dom}')
+
+    elif tipo == 'Constancia de Situación Fiscal':
+        prev_c = _obtener_curp(r)
+        prev_n = _obtener_nombre_candidato(r)
+        if leidos.get('rfc'):
+            lineas.append(f'• **RFC:** {leidos["rfc"]}')
+        if leidos.get('curp'):
+            comp = ' (Coincide con Acta/INE ✅)' if prev_c and prev_c.strip().upper() == leidos['curp'].strip().upper() else (f' (⚠️ Difiere: {prev_c})' if prev_c else '')
+            lineas.append(f'• **CURP:** {leidos["curp"]}{comp}')
+        if leidos.get('nombre_completo'):
+            comp = ' (Coincide con Acta/INE ✅)' if prev_n and _comparar_cadenas(prev_n, leidos['nombre_completo']) else (f' (⚠️ Difiere: {prev_n})' if prev_n else '')
+            lineas.append(f'• **Nombre:** {leidos["nombre_completo"]}{comp}')
+
+    elif tipo == 'Número de Seguro Social':
+        prev_c = _obtener_curp(r)
+        prev_n = _obtener_nombre_candidato(r)
+        if leidos.get('nss'):
+            lineas.append(f'• **NSS:** {leidos["nss"]}')
+        if leidos.get('nombre_completo'):
+            comp = ' (Coincide con registros ✅)' if prev_n and _comparar_cadenas(prev_n, leidos['nombre_completo']) else (f' (⚠️ Difiere: {prev_n})' if prev_n else '')
+            lineas.append(f'• **Nombre:** {leidos["nombre_completo"]}{comp}')
+        if leidos.get('curp'):
+            comp = ' (Coincide con registros ✅)' if prev_c and prev_c.strip().upper() == leidos['curp'].strip().upper() else (f' (⚠️ Difiere: {prev_c})' if prev_c else '')
+            lineas.append(f'• **CURP:** {leidos["curp"]}{comp}')
+
+    return '\n'.join(lineas)
+
+
+def asistente_generar_registro(reclutadores: list[str] | None = None) -> Asistente:
     def terminar(r: Respuestas) -> CambioPendiente:
         no_temp = normalizar_numero_temporal(r['numero_temporal'])
-        nombre = str(r['nombre_completo']).strip()
-        curp = str(r['curp']).strip().upper()
+        nombre = _obtener_nombre_candidato(r)
+        curp = _obtener_curp(r)
+
+        # Consolidar datos de los documentos
+        acta = _obtener_datos_doc(r, 'doc_acta')
+        dom = _obtener_datos_doc(r, 'doc_domicilio')
+        ine = _obtener_datos_doc(r, 'doc_ine')
+        csf = _obtener_datos_doc(r, 'doc_csf')
+        nss_doc = _obtener_datos_doc(r, 'doc_nss')
+
+        rfc = str(csf.get('rfc') or r.get('rfc_manual') or '').strip().upper()
+        nss = str(nss_doc.get('nss') or r.get('nss_manual') or '').strip()
+        genero = str(acta.get('genero') or ine.get('genero') or '').strip().upper()
+        fecha_nac = str(acta.get('fecha_nac') or ine.get('fecha_nac') or '').strip()
+        lugar_nac = str(acta.get('lugar_nacimiento') or '').strip()
+
+        # Domicilio
+        calle = str(dom.get('calle') or ine.get('calle') or csf.get('calle') or r.get('domicilio_manual') or '').strip()
+        num_ext = str(dom.get('num_ext') or ine.get('num_ext') or csf.get('num_ext') or '').strip()
+        num_int = str(dom.get('num_int') or ine.get('num_int') or csf.get('num_int') or '').strip()
+        colonia = str(dom.get('colonia') or ine.get('colonia') or csf.get('colonia') or '').strip()
+        municipio = str(dom.get('municipio') or ine.get('municipio') or csf.get('municipio') or '').strip()
+        estado_dir = str(dom.get('estado') or ine.get('estado') or csf.get('estado') or '').strip()
+        cp = str(dom.get('cp') or ine.get('cp') or csf.get('cp') or '').strip()
+
+        # Propietario comprobante
+        propietario = dom.get('nombre_propietario') or ''
+        parentesco_prop = str(r.get('parentesco_propietario') or ('Propio' if propietario and _comparar_cadenas(propietario, nombre) else 'No especificado')).strip()
+
+        # Contacto emergencia
+        nom_eme = str(r.get('nom_eme') or '').strip()
+        par_eme = str(r.get('par_eme') or '').strip()
+        tel_eme = str(r.get('tel_eme') or '').strip()
+        tel_movil = str(r.get('tel_movil') or '').strip()
+
+        # Edad
+        edad_str = ''
+        if fecha_nac:
+            try:
+                fn_dt = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
+                hoy_d = date.today()
+                edad = hoy_d.year - fn_dt.year - ((hoy_d.month, hoy_d.day) < (fn_dt.month, fn_dt.day))
+                if 14 <= edad <= 100:
+                    edad_str = str(edad)
+            except Exception:
+                edad_str = ''
+
         formulario: dict[str, str] = {
             'numero_temporal': no_temp,
             'nombre_completo': nombre,
             'curp': curp,
-            'rfc': str(r.get('rfc') or '').strip().upper(),
-            'nss': str(r.get('nss') or '').strip(),
-            'tel_movil': str(r.get('tel_movil') or '').strip(),
-            'correo': str(r.get('correo') or '').strip(),
-            'calle': str(r.get('domicilio') or '').strip(),
-            'nombre_emergencia': str(r.get('contacto_emergencia') or '').strip(),
+            'rfc': rfc,
+            'nss': nss,
+            'fecha_nac': fecha_nac,
+            'edad': edad_str,
+            'genero': genero,
+            'procedencia': lugar_nac,
+            'calle': calle,
+            'num_ext': num_ext,
+            'num_int': num_int,
+            'colonia': colonia,
+            'municipio': municipio,
+            'estado': estado_dir,
+            'cp': cp,
+            'tel_movil': tel_movil,
+            'nom_eme1': nom_eme,
+            'par_eme1': par_eme,
+            'tel_eme1': tel_eme,
         }
+
         siguiente = None
-        if r.get('fuente'):
-            sub_fuente = 'CW' if r['fuente'] == 'Reclu CW' else ('PURO' if r['fuente'] == 'Reclu puro' else '')
+        fuente = r.get('fuente')
+        reclutador = str(r.get('reclutador') or '').strip()
+        if fuente:
+            sub_fuente = 'CW' if fuente == 'Reclu CW' else ('PURO' if fuente == 'Reclu puro' else '')
             encuesta_form = {
                 'curp': curp,
-                'fuente': r['fuente'],
+                'fuente': fuente,
                 'sub_fuente': sub_fuente,
-                'nombre_reclutador': str(r.get('reclutador') or '').strip(),
+                'nombre_reclutador': reclutador,
                 'nombre_empleado': nombre,
             }
             siguiente = CambioPendiente(
                 'POST', '/api/guardar-encuesta',
                 f'📊 Guardar Encuesta de Reclutamiento — {nombre}:',
-                detalle=[f'Fuente: {r["fuente"]}', f'Reclutador: {r.get("reclutador") or "Sin asignar"}'],
+                detalle=[f'Fuente: {fuente}', f'Reclutador: {reclutador or "Sin asignar"}'],
                 formulario=encuesta_form,
             )
+
+        dir_resumen = ', '.join(filter(None, [calle, f"Ext. {num_ext}" if num_ext else None, f"Col. {colonia}" if colonia else None, f"CP {cp}" if cp else None, municipio, estado_dir])) or 'Sin dato'
+        detalle = [
+            f'Número Temporal: {no_temp}',
+            f'Nombre: {nombre}',
+            f'CURP: {curp}',
+            f'RFC: {rfc or "Sin dato"}',
+            f'NSS: {nss or "Sin dato"}',
+            f'Sexo: {genero or "Sin dato"}',
+            f'Fecha Nacimiento: {fecha_nac or "Sin dato"}' + (f' ({edad_str} años)' if edad_str else ''),
+            f'Lugar Nacimiento: {lugar_nac or "Sin dato"}',
+            f'Dirección: {dir_resumen}',
+            f'Titular Domicilio: {propietario or "Sin dato"} (Parentesco: {parentesco_prop})',
+            f'Teléfono Candidato: {tel_movil}',
+            f'Contacto Emergencia: {nom_eme or "Sin dato"} ({par_eme or "Sin parentesco"}) - {tel_eme or "Sin tel"}',
+            f'Encuesta: {fuente or "Sin encuesta"} | Reclutador: {reclutador or "Sin asignar"}',
+        ]
 
         return CambioPendiente(
             'POST', '/api/guardar-registro',
             f'✍️ Registrar Candidato — {nombre}:',
-            detalle=[
-                f'Número Temporal: {no_temp}',
-                f'Nombre: {nombre}',
-                f'CURP: {curp}',
-                f'Teléfono: {formulario["tel_movil"] or "Sin dato"}',
-                f'NSS: {formulario["nss"] or "Sin dato"}',
-                f'RFC: {formulario["rfc"] or "Sin dato"}',
-                f'Fuente: {r.get("fuente") or "Sin encuesta"}',
-            ],
+            detalle=detalle,
             formulario=formulario,
             siguiente=siguiente,
         )
 
+    reclutadores_lista = list(reclutadores) if reclutadores else []
+
+    pasos = [
+        Paso('doc_acta',
+             '📸 Envía la foto o PDF del **Acta de Nacimiento**:\n\n'
+             'Se capturarán automáticamente:\n'
+             '• Clave Única de Registro de Población (CURP)\n'
+             '• Nombre completo (nombre, primer y segundo apellido)\n'
+             '• Sexo\n'
+             '• Fecha de nacimiento\n'
+             '• Lugar de nacimiento (Entidad y municipio/localidad)\n\n'
+             '*(O pulsa «Omitir» si no la tienes)*',
+             tipo='archivo', omitible=True, escanear_como='Acta de Nacimiento'),
+
+        Paso('doc_domicilio',
+             '📸 Envía la foto o PDF del **Comprobante de Domicilio**:\n\n'
+             'Se capturarán automáticamente:\n'
+             '• Nombre del propietario/titular\n'
+             '• Dirección completa (Calle, Número, Colonia, Municipio, Estado, C.P.)\n\n'
+             '*(O pulsa «Omitir» si no lo tienes)*',
+             tipo='archivo', omitible=True, escanear_como='Comprobante de Domicilio'),
+
+        Paso('parentesco_propietario',
+             lambda r: f"El comprobante de domicilio está a nombre de: «{_obtener_propietario(r)}».\n"
+                       f"¿Qué parentesco tiene con el candidato? (o escribe «Propio» si es del candidato):",
+             tipo='texto', omitible=True, aplica=lambda r: _necesita_parentesco(r)),
+
+        Paso('doc_ine',
+             '📸 Envía la foto o PDF de la **Credencial de Elector (INE / IFE)**:\n\n'
+             'Se capturarán y comprobarán:\n'
+             '• Nombre completo (comprobación con Acta)\n'
+             '• Sexo (comprobación con Acta)\n'
+             '• Domicilio (comprobación con Comprobante)\n'
+             '• CURP (comprobación con Acta)\n'
+             '• Fecha de Nacimiento (comprobación con Acta)\n\n'
+             '*(O pulsa «Omitir» si no la tienes)*',
+             tipo='archivo', omitible=True, escanear_como='INE'),
+
+        Paso('doc_csf',
+             '📸 Envía la foto o PDF de la **Constancia de Situación Fiscal (SAT)**:\n\n'
+             'Se capturarán y comprobarán:\n'
+             '• RFC\n'
+             '• CURP (comprobación con Acta e INE)\n'
+             '• Nombre Completo (comprobación con Acta e INE)\n\n'
+             '*(O pulsa «Omitir» si no la tienes)*',
+             tipo='archivo', omitible=True, escanear_como='Constancia de Situación Fiscal'),
+
+        Paso('doc_nss',
+             '📸 Envía la foto o PDF del **Número de Seguro Social (IMSS)**:\n\n'
+             'Se capturarán y comprobarán:\n'
+             '• Número de Seguro Social (NSS)\n'
+             '• Nombre completo (comprobación con registros)\n'
+             '• CURP (comprobación con registros)\n\n'
+             '*(O pulsa «Omitir» si no lo tienes)*',
+             tipo='archivo', omitible=True, escanear_como='Número de Seguro Social'),
+
+        Paso('nombre_manual', 'Escribe el nombre completo del candidato:', tipo='texto',
+             aplica=lambda r: not _tiene_nombre(r),
+             validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el nombre completo.'))),
+
+        Paso('curp_manual', 'CURP (18 caracteres):', tipo='texto',
+             aplica=lambda r: not _tiene_curp(r),
+             validar=lambda v, _r: str(v).strip().upper() if len(str(v).strip()) >= 10 else (_ for _ in ()).throw(ValueError('Escribe una CURP válida.'))),
+
+        Paso('domicilio_manual', 'Dirección completa (Calle, Número, Colonia, C.P., Municipio, Estado):', tipo='texto',
+             omitible=True, aplica=lambda r: not _tiene_domicilio(r)),
+
+        Paso('tel_movil', '📱 Teléfono móvil del candidato:', tipo='texto',
+             validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
+
+        Paso('nom_eme', '🚨 Contacto de Emergencia — Nombre completo (o pulsa Omitir):', tipo='texto', omitible=True),
+
+        Paso('par_eme', '🚨 Contacto de Emergencia — Parentesco:',
+             opciones=lambda _r: ['Padre', 'Madre', 'Cónyuge / Pareja', 'Hijo / Hija', 'Hermano / Hermana', 'Familiar', 'Amigo / Conocido'],
+             tipo='opciones', omitible=True, aplica=lambda r: bool(r.get('nom_eme'))),
+
+        Paso('tel_eme', '🚨 Contacto de Emergencia — Teléfono (o pulsa Omitir):', tipo='texto',
+             omitible=True, aplica=lambda r: bool(r.get('nom_eme'))),
+
+        Paso('fuente', '📊 Encuesta de Reclutamiento — ¿Por qué medio nos conoció?:', opciones=lambda _r: list(FUENTES_REGISTRO)),
+
+        Paso('reclutador', '👤 Nombre del reclutador (o pulsa Omitir):',
+             opciones=(lambda _r: reclutadores_lista) if reclutadores_lista else None,
+             tipo='opciones' if reclutadores_lista else 'texto',
+             omitible=True),
+
+        Paso('numero_temporal', '🔢 Ingresa el N° de Empleado Temporal (ej. TEMP - 001):', tipo='texto',
+             validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el número temporal.'))),
+    ]
+
     return Asistente(
         titulo='✍️ Generar Registro de Candidato',
-        pasos=[
-            Paso('numero_temporal', 'Ingresa el N° de Empleado Temporal (ej. TEMP - 001):', tipo='texto',
-                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el número temporal.'))),
-            Paso('nombre_completo', 'Nombre completo del candidato:', tipo='texto',
-                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el nombre completo.'))),
-            Paso('curp', 'CURP (18 caracteres):', tipo='texto',
-                 validar=lambda v, _r: str(v).strip().upper() if len(str(v).strip()) >= 10 else (_ for _ in ()).throw(ValueError('Escribe una CURP válida.'))),
-            Paso('acta_nacimiento', 'Folio o número de Acta de Nacimiento (o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('domicilio', 'Comprobante de Domicilio / Dirección completa (o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('rfc', 'Constancia de Situación Fiscal / RFC (o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('nss', 'Número de Seguro Social (NSS) (o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('tel_movil', 'Teléfono móvil:', tipo='texto',
-                 validar=lambda v, _r: str(v).strip() if str(v).strip() else (_ for _ in ()).throw(ValueError('Escribe el teléfono.'))),
-            Paso('correo', 'Correo electrónico (o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('contacto_emergencia', 'Contacto de Emergencia (Nombre y teléfono, o pulsa Omitir):', tipo='texto', omitible=True),
-            Paso('fuente', 'Encuesta de Reclutamiento — ¿Por qué medio nos conoció?:', opciones=lambda _r: list(FUENTES_REGISTRO)),
-            Paso('reclutador', 'Nombre del reclutador (o pulsa Omitir):', tipo='texto', omitible=True),
-        ],
+        pasos=pasos,
         al_terminar=terminar,
     )
 

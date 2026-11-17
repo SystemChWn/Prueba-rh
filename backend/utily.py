@@ -70,15 +70,18 @@ def health_check():
 
 
 DOCUMENTOS_ESCANEABLES = {
-    'Acta de Nacimiento': ('nombre_completo', 'fecha_nac', 'genero'),
+    'Acta de Nacimiento': ('nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'),
     'Comprobante de Domicilio': (
-        'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
+        'nombre_propietario', 'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
+    ),
+    'INE': (
+        'nombre_completo', 'curp', 'fecha_nac', 'genero', 'calle', 'num_ext', 'num_int', 'colonia', 'municipio', 'estado', 'cp',
     ),
     'Constancia de Situación Fiscal': (
         'nombre_completo', 'rfc', 'curp', 'cp', 'colonia', 'calle',
         'num_ext', 'num_int', 'municipio', 'estado',
     ),
-    'Número de Seguro Social': ('nss',),
+    'Número de Seguro Social': ('nombre_completo', 'nss', 'curp'),
 }
 INSTRUCCIONES_CAMPOS_DOCUMENTO = {
     'nombre_completo': (
@@ -129,18 +132,32 @@ INSTRUCCIONES_CAMPOS_DOCUMENTO = {
         'Número de Seguridad Social (NSS) del titular, de 11 dígitos. Devuelve '
         'solo dígitos; no uses el CURP, RFC, folio ni número de clínica.'
     ),
+    'lugar_nacimiento': (
+        'Entidad federativa y municipio o localidad de nacimiento asentada en el documento. '
+        'Usa null si no aparece.'
+    ),
+    'nombre_propietario': (
+        'Nombre de la persona titular, propietaria o destinataria del servicio en el '
+        'comprobante de domicilio. Usa null si no es legible o no aparece.'
+    ),
 }
 INSTRUCCIONES_TIPO_DOCUMENTO = {
     'Acta de Nacimiento': (
         'Verifica que sea un acta de nacimiento. Identifica los datos del registrado '
         '(la persona cuyo nacimiento se certifica), no los de sus progenitores. '
-        'Extrae nombre completo, fecha de nacimiento y sexo solo cuando el campo '
+        'Extrae nombre completo, CURP, fecha de nacimiento, sexo y lugar de nacimiento solo cuando el campo '
         'esté expresamente asentado.'
     ),
     'Comprobante de Domicilio': (
-        'Verifica que sea un comprobante de domicilio. Extrae el domicilio impreso '
-        'y separa calle, número exterior e interior, colonia, código postal, '
-        'municipio/alcaldía y estado en sus campos correspondientes.'
+        'Verifica que sea un comprobante de domicilio. Extrae el nombre del titular o '
+        'propietario del servicio, y el domicilio impreso separando calle, número exterior e interior, '
+        'colonia, código postal, municipio/alcaldía y estado en sus campos correspondientes.'
+    ),
+    'INE': (
+        'Verifica que sea una credencial para votar (INE o IFE). Extrae el nombre completo de la persona '
+        '(nombre, primer apellido, segundo apellido), CURP, sexo (MASCULINO o FEMENINO), fecha de nacimiento '
+        'en formato YYYY-MM-DD y el domicilio impreso separando calle, número exterior e interior, colonia, '
+        'municipio/alcaldía, estado y código postal.'
     ),
     'Constancia de Situación Fiscal': (
         'Verifica que sea una Constancia de Situación Fiscal. Usa los datos del '
@@ -149,9 +166,8 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'confundas el domicilio fiscal con la dirección de la autoridad emisora.'
     ),
     'Número de Seguro Social': (
-        'Verifica que sea un documento que muestre el Número de Seguridad Social. '
-        'Extrae únicamente el NSS del titular; no confundas el NSS con CURP, RFC, '
-        'folio, unidad médica o número de clínica.'
+        'Verifica que sea un documento que muestre el Número de Seguridad Social (IMSS). '
+        'Extrae únicamente el NSS del titular (11 dígitos), su nombre completo y su CURP si aparecen.'
     ),
 }
 MAX_DOCUMENTO_ESCANEABLE_BYTES = 9 * 1024 * 1024
@@ -169,6 +185,8 @@ LONGITUD_MAXIMA_CAMPOS_DOCUMENTO = {
     'rfc': 13,
     'curp': 18,
     'nss': 11,
+    'lugar_nacimiento': 150,
+    'nombre_propietario': 100,
 }
 MIMES_DOCUMENTO_ESCANEABLE = {
     '.pdf': ('application/pdf', lambda contenido: contenido.startswith(b'%PDF-')),

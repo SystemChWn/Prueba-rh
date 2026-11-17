@@ -29,6 +29,7 @@ TIPOS = {
     t.clave: t for t in (
         TipoDocumento('acta', 'Acta de Nacimiento', 'acta_nacimiento'),
         TipoDocumento('domicilio', 'Comprobante de Domicilio', 'comprobante_domicilio'),
+        TipoDocumento('ine', 'INE', 'ine'),
         TipoDocumento('csf', 'Constancia de Situación Fiscal', 'rfc_doc'),
         TipoDocumento('nss', 'Número de Seguro Social', 'nss_doc'),
     )
@@ -39,6 +40,8 @@ CAMPOS = {
     'nombre_completo': ('nombre_completo', 'Nombre', None),
     'fecha_nac': ('fecha_nacimiento', 'Fecha de nacimiento', 0),
     'genero': ('genero', 'Género', None),
+    'lugar_nacimiento': ('procedencia', 'Lugar de nacimiento', None),
+    'nombre_propietario': ('nombre_propietario', 'Propietario domicilio', None),
     'curp': ('curp', 'CURP', 4),
     'rfc': ('rfc', 'RFC', 3),
     'nss': ('nss', 'NSS', 4),
