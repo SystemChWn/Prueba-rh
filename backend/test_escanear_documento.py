@@ -16,16 +16,20 @@ class EscanearDocumentoTests(unittest.TestCase):
     def test_document_types_send_their_exact_field_guidance_and_schema(self, post_openai):
         casos = {
             'Acta de Nacimiento': {
-                'nombre_completo', 'fecha_nac', 'genero',
+                'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento',
             },
             'Comprobante de Domicilio': {
-                'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
+                'nombre_propietario', 'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
+            },
+            'INE': {
+                'nombre_completo', 'curp', 'fecha_nac', 'genero', 'calle', 'num_ext', 'num_int',
+                'colonia', 'municipio', 'estado', 'cp',
             },
             'Constancia de Situación Fiscal': {
                 'nombre_completo', 'rfc', 'curp', 'cp', 'colonia', 'calle',
                 'num_ext', 'num_int', 'municipio', 'estado',
             },
-            'Número de Seguro Social': {'nss'},
+            'Número de Seguro Social': {'nombre_completo', 'nss', 'curp'},
         }
 
         for tipo_documento, campos_esperados in casos.items():
@@ -91,8 +95,10 @@ class EscanearDocumentoTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()['campos'], {
             'nombre_completo': 'Ana López',
+            'curp': None,
             'fecha_nac': '2000-01-02',
             'genero': 'FEMENINO',
+            'lugar_nacimiento': None,
         })
         solicitud = post_openai.call_args.kwargs['json']
         self.assertEqual(
@@ -101,7 +107,7 @@ class EscanearDocumentoTests(unittest.TestCase):
         )
         self.assertEqual(
             set(solicitud['text']['format']['schema']['properties']),
-            {'nombre_completo', 'fecha_nac', 'genero'},
+            {'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'},
         )
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
@@ -124,7 +130,11 @@ class EscanearDocumentoTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()['campos'], {'nss': '12345678901'})
+        self.assertEqual(response.get_json()['campos'], {
+            'nombre_completo': None,
+            'nss': '12345678901',
+            'curp': None,
+        })
         self.assertEqual(
             post_openai.call_args.kwargs['json']['input'][0]['content'][1]['type'],
             'input_image',
@@ -157,8 +167,10 @@ class EscanearDocumentoTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()['campos'], {
             'nombre_completo': None,
+            'curp': None,
             'fecha_nac': None,
             'genero': 'FEMENINO',
+            'lugar_nacimiento': None,
         })
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})

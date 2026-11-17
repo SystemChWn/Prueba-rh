@@ -69,13 +69,31 @@ def health_check():
     return jsonify({'status': 'ok'}), 200
 
 
+def _corregir_orientacion_imagen(contenido: bytes, mime_type: str) -> tuple[bytes, str]:
+    """Corrige la orientación EXIF de una imagen si viene rotada."""
+    if mime_type not in ('image/jpeg', 'image/png', 'image/webp'):
+        return contenido, mime_type
+    try:
+        from PIL import Image, ImageOps
+        img = Image.open(BytesIO(contenido))
+        img = ImageOps.exif_transpose(img)
+        buf = BytesIO()
+        fmt = 'JPEG' if mime_type == 'image/jpeg' else ('PNG' if mime_type == 'image/png' else 'WEBP')
+        img.save(buf, format=fmt)
+        return buf.getvalue(), mime_type
+    except Exception as exc:
+        app.logger.warning('No se pudo corregir orientación EXIF: %s', exc)
+        return contenido, mime_type
+
+
 DOCUMENTOS_ESCANEABLES = {
     'Acta de Nacimiento': ('nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'),
     'Comprobante de Domicilio': (
         'nombre_propietario', 'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
     ),
     'INE': (
-        'nombre_completo', 'curp', 'fecha_nac', 'genero', 'calle', 'num_ext', 'num_int', 'colonia', 'municipio', 'estado', 'cp',
+        'nombre_completo', 'curp', 'fecha_nac', 'genero', 'calle', 'num_ext', 'num_int',
+        'colonia', 'municipio', 'estado', 'cp',
     ),
     'Constancia de Situación Fiscal': (
         'nombre_completo', 'rfc', 'curp', 'cp', 'colonia', 'calle',
@@ -85,103 +103,89 @@ DOCUMENTOS_ESCANEABLES = {
 }
 INSTRUCCIONES_CAMPOS_DOCUMENTO = {
     'nombre_completo': (
-        'Nombre legal completo de la persona titular, incluyendo nombre(s) y apellidos; '
-        'no uses nombres de padres, tutores, representantes ni testigos.'
+        'Nombre legal completo de la persona titular, incluyendo nombre(s) y apellidos. '
+        'En Acta de Nacimiento corresponde únicamente a la persona registrada; NO uses datos de los padres/filiación.'
     ),
+    'nombre': 'Nombre(s) de pila de la persona registrada.',
+    'primer_apellido': 'Primer apellido (paterno) de la persona registrada.',
+    'segundo_apellido': 'Segundo apellido (materno) de la persona registrada o null si no tiene.',
     'fecha_nac': (
-        'Fecha de nacimiento de la persona titular en YYYY-MM-DD. No uses la fecha de '
-        'registro, expedición o impresión. Si la fecha es ambigua o incompleta, usa null.'
+        'Fecha de nacimiento en formato YYYY-MM-DD. No uses la fecha de registro o expedición. '
+        'Verifica que coincida con los dígitos AAMMDD de la CURP.'
     ),
-    'genero': (
-        'Sexo/género únicamente si aparece explícitamente en el acta. Devuelve '
-        'MASCULINO o FEMENINO; no lo deduzcas por el nombre. Si no está indicado '
-        'o no corresponde claramente, usa null.'
-    ),
-    'cp': (
-        'Código postal mexicano de cinco dígitos correspondiente al domicilio. '
-        'Devuelve solo los cinco dígitos; si no está completo, usa null.'
-    ),
-    'colonia': (
-        'Nombre de colonia, barrio, fraccionamiento o asentamiento del domicilio; '
-        'no lo confundas con municipio o estado.'
-    ),
-    'calle': (
-        'Nombre de calle o vialidad del domicilio, sin el número exterior/interior.'
-    ),
-    'num_ext': (
-        'Número exterior del domicilio. No incluyas el número interior; usa null '
-        'si no aparece.'
-    ),
-    'num_int': (
-        'Número interior, departamento o unidad del domicilio. Usa null si no aparece.'
-    ),
-    'municipio': (
-        'Municipio o alcaldía escrito en el domicilio; no lo confundas con colonia '
-        'o estado.'
-    ),
-    'estado': 'Estado de México indicado en el domicilio.',
-    'rfc': (
-        'RFC del contribuyente titular, de 12 o 13 caracteres. Devuélvelo en '
-        'mayúsculas, sin espacios; no uses el RFC de un representante.'
-    ),
-    'curp': (
-        'CURP de la persona contribuyente, de 18 caracteres. Devuélvela en '
-        'mayúsculas, sin espacios.'
-    ),
-    'nss': (
-        'Número de Seguridad Social (NSS) del titular, de 11 dígitos. Devuelve '
-        'solo dígitos; no uses el CURP, RFC, folio ni número de clínica.'
-    ),
-    'lugar_nacimiento': (
-        'Entidad federativa y municipio o localidad de nacimiento asentada en el documento. '
-        'Usa null si no aparece.'
-    ),
-    'nombre_propietario': (
-        'Nombre de la persona titular, propietaria o destinataria del servicio en el '
-        'comprobante de domicilio. Usa null si no es legible o no aparece.'
-    ),
+    'fecha_nacimiento': 'Fecha de nacimiento en formato YYYY-MM-DD.',
+    'genero': 'Sexo o género: MASCULINO o FEMENINO.',
+    'sexo': 'Sexo de la persona: MASCULINO o FEMENINO.',
+    'cp': 'Código postal de cinco dígitos. Usa null si no es legible.',
+    'codigo_postal': 'Código postal de cinco dígitos.',
+    'colonia': 'Colonia, fraccionamiento o barrio del domicilio.',
+    'calle': 'Nombre de la calle o vialidad sin número.',
+    'num_ext': 'Número exterior del domicilio. Usa null si no aparece.',
+    'numero_exterior': 'Número exterior del domicilio.',
+    'num_int': 'Número interior o departamento. Usa null si no tiene o no aparece.',
+    'numero_interior': 'Número interior o departamento (null si no tiene).',
+    'municipio': 'Municipio o alcaldía del domicilio.',
+    'estado': 'Entidad federativa o estado.',
+    'domicilio': 'Dirección completa tal como aparece impresa.',
+    'rfc': 'RFC del contribuyente titular (12 o 13 caracteres en mayúsculas sin espacios).',
+    'curp': 'CURP de 18 caracteres en mayúsculas sin espacios.',
+    'nss': 'Número de Seguridad Social (NSS) de 11 dígitos.',
+    'lugar_nacimiento': 'Entidad federativa y municipio o localidad de nacimiento asentada en el documento.',
+    'nombre_propietario': 'Nombre completo del titular o propietario del servicio en el comprobante.',
 }
 INSTRUCCIONES_TIPO_DOCUMENTO = {
     'Acta de Nacimiento': (
-        'Verifica que sea un acta de nacimiento. Identifica los datos del registrado '
-        '(la persona cuyo nacimiento se certifica), no los de sus progenitores. '
-        'Extrae nombre completo, CURP, fecha de nacimiento, sexo y lugar de nacimiento solo cuando el campo '
-        'esté expresamente asentado.'
+        'Analiza esta Acta de Nacimiento mexicana (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Ignora por completo los datos de los padres (Filiación) y extrae ÚNICAMENTE los datos de la Persona Registrada. '
+        'Verifica que la fecha de nacimiento coincida con los dígitos AAMMDD de la CURP. '
+        'Extrae curp, nombre, primer_apellido, segundo_apellido, nombre_completo, sexo (MASCULINO o FEMENINO), '
+        'fecha_nacimiento (YYYY-MM-DD) y lugar_nacimiento (Municipio, Estado). '
+        'Si algún dato no es legible o no aparece, usa null; nunca inventes datos.'
     ),
     'Comprobante de Domicilio': (
-        'Verifica que sea un comprobante de domicilio. Extrae el nombre del titular o '
-        'propietario del servicio, y el domicilio impreso separando calle, número exterior e interior, '
-        'colonia, código postal, municipio/alcaldía y estado en sus campos correspondientes.'
+        'Analiza este Comprobante de Domicilio mexicano (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Extrae el titular del recibo (nombre_propietario) y la dirección desglosada: '
+        'calle, numero_exterior, numero_interior (null si no tiene), colonia, municipio, estado y codigo_postal (5 dígitos). '
+        'Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'INE': (
-        'Verifica que sea una credencial para votar (INE o IFE). Extrae el nombre completo de la persona '
-        '(nombre, primer apellido, segundo apellido), CURP, sexo (MASCULINO o FEMENINO), fecha de nacimiento '
-        'en formato YYYY-MM-DD y el domicilio impreso separando calle, número exterior e interior, colonia, '
-        'municipio/alcaldía, estado y código postal.'
+        'Analiza esta credencial oficial INE/IFE (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Extrae los datos de la credencial oficial: nombre_completo, sexo (MASCULINO o FEMENINO), '
+        'domicilio (dirección completa tal como aparece), curp (18 caracteres) y fecha_nacimiento (YYYY-MM-DD). '
+        'Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'Constancia de Situación Fiscal': (
-        'Verifica que sea una Constancia de Situación Fiscal. Usa los datos del '
-        'contribuyente titular, no los del representante. Extrae nombre, RFC, CURP '
-        'y domicilio fiscal si aparecen; separa cada parte del domicilio. No '
-        'confundas el domicilio fiscal con la dirección de la autoridad emisora.'
+        'Analiza esta Constancia de Situación Fiscal del SAT (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Extrae los datos fiscales del contribuyente titular: rfc (12 o 13 caracteres), curp (18 caracteres) '
+        'y nombre_completo. Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'Número de Seguro Social': (
-        'Verifica que sea un documento que muestre el Número de Seguridad Social (IMSS). '
-        'Extrae únicamente el NSS del titular (11 dígitos), su nombre completo y su CURP si aparecen.'
+        'Analiza este documento del IMSS que contiene el Número de Seguridad Social (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Extrae del titular: nss (11 dígitos), nombre_completo y curp (18 caracteres si aparece). '
+        'Si algún dato no es legible, usa null; no inventes datos.'
     ),
 }
 MAX_DOCUMENTO_ESCANEABLE_BYTES = 9 * 1024 * 1024
 LONGITUD_MAXIMA_CAMPOS_DOCUMENTO = {
     'nombre_completo': 100,
+    'nombre': 80,
+    'primer_apellido': 60,
+    'segundo_apellido': 60,
     'fecha_nac': 10,
+    'fecha_nacimiento': 10,
     'genero': 30,
+    'sexo': 30,
     'cp': 5,
+    'codigo_postal': 5,
     'colonia': 150,
     'calle': 150,
     'num_ext': 20,
+    'numero_exterior': 20,
     'num_int': 20,
+    'numero_interior': 20,
     'municipio': 150,
     'estado': 100,
+    'domicilio': 250,
     'rfc': 13,
     'curp': 18,
     'nss': 11,
@@ -226,6 +230,8 @@ def escanear_documento():
     mime_type, validar_firma = formato
     if not validar_firma(contenido):
         return jsonify({'error': 'El archivo no coincide con su formato declarado.'}), 400
+
+    contenido, mime_type = _corregir_orientacion_imagen(contenido, mime_type)
 
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
@@ -338,13 +344,46 @@ def escanear_documento():
                 )
                 if texto_resultado:
                     break
-    try:
-        valores = json.loads(texto_resultado) if texto_resultado else None
-    except (TypeError, ValueError):
-        valores = None
+    valores = None
+    if texto_resultado:
+        texto_limpio = texto_resultado.strip()
+        if texto_limpio.startswith('```'):
+            texto_limpio = re.sub(r'^```(?:json)?\s*', '', texto_limpio, flags=re.IGNORECASE)
+            texto_limpio = re.sub(r'\s*```$', '', texto_limpio)
+        try:
+            valores = json.loads(texto_limpio)
+        except (TypeError, ValueError):
+            valores = None
     if not isinstance(valores, dict):
         app.logger.error('OpenAI no devolvió campos estructurados para el documento.')
         return jsonify({'error': 'No fue posible extraer datos del documento.'}), 502
+
+    # Homologar alias y campos compuestos
+    if not valores.get('nombre_completo'):
+        partes_n = [valores.get('nombre'), valores.get('primer_apellido'), valores.get('segundo_apellido')]
+        comp = ' '.join(filter(None, [str(p).strip() for p in partes_n if p]))
+        if comp:
+            valores['nombre_completo'] = comp
+    if not valores.get('genero') and valores.get('sexo'):
+        valores['genero'] = valores['sexo']
+    if not valores.get('sexo') and valores.get('genero'):
+        valores['sexo'] = valores['genero']
+    if not valores.get('fecha_nac') and valores.get('fecha_nacimiento'):
+        valores['fecha_nac'] = valores['fecha_nacimiento']
+    if not valores.get('fecha_nacimiento') and valores.get('fecha_nac'):
+        valores['fecha_nacimiento'] = valores['fecha_nac']
+    if not valores.get('num_ext') and valores.get('numero_exterior'):
+        valores['num_ext'] = valores['numero_exterior']
+    if not valores.get('numero_exterior') and valores.get('num_ext'):
+        valores['numero_exterior'] = valores['num_ext']
+    if not valores.get('num_int') and valores.get('numero_interior'):
+        valores['num_int'] = valores['numero_interior']
+    if not valores.get('numero_interior') and valores.get('num_int'):
+        valores['numero_interior'] = valores['num_int']
+    if not valores.get('cp') and valores.get('codigo_postal'):
+        valores['cp'] = valores['codigo_postal']
+    if not valores.get('codigo_postal') and valores.get('cp'):
+        valores['codigo_postal'] = valores['cp']
 
     campos = {}
     for campo in campos_documento:

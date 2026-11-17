@@ -35,7 +35,7 @@ from bot.interfaz import (
     teclado_confirmar,
     texto_error,
 )
-from bot import documentos
+from bot import documentos, registro_candidato
 from bot.menu import formularios
 from bot.menu.asistente import Asistente
 from bot.menu.navegacion import NODOS, hijos_visibles, padre_de, puede
@@ -505,10 +505,16 @@ async def accion_generar_registro(update, context, estado: EstadoUsuario) -> Non
     reclutadores: list[str] = []
     try:
         resp = await backend.peticion(telegram_id, 'GET', '/api/reclutadores-nombres')
-        reclutadores = [str(r).strip() for r in (resp.datos or []) if str(r).strip()]
+        datos = resp.datos if isinstance(resp.datos, dict) else {}
+        items = datos.get('reclutadores') or (resp.datos if isinstance(resp.datos, list) else [])
+        reclutadores = [
+            str(r.get('nombre') if isinstance(r, dict) else r).strip()
+            for r in items if str(r).strip()
+        ]
     except Exception:
         reclutadores = []
-    await iniciar_asistente(update, context, estado, formularios.asistente_generar_registro(reclutadores))
+    estado.limpiar_menu()
+    await registro_candidato.iniciar_registro(update, context, reclutadores)
 
 
 async def accion_team_agregar(update, context, estado: EstadoUsuario) -> None:
@@ -897,7 +903,10 @@ async def atender_texto(update: Update, context, texto: str) -> bool:
 
 async def atender_archivo(update: Update, context) -> bool:
     estado = _estados(context).de(update.effective_user.id)
-    if estado.asistente is not None and estado.asistente.paso is not None and estado.asistente.paso.tipo == 'archivo':
-        await archivo_asistente(update, context, estado)
+    if estado.asistente is not None:
+        if estado.asistente.paso is not None and estado.asistente.paso.tipo == 'archivo':
+            await archivo_asistente(update, context, estado)
+        else:
+            await responder(update, 'En este paso del formulario se espera texto o una opción, no un archivo. Responde a la pregunta o usa /cancelar.')
         return True
     return False

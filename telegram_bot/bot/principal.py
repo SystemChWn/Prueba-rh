@@ -35,7 +35,7 @@ from bot.interfaz import (  # noqa: F401 - reexportados para quien importe desde
     teclado_confirmar,
     texto_error,
 )
-from bot import avisos, conversacion, memoria, tareas
+from bot import avisos, conversacion, memoria, registro_candidato, tareas
 from bot.agente import Agente
 from bot.llm import ClienteOpenAI
 from bot.voz import ClienteVoz
@@ -231,9 +231,11 @@ async def cmd_eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def cmd_cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    estado = _estados(context).de(update.effective_user.id)
+    user_id = update.effective_user.id
+    habia_registro = registro_candidato.cancelar_registro(user_id)
+    estado = _estados(context).de(user_id)
     async with estado.candado:
-        habia = estado.pendiente is not None or estado.asistente is not None
+        habia = estado.pendiente is not None or estado.asistente is not None or habia_registro
         estado.pendiente = None
     estado.limpiar_menu()
     await responder(update, 'Descartado.' if habia else 'No tenías nada pendiente.')
@@ -345,12 +347,18 @@ async def _aplicar_lote(consulta, context, telegram_id: int, lote: Lote) -> None
 
 async def al_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     texto = update.effective_message.text or ''
+    if registro_candidato.tiene_registro_activo(update.effective_user.id):
+        if await registro_candidato.atender_texto(update, context, texto):
+            return
     if await pantallas.atender_texto(update, context, texto):
         return
     await conversacion.atender(update, context, texto)
 
 
 async def al_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if registro_candidato.tiene_registro_activo(update.effective_user.id):
+        if await registro_candidato.atender_archivo(update, context):
+            return
     if await pantallas.atender_archivo(update, context):
         return
     if await conversacion.guardar_adjunto(update, context):
@@ -363,6 +371,9 @@ async def al_voz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     texto = await conversacion.transcribir_nota(update, context)
     if texto is None:
         return
+    if registro_candidato.tiene_registro_activo(update.effective_user.id):
+        if await registro_candidato.atender_texto(update, context, texto):
+            return
     if await pantallas.atender_texto(update, context, texto):
         return
     await conversacion.atender(update, context, texto, origen='voz')
@@ -458,6 +469,7 @@ def construir(settings: Settings) -> Application:
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_accion_empleado, pattern=r'^ea:[a-z]{2,5}$'))
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_candidato, pattern=r'^cp?:\d{1,4}$'))
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_asistente, pattern=r'^a:(\d{1,3}|[bsx])$'))
+    app.add_handler(CallbackQueryHandler(registro_candidato.al_boton, pattern=r'^reg:'))
     app.add_handler(CallbackQueryHandler(conversacion.al_calificar, pattern=r'^cal:\d{1,12}:[+-]$'))
     app.add_handler(CallbackQueryHandler(avisos.al_boton, pattern=r'^av:(on|off|ver|h\d{1,2})$'))
     app.add_handler(CallbackQueryHandler(tareas.al_boton_borrar, pattern=r'^tb:\d{1,2}$'))
