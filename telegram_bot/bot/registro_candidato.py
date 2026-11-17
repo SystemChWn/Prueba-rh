@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 FUENTES_REGISTRO = ['Facebook', 'Posteo', 'Volante', 'Recomendación', 'Reclu CW', 'Reclu puro']
 PARENTESCOS_COMUNES = ['Madre', 'Padre', 'Cónyuge / Pareja', 'Hijo / Hija', 'Hermano / Hermana', 'Familiar', 'Amigo / Conocido']
+ESTADOS_CIVILES = ['SOLTERO(A)', 'CASADO(A)', 'DIVORCIADO(A)', 'VIUDO(A)', 'UNIÓN LIBRE']
 
 
 class EstadoRegistro(str, Enum):
@@ -61,6 +62,7 @@ class EstadoRegistro(str, Enum):
     ESPERANDO_EMERGENCIA_TELEFONO = 'esperando_emergencia_telefono'
     ESPERANDO_TEL_CANDIDATO = 'esperando_tel_candidato'
     ESPERANDO_CORREO_CANDIDATO = 'esperando_correo_candidato'
+    ESPERANDO_EDO_CIVIL = 'esperando_edo_civil'
     ESPERANDO_ENCUESTA_FUENTE = 'esperando_encuesta_fuente'
     ESPERANDO_ENCUESTA_RECLUTADOR = 'esperando_encuesta_reclutador'
     CONFIRMAR_DATOS = 'confirmar_datos'
@@ -381,6 +383,18 @@ async def _pedir_correo_candidato(update: Update, sesion: SesionRegistro, prefij
     await responder(update, texto, reply_markup=teclado)
 
 
+async def _pedir_edo_civil(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    sesion.estado = EstadoRegistro.ESPERANDO_EDO_CIVIL
+    texto = (
+        f"{prefijo}\n\n"
+        "💍 Selecciona el **Estado Civil** del candidato:\n"
+        "Elige una opción con los botones o escríbelo:"
+    )
+    filas = [[boton(opc, f'reg:edocivil:{opc}')] for opc in ESTADOS_CIVILES]
+    filas.append([boton('⏩ Omitir estado civil', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')])
+    await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
+
+
 async def _pedir_encuesta_fuente(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE
     texto = (
@@ -506,6 +520,7 @@ ETIQUETAS_CAMPOS = {
     'procedencia': 'Lugar de nacimiento',
     'tel_movil': 'Teléfono móvil',
     'correo': 'Correo electrónico',
+    'edo_civil': 'Estado civil',
     'emergencia': 'Contacto de emergencia (Nombre, Parentesco, Teléfono)',
     'encuesta': 'Medio de reclutamiento y Reclutador',
 }
@@ -557,6 +572,7 @@ async def mostrar_pantalla_confirmacion(update: Update, sesion: SesionRegistro) 
 
     tel = d.get('tel_movil') or 'Sin dato'
     correo = d.get('correo') or 'Sin dato'
+    edo_civil = d.get('edo_civil') or 'Sin dato'
     nom_eme = d.get('nom_eme1') or 'Sin dato'
     par_eme = d.get('par_eme1') or 'Sin parentesco'
     tel_eme = d.get('tel_eme1') or 'Sin teléfono'
@@ -577,6 +593,7 @@ async def mostrar_pantalla_confirmacion(update: Update, sesion: SesionRegistro) 
         f"• **Dirección:** {dir_str}",
         f"• **Teléfono candidato:** {tel}",
         f"• **Correo:** {correo}",
+        f"• **Estado Civil:** {edo_civil}",
         f"• **Contacto de emergencia:** {nom_eme} ({par_eme}) - {tel_eme}",
         f"• **Medio de reclutamiento:** {fuente}",
         f"• **Reclutador asignado:** {rec}",
@@ -608,7 +625,8 @@ async def mostrar_menu_edicion(update: Update, sesion: SesionRegistro) -> None:
         [boton('Fecha de nacimiento', 'reg:edit:fecha_nac'), boton('Sexo / Género', 'reg:edit:genero')],
         [boton('Dirección completa', 'reg:edit:domicilio'), boton('Lugar de nacimiento', 'reg:edit:procedencia')],
         [boton('Teléfono candidato', 'reg:edit:tel_movil'), boton('Correo electrónico', 'reg:edit:correo')],
-        [boton('Contacto emergencia', 'reg:edit:emergencia'), boton('Encuesta / Reclutador', 'reg:edit:encuesta')],
+        [boton('Estado Civil', 'reg:edit:edo_civil'), boton('Contacto emergencia', 'reg:edit:emergencia')],
+        [boton('Encuesta / Reclutador', 'reg:edit:encuesta')],
         [boton('⬅️ Volver a confirmar', 'reg:volver_confirmar')],
     ]
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
@@ -991,6 +1009,17 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
         else:
             sesion.datos['correo'] = ''
             pref = '⏩ Correo electrónico omitido.'
+        await _pedir_edo_civil(update, sesion, prefijo=pref)
+        return True
+
+    # PASO 6.6: ESTADO CIVIL DEL CANDIDATO
+    elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
+        if texto.lower() not in ('omitir', 'no'):
+            sesion.datos['edo_civil'] = texto.strip().upper()
+            pref = f'✅ Estado Civil guardado: {texto}'
+        else:
+            sesion.datos['edo_civil'] = ''
+            pref = '⏩ Estado Civil omitido.'
         await _pedir_encuesta_fuente(update, sesion, prefijo=pref)
         return True
 
@@ -1110,6 +1139,12 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await responder(update, f"Parentesco: {parentesco}\n\nEscribe el **teléfono de contacto** de emergencia para {sesion.datos.get('nom_eme1')}:", reply_markup=teclado)
         return
 
+    if data.startswith('reg:edocivil:'):
+        edo = data.removeprefix('reg:edocivil:')
+        sesion.datos['edo_civil'] = edo
+        await _pedir_encuesta_fuente(update, sesion, prefijo=f'✅ Estado Civil: {edo}')
+        return
+
     if data.startswith('reg:f:'):
         fuente = data.removeprefix('reg:f:')
         sesion.datos['fuente'] = fuente
@@ -1187,7 +1222,10 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await _pedir_tel_candidato(update, sesion, prefijo='⏩ Teléfono de emergencia omitido.')
     elif estado == EstadoRegistro.ESPERANDO_CORREO_CANDIDATO:
         sesion.datos['correo'] = ''
-        await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Correo electrónico omitido.')
+        await _pedir_edo_civil(update, sesion, prefijo='⏩ Correo electrónico omitido.')
+    elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
+        sesion.datos['edo_civil'] = ''
+        await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Estado Civil omitido.')
     elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECLUTADOR:
         sesion.datos['nombre_reclutador'] = ''
         await verificar_faltantes_o_confirmar(update, sesion)
@@ -1219,6 +1257,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
     tel_movil = d.get('tel_movil') or ''
     correo = d.get('correo') or ''
+    edo_civil = d.get('edo_civil') or ''
     nom_eme = d.get('nom_eme1') or ''
     par_eme = d.get('par_eme1') or ''
     tel_eme = d.get('tel_eme1') or ''
@@ -1234,6 +1273,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
         'fecha_nac': fecha_nac,
         'edad': edad,
         'genero': genero,
+        'edo_civil': edo_civil,
         'procedencia': procedencia,
         'calle': calle,
         'num_ext': num_ext,
@@ -1287,6 +1327,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
             f"• **Dirección:** {calle} {num_ext}, Col. {colonia}, CP {cp}, {municipio}, {estado_dir}\n"
             f"• **Teléfono:** {tel_movil or 'Sin dato'}\n"
             f"• **Correo:** {correo or 'Sin dato'}\n"
+            f"• **Estado Civil:** {edo_civil or 'Sin dato'}\n"
             f"• **Contacto de emergencia:** {nom_eme or 'Sin dato'} ({par_eme}) - {tel_eme}\n"
             f"• **Encuesta:** {fuente or 'Sin dato'} | Reclutador: {d.get('nombre_reclutador') or 'Sin asignar'}\n\n"
             "El expediente ha quedado registrado y disponible en el panel administrativo."
