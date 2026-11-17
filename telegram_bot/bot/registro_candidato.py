@@ -856,3 +856,4 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
             f"⚠️ Ocurrió un error al guardar el registro en el sistema: {exc}\n"
             "Tus datos siguen guardados en memoria. Intenta enviar nuevamente el número temporal o escribe /cancelar para descartar."
         )
+
