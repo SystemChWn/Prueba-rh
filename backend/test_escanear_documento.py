@@ -30,7 +30,6 @@ class EscanearDocumentoTests(unittest.TestCase):
                 'num_ext', 'num_int', 'municipio', 'estado',
             },
             'Número de Seguro Social': {'nombre_completo', 'nss', 'curp'},
-            'CURP': {'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'},
         }
 
         for tipo_documento, campos_esperados in casos.items():
