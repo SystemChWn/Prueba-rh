@@ -70,6 +70,20 @@ class RegistroCandidatoTests(unittest.TestCase):
         self.assertTrue(registro_candidato.cancelar_registro(user_id))
         self.assertFalse(registro_candidato.tiene_registro_activo(user_id))
 
+    def test_nuevos_estados_flujo_candidato(self):
+        estados_requeridos = [
+            EstadoRegistro.CONFIRMANDO_DATO_ACTA,
+            EstadoRegistro.CONFIRMANDO_DATO_INE,
+            EstadoRegistro.ESPERANDO_DOC_CURP,
+            EstadoRegistro.CONFIRMANDO_DATO_CURP,
+            EstadoRegistro.CONFIRMANDO_DATO_CSF,
+            EstadoRegistro.CONFIRMANDO_DATO_NSS,
+            EstadoRegistro.ESPERANDO_NACIONALIDAD,
+            EstadoRegistro.ESPERANDO_FOTO_EMPLEADO,
+        ]
+        for estado in estados_requeridos:
+            self.assertIn(estado, EstadoRegistro)
+
 
 if __name__ == '__main__':
     unittest.main()
