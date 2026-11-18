@@ -70,6 +70,24 @@ class RegistroCandidatoTests(unittest.TestCase):
         self.assertTrue(registro_candidato.cancelar_registro(user_id))
         self.assertFalse(registro_candidato.tiene_registro_activo(user_id))
 
+    def test_nacionalidad_y_encuesta_reclutador_filtros(self):
+        # Sesión por defecto incluye nacionalidad Mexicana
+        sesion = SesionRegistro(user_id=123, datos={'curp': 'AAAA000000HDFRRN01'})
+        datos, _ = registro_candidato.ejecutar_validacion_consenso(sesion)
+        self.assertEqual(datos.get('nacionalidad'), 'MEXICANA')
+
+        # Si se asigna otra nacionalidad
+        sesion.datos['nacionalidad'] = 'COLOMBIANA'
+        datos, _ = registro_candidato.ejecutar_validacion_consenso(sesion)
+        self.assertEqual(datos.get('nacionalidad'), 'COLOMBIANA')
+
+    def test_estados_nuevos_definidos(self):
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOC_CURP.value, 'esperando_doc_curp')
+        self.assertEqual(EstadoRegistro.ESPERANDO_NACIONALIDAD.value, 'esperando_nacionalidad')
+        self.assertEqual(EstadoRegistro.ESPERANDO_FOTO_CANDIDATO.value, 'esperando_foto_candidato')
+        self.assertEqual(EstadoRegistro.CONFIRMANDO_DATO_PASO.value, 'confirmando_dato_paso')
+        self.assertEqual(EstadoRegistro.ESPERANDO_CORRECCION_PASO.value, 'esperando_correccion_paso')
+
 
 if __name__ == '__main__':
     unittest.main()

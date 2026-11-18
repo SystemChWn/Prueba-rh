@@ -100,6 +100,7 @@ DOCUMENTOS_ESCANEABLES = {
         'num_ext', 'num_int', 'municipio', 'estado',
     ),
     'Número de Seguro Social': ('nombre_completo', 'nss', 'curp'),
+    'Documento CURP': ('nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'),
 }
 INSTRUCCIONES_CAMPOS_DOCUMENTO = {
     'nombre_completo': (
@@ -163,6 +164,11 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'Analiza este documento del IMSS que contiene el Número de Seguridad Social (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
         'Extrae del titular: nss (11 dígitos), nombre_completo y curp (18 caracteres si aparece). '
         'Si algún dato no es legible, usa null; no inventes datos.'
+    ),
+    'Documento CURP': (
+        'Analiza esta constancia oficial de Clave Única de Registro de Población (CURP) mexicana (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Extrae del titular: curp (18 caracteres en mayúsculas), nombre_completo, sexo (MASCULINO o FEMENINO), '
+        'fecha_nacimiento (YYYY-MM-DD) y lugar_nacimiento. Si algún dato no es legible, usa null; no inventes datos.'
     ),
 }
 MAX_DOCUMENTO_ESCANEABLE_BYTES = 9 * 1024 * 1024

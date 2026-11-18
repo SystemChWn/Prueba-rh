@@ -2,17 +2,20 @@
 
 Aísla el proceso de captura y validación documental por user_id.
 Incluye:
-- Voto por mayoría / consenso entre documentos repetidos (nombre, curp, rfc).
-- Confirmación obligatoria de datos y edición interactiva de cualquier campo.
-- Detección de campos en blanco para que ningún dato quede vacío.
-- Normalización de nombres iniciando por el nombre de pila.
-- Mapeo correcto de sexo en INE (M = Mujer/Femenino, H = Hombre/Masculino).
-- Captura de correo electrónico tras el teléfono móvil.
-- Separación estricta de fuentes de encuesta vs nombres de reclutadores.
+- Preprocesamiento EXIF y extracción estructurada por visión OCR.
+- Confirmación interactiva paso a paso de datos críticos (Nombre, CURP, RFC, NSS)
+  con opción de corregir por texto o volver a tomar la foto.
+- Fallback automático: solicitud de Documento CURP si no se detectó en Acta ni INE.
+- Pregunta de nacionalidad con opción directa «🇲🇽 Mexicana» o especificar otra.
+- Captura de fotografía del candidato (rostro) para expediente digital antes de la encuesta.
+- Encuesta de reclutamiento: selección de reclutador ÚNICAMENTE para Facebook o Reclu CW.
+- Mapeo exacto de sexo (en INE: M = Mujer/Femenino, H = Hombre/Masculino).
+- Validación de campos en blanco y confirmación final completa.
 """
 
 from __future__ import annotations
 
+import base64
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -52,9 +55,12 @@ ESTADOS_CIVILES = ['SOLTERO(A)', 'CASADO(A)', 'DIVORCIADO(A)', 'VIUDO(A)', 'UNI�
 
 class EstadoRegistro(str, Enum):
     ESPERANDO_ACTA = 'esperando_acta'
+    CONFIRMANDO_DATO_PASO = 'confirmando_dato_paso'
+    ESPERANDO_CORRECCION_PASO = 'esperando_correccion_paso'
     ESPERANDO_DOMICILIO = 'esperando_domicilio'
     ESPERANDO_PARENTESCO_DOMICILIO = 'esperando_parentesco_domicilio'
     ESPERANDO_INE = 'esperando_ine'
+    ESPERANDO_DOC_CURP = 'esperando_doc_curp'
     ESPERANDO_CSF = 'esperando_csf'
     ESPERANDO_NSS = 'esperando_nss'
     ESPERANDO_EMERGENCIA_NOMBRE = 'esperando_emergencia_nombre'
@@ -63,6 +69,9 @@ class EstadoRegistro(str, Enum):
     ESPERANDO_TEL_CANDIDATO = 'esperando_tel_candidato'
     ESPERANDO_CORREO_CANDIDATO = 'esperando_correo_candidato'
     ESPERANDO_EDO_CIVIL = 'esperando_edo_civil'
+    ESPERANDO_NACIONALIDAD = 'esperando_nacionalidad'
+    ESPERANDO_OTRA_NACIONALIDAD = 'esperando_otra_nacionalidad'
+    ESPERANDO_FOTO_CANDIDATO = 'esperando_foto_candidato'
     ESPERANDO_ENCUESTA_FUENTE = 'esperando_encuesta_fuente'
     ESPERANDO_ENCUESTA_RECLUTADOR = 'esperando_encuesta_reclutador'
     CONFIRMAR_DATOS = 'confirmar_datos'
@@ -79,6 +88,11 @@ class SesionRegistro:
     reclutadores: list[str] = field(default_factory=list)
     campo_editando: str | None = None
     faltantes_pendientes: list[str] = field(default_factory=list)
+    # Control de confirmación paso a paso de datos críticos
+    cola_confirmacion: list[str] = field(default_factory=list)
+    campo_confirmando: str | None = None
+    siguiente_estado_post_conf: EstadoRegistro = EstadoRegistro.ESPERANDO_DOMICILIO
+    ultimo_doc_para_reintentar: str = 'Acta de Nacimiento'
 
 
 #: Almacenamiento centralizado de sesiones activas de registro por telegram_id
@@ -158,7 +172,6 @@ def ordenar_nombre_natural(nombre_completo: str, nombre_pila: str = '', apellido
     if len(palabras) < 3:
         return nombre_completo.strip()
 
-    # Si empieza por apellido paterno conocido
     if apellido_pat and normalizar_texto(palabras[0]) == normalizar_texto(apellido_pat):
         if apellido_mat and len(palabras) >= 3 and normalizar_texto(palabras[1]) == normalizar_texto(apellido_mat):
             apellidos = palabras[:2]
@@ -290,7 +303,7 @@ async def iniciar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE, r
 
     texto = (
         "✍️ **Generar Registro de Candidato**\n\n"
-        "**Paso 1 de 7 — Acta de Nacimiento**\n"
+        "**Paso 1 — Acta de Nacimiento**\n"
         "📸 Por favor envía la foto o PDF del **Acta de Nacimiento** mexicana.\n\n"
         "Extraeremos automáticamente:\n"
         "• CURP\n"
@@ -303,14 +316,108 @@ async def iniciar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE, r
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
 
+# --- VALIDACIÓN INMEDIATA PASO A PASO (NOMBRE, CURP, RFC, NSS) ---
+
+ETIQUETAS_CAMPOS = {
+    'nombre_completo': 'Nombre completo',
+    'curp': 'CURP',
+    'rfc': 'RFC',
+    'nss': 'Número de Seguro Social (NSS)',
+    'fecha_nac': 'Fecha de nacimiento (AAAA-MM-DD)',
+    'domicilio': 'Dirección (Calle, Número, Colonia, CP, Municipio, Estado)',
+    'genero': 'Sexo / Género (MASCULINO / FEMENINO)',
+    'procedencia': 'Lugar de nacimiento',
+    'nacionalidad': 'Nacionalidad',
+    'tel_movil': 'Teléfono móvil',
+    'correo': 'Correo electrónico',
+    'edo_civil': 'Estado civil',
+    'emergencia': 'Contacto de emergencia (Nombre, Parentesco, Teléfono)',
+    'encuesta': 'Medio de reclutamiento y Reclutador',
+}
+
+
+async def iniciar_confirmacion_critica(
+    update: Update,
+    sesion: SesionRegistro,
+    campos: list[str],
+    siguiente_estado: EstadoRegistro,
+    doc_origen: str,
+    prefijo: str = '',
+) -> None:
+    """Inicia la validación inmediata para cada dato crítico extraído."""
+    sesion.cola_confirmacion = [c for c in campos if sesion.datos.get(c)]
+    sesion.siguiente_estado_post_conf = siguiente_estado
+    sesion.ultimo_doc_para_reintentar = doc_origen
+    await avanzar_confirmacion_critica(update, sesion, prefijo=prefijo)
+
+
+async def avanzar_confirmacion_critica(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    """Pide confirmación para el siguiente dato crítico en cola o continúa el flujo."""
+    if not sesion.cola_confirmacion:
+        sesion.campo_confirmando = None
+        sig = sesion.siguiente_estado_post_conf
+        await ir_al_estado(update, sesion, sig, prefijo=prefijo)
+        return
+
+    campo = sesion.cola_confirmacion.pop(0)
+    sesion.campo_confirmando = campo
+    sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
+
+    etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
+    valor = sesion.datos.get(campo) or 'Sin dato'
+
+    partes = []
+    if prefijo:
+        partes.append(prefijo)
+    partes.append(f"🔍 **Confirmación de dato extraído:**\n")
+    partes.append(f"• **{etiqueta}:** `{valor}`\n")
+    partes.append(f"¿Este dato es correcto?")
+
+    teclado = InlineKeyboardMarkup([
+        [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+        [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+        [boton('❌ Cancelar', 'reg:cancelar')],
+    ])
+    await responder(update, '\n'.join(partes), reply_markup=teclado)
+
+
+async def ir_al_estado(update: Update, sesion: SesionRegistro, estado: EstadoRegistro, prefijo: str = '') -> None:
+    if estado == EstadoRegistro.ESPERANDO_DOMICILIO:
+        await _pedir_domicilio(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_INE:
+        await _pedir_ine(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+        await _pedir_doc_curp(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_CSF:
+        await _pedir_csf(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_NSS:
+        await _pedir_nss(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE:
+        await _pedir_emergencia_nombre(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_TEL_CANDIDATO:
+        await _pedir_tel_candidato(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_CORREO_CANDIDATO:
+        await _pedir_correo_candidato(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
+        await _pedir_edo_civil(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_NACIONALIDAD:
+        await _pedir_nacionalidad(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
+        await _pedir_foto_candidato(update, sesion, prefijo=prefijo)
+    elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE:
+        await _pedir_encuesta_fuente(update, sesion, prefijo=prefijo)
+    else:
+        await verificar_faltantes_o_confirmar(update, sesion)
+
+
 async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 2 de 7 — Comprobante de Domicilio**\n"
+        "**Paso 2 — Comprobante de Domicilio**\n"
         "📸 Envía la foto o PDF del **Comprobante de Domicilio** (CFE, agua, teléfono, etc.).\n\n"
         "Extraeremos el titular del recibo y la dirección completa."
-    )
+    ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
 
@@ -318,7 +425,7 @@ async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_INE
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 3 de 7 — Credencial de Elector (INE / IFE)**\n"
+        "**Paso 3 — Credencial de Elector (INE / IFE)**\n"
         "📸 Envía la foto o PDF de la **INE** del candidato.\n\n"
         "Se capturarán y validarán:\n"
         "• Nombre completo (se reordena iniciando por nombre)\n"
@@ -326,18 +433,33 @@ async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') 
         "• Domicilio oficial\n"
         "• CURP\n"
         "• Fecha de nacimiento"
-    )
+    ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
+
+
+async def _pedir_doc_curp(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    sesion.estado = EstadoRegistro.ESPERANDO_DOC_CURP
+    texto = (
+        f"{prefijo}\n\n"
+        "📄 **Constancia de CURP requerida**\n"
+        "No detectamos la clave CURP en el Acta de Nacimiento ni en la INE.\n\n"
+        "📸 Por favor envía la foto o PDF del **Documento oficial de la CURP**, "
+        "o escríbela directamente por texto (18 caracteres):"
+    ).strip()
+    teclado = InlineKeyboardMarkup([
+        [boton('⏩ Omitir por ahora', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+    ])
+    await responder(update, texto, reply_markup=teclado)
 
 
 async def _pedir_csf(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_CSF
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 4 de 7 — Constancia de Situación Fiscal (SAT)**\n"
+        "**Paso 4 — Constancia de Situación Fiscal (SAT)**\n"
         "📸 Envía la foto o PDF de la **Constancia Fiscal**.\n\n"
         "Se capturarán RFC, CURP y Nombre del contribuyente."
-    )
+    ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
 
@@ -345,10 +467,10 @@ async def _pedir_nss(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_NSS
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 5 de 7 — Número de Seguro Social (IMSS)**\n"
+        "**Paso 5 — Número de Seguro Social (IMSS)**\n"
         "📸 Envía la foto o PDF del documento con el **NSS**.\n\n"
         "Se capturarán NSS (11 dígitos), Nombre y CURP."
-    )
+    ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
 
@@ -356,9 +478,9 @@ async def _pedir_emergencia_nombre(update: Update, sesion: SesionRegistro, prefi
     sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 6 de 7 — Contacto de Emergencia**\n"
+        "**Paso 6 — Contacto de Emergencia**\n"
         "🚨 Escribe el **Nombre completo** de la persona para contactar en caso de emergencia:"
-    )
+    ).strip()
     teclado = InlineKeyboardMarkup([[boton('⏩ Omitir contacto', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
     await responder(update, texto, reply_markup=teclado)
 
@@ -368,7 +490,7 @@ async def _pedir_tel_candidato(update: Update, sesion: SesionRegistro, prefijo: 
     texto = (
         f"{prefijo}\n\n"
         "📱 Escribe el **Teléfono móvil** del candidato (10 dígitos):"
-    )
+    ).strip()
     teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
     await responder(update, texto, reply_markup=teclado)
 
@@ -378,7 +500,7 @@ async def _pedir_correo_candidato(update: Update, sesion: SesionRegistro, prefij
     texto = (
         f"{prefijo}\n\n"
         "📧 Escribe el **Correo electrónico** del candidato (o pulsa «Omitir»):"
-    )
+    ).strip()
     teclado = InlineKeyboardMarkup([[boton('⏩ Omitir correo', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
     await responder(update, texto, reply_markup=teclado)
 
@@ -389,20 +511,49 @@ async def _pedir_edo_civil(update: Update, sesion: SesionRegistro, prefijo: str 
         f"{prefijo}\n\n"
         "💍 Selecciona el **Estado Civil** del candidato:\n"
         "Elige una opción con los botones o escríbelo:"
-    )
+    ).strip()
     filas = [[boton(opc, f'reg:edocivil:{opc}')] for opc in ESTADOS_CIVILES]
     filas.append([boton('⏩ Omitir estado civil', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')])
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
+
+
+async def _pedir_nacionalidad(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    sesion.estado = EstadoRegistro.ESPERANDO_NACIONALIDAD
+    texto = (
+        f"{prefijo}\n\n"
+        "🌎 ¿Cuál es la **Nacionalidad** del candidato?"
+    ).strip()
+    teclado = InlineKeyboardMarkup([
+        [boton('🇲🇽 Mexicana', 'reg:nac:MEXICANA')],
+        [boton('✏️ Otra nacionalidad', 'reg:nac:otra')],
+        [boton('❌ Cancelar', 'reg:cancelar')],
+    ])
+    await responder(update, texto, reply_markup=teclado)
+
+
+async def _pedir_foto_candidato(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    sesion.estado = EstadoRegistro.ESPERANDO_FOTO_CANDIDATO
+    texto = (
+        f"{prefijo}\n\n"
+        "📸 **Fotografía para Expediente Digital**\n"
+        "Por favor toma o envía una fotografía del empleado/candidato (rostro de frente) "
+        "para adjuntarla a su expediente digital.\n\n"
+        "*(Pulsa «Omitir foto» si no la tienes en este momento)*"
+    ).strip()
+    teclado = InlineKeyboardMarkup([
+        [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
+    ])
+    await responder(update, texto, reply_markup=teclado)
 
 
 async def _pedir_encuesta_fuente(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 7 de 7 — Encuesta de Reclutamiento**\n"
+        "**Encuesta de Reclutamiento**\n"
         "📊 ¿Por qué medio nos conoció el candidato?\n"
         "Elige una opción con los botones o escribe el medio:"
-    )
+    ).strip()
     filas = [[boton(f, f'reg:f:{f}')] for f in FUENTES_REGISTRO]
     filas.append([boton('❌ Cancelar', 'reg:cancelar')])
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
@@ -414,17 +565,17 @@ async def _pedir_encuesta_reclutador(update: Update, sesion: SesionRegistro, pre
         f"{prefijo}\n\n"
         "👤 ¿Quién es el **Reclutador** asignado?\n"
         "Elige de la lista o escribe el nombre del reclutador:"
-    )
+    ).strip()
     filas = [[boton(r, f'reg:rec:{r[:25]}')] for r in sesion.reclutadores[:8]]
     filas.append([boton('⏩ Sin reclutador / Omitir', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')])
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
 
 
-# --- RESOLUCIÓN DE CONSENSO Y VERIFICACIÓN DE FALTANTES ---
+# --- RESOLUCIÓN Y VERIFICACIÓN DE FALTANTES ---
 
 def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str], list[str]]:
     """
-    Aplica voto por mayoría entre los documentos para nombre, curp, rfc, nss, sexo, fecha_nac.
+    Consolida datos entre documentos para nombre, curp, rfc, nss, sexo, fecha_nac.
     Devuelve (datos_resueltos, mensajes_consenso).
     """
     d = sesion.datos
@@ -432,6 +583,7 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
 
     # 1. CURP
     curps = [
+        d.get('curp_doc', {}).get('curp'),
         d.get('acta', {}).get('curp'),
         d.get('ine', {}).get('curp'),
         d.get('csf', {}).get('curp'),
@@ -440,8 +592,6 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
     curp_win, hay_disc_curp, vars_curp = resolver_por_mayoria(curps)
     if curp_win:
         d['curp'] = curp_win
-        if hay_disc_curp:
-            avisos.append(f"• **CURP:** Se detectaron variantes ({', '.join(vars_curp)}). Se asignó por mayoría: `{curp_win}`")
 
     # 2. NOMBRE COMPLETO (Acomodado iniciando por el nombre)
     nom_acta = d.get('acta', {}).get('nombre_completo')
@@ -449,22 +599,22 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
     ap_pat = d.get('acta', {}).get('primer_apellido', '')
     ap_mat = d.get('acta', {}).get('segundo_apellido', '')
 
+    nom_curp = ordenar_nombre_natural(d.get('curp_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
     nom_ine = ordenar_nombre_natural(d.get('ine', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
     nom_csf = ordenar_nombre_natural(d.get('csf', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
     nom_nss = ordenar_nombre_natural(d.get('nss_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
     nom_acta_nat = ordenar_nombre_natural(nom_acta, nom_pila, ap_pat, ap_mat) if nom_acta else ''
 
-    nombres = [nom_acta_nat, nom_ine, nom_csf, nom_nss]
-    nom_win, hay_disc_nom, vars_nom = resolver_por_mayoria(nombres)
+    nombres = [nom_acta_nat, nom_curp, nom_ine, nom_csf, nom_nss]
+    nom_win, _, _ = resolver_por_mayoria(nombres)
     if nom_win:
         d['nombre_completo'] = nom_win
-        if hay_disc_nom:
-            avisos.append(f"• **Nombre:** Se detectaron variantes ({', '.join(vars_nom)}). Se asignó por mayoría: `{nom_win}`")
 
     # 3. SEXO
     sex_acta = d.get('acta', {}).get('sexo')
+    sex_curp = d.get('curp_doc', {}).get('sexo')
     sex_ine = d.get('ine', {}).get('sexo')
-    sexos = [sex_acta, sex_ine]
+    sexos = [sex_acta, sex_curp, sex_ine]
     sex_win, _, _ = resolver_por_mayoria(sexos)
     if sex_win:
         d['genero'] = sex_win
@@ -472,8 +622,9 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
 
     # 4. FECHA DE NACIMIENTO
     fn_acta = d.get('acta', {}).get('fecha_nac')
+    fn_curp = d.get('curp_doc', {}).get('fecha_nac')
     fn_ine = d.get('ine', {}).get('fecha_nac')
-    fn_win, _, _ = resolver_por_mayoria([fn_acta, fn_ine])
+    fn_win, _, _ = resolver_por_mayoria([fn_acta, fn_curp, fn_ine])
     if fn_win:
         d['fecha_nac'] = fn_win
 
@@ -486,6 +637,10 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
     nss_doc = d.get('nss_doc', {}).get('nss')
     if nss_doc:
         d['nss'] = nss_doc
+
+    # Nacionalidad por defecto Mexicana si no está establecida
+    if not d.get('nacionalidad'):
+        d['nacionalidad'] = 'MEXICANA'
 
     return d, avisos
 
@@ -507,23 +662,6 @@ def obtener_campos_en_blanco(sesion: SesionRegistro) -> list[str]:
     if not d.get('calle') and not d.get('colonia') and not d.get('cp'):
         faltantes.append('domicilio')
     return faltantes
-
-
-ETIQUETAS_CAMPOS = {
-    'nombre_completo': 'Nombre completo',
-    'curp': 'CURP',
-    'rfc': 'RFC',
-    'nss': 'NSS',
-    'fecha_nac': 'Fecha de nacimiento (AAAA-MM-DD)',
-    'domicilio': 'Dirección (Calle, Número, Colonia, CP, Municipio, Estado)',
-    'genero': 'Sexo / Género (MASCULINO / FEMENINO)',
-    'procedencia': 'Lugar de nacimiento',
-    'tel_movil': 'Teléfono móvil',
-    'correo': 'Correo electrónico',
-    'edo_civil': 'Estado civil',
-    'emergencia': 'Contacto de emergencia (Nombre, Parentesco, Teléfono)',
-    'encuesta': 'Medio de reclutamiento y Reclutador',
-}
 
 
 async def verificar_faltantes_o_confirmar(update: Update, sesion: SesionRegistro) -> None:
@@ -560,6 +698,7 @@ async def mostrar_pantalla_confirmacion(update: Update, sesion: SesionRegistro) 
     edad_str = f" ({edad} años)" if edad else ""
     sexo = d.get('genero') or d.get('sexo') or 'Sin dato'
     lugar = d.get('procedencia') or 'Sin dato'
+    nacionalidad = d.get('nacionalidad') or 'MEXICANA'
 
     calle = d.get('calle') or ''
     num_ext = d.get('num_ext') or ''
@@ -576,6 +715,7 @@ async def mostrar_pantalla_confirmacion(update: Update, sesion: SesionRegistro) 
     nom_eme = d.get('nom_eme1') or 'Sin dato'
     par_eme = d.get('par_eme1') or 'Sin parentesco'
     tel_eme = d.get('tel_eme1') or 'Sin teléfono'
+    foto_estado = "Adjunta ✅" if d.get('fotografia_base64') else "No proporcionada"
 
     fuente = d.get('fuente') or 'Sin dato'
     rec = d.get('nombre_reclutador') or 'Sin asignar'
@@ -590,19 +730,16 @@ async def mostrar_pantalla_confirmacion(update: Update, sesion: SesionRegistro) 
         f"• **Fecha nac.:** {fecha_nac}{edad_str}",
         f"• **Sexo:** {sexo}",
         f"• **Lugar nac.:** {lugar}",
+        f"• **Nacionalidad:** {nacionalidad}",
         f"• **Dirección:** {dir_str}",
         f"• **Teléfono candidato:** {tel}",
         f"• **Correo:** {correo}",
         f"• **Estado Civil:** {edo_civil}",
         f"• **Contacto de emergencia:** {nom_eme} ({par_eme}) - {tel_eme}",
+        f"• **Fotografía de expediente:** {foto_estado}",
         f"• **Medio de reclutamiento:** {fuente}",
         f"• **Reclutador asignado:** {rec}",
     ]
-
-    if avisos:
-        lineas_resumen.append("")
-        lineas_resumen.append("ℹ️ **Resolución por consenso:**")
-        lineas_resumen.extend(avisos)
 
     lineas_resumen.append("")
     lineas_resumen.append("¿Todos estos datos son correctos?")
@@ -624,15 +761,15 @@ async def mostrar_menu_edicion(update: Update, sesion: SesionRegistro) -> None:
         [boton('RFC', 'reg:edit:rfc'), boton('NSS', 'reg:edit:nss')],
         [boton('Fecha de nacimiento', 'reg:edit:fecha_nac'), boton('Sexo / Género', 'reg:edit:genero')],
         [boton('Dirección completa', 'reg:edit:domicilio'), boton('Lugar de nacimiento', 'reg:edit:procedencia')],
-        [boton('Teléfono candidato', 'reg:edit:tel_movil'), boton('Correo electrónico', 'reg:edit:correo')],
-        [boton('Estado Civil', 'reg:edit:edo_civil'), boton('Contacto emergencia', 'reg:edit:emergencia')],
-        [boton('Encuesta / Reclutador', 'reg:edit:encuesta')],
+        [boton('Nacionalidad', 'reg:edit:nacionalidad'), boton('Teléfono candidato', 'reg:edit:tel_movil')],
+        [boton('Correo electrónico', 'reg:edit:correo'), boton('Estado Civil', 'reg:edit:edo_civil')],
+        [boton('Contacto emergencia', 'reg:edit:emergencia'), boton('Encuesta / Reclutador', 'reg:edit:encuesta')],
         [boton('⬅️ Volver a confirmar', 'reg:volver_confirmar')],
     ]
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
 
 
-# --- MANEJADOR DE ARCHIVOS (OCR) ---
+# --- MANEJADOR DE ARCHIVOS (OCR Y FOTOGRAFÍA) ---
 
 async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     user_id = update.effective_user.id
@@ -667,6 +804,58 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     archivo = Archivo(campo='archivo', nombre=nombre, contenido=contenido, mime=mime)
 
     estado = sesion.estado
+
+    # FOTO DEL CANDIDATO (EXPEDIENTE DIGITAL)
+    if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
+        b64_foto = f"data:image/jpeg;base64,{base64.b64encode(contenido).decode('ascii')}"
+        sesion.datos['fotografia_base64'] = b64_foto
+        prefijo = "✅ **Fotografía del candidato guardada para su expediente digital.**"
+        await _pedir_encuesta_fuente(update, sesion, prefijo=prefijo)
+        return True
+
+    # REINTENTO POR FOTO TRAS RECHAZAR UN DATO
+    if estado in (EstadoRegistro.CONFIRMANDO_DATO_PASO, EstadoRegistro.ESPERANDO_CORRECCION_PASO):
+        doc_tipo = sesion.ultimo_doc_para_reintentar or 'Acta de Nacimiento'
+        await responder(update, f'🔍 Analizando nuevamente {doc_tipo}…')
+        try:
+            leidos = await _escanear_en_backend(context, user_id, doc_tipo, archivo)
+            if not leidos or not any(leidos.values()):
+                raise ValueError(f'No se detectaron campos legibles en {doc_tipo}.')
+        except Exception as exc:
+            await responder(
+                update,
+                f'⚠️ No se pudo leer claramente {doc_tipo}.\n'
+                'Puedes escribir el dato por texto o intentar con otra foto:',
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('✏️ Escribir dato', 'reg:conf_paso_corregir'), boton('❌ Cancelar', 'reg:cancelar')]
+                ])
+            )
+            return True
+
+        campo = sesion.campo_confirmando
+        if campo and leidos.get(campo):
+            val_nuevo = str(leidos.get(campo)).strip()
+            if campo == 'nombre_completo':
+                val_nuevo = ordenar_nombre_natural(val_nuevo)
+            elif campo == 'curp':
+                val_nuevo = val_nuevo.upper()
+            elif campo == 'rfc':
+                val_nuevo = val_nuevo.upper()
+            sesion.datos[campo] = val_nuevo
+            sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
+            etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
+            texto = (
+                f"✅ **Dato detectado nuevamente:**\n"
+                f"• **{etiqueta}:** `{val_nuevo}`\n\n"
+                f"¿Este dato es correcto ahora?"
+            )
+            teclado = InlineKeyboardMarkup([
+                [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+                [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                [boton('❌ Cancelar', 'reg:cancelar')],
+            ])
+            await responder(update, texto, reply_markup=teclado)
+            return True
 
     # PASO 1: ACTA DE NACIMIENTO
     if estado == EstadoRegistro.ESPERANDO_ACTA:
@@ -706,22 +895,43 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             'fecha_nac': fecha_nac,
             'lugar_nacimiento': lugar_nac,
         }
-        sesion.datos['nombre_completo'] = nombre_nat
-        sesion.datos['curp'] = curp
-        sesion.datos['sexo'] = sexo
-        sesion.datos['genero'] = sexo
-        sesion.datos['fecha_nac'] = fecha_nac
-        sesion.datos['procedencia'] = lugar_nac
+        if nombre_nat:
+            sesion.datos['nombre_completo'] = nombre_nat
+        if curp:
+            sesion.datos['curp'] = curp
+        if sexo:
+            sesion.datos['sexo'] = sexo
+            sesion.datos['genero'] = sexo
+        if fecha_nac:
+            sesion.datos['fecha_nac'] = fecha_nac
+        if lugar_nac:
+            sesion.datos['procedencia'] = lugar_nac
 
         resumen = (
-            "✅ **Acta de Nacimiento analizada con éxito:**\n"
+            "✅ **Acta de Nacimiento leída:**\n"
             f"• **Nombre:** {nombre_nat or 'No legible'}\n"
             f"• **CURP:** {curp or 'No legible'}\n"
             f"• **Sexo:** {sexo or 'No legible'}\n"
             f"• **Fecha nac.:** {fecha_nac or 'No legible'}\n"
             f"• **Lugar nac.:** {lugar_nac or 'No legible'}"
         )
-        await _pedir_domicilio(update, sesion, prefijo=resumen)
+
+        # Campos críticos a confirmar inmediatamente
+        criticos = []
+        if nombre_nat:
+            criticos.append('nombre_completo')
+        if curp:
+            criticos.append('curp')
+
+        if criticos:
+            await iniciar_confirmacion_critica(
+                update, sesion, criticos,
+                siguiente_estado=EstadoRegistro.ESPERANDO_DOMICILIO,
+                doc_origen='Acta de Nacimiento',
+                prefijo=resumen
+            )
+        else:
+            await _pedir_domicilio(update, sesion, prefijo=resumen)
         return True
 
     # PASO 2: COMPROBANTE DE DOMICILIO
@@ -819,7 +1029,6 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return True
 
         ine_nom_raw = str(leidos.get('nombre_completo') or '').strip()
-        # Normalizar INE: acomodar iniciando por el nombre
         ine_nom = ordenar_nombre_natural(
             ine_nom_raw,
             sesion.datos.get('acta', {}).get('nombre', ''),
@@ -827,12 +1036,20 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             sesion.datos.get('acta', {}).get('segundo_apellido', '')
         )
         ine_curp = str(leidos.get('curp') or '').strip().upper()
-        # Sexo en INE: 'M' es Mujer/Femenino, 'H' es Hombre/Masculino
         ine_sexo = normalizar_sexo(leidos.get('sexo') or leidos.get('genero'), es_ine=True)
         ine_fn = str(leidos.get('fecha_nac') or leidos.get('fecha_nacimiento') or '').strip()
         ine_dom = str(leidos.get('domicilio') or '').strip()
 
         sesion.datos['ine'] = {'nombre_completo': ine_nom, 'curp': ine_curp, 'sexo': ine_sexo, 'fecha_nac': ine_fn, 'domicilio': ine_dom}
+        if ine_nom and not sesion.datos.get('nombre_completo'):
+            sesion.datos['nombre_completo'] = ine_nom
+        if ine_curp and not sesion.datos.get('curp'):
+            sesion.datos['curp'] = ine_curp
+        if ine_sexo and not sesion.datos.get('genero'):
+            sesion.datos['genero'] = ine_sexo
+            sesion.datos['sexo'] = ine_sexo
+        if ine_fn and not sesion.datos.get('fecha_nac'):
+            sesion.datos['fecha_nac'] = ine_fn
 
         lineas = ['✅ **INE analizada con éxito:**']
         if ine_nom:
@@ -846,7 +1063,79 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if ine_dom:
             lineas.append(f'• **Domicilio INE:** {ine_dom}')
 
-        await _pedir_csf(update, sesion, prefijo='\n'.join(lineas))
+        resumen = '\n'.join(lineas)
+
+        # Determinar siguiente paso: si aún no hay CURP, pedir documento de CURP
+        tiene_curp = bool(sesion.datos.get('curp') or ine_curp or sesion.datos.get('acta', {}).get('curp'))
+        siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
+
+        criticos = []
+        if ine_nom:
+            criticos.append('nombre_completo')
+        if ine_curp:
+            criticos.append('curp')
+
+        if criticos:
+            await iniciar_confirmacion_critica(
+                update, sesion, criticos,
+                siguiente_estado=siguiente,
+                doc_origen='INE',
+                prefijo=resumen
+            )
+        else:
+            await ir_al_estado(update, sesion, siguiente, prefijo=resumen)
+        return True
+
+    # PASO FALLBACK: DOCUMENTO DE CURP
+    elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+        await responder(update, '🔍 Analizando Documento de CURP…')
+        try:
+            leidos = await _escanear_en_backend(context, user_id, 'Documento CURP', archivo)
+            if not leidos or not any(leidos.values()):
+                raise ValueError('No se detectaron campos legibles en el documento de CURP.')
+        except Exception as exc:
+            logger.warning('Falla en escaneo de CURP: %s', exc)
+            await responder(
+                update,
+                '⚠️ No pude leer con claridad la constancia de CURP.\n'
+                'Por favor envía una foto más nítida o escribe la CURP directamente por texto:',
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('⏩ Omitir', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+                ])
+            )
+            return True
+
+        curp_extraida = str(leidos.get('curp') or '').strip().upper()
+        nom_curp = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
+        sex_curp = normalizar_sexo(leidos.get('genero') or leidos.get('sexo'))
+        fn_curp = str(leidos.get('fecha_nac') or '').strip()
+
+        sesion.datos['curp_doc'] = {
+            'curp': curp_extraida,
+            'nombre_completo': nom_curp,
+            'sexo': sex_curp,
+            'fecha_nac': fn_curp,
+        }
+        if curp_extraida:
+            sesion.datos['curp'] = curp_extraida
+        if nom_curp and not sesion.datos.get('nombre_completo'):
+            sesion.datos['nombre_completo'] = nom_curp
+
+        resumen = (
+            "✅ **Documento de CURP analizado:**\n"
+            f"• **CURP:** {curp_extraida or 'No legible'}\n"
+            f"• **Nombre:** {nom_curp or 'No especificado'}"
+        )
+
+        if curp_extraida:
+            await iniciar_confirmacion_critica(
+                update, sesion, ['curp'],
+                siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
+                doc_origen='Documento CURP',
+                prefijo=resumen
+            )
+        else:
+            await _pedir_csf(update, sesion, prefijo=resumen)
         return True
 
     # PASO 4: CSF
@@ -870,7 +1159,10 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         csf_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
 
         sesion.datos['csf'] = {'rfc': rfc, 'curp': csf_curp, 'nombre_completo': csf_nom}
-        sesion.datos['rfc'] = rfc
+        if rfc:
+            sesion.datos['rfc'] = rfc
+        if csf_curp and not sesion.datos.get('curp'):
+            sesion.datos['curp'] = csf_curp
 
         lineas = ['✅ **Constancia de Situación Fiscal analizada:**']
         if rfc:
@@ -880,7 +1172,18 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if csf_nom:
             lineas.append(f'• **Nombre:** {csf_nom}')
 
-        await _pedir_nss(update, sesion, prefijo='\n'.join(lineas))
+        resumen = '\n'.join(lineas)
+        criticos = ['rfc'] if rfc else []
+
+        if criticos:
+            await iniciar_confirmacion_critica(
+                update, sesion, criticos,
+                siguiente_estado=EstadoRegistro.ESPERANDO_NSS,
+                doc_origen='Constancia de Situación Fiscal',
+                prefijo=resumen
+            )
+        else:
+            await _pedir_nss(update, sesion, prefijo=resumen)
         return True
 
     # PASO 5: NSS
@@ -904,7 +1207,10 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         nss_curp = str(leidos.get('curp') or '').strip().upper()
 
         sesion.datos['nss_doc'] = {'nss': nss, 'nombre_completo': nss_nom, 'curp': nss_curp}
-        sesion.datos['nss'] = nss
+        if nss:
+            sesion.datos['nss'] = nss
+        if nss_curp and not sesion.datos.get('curp'):
+            sesion.datos['curp'] = nss_curp
 
         lineas = ['✅ **Número de Seguro Social analizado:**']
         if nss:
@@ -912,14 +1218,25 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if nss_nom:
             lineas.append(f'• **Nombre:** {nss_nom}')
 
-        await _pedir_emergencia_nombre(update, sesion, prefijo='\n'.join(lineas))
+        resumen = '\n'.join(lineas)
+        criticos = ['nss'] if nss else []
+
+        if criticos:
+            await iniciar_confirmacion_critica(
+                update, sesion, criticos,
+                siguiente_estado=EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE,
+                doc_origen='Número de Seguro Social',
+                prefijo=resumen
+            )
+        else:
+            await _pedir_emergencia_nombre(update, sesion, prefijo=resumen)
         return True
 
     else:
         await responder(
             update,
-            'En este paso se espera una respuesta en texto, no una imagen. '
-            'Por favor escribe tu respuesta o presiona «Cancelar» para descartar.'
+            'En este paso se espera una respuesta en texto o pulsar un botón. '
+            'Por favor responde según lo solicitado o presiona «Cancelar» para descartar.'
         )
         return True
 
@@ -940,6 +1257,62 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
         return True
 
     estado = sesion.estado
+
+    # CORRECCIÓN EN TEXTO DE DATO CRÍTICO (PASO A PASO)
+    if estado == EstadoRegistro.ESPERANDO_CORRECCION_PASO:
+        campo = sesion.campo_confirmando
+        if campo:
+            val_limpio = texto.strip()
+            if campo == 'nombre_completo':
+                val_limpio = ordenar_nombre_natural(val_limpio)
+            elif campo in ('curp', 'rfc'):
+                val_limpio = val_limpio.upper()
+            sesion.datos[campo] = val_limpio
+            sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
+            etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
+            texto_conf = (
+                f"✅ **Dato corregido:**\n"
+                f"• **{etiqueta}:** `{val_limpio}`\n\n"
+                f"¿Este dato ya está correcto?"
+            )
+            teclado = InlineKeyboardMarkup([
+                [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+                [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                [boton('❌ Cancelar', 'reg:cancelar')],
+            ])
+            await responder(update, texto_conf, reply_markup=teclado)
+            return True
+
+    # CAPTURA DE CURP POR TEXTO SI ESTABA EN ESPERANDO_DOC_CURP
+    if estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+        if texto.lower() in ('omitir', '/omitir', 'no tengo'):
+            await procesar_omision(update, context, sesion)
+            return True
+        curp_text = texto.strip().upper()
+        sesion.datos['curp'] = curp_text
+        await iniciar_confirmacion_critica(
+            update, sesion, ['curp'],
+            siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
+            doc_origen='Documento CURP',
+            prefijo=f"✅ CURP ingresada: `{curp_text}`"
+        )
+        return True
+
+    # FOTO DE CANDIDATO OMITIDA POR TEXTO
+    if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
+        if texto.lower() in ('omitir', '/omitir', 'no', 'no tengo'):
+            sesion.datos['fotografia_base64'] = None
+            await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Fotografía para expediente omitida.')
+            return True
+        await responder(
+            update,
+            "📸 Para la foto del candidato envía una imagen con la cámara de tu celular o selecciona una foto de tu galería, "
+            "o pulsa «Omitir foto» si no la tienes en este momento.",
+            reply_markup=InlineKeyboardMarkup([
+                [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
+            ])
+        )
+        return True
 
     # Si está esperando una foto pero manda texto:
     if estado in (EstadoRegistro.ESPERANDO_ACTA, EstadoRegistro.ESPERANDO_DOMICILIO,
@@ -1020,10 +1393,17 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
         else:
             sesion.datos['edo_civil'] = ''
             pref = '⏩ Estado Civil omitido.'
-        await _pedir_encuesta_fuente(update, sesion, prefijo=pref)
+        await _pedir_nacionalidad(update, sesion, prefijo=pref)
         return True
 
-    # PASO 7.1: ENCUESTA FUENTE (Comprobación estricta para no mezclar reclutadores)
+    # PASO 6.7: OTRA NACIONALIDAD
+    elif estado == EstadoRegistro.ESPERANDO_OTRA_NACIONALIDAD:
+        nac = texto.strip().upper() or 'MEXICANA'
+        sesion.datos['nacionalidad'] = nac
+        await _pedir_foto_candidato(update, sesion, prefijo=f'✅ Nacionalidad registrada: {nac}')
+        return True
+
+    # PASO 7.1: ENCUESTA FUENTE
     elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE:
         # Verificar si escribió un reclutador por error
         if any(cadenas_coinciden(texto, r) for r in sesion.reclutadores):
@@ -1034,8 +1414,15 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
                 reply_markup=InlineKeyboardMarkup([[boton(f, f'reg:f:{f}')] for f in FUENTES_REGISTRO] + [[boton('❌ Cancelar', 'reg:cancelar')]])
             )
             return True
+
         sesion.datos['fuente'] = texto
-        await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio de reclutamiento: {texto}')
+        fuente_norm = normalizar_texto(texto)
+        # Solo Facebook o Reclu CW requieren seleccionar reclutador
+        if fuente_norm in ('facebook', 'reclu cw', 'reclutamiento cheong woon', 'cheong woon'):
+            await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio de reclutamiento: {texto}')
+        else:
+            sesion.datos['nombre_reclutador'] = ''
+            await verificar_faltantes_o_confirmar(update, sesion)
         return True
 
     # PASO 7.2: ENCUESTA RECLUTADOR
@@ -1053,6 +1440,8 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
                     sesion.datos['nombre_completo'] = ordenar_nombre_natural(texto)
                 elif campo == 'domicilio':
                     sesion.datos['calle'] = texto
+                elif campo in ('curp', 'rfc'):
+                    sesion.datos[campo] = texto.strip().upper()
                 else:
                     sesion.datos[campo] = texto
 
@@ -1080,6 +1469,8 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
                 sesion.datos['nom_eme1'] = texto
             elif campo == 'encuesta':
                 sesion.datos['fuente'] = texto
+            elif campo in ('curp', 'rfc'):
+                sesion.datos[campo] = texto.strip().upper()
             else:
                 sesion.datos[campo] = texto
             sesion.campo_editando = None
@@ -1115,6 +1506,45 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await consulta.edit_message_text('✖️ Registro de candidato cancelado.')
         return
 
+    # Omitir foto del candidato
+    if data == 'reg:omitir_foto':
+        sesion.datos['fotografia_base64'] = None
+        await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Fotografía para expediente omitida.')
+        return
+
+    # Confirmación paso a paso de datos críticos
+    if data == 'reg:conf_paso_ok':
+        await avanzar_confirmacion_critica(update, sesion)
+        return
+
+    if data == 'reg:conf_paso_corregir':
+        sesion.estado = EstadoRegistro.ESPERANDO_CORRECCION_PASO
+        campo = sesion.campo_confirmando
+        etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
+        val_act = sesion.datos.get(campo, '')
+        texto = (
+            f"✏️ **Corregir {etiqueta}**\n\n"
+            f"Valor actual: `{val_act}`\n\n"
+            f"Escribe por favor el **valor correcto** por texto:"
+        )
+        teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+        await responder(update, texto, reply_markup=teclado)
+        return
+
+    if data == 'reg:conf_paso_refoto':
+        sesion.estado = EstadoRegistro.ESPERANDO_CORRECCION_PASO
+        doc_tipo = sesion.ultimo_doc_para_reintentar or 'el documento'
+        texto = (
+            f"📸 **Tomar foto de nuevo — {doc_tipo}**\n\n"
+            f"Por favor toma o sube una foto más clara y enfocada de {doc_tipo} para releer el dato."
+        )
+        teclado = InlineKeyboardMarkup([
+            [boton('✏️ Prefiero escribirlo', 'reg:conf_paso_corregir')],
+            [boton('❌ Cancelar', 'reg:cancelar')],
+        ])
+        await responder(update, texto, reply_markup=teclado)
+        return
+
     if data == 'reg:omitir':
         await procesar_omision(update, context, sesion)
         return
@@ -1142,13 +1572,30 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if data.startswith('reg:edocivil:'):
         edo = data.removeprefix('reg:edocivil:')
         sesion.datos['edo_civil'] = edo
-        await _pedir_encuesta_fuente(update, sesion, prefijo=f'✅ Estado Civil: {edo}')
+        await _pedir_nacionalidad(update, sesion, prefijo=f'✅ Estado Civil: {edo}')
+        return
+
+    if data == 'reg:nac:MEXICANA':
+        sesion.datos['nacionalidad'] = 'MEXICANA'
+        await _pedir_foto_candidato(update, sesion, prefijo='✅ Nacionalidad: Mexicana 🇲🇽')
+        return
+
+    if data == 'reg:nac:otra':
+        sesion.estado = EstadoRegistro.ESPERANDO_OTRA_NACIONALIDAD
+        texto = "🌎 Escribe la **Nacionalidad** del candidato por texto:"
+        teclado = InlineKeyboardMarkup([[boton('🇲🇽 Dejar como Mexicana', 'reg:nac:MEXICANA'), boton('❌ Cancelar', 'reg:cancelar')]])
+        await responder(update, texto, reply_markup=teclado)
         return
 
     if data.startswith('reg:f:'):
         fuente = data.removeprefix('reg:f:')
         sesion.datos['fuente'] = fuente
-        await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio: {fuente}')
+        # Solo Facebook o Reclu CW piden reclutador
+        if fuente in ('Facebook', 'Reclu CW'):
+            await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio: {fuente}')
+        else:
+            sesion.datos['nombre_reclutador'] = ''
+            await verificar_faltantes_o_confirmar(update, sesion)
         return
 
     if data.startswith('reg:rec:'):
@@ -1202,7 +1649,12 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
     elif estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
         await _pedir_ine(update, sesion, prefijo='⏩ Comprobante de domicilio omitido.')
     elif estado == EstadoRegistro.ESPERANDO_INE:
-        await _pedir_csf(update, sesion, prefijo='⏩ INE omitida.')
+        # Si no hay CURP, solicitar Documento CURP; si ya hay, pasar a CSF
+        tiene_curp = bool(sesion.datos.get('curp') or sesion.datos.get('acta', {}).get('curp'))
+        siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
+        await ir_al_estado(update, sesion, siguiente, prefijo='⏩ INE omitida.')
+    elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+        await _pedir_csf(update, sesion, prefijo='⏩ Documento de CURP omitido.')
     elif estado == EstadoRegistro.ESPERANDO_CSF:
         await _pedir_nss(update, sesion, prefijo='⏩ Constancia Fiscal omitida.')
     elif estado == EstadoRegistro.ESPERANDO_NSS:
@@ -1225,7 +1677,7 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await _pedir_edo_civil(update, sesion, prefijo='⏩ Correo electrónico omitido.')
     elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
         sesion.datos['edo_civil'] = ''
-        await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Estado Civil omitido.')
+        await _pedir_nacionalidad(update, sesion, prefijo='⏩ Estado Civil omitido.')
     elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECLUTADOR:
         sesion.datos['nombre_reclutador'] = ''
         await verificar_faltantes_o_confirmar(update, sesion)
@@ -1246,6 +1698,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
     edad = calcular_edad(fecha_nac)
     genero = d.get('genero') or d.get('sexo') or ''
     procedencia = d.get('procedencia') or ''
+    nacionalidad = d.get('nacionalidad') or 'MEXICANA'
 
     calle = d.get('calle') or ''
     num_ext = d.get('num_ext') or ''
@@ -1261,6 +1714,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
     nom_eme = d.get('nom_eme1') or ''
     par_eme = d.get('par_eme1') or ''
     tel_eme = d.get('tel_eme1') or ''
+    fotografia_b64 = d.get('fotografia_base64') or None
 
     no_temp = d.get('numero_temporal') or 'TEMP - 001'
 
@@ -1274,6 +1728,7 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
         'edad': edad,
         'genero': genero,
         'edo_civil': edo_civil,
+        'nacionalidad': nacionalidad,
         'procedencia': procedencia,
         'calle': calle,
         'num_ext': num_ext,
@@ -1288,6 +1743,8 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
         'par_eme1': par_eme,
         'tel_eme1': tel_eme,
     }
+    if fotografia_b64:
+        formulario['fotografia_base64'] = fotografia_b64
 
     await responder(update, '⏳ Guardando expediente completo del candidato en el sistema…')
 
@@ -1323,12 +1780,14 @@ async def finalizar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE,
             f"• **NSS:** `{nss or 'Sin dato'}`\n"
             f"• **Fecha nac.:** {fecha_nac or 'Sin dato'} ({edad + ' años' if edad else 's/d'})\n"
             f"• **Sexo:** {genero or 'Sin dato'}\n"
+            f"• **Nacionalidad:** {nacionalidad}\n"
             f"• **Procedencia:** {procedencia or 'Sin dato'}\n"
             f"• **Dirección:** {calle} {num_ext}, Col. {colonia}, CP {cp}, {municipio}, {estado_dir}\n"
             f"• **Teléfono:** {tel_movil or 'Sin dato'}\n"
             f"• **Correo:** {correo or 'Sin dato'}\n"
             f"• **Estado Civil:** {edo_civil or 'Sin dato'}\n"
             f"• **Contacto de emergencia:** {nom_eme or 'Sin dato'} ({par_eme}) - {tel_eme}\n"
+            f"• **Fotografía expediente:** {'Adjunta ✅' if fotografia_b64 else 'No capturada'}\n"
             f"• **Encuesta:** {fuente or 'Sin dato'} | Reclutador: {d.get('nombre_reclutador') or 'Sin asignar'}\n\n"
             "El expediente ha quedado registrado y disponible en el panel administrativo."
         )

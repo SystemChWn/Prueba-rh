@@ -107,7 +107,7 @@ PERMISOS_POR_ENDPOINT = {
     'incidencias_empleado': ADMIN,
     'eliminar_incidencia_empleado': ADMIN,
     'descargar_archivo_incidencia': ADMIN,
-    'obtener_pendientes': ADMIN,
+    'obtener_pendientes': ADMIN_O_RECLUTAMIENTO,
     'eliminar_pendiente': ADMIN,
     'guardar_ingreso': ADMIN,
     'guardar_ingresos': ADMIN,
