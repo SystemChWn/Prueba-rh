@@ -61,6 +61,10 @@ class RespuestaBackend:
     def es_archivo(self) -> bool:
         return self.contenido is not None
 
+    @property
+    def ok(self) -> bool:
+        return 200 <= self.status < 300
+
 
 def mensaje_de_error(status: int, cuerpo: Any, texto: str = '') -> str:
     """El mensaje de error de la API (``{"error": ...}`` o texto plano)."""

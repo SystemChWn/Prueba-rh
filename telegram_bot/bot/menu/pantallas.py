@@ -608,15 +608,27 @@ body {{ font-family: Arial, sans-serif; margin: 20px; color: #111; }}
 async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
     clave = (update.callback_query.data or '').removeprefix('m:')
     backend, telegram_id = _backend(context), update.effective_user.id
-    resp = await backend.peticion(telegram_id, 'GET', '/api/obtener-pendientes')
-    candidatos = resp.datos if isinstance(resp.datos, list) else []
-    nombre_formato = 'Evaluación de Inducción' if clave == 'dia_evaluacion' else 'Registro de Inducción'
     fecha_hoy = hoy(context).strftime('%d/%m/%Y')
     fecha_iso = hoy(context).strftime('%Y-%m-%d')
 
+    # Consultar ingresos registrados del día de hoy
+    resp = await backend.peticion(telegram_id, 'GET', f'/api/ingresos-hoy?fecha={fecha_iso}')
+    candidatos = resp.datos if isinstance(resp.datos, list) else []
+
     if not candidatos:
-        await mostrar(update, f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy ({fecha_hoy}).',
-                      InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        # Fallback a pendientes de registro
+        resp_p = await backend.peticion(telegram_id, 'GET', '/api/obtener-pendientes')
+        candidatos = resp_p.datos if isinstance(resp_p.datos, list) else []
+
+    nombre_formato = 'Evaluación de Inducción' if clave == 'dia_evaluacion' else 'Registro de Inducción'
+
+    if not candidatos:
+        await mostrar(
+            update,
+            f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy ({fecha_hoy}).',
+            InlineKeyboardMarkup([_menu_inicio()]),
+            editar=True
+        )
         return
 
     await mostrar(update, f'⏳ Generando {nombre_formato} de hoy…', editar=True)
@@ -635,19 +647,7 @@ async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
         caption=f"📋 Aquí tienes el documento listo de **{nombre_formato}** con los {len(candidatos)} ingresos registrados de hoy ({fecha_hoy}). Puedes abrirlo e imprimirlo directamente."
     )
 
-    filas = []
-    # Si es Registro de Inducción, checar si ya se subió el reporte firmado
-    if clave == 'dia_registro':
-        try:
-            st_hoy = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/estado-hoy?fecha={fecha_iso}')
-            if st_hoy.datos and st_hoy.datos.get('subido') and st_hoy.datos.get('id'):
-                reg_id = st_hoy.datos.get('id')
-                filas.append([boton('📥 Descargar reporte firmado de hoy', f'rep:dl:{reg_id}')])
-        except Exception:
-            pass
-        filas.append([boton('📤 Subir reporte firmado de hoy', f'rep:subir:{fecha_iso}')])
-
-    filas.append([boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()])
+    filas = [[boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()]]
     await mostrar(update, f'✅ **{nombre_formato} generado y enviado correctamente.**', InlineKeyboardMarkup(filas), editar=False)
 
 
@@ -673,7 +673,7 @@ async def accion_rep_ind_hoy(update, context, estado: EstadoUsuario) -> None:
             f"¿Qué acción deseas realizar?"
         )
         filas.append([boton('📥 Descargar documento', f'rep:dl:{reg_id}')])
-        filas.append([boton('🗑️ Eliminar documento', f'rep:del:{reg_id}')])
+        filas.append([boton('🗑️ Eliminar definitivamente', f'rep:del:{reg_id}')])
         filas.append([boton('📤 Reemplazar con nuevo archivo', f'rep:subir:{fecha_iso}')])
     else:
         texto = (
@@ -695,36 +695,24 @@ async def accion_rep_ind_historial(update, context, estado: EstadoUsuario) -> No
     resp = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/historial-mes?mes={mes}&anio={anio}')
     datos = resp.datos or {}
     registros = datos.get('registros') or []
-    subidos_set = {r['fecha']: r for r in registros}
 
-    lineas = [f"📆 *Historial de Inducción — {MESES[mes - 1].capitalize()} {anio}*", ""]
+    lineas = [
+        f"📆 *Historial de Reportes de Inducción — {MESES[mes - 1].capitalize()} {anio}*",
+        "",
+    ]
     if registros:
-        lineas.append(f"Se encontraron **{len(registros)}** reporte(s) subido(s) este mes:")
-        for r in registros[-10:]:
+        lineas.append(f"Se tienen **{len(registros)}** fecha(s) con reporte registrado en este mes:")
+        for r in registros[-8:]:
             lineas.append(f"• `{r['fecha']}`: {r.get('nombre_archivo', 'archivo')}")
     else:
-        lineas.append("No hay reportes de inducción subidos en este mes todavía.")
+        lineas.append("No hay reportes de inducción registrados en este mes todavía.")
 
-    lineas.append("\nElige una fecha para consultar, descargar, eliminar o subir su reporte:")
-    filas = []
+    lineas.append("\nPara consultar el reporte de cualquier día, presiona el botón de abajo:")
 
-    # Botones con los últimos 5 días
-    from datetime import timedelta
-    fila_dias = []
-    for d_offset in range(5):
-        f_eval = dia_actual - timedelta(days=d_offset)
-        f_iso = f_eval.strftime('%Y-%m-%d')
-        f_lbl = f_eval.strftime('%d/%m')
-        icono = "✅" if f_iso in subidos_set else "⚪"
-        fila_dias.append(boton(f"{icono} {f_lbl}", f"rep:ver:{f_iso}"))
-        if len(fila_dias) == 3:
-            filas.append(fila_dias)
-            fila_dias = []
-    if fila_dias:
-        filas.append(fila_dias)
-
-    filas.append([boton('✏️ Indicar otra fecha', 'rep:pedir_fecha')])
-    filas.append([boton('⬅️ Atrás', 'm:subir_reporte_induccion'), *_menu_inicio()])
+    filas = [
+        [boton('📅 Indicar Fecha', 'rep:pedir_fecha')],
+        [boton('⬅️ Atrás', 'm:subir_reporte_induccion'), *_menu_inicio()]
+    ]
     await mostrar(update, "\n".join(lineas), InlineKeyboardMarkup(filas), editar=True)
 
 
@@ -754,8 +742,8 @@ async def al_boton_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         reg_id = int(datos.removeprefix('rep:del:'))
         await mostrar(update, '⏳ Eliminando documento…', editar=True)
         resp = await backend.peticion(telegram_id, 'DELETE', f'/api/registro-induccion/{reg_id}')
-        if resp.ok:
-            await mostrar(update, '🗑️ **Reporte de Inducción eliminado correctamente.**', InlineKeyboardMarkup([[boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()]]), editar=True)
+        if resp.ok or (200 <= resp.status < 300):
+            await mostrar(update, '🗑️ **Reporte de Inducción eliminado definitivamente.**', InlineKeyboardMarkup([[boton('📆 Ver Historial', 'm:rep_ind_historial'), *_menu_inicio()]]), editar=True)
         else:
             await mostrar(update, '⚠️ Error al eliminar el reporte.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
         return
@@ -1072,9 +1060,8 @@ ACCIONES = {
     'team_modificar': accion_team_modificar,
     'team_eliminar': accion_team_eliminar,
 
-    # 10. Descargar Excel e Ingresos del Mes
+    # 10. Descargar Excel
     'dl_excel_mes': accion_dl_excel_mes,
-    'ingresos_mes': accion_ingresos_mes,
 
     # 11. Subir Papelería
     'subir_papeleria': accion_subir_papeleria,
@@ -1277,18 +1264,19 @@ async def atender_texto(update: Update, context, texto: str) -> bool:
                 nom = st.get('nombre_archivo', 'archivo')
                 txt = (
                     f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
-                    f"✅ **Estado:** Subido (`{nom}`)\n\n"
+                    f"✅ **Estado:** Documento subido y registrado (`{nom}`)\n\n"
                     f"Elige una acción:"
                 )
-                filas.append([boton('📥 Descargar', f'rep:dl:{reg_id}'), boton('🗑️ Eliminar', f'rep:del:{reg_id}')])
+                filas.append([boton('📥 Descargar', f'rep:dl:{reg_id}'), boton('🗑️ Eliminar definitivamente', f'rep:del:{reg_id}')])
                 filas.append([boton('📤 Reemplazar archivo', f'rep:subir:{fecha_iso}')])
             else:
                 txt = (
                     f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
-                    f"⚪ **Estado:** No hay reporte registrado para esta fecha.\n\n"
+                    f"⚪ **Estado:** No se detectó ningún documento para esta fecha.\n\n"
                     f"¿Deseas subirlo ahora?"
                 )
                 filas.append([boton('📤 Subir documento', f'rep:subir:{fecha_iso}')])
+            filas.append([boton('📅 Indicar otra fecha', 'rep:pedir_fecha')])
             filas.append([boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()])
             await responder(update, txt, InlineKeyboardMarkup(filas))
             return True
@@ -1325,15 +1313,16 @@ async def atender_archivo(update: Update, context) -> bool:
                 telegram_id,
                 'POST',
                 '/api/registro-induccion/subir',
-                formulario={'fecha': fecha},
-                archivo=Archivo(campo='file', nombre=nombre, contenido=contenido, mime=mime)
+                data={'fecha': fecha},
+                files=[('file', (nombre, contenido, mime))]
             )
             estado.esperando = None
-            if resp.ok:
+            if resp.ok or (200 <= resp.status < 300):
                 await responder(
                     update,
-                    f"✅ **Reporte de Inducción guardado exitosamente para la fecha {fecha}.**",
-                    InlineKeyboardMarkup([[boton('📋 Formatos del día', 'm:formatos_dia'), *_menu_inicio()]])
+                    f"✅ **Reporte de Inducción guardado exitosamente para la fecha {fecha}.**\n"
+                    "En la página web ahora se refleja como subido correctamente.",
+                    InlineKeyboardMarkup([[boton('📄 Subir Inducción', 'm:subir_reporte_induccion'), *_menu_inicio()]])
                 )
             else:
                 await responder(update, f"⚠️ Error al subir el reporte: {resp.datos or 'Sin detalle'}")

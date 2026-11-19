@@ -31,7 +31,6 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
         'listado_general',
         'generar_registro',
         'team_reclu',
-        'ingresos_mes',
         'subir_papeleria',
     )),
 
@@ -51,12 +50,12 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     Nodo('ingresos_pendientes', '📝 Ingresos Pendientes', ADMIN, accion='ingresos_pendientes'),
 
     # 4. Formatos del dia (Evaluación y Registro de Inducción con descarga directa)
-    Nodo('formatos_dia', '📋 Formatos del día', TODOS, hijos=('dia_evaluacion', 'dia_registro', 'subir_reporte_induccion')),
+    Nodo('formatos_dia', '📋 Formatos del día', TODOS, hijos=('dia_evaluacion', 'dia_registro')),
     Nodo('dia_evaluacion', 'Evaluación de Inducción', TODOS, accion='dia_evaluacion'),
     Nodo('dia_registro', 'Registro de Inducción', TODOS, accion='dia_registro'),
 
     # 4.1 Subir Reporte de Inducción e Historial
-    Nodo('subir_reporte_induccion', '📤 Subir Reporte de Inducción', TODOS, hijos=('rep_ind_hoy', 'rep_ind_historial')),
+    Nodo('subir_reporte_induccion', '📄 Subir Inducción', TODOS, hijos=('rep_ind_hoy', 'rep_ind_historial')),
     Nodo('rep_ind_hoy', '📅 Fecha de hoy', TODOS, accion='rep_ind_hoy'),
     Nodo('rep_ind_historial', '📆 Ver Historial', TODOS, accion='rep_ind_historial'),
 
@@ -75,10 +74,7 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     Nodo('team_eliminar', '🗑️ Eliminar Reclutador', TODOS, accion='team_eliminar'),
     Nodo('dl_reclu', '📥 Descargar Excel Reclutamiento', TODOS, accion='dl_reclu'),
 
-    # 8. Ingresos del Mes (Reporte y Resumen)
-    Nodo('ingresos_mes', '📊 Ingresos del mes', TODOS, accion='ingresos_mes'),
-
-    # 9. Subir Papelería (Ingresar N°Emp o TEMP-N°)
+    # 8. Subir Papelería (Ingresar N°Emp o TEMP-N°)
     Nodo('subir_papeleria', '📎 Subir Papelería', ADMIN, accion='subir_papeleria'),
 )}
 

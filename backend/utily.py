@@ -70,19 +70,43 @@ def health_check():
 
 
 def _corregir_orientacion_imagen(contenido: bytes, mime_type: str) -> tuple[bytes, str]:
-    """Corrige la orientación EXIF de una imagen si viene rotada."""
+    """Corrige la orientación EXIF de una imagen y optimiza contraste/brillo para OCR."""
     if mime_type not in ('image/jpeg', 'image/png', 'image/webp'):
         return contenido, mime_type
     try:
-        from PIL import Image, ImageOps
+        from PIL import Image, ImageOps, ImageEnhance, ImageStat
         img = Image.open(BytesIO(contenido))
         img = ImageOps.exif_transpose(img)
+        if img.mode not in ('RGB', 'L'):
+            img = img.convert('RGB')
+
+        # Evaluar brillo medio en escala de grises
+        stat = ImageStat.Stat(img.convert('L'))
+        brillo_medio = stat.mean[0] if stat.mean else 128
+
+        # Si está muy oscura (< 95), realzar brillo y rango dinámico
+        if brillo_medio < 95:
+            img = ImageOps.autocontrast(img, cutoff=2)
+            enhancer = ImageEnhance.Brightness(img)
+            img = enhancer.enhance(1.35)
+        elif brillo_medio > 215:
+            # Muy sobreexpuesta o con reflejos, acentuar contraste
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(1.3)
+        else:
+            # Rango normal: expandir rango dinámico suavemente
+            img = ImageOps.autocontrast(img, cutoff=0.5)
+
+        # Redimensionar si es excesivamente grande para evitar degradación o timeouts
+        max_dim = 2048
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
         buf = BytesIO()
-        fmt = 'JPEG' if mime_type == 'image/jpeg' else ('PNG' if mime_type == 'image/png' else 'WEBP')
-        img.save(buf, format=fmt)
-        return buf.getvalue(), mime_type
+        img.save(buf, format='JPEG', quality=92, optimize=True)
+        return buf.getvalue(), 'image/jpeg'
     except Exception as exc:
-        app.logger.warning('No se pudo corregir orientación EXIF: %s', exc)
+        app.logger.warning('No se pudo optimizar imagen con PIL: %s', exc)
         return contenido, mime_type
 
 
@@ -310,6 +334,7 @@ def escanear_documento():
         'max_output_tokens': 800,
     }
 
+    cuerpo = None
     try:
         respuesta = requests.post(
             'https://api.openai.com/v1/responses',
@@ -322,23 +347,71 @@ def escanear_documento():
         )
         respuesta.raise_for_status()
         cuerpo = respuesta.json()
-    except requests.Timeout:
-        app.logger.warning('Tiempo de espera agotado al escanear un documento.')
-        return jsonify({'error': 'El escaneo tardó demasiado. Inténtalo de nuevo.'}), 504
-    except requests.HTTPError as error:
-        estado = error.response.status_code if error.response is not None else 'desconocido'
-        app.logger.error('OpenAI rechazó el escaneo de documento (HTTP %s).', estado)
-        return jsonify({'error': 'No fue posible analizar el documento.'}), 502
-    except requests.RequestException:
-        app.logger.exception('Error de conexión al escanear un documento.')
-        return jsonify({'error': 'No fue posible conectar con el servicio de escaneo.'}), 502
-    except ValueError:
-        app.logger.exception('OpenAI devolvió una respuesta JSON inválida.')
-        return jsonify({'error': 'El servicio de escaneo devolvió una respuesta inválida.'}), 502
+    except Exception as error_resp:
+        app.logger.warning('Fallo en /v1/responses (%s), intentando fallback con /v1/chat/completions…', error_resp)
+        try:
+            # Fallback universal con Chat Completions Vision
+            contenido_usuario = [
+                {
+                    'type': 'text',
+                    'text': (
+                        f"Documento a analizar: «{tipo_documento}».\n"
+                        f"{INSTRUCCIONES_TIPO_DOCUMENTO.get(tipo_documento, '')}\n"
+                        "Transcribe con la mayor fidelidad y exactitud cada campo visible en formato JSON. "
+                        "El documento puede ser una fotografía, fotocopia o tener baja iluminación; extrae "
+                        "cualquier dato legible, especialmente claves numéricas o alfanuméricas (CURP, RFC, NSS, nombres)."
+                    ),
+                }
+            ]
+            if mime_type != 'application/pdf':
+                contenido_usuario.append({'type': 'image_url', 'image_url': {'url': data_url, 'detail': 'high'}})
+
+            solicitud_chat = {
+                'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+                'messages': [
+                    {'role': 'user', 'content': contenido_usuario}
+                ],
+                'response_format': {
+                    'type': 'json_schema',
+                    'json_schema': {
+                        'name': 'campos_documento',
+                        'strict': True,
+                        'schema': esquema,
+                    },
+                },
+                'max_tokens': 1000,
+            }
+            resp_chat = requests.post(
+                'https://api.openai.com/v1/chat/completions',
+                headers={
+                    'Authorization': f'Bearer {api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json=solicitud_chat,
+                timeout=(5, 50),
+            )
+            resp_chat.raise_for_status()
+            cuerpo = resp_chat.json()
+        except requests.Timeout:
+            app.logger.warning('Tiempo de espera agotado al escanear un documento.')
+            return jsonify({'error': 'El escaneo tardó demasiado. Inténtalo de nuevo.'}), 504
+        except requests.HTTPError as error:
+            estado = error.response.status_code if error.response is not None else 'desconocido'
+            app.logger.error('OpenAI rechazó el escaneo de documento (HTTP %s).', estado)
+            return jsonify({'error': 'No fue posible analizar el documento.'}), 502
+        except Exception:
+            app.logger.exception('Error de conexión al escanear un documento.')
+            return jsonify({'error': 'No fue posible conectar con el servicio de escaneo.'}), 502
 
     texto_resultado = cuerpo.get('output_text') if isinstance(cuerpo, dict) else None
+    if not isinstance(texto_resultado, str) and isinstance(cuerpo, dict):
+        # Intentar extraer de choices (Chat Completions)
+        choices = cuerpo.get('choices')
+        if isinstance(choices, list) and choices:
+            msg = choices[0].get('message') if isinstance(choices[0], dict) else {}
+            texto_resultado = msg.get('content')
+
     if not isinstance(texto_resultado, str):
-        texto_resultado = None
         elementos_salida = cuerpo.get('output', []) if isinstance(cuerpo, dict) else []
         if isinstance(elementos_salida, list):
             for elemento in elementos_salida:
@@ -359,6 +432,7 @@ def escanear_documento():
                 )
                 if texto_resultado:
                     break
+
     valores = None
     if texto_resultado:
         texto_limpio = texto_resultado.strip()
@@ -369,9 +443,27 @@ def escanear_documento():
             valores = json.loads(texto_limpio)
         except (TypeError, ValueError):
             valores = None
+
     if not isinstance(valores, dict):
         app.logger.error('OpenAI no devolvió campos estructurados para el documento.')
         return jsonify({'error': 'No fue posible extraer datos del documento.'}), 502
+
+    # Rescate por expresiones regulares de claves críticas si no se encontraron estructuradas
+    texto_total = str(texto_resultado or '')
+    if 'curp' in campos_documento and not valores.get('curp'):
+        match_curp = re.search(r'\b([A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d)\b', texto_total.upper())
+        if match_curp:
+            valores['curp'] = match_curp.group(1)
+
+    if 'rfc' in campos_documento and not valores.get('rfc'):
+        match_rfc = re.search(r'\b([A-Z&Ñ]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A])\b', texto_total.upper())
+        if match_rfc:
+            valores['rfc'] = match_rfc.group(1)
+
+    if 'nss' in campos_documento and not valores.get('nss'):
+        match_nss = re.search(r'\b(\d{11})\b', texto_total)
+        if match_nss:
+            valores['nss'] = match_nss.group(1)
 
     # Homologar alias y campos compuestos
     if not valores.get('nombre_completo'):
@@ -1797,6 +1889,69 @@ def obtener_pendientes():
         return (f"ERROR: {str(e)}", 500)
 
 
+@app.route('/api/ingresos-hoy', methods=['GET'])
+def obtener_ingresos_hoy():
+    """Devuelve los candidatos o empleados con fecha de ingreso/registro de hoy (o fecha indicada)."""
+    fecha_param = request.args.get('fecha') or datetime.now().strftime('%Y-%m-%d')
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_nombre_completo(cur)
+                cur.execute("""
+                    SELECT r.id,
+                           r.nombre_completo,
+                           r.numero_temporal,
+                           ip.no_empleado,
+                           COALESCE(ip.puesto, 'Operador') AS puesto,
+                           COALESCE(ip.area, 'Producción') AS area,
+                           COALESCE(ip.empresa, 'Cheong Woon') AS empresa,
+                           COALESCE(r.curp, '') AS curp
+                    FROM registro r
+                    LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
+                    WHERE r.fecha_registro = %s
+                       OR (ip.fecha_ingreso IS NOT NULL AND ip.fecha_ingreso::date = %s::date)
+                    ORDER BY r.id ASC
+                """, (fecha_param, fecha_param))
+                filas = cur.fetchall()
+                data = [
+                    {
+                        'id': f[0],
+                        'nombre_completo': f[1] or 'Sin nombre',
+                        'numero_temporal': f[2] or '',
+                        'no_empleado': f[3] or f[2] or '',
+                        'puesto': f[4] or 'Operador',
+                        'area': f[5] or 'Producción',
+                        'empresa': f[6] or 'Cheong Woon',
+                        'curp': f[7] or '',
+                    }
+                    for f in filas
+                ]
+                # Si no hubo registros específicos con fecha_registro = hoy, incluir también pendientes sin puesto
+                if not data:
+                    cur.execute("""
+                        SELECT r.id, r.nombre_completo, r.numero_temporal, '', 'Operador', 'Producción', 'Cheong Woon', COALESCE(r.curp, '')
+                        FROM registro r
+                        WHERE NOT EXISTS (SELECT 1 FROM ingresos_puesto ip WHERE ip.registro_id = r.id)
+                        ORDER BY r.id DESC
+                    """)
+                    data = [
+                        {
+                            'id': f[0],
+                            'nombre_completo': f[1] or 'Sin nombre',
+                            'numero_temporal': f[2] or '',
+                            'no_empleado': f[2] or '',
+                            'puesto': f[4],
+                            'area': f[5],
+                            'empresa': f[6],
+                            'curp': f[7],
+                        }
+                        for f in cur.fetchall()
+                    ]
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/eliminar-pendiente/<int:id>', methods=['DELETE'])
 @app.route('/api/eliminar-pendiente/<id>', methods=['DELETE', 'OPTIONS'])
 def eliminar_pendiente(id):
@@ -3206,7 +3361,7 @@ def exportar_reclutamiento():
 
                 cur.execute("""
                     SELECT DISTINCT ON (r.id)
-                           COALESCE(r.fecha_registro, e.fecha_registro, r.created_at) AS f_reg,
+                           COALESCE(r.fecha_registro, e.fecha_registro) AS f_reg,
                            COALESCE(NULLIF(TRIM(r.nombre_completo), ''), NULLIF(TRIM(e.nombre_empleado), ''), 'Sin nombre') AS nombre_emp,
                            UPPER(TRIM(COALESCE(e.fuente, 'SIN ENCUESTA'))) AS medio,
                            CASE
@@ -3222,8 +3377,8 @@ def exportar_reclutamiento():
                            END AS persona_recomendo
                     FROM registro AS r
                     LEFT JOIN encuesta_reclutamiento AS e ON e.registro_id = r.id
-                    WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
-                      AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+                    WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro)) = %s
+                      AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro)) = %s
                     ORDER BY r.id, f_reg ASC
                 """, (mes, anio))
                 filas = cur.fetchall()

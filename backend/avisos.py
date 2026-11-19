@@ -134,8 +134,8 @@ def _resumen_mes(cur, hoy):
         SELECT COUNT(DISTINCT r.id)
         FROM registro r
         LEFT JOIN encuesta_reclutamiento e ON e.registro_id = r.id
-        WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
-          AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+        WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro)) = %s
+          AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro)) = %s
     """, (mes, anio))
     row_total = cur.fetchone()
     total = int(row_total[0]) if row_total and row_total[0] else 0

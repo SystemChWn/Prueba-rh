@@ -17,6 +17,7 @@ class EscanearDocumentoTests(unittest.TestCase):
         casos = {
             'Acta de Nacimiento': {
                 'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento',
+                'entidad_nacimiento', 'lugar_registro', 'entidad_registro',
             },
             'Comprobante de Domicilio': {
                 'nombre_propietario', 'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
@@ -99,6 +100,9 @@ class EscanearDocumentoTests(unittest.TestCase):
             'fecha_nac': '2000-01-02',
             'genero': 'FEMENINO',
             'lugar_nacimiento': None,
+            'entidad_nacimiento': None,
+            'lugar_registro': None,
+            'entidad_registro': None,
         })
         solicitud = post_openai.call_args.kwargs['json']
         self.assertEqual(
@@ -107,7 +111,10 @@ class EscanearDocumentoTests(unittest.TestCase):
         )
         self.assertEqual(
             set(solicitud['text']['format']['schema']['properties']),
-            {'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'},
+            {
+                'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento',
+                'entidad_nacimiento', 'lugar_registro', 'entidad_registro',
+            },
         )
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
@@ -171,6 +178,9 @@ class EscanearDocumentoTests(unittest.TestCase):
             'fecha_nac': None,
             'genero': 'FEMENINO',
             'lugar_nacimiento': None,
+            'entidad_nacimiento': None,
+            'lugar_registro': None,
+            'entidad_registro': None,
         })
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})

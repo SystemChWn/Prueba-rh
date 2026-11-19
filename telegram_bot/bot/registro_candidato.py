@@ -326,15 +326,31 @@ def _corregir_orientacion(contenido: bytes, mime: str) -> bytes:
     if mime not in ('image/jpeg', 'image/png', 'image/webp'):
         return contenido
     try:
-        from PIL import Image, ImageOps
+        from PIL import Image, ImageOps, ImageEnhance, ImageStat
         img = Image.open(BytesIO(contenido))
         img = ImageOps.exif_transpose(img)
+        if img.mode not in ('RGB', 'L'):
+            img = img.convert('RGB')
+        
+        stat = ImageStat.Stat(img.convert('L'))
+        brillo_medio = stat.mean[0] if stat.mean else 128
+        if brillo_medio < 95:
+            img = ImageOps.autocontrast(img, cutoff=2)
+            img = ImageEnhance.Brightness(img).enhance(1.3)
+        elif brillo_medio > 215:
+            img = ImageEnhance.Contrast(img).enhance(1.25)
+        else:
+            img = ImageOps.autocontrast(img, cutoff=0.5)
+
+        max_dim = 2048
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
         buf = BytesIO()
-        fmt = 'JPEG' if mime == 'image/jpeg' else ('PNG' if mime == 'image/png' else 'WEBP')
-        img.save(buf, format=fmt)
+        img.save(buf, format='JPEG', quality=92, optimize=True)
         return buf.getvalue()
     except Exception as exc:
-        logger.warning('No se pudo corregir orientación EXIF en bot: %s', exc)
+        logger.warning('No se pudo corregir u optimizar imagen en bot: %s', exc)
         return contenido
 
 
