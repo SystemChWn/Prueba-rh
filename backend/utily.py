@@ -87,7 +87,10 @@ def _corregir_orientacion_imagen(contenido: bytes, mime_type: str) -> tuple[byte
 
 
 DOCUMENTOS_ESCANEABLES = {
-    'Acta de Nacimiento': ('nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento'),
+    'Acta de Nacimiento': (
+        'nombre_completo', 'curp', 'fecha_nac', 'genero', 'lugar_nacimiento',
+        'entidad_nacimiento', 'lugar_registro', 'entidad_registro',
+    ),
     'Comprobante de Domicilio': (
         'nombre_propietario', 'cp', 'colonia', 'calle', 'num_ext', 'num_int', 'municipio', 'estado',
     ),
@@ -116,7 +119,7 @@ INSTRUCCIONES_CAMPOS_DOCUMENTO = {
     ),
     'fecha_nacimiento': 'Fecha de nacimiento en formato YYYY-MM-DD.',
     'genero': 'Sexo o género: MASCULINO o FEMENINO.',
-    'sexo': 'Sexo de la persona: MASCULINO o FEMENINO.',
+    'sexo': 'Sexo de la persona: MASCULINO o FEMENINO (en INE puede decir M o H).',
     'cp': 'Código postal de cinco dígitos. Usa null si no es legible.',
     'codigo_postal': 'Código postal de cinco dígitos.',
     'colonia': 'Colonia, fraccionamiento o barrio del domicilio.',
@@ -131,16 +134,20 @@ INSTRUCCIONES_CAMPOS_DOCUMENTO = {
     'rfc': 'RFC del contribuyente titular (12 o 13 caracteres en mayúsculas sin espacios).',
     'curp': 'CURP de 18 caracteres en mayúsculas sin espacios.',
     'nss': 'Número de Seguridad Social (NSS) de 11 dígitos.',
-    'lugar_nacimiento': 'Entidad federativa y municipio o localidad de nacimiento asentada en el documento.',
+    'lugar_nacimiento': 'Municipio o localidad de nacimiento asentada en el documento.',
+    'entidad_nacimiento': 'Estado o Entidad federativa de nacimiento.',
+    'lugar_registro': 'Municipio o localidad del registro civil.',
+    'entidad_registro': 'Estado o Entidad federativa del registro civil.',
     'nombre_propietario': 'Nombre completo del titular o propietario del servicio en el comprobante.',
 }
 INSTRUCCIONES_TIPO_DOCUMENTO = {
     'Acta de Nacimiento': (
-        'Analiza esta Acta de Nacimiento mexicana (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
+        'Analiza esta Acta de Nacimiento mexicana (la imagen puede estar rotada 90° o 180° o en baja resolución; oriéntala mentalmente antes de leerla). '
         'Ignora por completo los datos de los padres (Filiación) y extrae ÚNICAMENTE los datos de la Persona Registrada. '
         'Verifica que la fecha de nacimiento coincida con los dígitos AAMMDD de la CURP. '
         'Extrae curp, nombre, primer_apellido, segundo_apellido, nombre_completo, sexo (MASCULINO o FEMENINO), '
-        'fecha_nacimiento (YYYY-MM-DD) y lugar_nacimiento (Municipio, Estado). '
+        'fecha_nacimiento (YYYY-MM-DD), lugar_nacimiento (municipio/localidad), entidad_nacimiento (estado donde nació), '
+        'lugar_registro (municipio donde se registró) y entidad_registro (estado donde se registró). '
         'Si algún dato no es legible o no aparece, usa null; nunca inventes datos.'
     ),
     'Comprobante de Domicilio': (
@@ -150,25 +157,27 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'INE': (
-        'Analiza esta credencial oficial INE/IFE (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
-        'Extrae los datos de la credencial oficial: nombre_completo, sexo (MASCULINO o FEMENINO), '
-        'domicilio (dirección completa tal como aparece), curp (18 caracteres) y fecha_nacimiento (YYYY-MM-DD). '
+        'Analiza esta credencial oficial INE/IFE (la imagen puede estar rotada 90° o 180° o tener baja calidad/reflejos; oriéntala mentalmente antes de leerla). '
+        'Extrae con sumo cuidado los datos de la credencial oficial: nombre_completo, sexo (MASCULINO si dice H, FEMENINO si dice M), '
+        'domicilio (dirección completa tal como aparece), curp (18 caracteres alfanuméricos) y fecha_nacimiento (YYYY-MM-DD). '
+        'Pon especial atención en la CURP: debe tener 18 caracteres; no confundas 0 con O ni 1 con I. '
         'Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'Constancia de Situación Fiscal': (
         'Analiza esta Constancia de Situación Fiscal del SAT (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
-        'Extrae los datos fiscales del contribuyente titular: rfc (12 o 13 caracteres), curp (18 caracteres) '
-        'y nombre_completo. Si algún dato no es legible, usa null; no inventes datos.'
+        'Extrae los datos fiscales del contribuyente titular: rfc (12 o 13 caracteres alfanuméricos en mayúsculas), '
+        'curp (18 caracteres) y nombre_completo. Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'Número de Seguro Social': (
         'Analiza este documento del IMSS que contiene el Número de Seguridad Social (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
-        'Extrae del titular: nss (11 dígitos), nombre_completo y curp (18 caracteres si aparece). '
+        'Extrae del titular: nss (11 dígitos numéricos sin guiones), nombre_completo y curp (18 caracteres si aparece). '
         'Si algún dato no es legible, usa null; no inventes datos.'
     ),
     'Documento CURP': (
-        'Analiza esta constancia oficial de Clave Única de Registro de Población (CURP) mexicana (la imagen puede estar rotada 90° o 180°; oriéntala mentalmente antes de leerla). '
-        'Extrae del titular: curp (18 caracteres en mayúsculas), nombre_completo, sexo (MASCULINO o FEMENINO), '
-        'fecha_nacimiento (YYYY-MM-DD) y lugar_nacimiento. Si algún dato no es legible, usa null; no inventes datos.'
+        'Analiza esta Constancia o Documento Oficial de CURP emitida por RENAPO (la imagen puede estar rotada 90° o 180° o en baja resolución). '
+        'Extrae con exactitud los datos de la persona registrada: curp (exactamente 18 caracteres en mayúsculas), '
+        'nombre_completo, fecha_nacimiento (YYYY-MM-DD coincidente con AAMMDD de la CURP), sexo (MASCULINO o FEMENINO) '
+        'y lugar_nacimiento (Entidad federativa de nacimiento). Si algún dato no es legible, usa null.'
     ),
 }
 MAX_DOCUMENTO_ESCANEABLE_BYTES = 9 * 1024 * 1024
@@ -3186,23 +3195,36 @@ def exportar_reclutamiento():
                     ADD COLUMN IF NOT EXISTS registro_id INTEGER REFERENCES registro(id)
                 """)
                 cur.execute("""
-                    SELECT e.fecha_registro,
-                           COALESCE(NULLIF(TRIM(e.nombre_reclutador), ''), ''),
-                           p.team
-                    FROM encuesta_reclutamiento AS e
-                    LEFT JOIN personal_reclutamiento AS p
-                      ON LOWER(TRIM(p.nombre)) = LOWER(TRIM(e.nombre_reclutador))
-                    WHERE EXTRACT(MONTH FROM e.fecha_registro) = %s
-                      AND EXTRACT(YEAR FROM e.fecha_registro) = %s
-                      AND NULLIF(TRIM(e.nombre_reclutador), '') IS NOT NULL
-                      AND (
-                          UPPER(TRIM(COALESCE(e.fuente, ''))) IN ('FACEBOOK', 'RECLU CW')
-                          OR (
-                              UPPER(TRIM(COALESCE(e.fuente, ''))) = 'AGENCIA'
-                              AND UPPER(TRIM(COALESCE(e.sub_fuente, ''))) = 'CW'
-                          )
-                      )
-                    ORDER BY e.fecha_registro, e.nombre_empleado
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS nombre_empleado VARCHAR(200)
+                """)
+                cur.execute("""
+                    ALTER TABLE encuesta_reclutamiento
+                    ADD COLUMN IF NOT EXISTS nombre_reclutador VARCHAR(255)
+                """)
+                asegurar_columna_nombre_completo(cur)
+
+                cur.execute("""
+                    SELECT DISTINCT ON (r.id)
+                           COALESCE(r.fecha_registro, e.fecha_registro, r.created_at) AS f_reg,
+                           COALESCE(NULLIF(TRIM(r.nombre_completo), ''), NULLIF(TRIM(e.nombre_empleado), ''), 'Sin nombre') AS nombre_emp,
+                           UPPER(TRIM(COALESCE(e.fuente, 'SIN ENCUESTA'))) AS medio,
+                           CASE
+                               WHEN UPPER(TRIM(COALESCE(e.fuente, ''))) IN ('FACEBOOK', 'RECLU CW')
+                                    OR (UPPER(TRIM(COALESCE(e.fuente, ''))) = 'AGENCIA' AND UPPER(TRIM(COALESCE(e.sub_fuente, ''))) = 'CW')
+                               THEN COALESCE(NULLIF(TRIM(e.nombre_reclutador), ''), 'No especificado')
+                               ELSE ''
+                           END AS reclutador,
+                           CASE
+                               WHEN UPPER(TRIM(COALESCE(e.fuente, ''))) LIKE '%RECOMEN%'
+                               THEN COALESCE(NULLIF(TRIM(e.nombre_empleado), ''), NULLIF(TRIM(e.nombre_reclutador), ''), '')
+                               ELSE ''
+                           END AS persona_recomendo
+                    FROM registro AS r
+                    LEFT JOIN encuesta_reclutamiento AS e ON e.registro_id = r.id
+                    WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+                      AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+                    ORDER BY r.id, f_reg ASC
                 """, (mes, anio))
                 filas = cur.fetchall()
 
@@ -3211,26 +3233,35 @@ def exportar_reclutamiento():
         worksheet = workbook.active
         worksheet.title = 'Reclutamiento'
 
-        # Cabeceras de la tabla
-        encabezados = ['Fecha de registro', 'Mes', 'Nombre del reclutador', 'Team de reclutamiento']
+        # Cabeceras exactas solicitadas
+        encabezados = [
+            'Fecha de Registro',
+            'Mes',
+            'Nombre del empleado',
+            'Medio',
+            'Nombre del Reclutador',
+            'Nombre de la persona que recomendó'
+        ]
         worksheet.append(encabezados)
 
-        # Agregar filas de datos
         nombres_meses = [
             'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
         ]
         for fila in filas:
+            f_fecha = fila[0]
+            nombre_mes = nombres_meses[f_fecha.month - 1] if f_fecha and hasattr(f_fecha, 'month') else ''
             worksheet.append([
-                fila[0],
-                nombres_meses[fila[0].month - 1] if fila[0] else '',
-                fila[1],
-                f'Team {fila[2]}' if fila[2] else '',
+                f_fecha,
+                nombre_mes,
+                fila[1] or '',
+                fila[2] or '',
+                fila[3] or '',
+                fila[4] or '',
             ])
-            if fila[0]:
+            if f_fecha and hasattr(f_fecha, 'month'):
                 worksheet.cell(row=worksheet.max_row, column=1).number_format = 'dd/mm/yyyy'
 
-        # Dar formato visual básico (congelar paneles y ajustar columnas)
         worksheet.freeze_panes = 'A2'
         if worksheet.dimensions:
             worksheet.auto_filter.ref = worksheet.dimensions
@@ -3238,9 +3269,8 @@ def exportar_reclutamiento():
         for column_cells in worksheet.columns:
             column_letter = column_cells[0].column_letter
             max_length = max(len(str(cell.value or '')) for cell in column_cells)
-            worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 32)
+            worksheet.column_dimensions[column_letter].width = min(max(max_length + 3, 14), 40)
 
-        # Guardar en memoria y retornar como archivo descargable
         output = BytesIO()
         workbook.save(output)
         output.seek(0)
@@ -3499,25 +3529,52 @@ def estado_registro_induccion_hoy():
 @app.route('/api/registro-induccion/subir', methods=['POST'])
 def subir_registro_induccion():
     """Sube o actualiza el registro de inducción para una fecha dada (por defecto hoy)."""
-    archivo = request.files.get('file')
-    if not archivo or not archivo.filename:
-        return jsonify({'error': 'El archivo es obligatorio'}), 400
+    archivo = (
+        request.files.get('file')
+        or request.files.get('archivo')
+        or (list(request.files.values())[0] if request.files else None)
+    )
 
-    fecha_param = request.form.get('fecha')
+    json_payload = request.get_json(silent=True) or {}
+    fecha_param = request.form.get('fecha') or json_payload.get('fecha')
     if not fecha_param:
         fecha_param = datetime.now().strftime('%Y-%m-%d')
     try:
-        datetime.strptime(fecha_param, '%Y-%m-%d')
+        datetime.strptime(str(fecha_param).strip(), '%Y-%m-%d')
+        fecha_param = str(fecha_param).strip()
     except ValueError:
         return jsonify({'error': 'Formato de fecha inválido (use YYYY-MM-DD)'}), 400
 
-    nombre_archivo = secure_filename(archivo.filename) or 'registro_induccion'
-    mime_type = archivo.mimetype or 'application/octet-stream'
-    contenido = archivo.read() or b''
-    if not contenido:
-        return jsonify({'error': 'El archivo está vacío'}), 400
+    nombre_archivo = 'registro_induccion.pdf'
+    mime_type = 'application/pdf'
+    archivo_base64 = ''
 
-    archivo_base64 = base64.b64encode(contenido).decode('ascii')
+    if archivo and archivo.filename:
+        nombre_orig = archivo.filename.strip()
+        ext = ('.' + nombre_orig.rsplit('.', 1)[-1].lower()) if '.' in nombre_orig else '.pdf'
+        limpio = secure_filename(nombre_orig)
+        if not limpio or limpio == ext.lstrip('.'):
+            nombre_archivo = f"registro_induccion_{fecha_param}{ext}"
+        else:
+            if not limpio.lower().endswith(ext):
+                limpio = f"{limpio}{ext}"
+            nombre_archivo = limpio
+        mime_type = archivo.mimetype or 'application/octet-stream'
+        contenido = archivo.read() or b''
+        if not contenido:
+            return jsonify({'error': 'El archivo está vacío'}), 400
+        archivo_base64 = base64.b64encode(contenido).decode('ascii')
+    elif json_payload.get('archivo_base64') or request.form.get('archivo_base64'):
+        raw_b64 = (json_payload.get('archivo_base64') or request.form.get('archivo_base64')).strip()
+        if ',' in raw_b64:
+            cabecera, raw_b64 = raw_b64.split(',', 1)
+            if 'data:' in cabecera and ';' in cabecera:
+                mime_type = cabecera.split('data:')[1].split(';')[0]
+        archivo_base64 = raw_b64
+        nombre_sugerido = json_payload.get('nombre_archivo') or request.form.get('nombre_archivo') or f"registro_induccion_{fecha_param}.pdf"
+        nombre_archivo = secure_filename(nombre_sugerido) or f"registro_induccion_{fecha_param}.pdf"
+    else:
+        return jsonify({'error': 'El archivo es obligatorio'}), 400
 
     try:
         with get_db_connection() as conn:

@@ -469,6 +469,7 @@ def construir(settings: Settings) -> Application:
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_accion_empleado, pattern=r'^ea:[a-z]{2,5}$'))
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_candidato, pattern=r'^cp?:\d{1,4}$'))
     app.add_handler(CallbackQueryHandler(pantallas.al_boton_asistente, pattern=r'^a:(\d{1,3}|[bsx])$'))
+    app.add_handler(CallbackQueryHandler(pantallas.al_boton_reporte, pattern=r'^rep:'))
     app.add_handler(CallbackQueryHandler(registro_candidato.al_boton, pattern=r'^reg:'))
     app.add_handler(CallbackQueryHandler(conversacion.al_calificar, pattern=r'^cal:\d{1,12}:[+-]$'))
     app.add_handler(CallbackQueryHandler(avisos.al_boton, pattern=r'^av:(on|off|ver|h\d{1,2})$'))

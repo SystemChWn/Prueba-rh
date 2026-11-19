@@ -23,7 +23,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from bot.backend import ClienteBackend, ErrorBackend
-from bot.borrador import CambioPendiente
+from bot.borrador import Archivo, CambioPendiente
 from bot.config import Settings
 from bot.estado import EstadoUsuario, Estados
 from bot.interfaz import (
@@ -478,26 +478,369 @@ async def accion_imprimir(update, context, estado: EstadoUsuario) -> None:
     await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
 
 
+def generar_html_checklist(candidatos: list[dict], fecha_str: str) -> bytes:
+    filas_html = []
+    for idx, c in enumerate(candidatos, 1):
+        nom = c.get('nombre_completo') or 'Sin nombre'
+        area = c.get('area') or c.get('puesto') or 'OPERATIVO'
+        num = c.get('numero_temporal') or c.get('no_empleado') or ''
+        filas_html.append(f"""
+        <tr>
+            <td style="text-align:center; padding:8px; border:1px solid #333;">{idx}</td>
+            <td style="padding:8px; border:1px solid #333; font-weight:bold;">{nom} <span style="font-size:9pt; color:#666;">({num})</span></td>
+            <td style="text-align:center; padding:8px; border:1px solid #333;">{area}</td>
+            <td style="border:1px solid #333; width:180px;"></td>
+        </tr>
+        """)
+    filas_str = "\n".join(filas_html)
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Registro de Inducción - {fecha_str}</title>
+<style>
+body {{ font-family: Arial, sans-serif; margin: 20px; color: #111; }}
+.no-print {{ margin-bottom: 20px; }}
+.btn {{ background: #2563eb; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }}
+.header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }}
+.header h2 {{ margin: 0; font-size: 16pt; }}
+.header p {{ margin: 5px 0 0; font-size: 11pt; color: #444; }}
+table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }}
+th {{ background: #f1f5f9; padding: 8px; border: 1px solid #333; font-weight: bold; }}
+@media print {{ .no-print {{ display: none !important; }} body {{ margin: 0; }} }}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir Formato</button>
+</div>
+<div class="header">
+  <h2>CHEONG WOON MÉXICO / KRONOS</h2>
+  <h3>REGISTRO DE ASISTENCIA A INDUCCIÓN DE PERSONAL</h3>
+  <p>Fecha: <strong>{fecha_str}</strong></p>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px;">No.</th>
+      <th>Nombre Completo del Candidato / Empleado</th>
+      <th style="width:180px;">Área / Puesto</th>
+      <th style="width:180px;">Firma de Conformidad</th>
+    </tr>
+  </thead>
+  <tbody>
+    {filas_str}
+  </tbody>
+</table>
+</body>
+</html>"""
+    return html.encode('utf-8')
+
+
+def generar_html_evaluacion(candidatos: list[dict], fecha_str: str) -> bytes:
+    secciones = []
+    for c in candidatos:
+        nom = c.get('nombre_completo') or 'Sin nombre'
+        num = c.get('numero_temporal') or c.get('no_empleado') or ''
+        area = c.get('area') or c.get('puesto') or 'OPERATIVO'
+        secciones.append(f"""
+        <div class="page">
+          <div class="header">
+            <h3>CHEONG WOON MÉXICO / KRONOS</h3>
+            <h4>EVALUACIÓN DE INDUCCIÓN DE PERSONAL</h4>
+            <p><strong>Empleado:</strong> {nom} &nbsp;|&nbsp; <strong>No.:</strong> {num} &nbsp;|&nbsp; <strong>Área:</strong> {area} &nbsp;|&nbsp; <strong>Fecha:</strong> {fecha_str}</p>
+          </div>
+          <table class="eval-table">
+            <thead>
+              <tr>
+                <th style="width:70%;">Aspecto Evaluado</th>
+                <th style="width:15%; text-align:center;">Aprobado</th>
+                <th style="width:15%; text-align:center;">Firma Evaluador</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1. Misión, Visión y Valores de la Empresa</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+              <tr><td>2. Reglamento Interior de Trabajo y Políticas</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+              <tr><td>3. Medidas de Seguridad, Higiene y EPP</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+              <tr><td>4. Prestaciones, Horarios y Turnos de Trabajo</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+              <tr><td>5. Recorrido por Instalaciones y Salidas de Emergencia</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="firmas">
+            <div class="col-firma"><div class="linea"></div>Firma del Empleado</div>
+            <div class="col-firma"><div class="linea"></div>Firma del Instructor / RH</div>
+          </div>
+        </div>
+        """)
+    secciones_str = "\n".join(secciones)
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Evaluación de Inducción - {fecha_str}</title>
+<style>
+body {{ font-family: Arial, sans-serif; margin: 20px; color: #111; }}
+.no-print {{ margin-bottom: 20px; }}
+.btn {{ background: #2563eb; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }}
+.page {{ border: 1px solid #ccc; padding: 25px; margin-bottom: 30px; page-break-after: always; max-width: 800px; margin-left: auto; margin-right: auto; }}
+.header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }}
+.header h3 {{ margin: 0; font-size: 15pt; }}
+.header h4 {{ margin: 5px 0; font-size: 13pt; color: #2563eb; }}
+.eval-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }}
+.eval-table th, .eval-table td {{ border: 1px solid #333; padding: 10px 8px; }}
+.eval-table th {{ background: #f1f5f9; }}
+.firmas {{ display: flex; justify-content: space-between; margin-top: 50px; text-align: center; font-size: 10pt; }}
+.col-firma {{ width: 40%; }}
+.linea {{ border-top: 1px solid #000; margin-bottom: 6px; }}
+@media print {{ .no-print {{ display: none !important; }} .page {{ border: none; padding: 0; margin-bottom: 0; }} }}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir Evaluaciones</button>
+</div>
+{secciones_str}
+</body>
+</html>"""
+    return html.encode('utf-8')
+
+
 async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
     clave = (update.callback_query.data or '').removeprefix('m:')
     backend, telegram_id = _backend(context), update.effective_user.id
     resp = await backend.peticion(telegram_id, 'GET', '/api/obtener-pendientes')
     candidatos = resp.datos if isinstance(resp.datos, list) else []
     nombre_formato = 'Evaluación de Inducción' if clave == 'dia_evaluacion' else 'Registro de Inducción'
-    ruta_formato = 'formatos-lote.html?tipo=evaluacion' if clave == 'dia_evaluacion' else 'documentos/checklist.html'
+    fecha_hoy = hoy(context).strftime('%d/%m/%Y')
+    fecha_iso = hoy(context).strftime('%Y-%m-%d')
 
     if not candidatos:
-        await mostrar(update, f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy.',
+        await mostrar(update, f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy ({fecha_hoy}).',
                       InlineKeyboardMarkup([_menu_inicio()]), editar=True)
         return
-    ids = ','.join(str(c['id']) for c in candidatos if c.get('id'))
-    texto = (
-        f'📋 *Formatos del día — {nombre_formato}*\n\n'
-        f'Ingresos registrados ({len(candidatos)}):\n' +
-        '\n'.join(f"• {c.get('nombre_completo')} ({c.get('numero_temporal') or 'sin número'})" for c in candidatos) +
-        f'\n\nPuedes generar los formatos desde el panel web:\n`{ruta_formato}?ids={ids}`'
+
+    await mostrar(update, f'⏳ Generando {nombre_formato} de hoy…', editar=True)
+
+    if clave == 'dia_evaluacion':
+        contenido_doc = generar_html_evaluacion(candidatos, fecha_hoy)
+        nombre_arch = f"evaluacion_induccion_{fecha_iso}.html"
+    else:
+        contenido_doc = generar_html_checklist(candidatos, fecha_hoy)
+        nombre_arch = f"registro_induccion_{fecha_iso}.html"
+
+    # Enviar el archivo directo a la persona
+    await update.effective_message.reply_document(
+        document=contenido_doc,
+        filename=nombre_arch,
+        caption=f"📋 Aquí tienes el documento listo de **{nombre_formato}** con los {len(candidatos)} ingresos registrados de hoy ({fecha_hoy}). Puedes abrirlo e imprimirlo directamente."
     )
-    await mostrar(update, texto, InlineKeyboardMarkup([[boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()]]), editar=True)
+
+    filas = []
+    # Si es Registro de Inducción, checar si ya se subió el reporte firmado
+    if clave == 'dia_registro':
+        try:
+            st_hoy = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/estado-hoy?fecha={fecha_iso}')
+            if st_hoy.datos and st_hoy.datos.get('subido') and st_hoy.datos.get('id'):
+                reg_id = st_hoy.datos.get('id')
+                filas.append([boton('📥 Descargar reporte firmado de hoy', f'rep:dl:{reg_id}')])
+        except Exception:
+            pass
+        filas.append([boton('📤 Subir reporte firmado de hoy', f'rep:subir:{fecha_iso}')])
+
+    filas.append([boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()])
+    await mostrar(update, f'✅ **{nombre_formato} generado y enviado correctamente.**', InlineKeyboardMarkup(filas), editar=False)
+
+
+# --- Subir Reporte de Inducción y Ver Historial --------------------------------------------
+
+async def accion_rep_ind_hoy(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    fecha_iso = hoy(context).strftime('%Y-%m-%d')
+    fecha_humana = hoy(context).strftime('%d/%m/%Y')
+
+    resp = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/estado-hoy?fecha={fecha_iso}')
+    datos = resp.datos or {}
+    subido = bool(datos.get('subido'))
+    filas = []
+
+    if subido:
+        reg_id = datos.get('id')
+        nom_arch = datos.get('nombre_archivo') or 'registro_induccion.pdf'
+        texto = (
+            f"📋 *Reporte de Inducción — Hoy ({fecha_humana})*\n\n"
+            f"✅ **Estado:** Documento subido y registrado\n"
+            f"📄 **Archivo:** `{nom_arch}`\n\n"
+            f"¿Qué acción deseas realizar?"
+        )
+        filas.append([boton('📥 Descargar documento', f'rep:dl:{reg_id}')])
+        filas.append([boton('🗑️ Eliminar documento', f'rep:del:{reg_id}')])
+        filas.append([boton('📤 Reemplazar con nuevo archivo', f'rep:subir:{fecha_iso}')])
+    else:
+        texto = (
+            f"📋 *Reporte de Inducción — Hoy ({fecha_humana})*\n\n"
+            f"⚠️ **Estado:** Aún no se ha subido el reporte firmado del día de hoy.\n\n"
+            f"Presiona «Subir documento» para adjuntar la fotografía o PDF del reporte firmado:"
+        )
+        filas.append([boton('📤 Subir documento', f'rep:subir:{fecha_iso}')])
+
+    filas.append([boton('⬅️ Atrás', 'm:subir_reporte_induccion'), *_menu_inicio()])
+    await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
+
+
+async def accion_rep_ind_historial(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    dia_actual = hoy(context)
+    mes, anio = dia_actual.month, dia_actual.year
+
+    resp = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/historial-mes?mes={mes}&anio={anio}')
+    datos = resp.datos or {}
+    registros = datos.get('registros') or []
+    subidos_set = {r['fecha']: r for r in registros}
+
+    lineas = [f"📆 *Historial de Inducción — {MESES[mes - 1].capitalize()} {anio}*", ""]
+    if registros:
+        lineas.append(f"Se encontraron **{len(registros)}** reporte(s) subido(s) este mes:")
+        for r in registros[-10:]:
+            lineas.append(f"• `{r['fecha']}`: {r.get('nombre_archivo', 'archivo')}")
+    else:
+        lineas.append("No hay reportes de inducción subidos en este mes todavía.")
+
+    lineas.append("\nElige una fecha para consultar, descargar, eliminar o subir su reporte:")
+    filas = []
+
+    # Botones con los últimos 5 días
+    from datetime import timedelta
+    fila_dias = []
+    for d_offset in range(5):
+        f_eval = dia_actual - timedelta(days=d_offset)
+        f_iso = f_eval.strftime('%Y-%m-%d')
+        f_lbl = f_eval.strftime('%d/%m')
+        icono = "✅" if f_iso in subidos_set else "⚪"
+        fila_dias.append(boton(f"{icono} {f_lbl}", f"rep:ver:{f_iso}"))
+        if len(fila_dias) == 3:
+            filas.append(fila_dias)
+            fila_dias = []
+    if fila_dias:
+        filas.append(fila_dias)
+
+    filas.append([boton('✏️ Indicar otra fecha', 'rep:pedir_fecha')])
+    filas.append([boton('⬅️ Atrás', 'm:subir_reporte_induccion'), *_menu_inicio()])
+    await mostrar(update, "\n".join(lineas), InlineKeyboardMarkup(filas), editar=True)
+
+
+async def al_boton_reporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    consulta = update.callback_query
+    await consulta.answer()
+    telegram_id = consulta.from_user.id
+    backend = _backend(context)
+    estado = _estados(context).de(telegram_id)
+    datos = consulta.data or ''
+
+    if datos.startswith('rep:dl:'):
+        reg_id = int(datos.removeprefix('rep:dl:'))
+        await mostrar(update, '⏳ Descargando documento…', editar=True)
+        respuesta = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/archivo/{reg_id}', params={'descargar': '1'})
+        if not respuesta.es_archivo:
+            await mostrar(update, '⚠️ No se pudo obtener el archivo del servidor.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+            return
+        await update.effective_message.reply_document(
+            document=respuesta.contenido,
+            filename=respuesta.nombre_archivo or f'registro_induccion_{reg_id}.pdf'
+        )
+        await mostrar(update, '📥 **Documento descargado con éxito.**', InlineKeyboardMarkup([[boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()]]), editar=True)
+        return
+
+    elif datos.startswith('rep:del:'):
+        reg_id = int(datos.removeprefix('rep:del:'))
+        await mostrar(update, '⏳ Eliminando documento…', editar=True)
+        resp = await backend.peticion(telegram_id, 'DELETE', f'/api/registro-induccion/{reg_id}')
+        if resp.ok:
+            await mostrar(update, '🗑️ **Reporte de Inducción eliminado correctamente.**', InlineKeyboardMarkup([[boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()]]), editar=True)
+        else:
+            await mostrar(update, '⚠️ Error al eliminar el reporte.', InlineKeyboardMarkup([_menu_inicio()]), editar=True)
+        return
+
+    elif datos.startswith('rep:subir:'):
+        fecha = datos.removeprefix('rep:subir:')
+        estado.esperando = f'subir_rep_ind:{fecha}'
+        texto = (
+            f"📤 *Subir Reporte de Inducción — Fecha: {fecha}*\n\n"
+            f"Por favor envía el archivo como foto o documento PDF (completo y con buena luz).\n"
+            f"Si deseas cancelar, pulsa el botón de abajo:"
+        )
+        filas = [[boton('❌ Cancelar', 'm:subir_reporte_induccion'), *_menu_inicio()]]
+        await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
+        return
+
+    elif datos.startswith('rep:ver:'):
+        fecha_iso = datos.removeprefix('rep:ver:')
+        resp = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/estado-hoy?fecha={fecha_iso}')
+        st = resp.datos or {}
+        filas = []
+        if st.get('subido'):
+            reg_id = st.get('id')
+            nom = st.get('nombre_archivo', 'archivo')
+            texto = (
+                f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
+                f"✅ **Estado:** Subido (`{nom}`)\n\n"
+                f"Elige una acción:"
+            )
+            filas.append([boton('📥 Descargar', f'rep:dl:{reg_id}'), boton('🗑️ Eliminar', f'rep:del:{reg_id}')])
+            filas.append([boton('📤 Reemplazar archivo', f'rep:subir:{fecha_iso}')])
+        else:
+            texto = (
+                f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
+                f"⚪ **Estado:** No hay reporte registrado para esta fecha.\n\n"
+                f"¿Deseas subirlo ahora?"
+            )
+            filas.append([boton('📤 Subir documento', f'rep:subir:{fecha_iso}')])
+        filas.append([boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()])
+        await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
+        return
+
+    elif datos == 'rep:pedir_fecha':
+        estado.esperando = 'indicar_fecha_rep_ind'
+        texto = (
+            f"✏️ *Indicar Fecha del Reporte*\n\n"
+            f"Escribe la fecha que deseas consultar en formato `AAAA-MM-DD` o `DD/MM/AAAA` (ejemplo: `2026-11-15` o `15/11/2026`):"
+        )
+        filas = [[boton('❌ Cancelar', 'm:rep_ind_historial'), *_menu_inicio()]]
+        await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
+        return
+
+
+# --- Ingresos del Mes ----------------------------------------------------------------------
+
+async def accion_ingresos_mes(update, context, estado: EstadoUsuario) -> None:
+    backend, telegram_id = _backend(context), update.effective_user.id
+    dia = hoy(context)
+    mes, anio = dia.month, dia.year
+
+    resp = await backend.peticion(telegram_id, 'GET', '/api/avisos', params={'ingresos_mes': '1'})
+    datos_avisos = resp.datos or {}
+    ing_mes = datos_avisos.get('ingresos_mes') or {}
+
+    total = ing_mes.get('total', 0)
+    teams = ing_mes.get('teams') or []
+
+    lineas = [
+        f"📊 *Ingresos del Mes — {MESES[mes - 1].capitalize()} {anio}*",
+        f"• **Total de personas registradas:** {total}",
+        "",
+        "*Reclutamiento activo por Team:*",
+    ]
+    if teams:
+        for t in teams:
+            lineas.append(f"  · Team {t.get('team')}: {t.get('total', 0)} personas")
+    else:
+        lineas.append("  · No hay registros asociados a teams aún este mes.")
+
+    lineas.append("\n📥 Puedes descargar el listado completo con todos los empleados y medios:")
+    filas = [
+        [boton('📥 Descargar Excel Reclutamiento', 'm:dl_reclu')],
+        [boton('👥 Reclutamiento Activo', 'm:team_reclu'), *_menu_inicio()]
+    ]
+    await mostrar(update, "\n".join(lineas), InlineKeyboardMarkup(filas), editar=True)
 
 
 async def accion_generar_registro(update, context, estado: EstadoUsuario) -> None:
@@ -659,7 +1002,20 @@ async def mostrar_formato_empleado(update, context, estado, empleado: dict, clav
     titulo, pagina = PAGINAS_FORMATOS.get(clave, ('Formato', 'documentos/cartacom.html'))
     rid = str(empleado.get('registro_id') or empleado.get('id') or '')
     nombre = empleado.get('nombre_completo') or 'Sin nombre'
-    no_emp = empleado.get('no_empleado') or 's/n'
+    no_emp = str(empleado.get('no_empleado') or empleado.get('numero_temporal') or 's/n').strip()
+
+    # Validación de Personal Temporal: no pueden generar documentos oficiales hasta número definitivo
+    if no_emp.upper().startswith('TEMP') or 'TEMP-' in no_emp.upper() or 'TEMP -' in no_emp.upper():
+        texto_error_temp = (
+            f'⚠️ *No es posible generar {titulo}*\n\n'
+            f'El personal **{nombre}** cuenta con número temporal (`{no_emp}`).\n\n'
+            f'Personal que tenga número de empleado Temporal no podrá generar ningún documento, '
+            f'hasta que se haya modificado con un número definitivo que no tenga el `TEMP -`.'
+        )
+        filas = [[boton('⬅️ Formatos', 'm:formatos_auto'), *_menu_inicio()]]
+        await responder(update, texto_error_temp, InlineKeyboardMarkup(filas))
+        return
+
     texto = (
         f'⚡ *{titulo} — {nombre}*\n\n'
         f'• Empleado: {nombre} ({no_emp})\n'
@@ -698,9 +1054,11 @@ ACCIONES = {
     'print_entradasalida': accion_imprimir,
     'print_indisciplina': accion_imprimir,
 
-    # 6. Formatos del día
+    # 6. Formatos del día y Reporte de Inducción
     'dia_evaluacion': accion_formatos_dia,
     'dia_registro': accion_formatos_dia,
+    'rep_ind_hoy': accion_rep_ind_hoy,
+    'rep_ind_historial': accion_rep_ind_historial,
 
     # 7. Listado General
     'dl_cw': accion_dl_empresa,
@@ -709,13 +1067,14 @@ ACCIONES = {
     # 8. Generar Registro
     'generar_registro': accion_generar_registro,
 
-    # 9. Personal Activo por Team
+    # 9. Reclutamiento Activo (Personal Activo por Team)
     'team_agregar': accion_team_agregar,
     'team_modificar': accion_team_modificar,
     'team_eliminar': accion_team_eliminar,
 
-    # 10. Descargar Excel
+    # 10. Descargar Excel e Ingresos del Mes
     'dl_excel_mes': accion_dl_excel_mes,
+    'ingresos_mes': accion_ingresos_mes,
 
     # 11. Subir Papelería
     'subir_papeleria': accion_subir_papeleria,
@@ -895,6 +1254,44 @@ async def atender_texto(update: Update, context, texto: str) -> bool:
         if estado.esperando and str(estado.esperando).startswith('buscar_formato:'):
             await buscar_para_formato_resultado(update, context, estado, texto)
             return True
+        if estado.esperando == 'indicar_fecha_rep_ind':
+            # Normalizar fecha
+            t = texto.strip()
+            fecha_iso = None
+            for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+                try:
+                    fecha_iso = datetime.strptime(t, fmt).strftime('%Y-%m-%d')
+                    break
+                except ValueError:
+                    pass
+            if not fecha_iso:
+                await responder(update, '⚠️ Formato de fecha no válido. Escribe en formato `AAAA-MM-DD` o `DD/MM/AAAA` (ej. `2026-11-15`):')
+                return True
+            estado.esperando = None
+            backend, telegram_id = _backend(context), update.effective_user.id
+            resp = await backend.peticion(telegram_id, 'GET', f'/api/registro-induccion/estado-hoy?fecha={fecha_iso}')
+            st = resp.datos or {}
+            filas = []
+            if st.get('subido'):
+                reg_id = st.get('id')
+                nom = st.get('nombre_archivo', 'archivo')
+                txt = (
+                    f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
+                    f"✅ **Estado:** Subido (`{nom}`)\n\n"
+                    f"Elige una acción:"
+                )
+                filas.append([boton('📥 Descargar', f'rep:dl:{reg_id}'), boton('🗑️ Eliminar', f'rep:del:{reg_id}')])
+                filas.append([boton('📤 Reemplazar archivo', f'rep:subir:{fecha_iso}')])
+            else:
+                txt = (
+                    f"📋 *Reporte de Inducción — {fecha_iso}*\n\n"
+                    f"⚪ **Estado:** No hay reporte registrado para esta fecha.\n\n"
+                    f"¿Deseas subirlo ahora?"
+                )
+                filas.append([boton('📤 Subir documento', f'rep:subir:{fecha_iso}')])
+            filas.append([boton('⬅️ Historial', 'm:rep_ind_historial'), *_menu_inicio()])
+            await responder(update, txt, InlineKeyboardMarkup(filas))
+            return True
     except ErrorBackend as error:
         await responder(update, texto_error(error))
         return True
@@ -903,6 +1300,47 @@ async def atender_texto(update: Update, context, texto: str) -> bool:
 
 async def atender_archivo(update: Update, context) -> bool:
     estado = _estados(context).de(update.effective_user.id)
+    if estado.esperando and str(estado.esperando).startswith('subir_rep_ind:'):
+        fecha = str(estado.esperando).removeprefix('subir_rep_ind:')
+        mensaje = update.effective_message
+        if mensaje.photo:
+            foto = mensaje.photo[-1]
+            nombre, file_id = f"reporte_induccion_{fecha}.jpg", foto.file_id
+            mime = 'image/jpeg'
+        elif mensaje.document:
+            documento = mensaje.document
+            nombre = documento.file_name or f"reporte_induccion_{fecha}.pdf"
+            file_id = documento.file_id
+            mime = documento.mime_type or ('application/pdf' if nombre.lower().endswith('.pdf') else 'application/octet-stream')
+        else:
+            await responder(update, '⚠️ Envía una fotografía o un archivo PDF del documento.')
+            return True
+
+        await responder(update, f'⏳ Subiendo reporte de inducción ({fecha})…')
+        try:
+            archivo_desc = await context.bot.get_file(file_id)
+            contenido = bytes(await archivo_desc.download_as_bytearray())
+            backend, telegram_id = _backend(context), update.effective_user.id
+            resp = await backend.peticion(
+                telegram_id,
+                'POST',
+                '/api/registro-induccion/subir',
+                formulario={'fecha': fecha},
+                archivo=Archivo(campo='file', nombre=nombre, contenido=contenido, mime=mime)
+            )
+            estado.esperando = None
+            if resp.ok:
+                await responder(
+                    update,
+                    f"✅ **Reporte de Inducción guardado exitosamente para la fecha {fecha}.**",
+                    InlineKeyboardMarkup([[boton('📋 Formatos del día', 'm:formatos_dia'), *_menu_inicio()]])
+                )
+            else:
+                await responder(update, f"⚠️ Error al subir el reporte: {resp.datos or 'Sin detalle'}")
+        except Exception as exc:
+            await responder(update, f"⚠️ Error al procesar archivo: {exc}")
+        return True
+
     if estado.asistente is not None:
         if estado.asistente.paso is not None and estado.asistente.paso.tipo == 'archivo':
             await archivo_asistente(update, context, estado)

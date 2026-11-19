@@ -93,6 +93,20 @@ def formatear(datos: dict[str, Any]) -> str | None:
         secciones.append(texto)
     if candidatos.get('registrados_ayer'):
         secciones.append(f'📝 Ayer se registraron {candidatos["registrados_ayer"]} candidato(s).')
+    ingresos_mes = datos.get('ingresos_mes') or {}
+    if ingresos_mes and ingresos_mes.get('total') is not None:
+        meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+        m_num = ingresos_mes.get('mes', hoy.month)
+        m_nom = meses[m_num - 1] if 1 <= m_num <= 12 else ''
+        anio_num = ingresos_mes.get('anio', hoy.year)
+        lineas_mes = [f'📊 **Cierre / Ingresos del Mes ({m_nom.capitalize()} {anio_num}):**',
+                      f'• **Total de personas registradas:** {ingresos_mes.get("total", 0)}']
+        teams = ingresos_mes.get('teams') or []
+        for t in teams:
+            lineas_mes.append(f'   · Team {t.get("team")}: {t.get("total", 0)}')
+        lineas_mes.append('📥 Para descargar el reporte en Excel: usa el menú /sistema -> Reclutamiento Activo')
+        secciones.append('\n'.join(lineas_mes))
     if not secciones:
         return None
     return f'🔔 Avisos de hoy ({DIAS[hoy.weekday()]} {hoy:%d/%m/%Y})\n\n' + '\n\n'.join(secciones)

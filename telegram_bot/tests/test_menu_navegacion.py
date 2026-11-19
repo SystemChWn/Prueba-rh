@@ -31,8 +31,9 @@ def test_cada_nodo_es_alcanzable_desde_la_raiz():
 
 def test_reclutamiento_no_ve_lo_de_admin():
     raiz = [n.clave for n in hijos_visibles('raiz', ['reclutamiento'])]
-    assert raiz == ['formatos_dia', 'generar_registro']
-    assert [n.clave for n in hijos_visibles('formatos_dia', ['reclutamiento'])] == ['dia_evaluacion', 'dia_registro']
+    assert raiz == ['formatos_dia', 'subir_reporte_induccion', 'generar_registro', 'team_reclu', 'ingresos_mes']
+    assert [n.clave for n in hijos_visibles('formatos_dia', ['reclutamiento'])] == ['dia_evaluacion', 'dia_registro', 'subir_reporte_induccion']
+    assert [n.clave for n in hijos_visibles('subir_reporte_induccion', ['reclutamiento'])] == ['rep_ind_hoy', 'rep_ind_historial']
 
 
 def test_admin_ve_todo():
@@ -41,9 +42,11 @@ def test_admin_ve_todo():
         'asignar_acceso',
         'ingresos_pendientes',
         'formatos_dia',
+        'subir_reporte_induccion',
         'listado_general',
         'generar_registro',
         'team_reclu',
+        'ingresos_mes',
         'subir_papeleria',
     ]
     assert [n.clave for n in hijos_visibles('raiz', ['admin'])] == esperados

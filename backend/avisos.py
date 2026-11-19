@@ -120,6 +120,39 @@ def _candidatos(cur, hoy, dias, con_nombres):
     return datos
 
 
+def _resumen_mes(cur, hoy):
+    # Si es día 1, el mes reportado es el recién concluido; de lo contrario es el mes en curso
+    if hoy.day == 1:
+        mes_ref = hoy - timedelta(days=1)
+        mes, anio = mes_ref.month, mes_ref.year
+        es_cierre = True
+    else:
+        mes, anio = hoy.month, hoy.year
+        es_cierre = (hoy + timedelta(days=2)).month != hoy.month
+
+    cur.execute("""
+        SELECT COUNT(DISTINCT r.id)
+        FROM registro r
+        LEFT JOIN encuesta_reclutamiento e ON e.registro_id = r.id
+        WHERE EXTRACT(MONTH FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+          AND EXTRACT(YEAR FROM COALESCE(r.fecha_registro, e.fecha_registro, r.created_at)) = %s
+    """, (mes, anio))
+    row_total = cur.fetchone()
+    total = int(row_total[0]) if row_total and row_total[0] else 0
+
+    cur.execute("""
+        SELECT p.team, COUNT(DISTINCT e.id)
+        FROM encuesta_reclutamiento e
+        JOIN personal_reclutamiento p ON LOWER(TRIM(p.nombre)) = LOWER(TRIM(e.nombre_reclutador))
+        WHERE EXTRACT(MONTH FROM e.fecha_registro) = %s
+          AND EXTRACT(YEAR FROM e.fecha_registro) = %s
+        GROUP BY p.team
+        ORDER BY p.team
+    """, (mes, anio))
+    teams = [{'team': r[0], 'total': r[1]} for r in cur.fetchall()]
+    return {'mes': mes, 'anio': anio, 'total': total, 'teams': teams, 'es_cierre': es_cierre}
+
+
 def crear_blueprint(get_db_connection):
     bp = Blueprint('avisos', __name__, url_prefix='/api')
 
@@ -144,6 +177,10 @@ def crear_blueprint(get_db_connection):
                     datos['inicios'] = _incidencias(cur, columnas, 'fecha_inicio', hoy)
                 if permisos & {'admin', 'reclutamiento'}:
                     datos['candidatos'] = _candidatos(cur, hoy, dias_candidato, con_nombres='admin' in permisos)
+                    res_mes = _resumen_mes(cur, hoy)
+                    # Se incluye si es fin/inicio de mes o si lo piden explícitamente
+                    if res_mes.get('es_cierre') or request.args.get('ingresos_mes') == '1':
+                        datos['ingresos_mes'] = res_mes
         return jsonify(datos)
 
     return bp

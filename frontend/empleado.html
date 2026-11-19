@@ -2292,7 +2292,7 @@
 
         function applyReadOnlyState(isEdit) {
             document.body.classList.toggle('is-editing', Boolean(isEdit));
-            const permanentlyLocked = new Set(['fecha-nacimiento', 'edad', 'genero', 'curp', 'rfc', 'nss']);
+            const permanentlyLocked = new Set(['fecha-nacimiento', 'edad', 'genero']);
             Object.entries(fields).forEach(([fieldKey, el]) => {
                 if (!el) return;
                 const isName = fieldKey === 'nombre-display';

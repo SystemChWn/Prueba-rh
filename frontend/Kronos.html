@@ -490,6 +490,16 @@
                 return;
             }
 
+            const conNumeroTemporal = seleccionados.filter(emp => {
+                const noEmp = String(emp.no_empleado || emp.numero_temporal || '').trim().toUpperCase();
+                return noEmp.startsWith('TEMP') || noEmp.includes('TEMP-') || noEmp.includes('TEMP -');
+            });
+            if (conNumeroTemporal.length > 0) {
+                const nombres = conNumeroTemporal.map(e => `${e.nombre_completo || 'Empleado'} (${e.no_empleado || e.numero_temporal})`).join(', ');
+                alert(`Personal con número temporal (${nombres}) no puede generar ningún documento hasta que se haya modificado con un número definitivo que no tenga el TEMP.`);
+                return;
+            }
+
             try {
                 const params = new URLSearchParams({
                     tipo: selectedFormat,
