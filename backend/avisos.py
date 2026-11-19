@@ -177,10 +177,9 @@ def crear_blueprint(get_db_connection):
                     datos['inicios'] = _incidencias(cur, columnas, 'fecha_inicio', hoy)
                 if permisos & {'admin', 'reclutamiento'}:
                     datos['candidatos'] = _candidatos(cur, hoy, dias_candidato, con_nombres='admin' in permisos)
-                    res_mes = _resumen_mes(cur, hoy)
-                    # Se incluye si es fin/inicio de mes o si lo piden explícitamente
-                    if res_mes.get('es_cierre') or request.args.get('ingresos_mes') == '1':
-                        datos['ingresos_mes'] = res_mes
+                    es_fin_de_mes = (hoy.day == 1) or ((hoy + timedelta(days=2)).month != hoy.month)
+                    if es_fin_de_mes or request.args.get('ingresos_mes') == '1':
+                        datos['ingresos_mes'] = _resumen_mes(cur, hoy)
         return jsonify(datos)
 
     return bp

@@ -53,6 +53,8 @@ PERMISOS_POR_ENDPOINT = {
     'actualizar_reclutador': ADMIN_O_RECLUTAMIENTO,
     'eliminar_telefono_reclutador': ADMIN_O_RECLUTAMIENTO,
     'obtener_ingresos': ADMIN_O_RECLUTAMIENTO,
+    'obtener_ingresos_hoy': ADMIN_O_RECLUTAMIENTO,
+    'exportar_ingresos_dia': ADMIN_O_RECLUTAMIENTO,
     'obtener_empleado': ADMIN_O_RECLUTAMIENTO,
     'obtener_empleado_por_id': ADMIN_O_RECLUTAMIENTO,
     'estado_registro_induccion_hoy': ADMIN_O_RECLUTAMIENTO,

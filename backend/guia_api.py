@@ -33,6 +33,8 @@ RUTAS_OCULTAS = {
     ('POST', '/api/guardar-encuesta'),        # idem
     ('POST', '/api/escanear-documento'),      # manda imágenes a OpenAI
     ('GET', '/api/exportar-excel'),           # plantilla de ejemplo, sin datos
+    ('GET', '/api/ingresos-hoy'),             # usado por bot para formatos del día
+    ('GET', '/api/exportar-ingresos-dia'),    # descarga de Excel de ingresos del día
     ('GET', '/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>/archivo'),  # binario personal
     ('POST', '/api/guardar-ingresos'),        # lote; el bot usa guardar-ingreso
 }

@@ -12,6 +12,7 @@ from copy import copy
 from datetime import datetime
 import psycopg2
 import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from flask import Flask, g, jsonify, request, send_from_directory, send_file
 from io import BytesIO
 from dotenv import load_dotenv
@@ -1897,7 +1898,16 @@ def obtener_ingresos_hoy():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 asegurar_columna_nombre_completo(cur)
-                cur.execute("""
+                asegurar_esquema_ingresos_puesto(cur)
+                cols_registro = obtener_columnas(cur, 'registro')
+                fecha_col = None
+                for candidato in ('fecha_registro', 'fecha_ingreso', 'created_at', 'fecha_alta'):
+                    if candidato in cols_registro:
+                        fecha_col = candidato
+                        break
+
+                where_fecha = f"r.{fecha_col}::date = %s::date" if fecha_col else "FALSE"
+                cur.execute(f"""
                     SELECT r.id,
                            r.nombre_completo,
                            r.numero_temporal,
@@ -1905,13 +1915,14 @@ def obtener_ingresos_hoy():
                            COALESCE(ip.puesto, 'Operador') AS puesto,
                            COALESCE(ip.area, 'Producción') AS area,
                            COALESCE(ip.empresa, 'Cheong Woon') AS empresa,
-                           COALESCE(r.curp, '') AS curp
+                           COALESCE(r.curp, '') AS curp,
+                           COALESCE(r.tel_movil, '') AS tel_movil,
+                           COALESCE(ip.turno, '1') AS turno
                     FROM registro r
                     LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
-                    WHERE r.fecha_registro = %s
-                       OR (ip.fecha_ingreso IS NOT NULL AND ip.fecha_ingreso::date = %s::date)
+                    WHERE {where_fecha}
                     ORDER BY r.id ASC
-                """, (fecha_param, fecha_param))
+                """, (fecha_param,))
                 filas = cur.fetchall()
                 data = [
                     {
@@ -1923,13 +1934,15 @@ def obtener_ingresos_hoy():
                         'area': f[5] or 'Producción',
                         'empresa': f[6] or 'Cheong Woon',
                         'curp': f[7] or '',
+                        'tel_movil': f[8] or '',
+                        'turno': f[9] or '1',
                     }
                     for f in filas
                 ]
                 # Si no hubo registros específicos con fecha_registro = hoy, incluir también pendientes sin puesto
                 if not data:
                     cur.execute("""
-                        SELECT r.id, r.nombre_completo, r.numero_temporal, '', 'Operador', 'Producción', 'Cheong Woon', COALESCE(r.curp, '')
+                        SELECT r.id, r.nombre_completo, r.numero_temporal, '', 'Operador', 'Producción', 'Cheong Woon', COALESCE(r.curp, ''), COALESCE(r.tel_movil, ''), '1'
                         FROM registro r
                         WHERE NOT EXISTS (SELECT 1 FROM ingresos_puesto ip WHERE ip.registro_id = r.id)
                         ORDER BY r.id DESC
@@ -1944,11 +1957,175 @@ def obtener_ingresos_hoy():
                             'area': f[5],
                             'empresa': f[6],
                             'curp': f[7],
+                            'tel_movil': f[8],
+                            'turno': f[9],
                         }
                         for f in cur.fetchall()
                     ]
         return jsonify(data), 200
     except Exception as e:
+        print(f"Error en /api/ingresos-hoy: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/exportar-ingresos-dia', methods=['GET'])
+def exportar_ingresos_dia():
+    """Genera y descarga un Excel con formato profesional de los ingresos del día."""
+    fecha_param = request.args.get('fecha') or datetime.now().strftime('%Y-%m-%d')
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_columna_nombre_completo(cur)
+                asegurar_esquema_ingresos_puesto(cur)
+                cols_registro = obtener_columnas(cur, 'registro')
+                fecha_col = None
+                for candidato in ('fecha_registro', 'fecha_ingreso', 'created_at', 'fecha_alta'):
+                    if candidato in cols_registro:
+                        fecha_col = candidato
+                        break
+
+                where_fecha = f"r.{fecha_col}::date = %s::date" if fecha_col else "FALSE"
+
+                cur.execute(f"""
+                    SELECT r.id,
+                           COALESCE(r.{fecha_col}::text, %s) AS fecha_reg,
+                           COALESCE(ip.no_empleado, r.numero_temporal, '') AS no_emp,
+                           r.nombre_completo,
+                           COALESCE(ip.puesto, 'Operador') AS puesto,
+                           COALESCE(ip.area, 'Producción') AS area,
+                           COALESCE(ip.empresa, 'Cheong Woon') AS empresa,
+                           COALESCE(ip.turno, '1') AS turno,
+                           COALESCE(r.curp, '') AS curp,
+                           COALESCE(r.tel_movil, '') AS tel_movil,
+                           COALESCE(rec.fuente, 'Reclutamiento') AS medio,
+                           COALESCE(rec.nombre_reclutador, '') AS reclutador,
+                           COALESCE(r.estatus, 'ACTIVO') AS estatus
+                    FROM registro r
+                    LEFT JOIN ingresos_puesto ip ON ip.registro_id = r.id
+                    LEFT JOIN LATERAL (
+                        SELECT e.fuente, e.nombre_reclutador
+                        FROM encuesta_reclutamiento e
+                        WHERE e.registro_id = r.id
+                           OR LOWER(TRIM(COALESCE(e.nombre_empleado, ''))) = LOWER(TRIM(r.nombre_completo))
+                        ORDER BY e.id DESC
+                        LIMIT 1
+                    ) rec ON TRUE
+                    WHERE {where_fecha}
+                    ORDER BY r.id ASC
+                """, (fecha_param, fecha_param))
+                filas = cur.fetchall()
+
+                if not filas:
+                    cur.execute(f"""
+                        SELECT r.id,
+                               %s AS fecha_reg,
+                               COALESCE(r.numero_temporal, '') AS no_emp,
+                               r.nombre_completo,
+                               'Operador' AS puesto,
+                               'Producción' AS area,
+                               'Cheong Woon' AS empresa,
+                               '1' AS turno,
+                               COALESCE(r.curp, '') AS curp,
+                               COALESCE(r.tel_movil, '') AS tel_movil,
+                               COALESCE(rec.fuente, 'Pendiente') AS medio,
+                               COALESCE(rec.nombre_reclutador, '') AS reclutador,
+                               'ACTIVO' AS estatus
+                        FROM registro r
+                        LEFT JOIN LATERAL (
+                            SELECT e.fuente, e.nombre_reclutador
+                            FROM encuesta_reclutamiento e
+                            WHERE e.registro_id = r.id
+                               OR LOWER(TRIM(COALESCE(e.nombre_empleado, ''))) = LOWER(TRIM(r.nombre_completo))
+                            ORDER BY e.id DESC
+                            LIMIT 1
+                        ) rec ON TRUE
+                        WHERE NOT EXISTS (SELECT 1 FROM ingresos_puesto ip WHERE ip.registro_id = r.id)
+                        ORDER BY r.id DESC
+                    """, (fecha_param,))
+                    filas = cur.fetchall()
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Ingresos del Día"
+        ws.views.sheetView[0].showGridLines = True
+
+        headers = [
+            "No.", "Fecha Registro", "N° Empleado", "Nombre del Empleado",
+            "Puesto", "Área", "Empresa", "Turno", "CURP", "Teléfono",
+            "Medio / Fuente", "Reclutador / Quien Recomendó", "Estatus"
+        ]
+        ws.append(headers)
+
+        header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        thin_border = Border(
+            left=Side(style='thin', color='D9D9D9'),
+            right=Side(style='thin', color='D9D9D9'),
+            top=Side(style='thin', color='D9D9D9'),
+            bottom=Side(style='thin', color='D9D9D9')
+        )
+
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            cell.border = thin_border
+        ws.row_dimensions[1].height = 28
+
+        data_font = Font(name="Arial", size=10)
+        data_align = Alignment(vertical="center")
+        center_align = Alignment(horizontal="center", vertical="center")
+
+        for idx, f in enumerate(filas, 1):
+            row_data = [
+                idx,
+                str(f[1] or fecha_param),
+                str(f[2] or ''),
+                str(f[3] or ''),
+                str(f[4] or ''),
+                str(f[5] or ''),
+                str(f[6] or ''),
+                str(f[7] or ''),
+                str(f[8] or ''),
+                str(f[9] or ''),
+                str(f[10] or ''),
+                str(f[11] or ''),
+                str(f[12] or '')
+            ]
+            ws.append(row_data)
+            row_idx = ws.max_row
+            ws.row_dimensions[row_idx].height = 20
+            for col_idx in range(1, len(row_data) + 1):
+                c = ws.cell(row=row_idx, column=col_idx)
+                c.font = data_font
+                c.border = thin_border
+                if col_idx in (1, 2, 3, 7, 8, 13):
+                    c.alignment = center_align
+                else:
+                    c.alignment = data_align
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = col[0].column_letter
+            ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 40)
+
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = ws.dimensions
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'ingresos_del_dia_{fecha_param}.xlsx'
+        )
+    except Exception as e:
+        print(f"Error en /api/exportar-ingresos-dia: {e}")
         return jsonify({'error': str(e)}), 500
 
 

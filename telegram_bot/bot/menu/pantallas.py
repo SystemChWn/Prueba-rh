@@ -375,7 +375,7 @@ async def accion_ind_team(update, context, estado) -> None:
                   InlineKeyboardMarkup([[boton('⬅️ Atrás', 'm:reclutamiento'), *_menu_inicio()]]), editar=True)
 
 
-async def _descargar(update, context, ruta: str, params: dict | None, nombre_defecto: str) -> None:
+async def _descargar(update, context, ruta: str, params: dict | None, nombre_defecto: str, volver_menu: str = 'm:descargas', caption: str | None = None) -> None:
     await mostrar(update, '⏳ Generando el archivo…', editar=True)
     respuesta = await _backend(context).peticion(update.effective_user.id, 'GET', ruta, params=params, timeout=120)
     if not respuesta.es_archivo:
@@ -383,9 +383,10 @@ async def _descargar(update, context, ruta: str, params: dict | None, nombre_def
         return
     # El archivo va directo a la persona; nunca pasa por un modelo.
     await update.effective_message.reply_document(
-        document=respuesta.contenido, filename=respuesta.nombre_archivo or nombre_defecto
+        document=respuesta.contenido, filename=respuesta.nombre_archivo or nombre_defecto, caption=caption
     )
-    await mostrar(update, '📥 Listo.', InlineKeyboardMarkup([[boton('⬅️ Descargas', 'm:descargas'), *_menu_inicio()]]),
+    destino_volver = 'Formatos del día' if volver_menu == 'm:formatos_dia' else 'Descargas'
+    await mostrar(update, '📥 Archivo enviado correctamente.', InlineKeyboardMarkup([[boton(f'⬅️ {destino_volver}', volver_menu), *_menu_inicio()]]),
                   editar=True)
 
 
@@ -478,128 +479,561 @@ async def accion_imprimir(update, context, estado: EstadoUsuario) -> None:
     await mostrar(update, texto, InlineKeyboardMarkup(filas), editar=True)
 
 
+def formatear_apellidos_nombres(nombre: str) -> str:
+    if not nombre:
+        return ''
+    palabras = nombre.strip().split()
+    if len(palabras) <= 2:
+        return nombre.upper()
+    apellidos = ' '.join(palabras[-2:])
+    nombres = ' '.join(palabras[:-2])
+    return f"{apellidos} {nombres}".upper()
+
+
 def generar_html_checklist(candidatos: list[dict], fecha_str: str) -> bytes:
     filas_html = []
     for idx, c in enumerate(candidatos, 1):
         nom = c.get('nombre_completo') or 'Sin nombre'
-        area = c.get('area') or c.get('puesto') or 'OPERATIVO'
-        num = c.get('numero_temporal') or c.get('no_empleado') or ''
+        area = c.get('area') or c.get('puesto') or 'Producción'
+        num = c.get('no_empleado') or c.get('numero_temporal') or ''
         filas_html.append(f"""
         <tr>
-            <td style="text-align:center; padding:8px; border:1px solid #333;">{idx}</td>
-            <td style="padding:8px; border:1px solid #333; font-weight:bold;">{nom} <span style="font-size:9pt; color:#666;">({num})</span></td>
-            <td style="text-align:center; padding:8px; border:1px solid #333;">{area}</td>
-            <td style="border:1px solid #333; width:180px;"></td>
+            <td style="text-align:center; font-weight:bold;">{idx}</td>
+            <td style="font-weight:bold;">{nom} <span style="font-size:9pt; color:#4a5568; font-weight:normal;">({num})</span></td>
+            <td style="text-align:center;">{area}</td>
+            <td style="height:36px;"></td>
         </tr>
         """)
     filas_str = "\n".join(filas_html)
+
     html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Registro de Inducción - {fecha_str}</title>
-<style>
-body {{ font-family: Arial, sans-serif; margin: 20px; color: #111; }}
-.no-print {{ margin-bottom: 20px; }}
-.btn {{ background: #2563eb; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }}
-.header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }}
-.header h2 {{ margin: 0; font-size: 16pt; }}
-.header p {{ margin: 5px 0 0; font-size: 11pt; color: #444; }}
-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }}
-th {{ background: #f1f5f9; padding: 8px; border: 1px solid #333; font-weight: bold; }}
-@media print {{ .no-print {{ display: none !important; }} body {{ margin: 0; }} }}
-</style>
+    <meta charset="UTF-8">
+    <title>Registro de Inducción - {fecha_str}</title>
+    <style>
+        body {{
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
+        .controls {{
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }}
+        .btn {{
+            padding: 12px 24px;
+            font-size: 11pt;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            background-color: #3182ce;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-decoration: none;
+        }}
+        .btn:hover {{
+            background-color: #2b6cb0;
+        }}
+        .page {{
+            background: white;
+            width: 21.6cm;
+            min-height: 27.9cm;
+            padding: 1.4cm 1.3cm;
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #1a202c;
+        }}
+        .register-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }}
+        .register-logo {{
+            width: 108px;
+            height: auto;
+            margin-top: -0.5cm;
+        }}
+        .register-title {{
+            margin: 0 0 24px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 18pt;
+            text-align: center;
+        }}
+        .register-schedule {{
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 24px;
+        }}
+        .schedule-field {{
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            white-space: nowrap;
+        }}
+        .schedule-line {{
+            flex: 1;
+            min-width: 24px;
+            height: 18px;
+            border-bottom: 1px solid #1a202c;
+        }}
+        .register-table {{
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }}
+        .register-table th,
+        .register-table td {{
+            border: 1px solid #1a202c;
+            padding: 7px 8px;
+        }}
+        .register-table th:first-child,
+        .register-table td:first-child {{
+            width: 8%;
+            text-align: center;
+        }}
+        .register-table th:nth-child(2),
+        .register-table td:nth-child(2) {{
+            width: 50%;
+            text-align: left;
+        }}
+        .register-table th:nth-child(3),
+        .register-table td:nth-child(3) {{
+            width: 22%;
+            text-align: center;
+        }}
+        .register-table th:last-child,
+        .register-table td:last-child {{
+            width: 20%;
+        }}
+        @media print {{
+            @page {{
+                size: letter;
+                margin: 0;
+            }}
+            html, body {{
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }}
+            .controls {{
+                display: none !important;
+            }}
+            .page {{
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                min-height: 27.94cm;
+                height: auto;
+            }}
+            .register-table thead {{
+                display: table-header-group;
+            }}
+            .register-table tr {{
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }}
+        }}
+    </style>
 </head>
 <body>
-<div class="no-print">
-  <button class="btn" onclick="window.print()">🖨️ Imprimir Formato</button>
-</div>
-<div class="header">
-  <h2>CHEONG WOON MÉXICO / KRONOS</h2>
-  <h3>REGISTRO DE ASISTENCIA A INDUCCIÓN DE PERSONAL</h3>
-  <p>Fecha: <strong>{fecha_str}</strong></p>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:40px;">No.</th>
-      <th>Nombre Completo del Candidato / Empleado</th>
-      <th style="width:180px;">Área / Puesto</th>
-      <th style="width:180px;">Firma de Conformidad</th>
-    </tr>
-  </thead>
-  <tbody>
-    {filas_str}
-  </tbody>
-</table>
+    <div class="controls">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF ({len(candidatos)} asistentes)</button>
+    </div>
+    <main class="page">
+        <div class="register-header">
+            <img class="register-logo" src="https://lh3.googleusercontent.com/d/1YuA-V3W27vrLeDszpzRYNJnwMKGvpHpA" alt="Cheong Woon Mexico">
+        </div>
+        <h1 class="register-title">REGISTRO DE INDUCCIÓN</h1>
+        <div class="register-schedule">
+            <div class="schedule-field"><strong>Fecha:</strong> <span>{fecha_str}</span></div>
+            <div class="schedule-field"><strong>Hora de inicio:</strong><span class="schedule-line"></span></div>
+            <div class="schedule-field"><strong>Hora de fin:</strong><span class="schedule-line"></span></div>
+        </div>
+        <table class="register-table">
+            <thead>
+                <tr>
+                    <th scope="col">No.</th>
+                    <th scope="col">Empleados</th>
+                    <th scope="col">Área</th>
+                    <th scope="col">Firma</th>
+                </tr>
+            </thead>
+            <tbody>
+                {filas_str}
+            </tbody>
+        </table>
+    </main>
 </body>
 </html>"""
     return html.encode('utf-8')
 
 
 def generar_html_evaluacion(candidatos: list[dict], fecha_str: str) -> bytes:
-    secciones = []
-    for c in candidatos:
-        nom = c.get('nombre_completo') or 'Sin nombre'
-        num = c.get('numero_temporal') or c.get('no_empleado') or ''
-        area = c.get('area') or c.get('puesto') or 'OPERATIVO'
-        secciones.append(f"""
-        <div class="page">
-          <div class="header">
-            <h3>CHEONG WOON MÉXICO / KRONOS</h3>
-            <h4>EVALUACIÓN DE INDUCCIÓN DE PERSONAL</h4>
-            <p><strong>Empleado:</strong> {nom} &nbsp;|&nbsp; <strong>No.:</strong> {num} &nbsp;|&nbsp; <strong>Área:</strong> {area} &nbsp;|&nbsp; <strong>Fecha:</strong> {fecha_str}</p>
-          </div>
-          <table class="eval-table">
+    paginas = []
+    for idx, c in enumerate(candidatos, 1):
+        nom_raw = c.get('nombre_completo') or 'Sin nombre'
+        nom_formateado = formatear_apellidos_nombres(nom_raw)
+        num_emp = c.get('no_empleado') or c.get('numero_temporal') or ''
+        depto = c.get('area') or c.get('puesto') or 'Producción'
+
+        paginas.append(f"""
+    <div class="page" id="contrato-page-{idx}" style="line-height: 1.2; font-size: 11pt; font-family: Arial, sans-serif;">
+        <!-- Logo y Fecha -->
+        <div class="logo-date-row">
+            <div class="logo-container">
+                <img src="https://lh3.googleusercontent.com/d/1YuA-V3W27vrLeDszpzRYNJnwMKGvpHpA" alt="Cheong Woon Mexico">
+            </div>
+            <div class="document-date">
+                Fecha: <span>{fecha_str}</span>
+            </div>
+        </div>
+        <h1 class="document-title">EVALUACIÓN DE INDUCCIÓN Y ADAPTACIÓN LABORAL</h1>
+        <div class="employee-row personal-row">
+            <div class="employee-field">
+                <strong>Nombre:</strong>
+                <span class="employee-value">{nom_formateado}</span>
+            </div>
+            <div class="employee-field">
+                <strong>N° Emp:</strong>
+                <span class="employee-value">{num_emp}</span>
+            </div>
+        </div>
+        <div class="employee-row">
+            <div class="employee-field">
+                <strong>Departamento:</strong>
+                <span class="employee-value">{depto}</span>
+            </div>
+            <div class="employee-field">
+                <strong>Líder:</strong>
+                <span class="employee-value"></span>
+            </div>
+        </div>
+        <div class="evaluation-instruction">Indica con una ✔ la opción deseada.</div>
+        <div class="evaluation-question">¿Qué te pareció el trabajo?</div>
+        <div class="rating-options">
+            <label class="rating-option"><input type="checkbox" name="evaluacion-trabajo-{idx}" value="Excelente"> Excelente</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-trabajo-{idx}" value="Bueno"> Bueno</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-trabajo-{idx}" value="Regular"> Regular</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-trabajo-{idx}" value="Malo"> Malo</label>
+        </div>
+        <table class="induction-table">
             <thead>
-              <tr>
-                <th style="width:70%;">Aspecto Evaluado</th>
-                <th style="width:15%; text-align:center;">Aprobado</th>
-                <th style="width:15%; text-align:center;">Firma Evaluador</th>
-              </tr>
+                <tr>
+                    <th></th>
+                    <th scope="col">Sí</th>
+                    <th scope="col">No</th>
+                </tr>
             </thead>
             <tbody>
-              <tr><td>1. Misión, Visión y Valores de la Empresa</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
-              <tr><td>2. Reglamento Interior de Trabajo y Políticas</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
-              <tr><td>3. Medidas de Seguridad, Higiene y EPP</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
-              <tr><td>4. Prestaciones, Horarios y Turnos de Trabajo</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
-              <tr><td>5. Recorrido por Instalaciones y Salidas de Emergencia</td><td style="text-align:center;">[ &nbsp; ]</td><td></td></tr>
+                <tr>
+                    <td>¿Recibiste correctamente la inducción de la empresa al momento de entrar?</td>
+                    <td><input type="checkbox" name="induccion-empresa-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="induccion-empresa-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Se te presentó a tu jefe inmediato?</td>
+                    <td><input type="checkbox" name="presentacion-jefe-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="presentacion-jefe-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿El trato del supervisor fue correcto y adecuado?</td>
+                    <td><input type="checkbox" name="trato-supervisor-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="trato-supervisor-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿El trato del personal de Recursos Humanos fue correcto y adecuado?</td>
+                    <td><input type="checkbox" name="trato-recursos-humanos-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="trato-recursos-humanos-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿El trato del personal coreano fue correcto y adecuado?</td>
+                    <td><input type="checkbox" name="trato-personal-coreano-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="trato-personal-coreano-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿El trato de tu jefe inmediato fue correcto y adecuado?</td>
+                    <td><input type="checkbox" name="trato-jefe-inmediato-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="trato-jefe-inmediato-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Estás cómodo en tu área de trabajo?</td>
+                    <td><input type="checkbox" name="comodidad-area-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="comodidad-area-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Te capacitaron en tu área de trabajo?</td>
+                    <td><input type="checkbox" name="capacitacion-area-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="capacitacion-area-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Te dieron indicaciones de las actividades que realizarías?</td>
+                    <td><input type="checkbox" name="indicaciones-actividades-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="indicaciones-actividades-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Te informaron sobre los permisos sanitarios?</td>
+                    <td><input type="checkbox" name="permisos-sanitarios-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="permisos-sanitarios-{idx}" value="no"></td>
+                </tr>
+                <tr>
+                    <td>¿Te informaron sobre los permisos de entrada y salida a destiempo?</td>
+                    <td><input type="checkbox" name="permisos-entrada-salida-{idx}" value="si"></td>
+                    <td><input type="checkbox" name="permisos-entrada-salida-{idx}" value="no"></td>
+                </tr>
             </tbody>
-          </table>
-          <div class="firmas">
-            <div class="col-firma"><div class="linea"></div>Firma del Empleado</div>
-            <div class="col-firma"><div class="linea"></div>Firma del Instructor / RH</div>
-          </div>
+        </table>
+        <br>
+        <div class="evaluation-question">¿Qué tan clara fue la explicación sobre el servicio de comedor?</div>
+        <div class="rating-options">
+            <label class="rating-option"><input type="checkbox" name="evaluacion-comedor-{idx}" value="Excelente"> Excelente</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-comedor-{idx}" value="Bueno"> Bueno</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-comedor-{idx}" value="Regular"> Regular</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-comedor-{idx}" value="Malo"> Malo</label>
         </div>
+        <br>
+        <div class="evaluation-question">Cómo calificas el servicio de transporte proporcionado por la empresa</div>
+        <div class="rating-options">
+            <label class="rating-option"><input type="checkbox" name="evaluacion-transporte-{idx}" value="Excelente"> Excelente</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-transporte-{idx}" value="Bueno"> Bueno</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-transporte-{idx}" value="Regular"> Regular</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-transporte-{idx}" value="Malo"> Malo</label>
+        </div>
+        <br>
+        <div class="evaluation-question">¿Cómo percibes el ambiente de trabajo en tu área?</div>
+        <div class="rating-options">
+            <label class="rating-option"><input type="checkbox" name="evaluacion-ambiente-{idx}" value="Excelente"> Excelente</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-ambiente-{idx}" value="Bueno"> Bueno</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-ambiente-{idx}" value="Regular"> Regular</label>
+            <label class="rating-option"><input type="checkbox" name="evaluacion-ambiente-{idx}" value="Malo"> Malo</label>
+        </div>
+        <br>
+        <div class="evaluation-question">Tienes algún comentario o sugerencia para mejorar la experiencia de bienvenida e integración del nuevo personal?</div>
+        <div class="comment-line"></div>
+        <div class="comment-line"></div>
+    </div>
         """)
-    secciones_str = "\n".join(secciones)
+
+    paginas_str = "\n".join(paginas)
+
     html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Evaluación de Inducción - {fecha_str}</title>
-<style>
-body {{ font-family: Arial, sans-serif; margin: 20px; color: #111; }}
-.no-print {{ margin-bottom: 20px; }}
-.btn {{ background: #2563eb; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }}
-.page {{ border: 1px solid #ccc; padding: 25px; margin-bottom: 30px; page-break-after: always; max-width: 800px; margin-left: auto; margin-right: auto; }}
-.header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }}
-.header h3 {{ margin: 0; font-size: 15pt; }}
-.header h4 {{ margin: 5px 0; font-size: 13pt; color: #2563eb; }}
-.eval-table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }}
-.eval-table th, .eval-table td {{ border: 1px solid #333; padding: 10px 8px; }}
-.eval-table th {{ background: #f1f5f9; }}
-.firmas {{ display: flex; justify-content: space-between; margin-top: 50px; text-align: center; font-size: 10pt; }}
-.col-firma {{ width: 40%; }}
-.linea {{ border-top: 1px solid #000; margin-bottom: 6px; }}
-@media print {{ .no-print {{ display: none !important; }} .page {{ border: none; padding: 0; margin-bottom: 0; }} }}
-</style>
+    <meta charset="UTF-8">
+    <title>Evaluaciones de Inducción - {fecha_str}</title>
+    <style>
+        body {{
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
+        .controls {{
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }}
+        .btn {{
+            padding: 12px 24px;
+            font-size: 11pt;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            background-color: #3182ce;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-decoration: none;
+        }}
+        .btn:hover {{
+            background-color: #2b6cb0;
+        }}
+        .page {{
+            background: white;
+            width: 21.6cm;
+            height: 27.9cm;
+            padding: 1.4cm 1.3cm 1.5cm;
+            margin: 10mm auto;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #1a202c;
+            text-align: justify;
+            overflow: visible; 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }}
+        .employee-row {{
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+            margin-bottom: 10px;
+            text-align: left;
+        }}
+        .employee-field {{
+            display: flex;
+            flex: 1;
+            align-items: baseline;
+            gap: 5px;
+            min-width: 0;
+            white-space: nowrap;
+        }}
+        .personal-row .employee-field:first-child {{
+            flex: 1.6;
+        }}
+        .personal-row .employee-field:last-child {{
+            flex: 0.8;
+        }}
+        .employee-value {{
+            flex: 1;
+            min-height: 18px;
+            border-bottom: 1px solid #1a202c;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 4px;
+            font-weight: bold;
+        }}
+        .evaluation-instruction {{
+            margin: 8px 0;
+            text-align: left;
+        }}
+        .evaluation-question {{
+            margin: 0 0 10px;
+            font-weight: bold;
+            text-align: left;
+        }}
+        .rating-options {{
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            text-align: left;
+        }}
+        .rating-option {{
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+        }}
+        .rating-option input {{
+            width: 15px;
+            height: 15px;
+            margin: 0;
+            accent-color: #1a202c;
+        }}
+        .induction-table {{
+            width: max-content;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 12px;
+            border-collapse: collapse;
+            table-layout: auto;
+            font-size: 11pt;
+            text-align: left;
+        }}
+        .induction-table th,
+        .induction-table td {{
+            padding: 3px 5px;
+        }}
+        .induction-table th:first-child,
+        .induction-table td:first-child {{
+            white-space: nowrap;
+        }}
+        .induction-table th:nth-child(2),
+        .induction-table th:nth-child(3),
+        .induction-table td:nth-child(2),
+        .induction-table td:nth-child(3) {{
+            width: 34px;
+            text-align: center;
+        }}
+        .induction-table input {{
+            width: 14px;
+            height: 18px;
+            margin: 0;
+            vertical-align: middle;
+            accent-color: #1a202c;
+        }}
+        .logo-date-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }}
+        .logo-container {{
+            max-width: 270px;
+            width: 70%;
+            margin-top: -0.65cm;
+        }}
+        .logo-container img {{
+            width: 40%;
+            height: auto;
+        }}
+        .document-date {{
+            text-align: right;
+            font-weight: 500;
+        }}
+        .document-title {{
+            margin: -8px 0 22px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 16pt;
+            text-align: center;
+        }}
+        .comment-line {{
+            height: 24px;
+            border-bottom: 1px solid #1a202c;
+        }}
+        @media print {{
+            @page {{
+                size: letter;
+                margin: 0;
+            }}
+            html, body {{
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }}
+            .controls {{
+                display: none !important;
+            }}
+            .page {{
+                box-shadow: none;
+                margin: 0;
+                width: 21.59cm;
+                height: 27.94cm;
+                break-inside: avoid;
+                page-break-after: always;
+                break-after: page;
+            }}
+            .page + .page {{
+                page-break-before: always;
+                break-before: page;
+            }}
+        }}
+    </style>
 </head>
 <body>
-<div class="no-print">
-  <button class="btn" onclick="window.print()">🖨️ Imprimir Evaluaciones</button>
-</div>
-{secciones_str}
+    <div class="controls">
+        <button class="btn" onclick="window.print()">🖨️ Descargar / Guardar PDF ({len(candidatos)} evaluaciones)</button>
+    </div>
+    {paginas_str}
 </body>
 </html>"""
     return html.encode('utf-8')
@@ -626,29 +1060,52 @@ async def accion_formatos_dia(update, context, estado: EstadoUsuario) -> None:
         await mostrar(
             update,
             f'📋 *{nombre_formato}*\n\nNo se detectaron ingresos registrados el día de hoy ({fecha_hoy}).',
-            InlineKeyboardMarkup([_menu_inicio()]),
+            InlineKeyboardMarkup([[boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()]]),
             editar=True
         )
         return
 
-    await mostrar(update, f'⏳ Generando {nombre_formato} de hoy…', editar=True)
+    await mostrar(update, f'⏳ Generando {nombre_formato} de hoy ({len(candidatos)} personas)…', editar=True)
 
     if clave == 'dia_evaluacion':
         contenido_doc = generar_html_evaluacion(candidatos, fecha_hoy)
         nombre_arch = f"evaluacion_induccion_{fecha_iso}.html"
+        caption = (
+            f"📝 Aquí tienes el documento oficial de **Evaluación de Inducción** ({fecha_hoy}).\n"
+            f"Generado automáticamente con hojas individuales para los {len(candidatos)} ingresos del día.\n\n"
+            f"💡 *Para guardar en PDF:* Abre el archivo y presiona el botón azul «Descargar / Guardar PDF»."
+        )
     else:
         contenido_doc = generar_html_checklist(candidatos, fecha_hoy)
         nombre_arch = f"registro_induccion_{fecha_iso}.html"
+        caption = (
+            f"📋 Aquí tienes el documento oficial de **Registro de Inducción** ({fecha_hoy}).\n"
+            f"Lista de asistencia con los {len(candidatos)} ingresos del día listos para firma.\n\n"
+            f"💡 *Para guardar en PDF:* Abre el archivo y presiona el botón azul «Imprimir / Guardar PDF»."
+        )
 
-    # Enviar el archivo directo a la persona
     await update.effective_message.reply_document(
         document=contenido_doc,
         filename=nombre_arch,
-        caption=f"📋 Aquí tienes el documento listo de **{nombre_formato}** con los {len(candidatos)} ingresos registrados de hoy ({fecha_hoy}). Puedes abrirlo e imprimirlo directamente."
+        caption=caption
     )
 
     filas = [[boton('⬅️ Formatos del día', 'm:formatos_dia'), *_menu_inicio()]]
     await mostrar(update, f'✅ **{nombre_formato} generado y enviado correctamente.**', InlineKeyboardMarkup(filas), editar=False)
+
+
+async def accion_dia_excel(update, context, estado: EstadoUsuario) -> None:
+    fecha_iso = hoy(context).strftime('%Y-%m-%d')
+    fecha_humana = hoy(context).strftime('%d/%m/%Y')
+    await _descargar(
+        update,
+        context,
+        f'/api/exportar-ingresos-dia?fecha={fecha_iso}',
+        None,
+        f'ingresos_del_dia_{fecha_iso}.xlsx',
+        volver_menu='m:formatos_dia',
+        caption=f'📊 Aquí tienes el Excel oficial de **Ingresos del Día** ({fecha_humana}) con el formato del personal registrado.'
+    )
 
 
 # --- Subir Reporte de Inducción y Ver Historial --------------------------------------------
@@ -1045,6 +1502,7 @@ ACCIONES = {
     # 6. Formatos del día y Reporte de Inducción
     'dia_evaluacion': accion_formatos_dia,
     'dia_registro': accion_formatos_dia,
+    'dia_excel': accion_dia_excel,
     'rep_ind_hoy': accion_rep_ind_hoy,
     'rep_ind_historial': accion_rep_ind_historial,
 
