@@ -225,36 +225,28 @@ def validar_rfc_formato(rfc: str) -> tuple[bool, str]:
     return True, "RFC válido"
 
 
-def recortar_foto_cuadrada_1a1(contenido_bytes: bytes, factor_y: float = 0.20) -> bytes:
-    """Recorta la foto a proporción 1:1 centrada horizontalmente con ajuste de altura personalizable y redimensionada a 600x600."""
+def procesar_foto_candidato(contenido_bytes: bytes) -> bytes:
+    """Preserva la fotografía con las dimensiones y proporción naturales de la cámara de Telegram, orientando EXIF y optimizando para el expediente."""
     try:
         from PIL import Image, ImageOps
         img = Image.open(BytesIO(contenido_bytes))
         img = ImageOps.exif_transpose(img)
         if img.mode != 'RGB':
             img = img.convert('RGB')
-        w, h = img.size
-        lado = min(w, h)
-        if w > h:
-            izq = (w - lado) // 2
-            arr = 0
-            der = izq + lado
-            abj = lado
-        else:
-            izq = 0
-            der = lado
-            arr = int((h - lado) * factor_y)
-            arr = max(0, min(arr, h - lado))
-            abj = arr + lado
-
-        recorte = img.crop((izq, arr, der, abj))
-        recorte = recorte.resize((600, 600), Image.Resampling.LANCZOS)
+        max_dim = 1280
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
         out = BytesIO()
-        recorte.save(out, format='JPEG', quality=95, optimize=True)
+        img.save(out, format='JPEG', quality=92, optimize=True)
         return out.getvalue()
     except Exception as exc:
-        logger.warning('No se pudo recortar foto a 1:1: %s', exc)
+        logger.warning('No se pudo procesar foto de candidato: %s', exc)
         return contenido_bytes
+
+
+def recortar_foto_cuadrada_1a1(contenido_bytes: bytes, factor_y: float = 0.20) -> bytes:
+    """Compatibilidad: procesa la foto optimizándola con proporción natural."""
+    return procesar_foto_candidato(contenido_bytes)
 
 
 def resolver_por_mayoria(valores: list[str]) -> tuple[str, bool, list[str]]:
@@ -316,9 +308,9 @@ def normalizar_numero_temporal(valor: str) -> str:
     return f'TEMP - {v}' if v else 'TEMP - 001'
 
 
-def _teclado_paso_doc() -> InlineKeyboardMarkup:
+def _teclado_paso_doc(tipo: str = 'doc') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [boton('⏩ Omitir documento', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+        [boton('⏩ Omitir documento', f'reg:omitir_{tipo}'), boton('❌ Cancelar', 'reg:cancelar')]
     ])
 
 
@@ -528,16 +520,17 @@ async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str 
         f"{prefijo}\n\n"
         "📸 Por favor envía la foto o PDF del **Comprobante de Domicilio** (CFE, agua, teléfono, etc.):"
     ).strip()
-    await responder(update, texto, reply_markup=_teclado_paso_doc())
+    await responder(update, texto, reply_markup=_teclado_paso_doc('domicilio'))
 
 
 async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_INE
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF de la **Credencial de Elector (INE / IFE)**:"
+        "📸 Por favor envía la foto o PDF de la **Credencial de Elector (INE / IFE)** o **Licencia de Conducir**:\n"
+        "*(Se utilizará únicamente para corroborar los datos de Nombre y CURP)*"
     ).strip()
-    await responder(update, texto, reply_markup=_teclado_paso_doc())
+    await responder(update, texto, reply_markup=_teclado_paso_doc('ine'))
 
 
 async def _pedir_doc_curp(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
@@ -547,7 +540,7 @@ async def _pedir_doc_curp(update: Update, sesion: SesionRegistro, prefijo: str =
         "📸 Por favor envía la foto o PDF de la **Constancia de CURP** oficial (o escríbela directamente por texto):"
     ).strip()
     teclado = InlineKeyboardMarkup([
-        [boton('⏩ Omitir por ahora', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+        [boton('⏩ Omitir por ahora', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
     ])
     await responder(update, texto, reply_markup=teclado)
 
@@ -556,18 +549,20 @@ async def _pedir_csf(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_CSF
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF de la **Constancia de Situación Fiscal (SAT)**:"
+        "📸 Por favor envía la foto o PDF de la **Constancia de Situación Fiscal (SAT)**:\n"
+        "*(Únicamente se tomará el dato del RFC)*"
     ).strip()
-    await responder(update, texto, reply_markup=_teclado_paso_doc())
+    await responder(update, texto, reply_markup=_teclado_paso_doc('csf'))
 
 
 async def _pedir_nss(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     sesion.estado = EstadoRegistro.ESPERANDO_NSS
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF del documento del **Número de Seguro Social (IMSS)**:"
+        "📸 Por favor envía la foto o PDF del documento del **Número de Seguro Social (IMSS)**:\n"
+        "*(Únicamente se tomará el dato del NSS)*"
     ).strip()
-    await responder(update, texto, reply_markup=_teclado_paso_doc())
+    await responder(update, texto, reply_markup=_teclado_paso_doc('nss'))
 
 
 async def _pedir_emergencia_nombre(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
@@ -576,7 +571,7 @@ async def _pedir_emergencia_nombre(update: Update, sesion: SesionRegistro, prefi
         f"{prefijo}\n\n"
         "🚨 Escribe el **Nombre completo** de la persona para contactar en caso de emergencia:"
     ).strip()
-    teclado = InlineKeyboardMarkup([[boton('⏩ Omitir contacto', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
+    teclado = InlineKeyboardMarkup([[boton('⏩ Omitir contacto', 'reg:omitir_contacto_eme'), boton('❌ Cancelar', 'reg:cancelar')]])
     await responder(update, texto, reply_markup=teclado)
 
 
@@ -596,7 +591,7 @@ async def _pedir_correo_candidato(update: Update, sesion: SesionRegistro, prefij
         f"{prefijo}\n\n"
         "📧 Escribe el **Correo electrónico** del candidato (o pulsa «Omitir»):"
     ).strip()
-    teclado = InlineKeyboardMarkup([[boton('⏩ Omitir correo', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
+    teclado = InlineKeyboardMarkup([[boton('⏩ Omitir correo', 'reg:omitir_correo'), boton('❌ Cancelar', 'reg:cancelar')]])
     await responder(update, texto, reply_markup=teclado)
 
 
@@ -608,7 +603,7 @@ async def _pedir_edo_civil(update: Update, sesion: SesionRegistro, prefijo: str 
         "Elige una opción con los botones o escríbelo:"
     ).strip()
     filas = [[boton(opc, f'reg:edocivil:{opc}')] for opc in ESTADOS_CIVILES]
-    filas.append([boton('⏩ Omitir estado civil', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')])
+    filas.append([boton('⏩ Omitir estado civil', 'reg:omitir_edocivil'), boton('❌ Cancelar', 'reg:cancelar')])
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
 
 
@@ -630,16 +625,9 @@ async def _pedir_foto_candidato(update: Update, sesion: SesionRegistro, prefijo:
     sesion.estado = EstadoRegistro.ESPERANDO_FOTO_CANDIDATO
     texto = (
         f"{prefijo}\n\n"
-        "📸 **Fotografía para Expediente Digital (Formato 1:1 Cuadrado)**\n\n"
-        "📱 **Guía de encuadre al abrir tu cámara:**\n"
-        "```text\n"
-        "┌────────────────────────┐\n"
-        "│        (Cabeza)        │  ← Deja espacio arriba\n"
-        "│     [ ROSTRO 1:1 ]     │  ← Centrado en pantalla\n"
-        "│        (Hombros)       │  ← Corte en el pecho\n"
-        "└────────────────────────┘\n"
-        "```\n"
-        "Toma la foto de frente con buena iluminación. El sistema la recortará en formato cuadrado 1:1 centrado en el rostro y te mostrará la vista previa para que puedas confirmar o ajustar el encuadre."
+        "📸 **Fotografía para Expediente Digital**\n\n"
+        "Por favor toma una foto de frente del candidato/empleado con la cámara de Telegram (rostro y hombros) o selecciónala de tu galería.\n"
+        "Se guardará en el expediente respetando la proporción natural de la captura."
     ).strip()
     teclado = InlineKeyboardMarkup([
         [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
@@ -916,24 +904,20 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # FOTO DEL CANDIDATO (EXPEDIENTE DIGITAL)
     if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
-        # Guardar imagen original y recortar a proporción 1:1
-        sesion.datos['_foto_raw'] = contenido
-        sesion.datos['_factor_y'] = 0.20
-        foto_1a1 = recortar_foto_cuadrada_1a1(contenido, factor_y=0.20)
-        b64_foto = f"data:image/jpeg;base64,{base64.b64encode(foto_1a1).decode('ascii')}"
+        foto_proc = procesar_foto_candidato(contenido)
+        b64_foto = f"data:image/jpeg;base64,{base64.b64encode(foto_proc).decode('ascii')}"
         sesion.datos['fotografia_base64'] = b64_foto
         sesion.estado = EstadoRegistro.CONFIRMANDO_FOTO_CANDIDATO
 
         await update.effective_message.reply_photo(
-            photo=foto_1a1,
+            photo=foto_proc,
             caption=(
-                "📸 **Vista previa de la fotografía (formato 1:1 para expediente digital)**\n\n"
-                "Puedes usar los botones para subir o bajar el encuadre si la cabeza o el rostro quedaron desfasados.\n\n"
-                "¿El encuadre se ve bien o deseas ajustarlo?"
+                "📸 **Vista previa de la fotografía para el expediente digital**\n\n"
+                "La foto se guardará con la proporción natural capturada por tu cámara de Telegram.\n\n"
+                "¿La fotografía se ve clara y bien enfocada o deseas tomar otra?"
             ),
             reply_markup=InlineKeyboardMarkup([
                 [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
-                [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
                 [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
                 [boton('❌ Cancelar', 'reg:cancelar')],
             ])
@@ -1125,7 +1109,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 update,
                 '⚠️ No pude leer el comprobante de domicilio.\n'
                 'Por favor envía una foto con mejor iluminación y nítida, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                reply_markup=_teclado_paso_doc('domicilio'),
             )
             return True
 
@@ -1145,7 +1129,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 update,
                 '⚠️ El documento enviado no parece ser un **Comprobante de Domicilio** válido (recibo de luz CFE, agua, teléfono, etc.).\n'
                 'Por favor envía un recibo de servicios donde se aprecie claramente la dirección del cliente o suministro, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                reply_markup=_teclado_paso_doc('domicilio'),
             )
             return True
 
@@ -1166,6 +1150,8 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         sesion.datos['municipio'] = municipio
         sesion.datos['estado'] = estado_dir
         sesion.datos['cp'] = cp
+        # Proteger dirección para que ningún otro documento la modifique
+        sesion.campos_confirmados.add('domicilio')
 
         partes_dir = filter(None, [calle, f"Ext. {num_ext}" if num_ext else None, f"Int. {num_int}" if num_int else None, f"Col. {colonia}" if colonia else None, f"C.P. {cp}" if cp else None, municipio, estado_dir])
         dir_resumen = ', '.join(partes_dir) or 'Dirección detectada'
@@ -1190,7 +1176,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 f"❓ El comprobante está a nombre de «{prop}».\n"
                 f"¿Qué parentesco tienes con esta persona? (ej. Madre, Padre, Cónyuge, Familiar, o escribe «Propio» si eres tú):"
             )
-            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir parentesco', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
+            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir parentesco', 'reg:omitir_domicilio'), boton('❌ Cancelar', 'reg:cancelar')]])
             await responder(update, resumen, reply_markup=teclado)
         else:
             sesion.datos['parentesco_propietario'] = 'No especificado'
@@ -1201,19 +1187,19 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await _pedir_ine(update, sesion, prefijo=resumen)
         return True
 
-    # CREDENCIAL DE ELECTOR (INE / IFE)
+    # CREDENCIAL DE ELECTOR (INE / IFE) O LICENCIA DE CONDUCIR
     elif estado == EstadoRegistro.ESPERANDO_INE:
         await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'INE', archivo)
             if not leidos or not any(leidos.values()):
-                raise ValueError('No se pudieron detectar campos legibles en la INE.')
+                raise ValueError('No se pudieron detectar campos legibles en la identificación.')
         except Exception as exc:
-            logger.warning('Falla en escaneo de INE: %s', exc)
+            logger.warning('Falla en escaneo de INE / Licencia: %s', exc)
             await responder(
                 update,
-                '⚠️ No pude leer la INE. Envía una foto más clara o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                '⚠️ No pude leer la identificación (INE / Licencia). Envía una foto más clara o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc('ine'),
             )
             return True
 
@@ -1229,18 +1215,20 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ine_fn = str(leidos.get('fecha_nac') or leidos.get('fecha_nacimiento') or '').strip()
         ine_dom = str(leidos.get('domicilio') or '').strip()
 
-        # Validación estricta: debe contener al menos CURP o datos personales clave de INE
+        # Validación estricta: debe contener al menos CURP o datos personales clave
         es_ine_valida = bool(ine_curp or (ine_nom and (ine_fn or ine_dom or ine_sexo)))
         if not es_ine_valida:
             await responder(
                 update,
-                '⚠️ El documento enviado no parece ser una **Credencial de Elector (INE / IFE)** válida.\n'
+                '⚠️ El documento enviado no parece ser una **Credencial de Elector (INE / IFE)** o **Licencia de Conducir** válida.\n'
                 'Por favor asegúrate de enviar la foto o PDF de la credencial oficial vigente, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                reply_markup=_teclado_paso_doc('ine'),
             )
             return True
 
         sesion.datos['ine'] = {'nombre_completo': ine_nom, 'curp': ine_curp, 'sexo': ine_sexo, 'fecha_nac': ine_fn, 'domicilio': ine_dom}
+
+        # La INE / Licencia corrobora los datos; no sobrescribe datos ya confirmados
         if ine_nom and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
             sesion.datos['nombre_completo'] = ine_nom
         if ine_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
@@ -1252,24 +1240,31 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             sesion.datos['sexo'] = ine_sexo
         if ine_fn and not sesion.datos.get('fecha_nac'):
             sesion.datos['fecha_nac'] = ine_fn
+        # Si la dirección no se ha tomado y no está confirmada por comprobante, usar la de INE
+        if 'domicilio' not in sesion.campos_confirmados and not sesion.datos.get('calle') and ine_dom:
+            sesion.datos['calle'] = ine_dom
 
-        lineas = ['✅ **INE analizada con éxito:**']
-        if ine_nom:
-            if 'nombre_completo' in sesion.campos_confirmados:
-                lineas.append(f'• **Nombre en INE:** {ine_nom} *(Confirmado previamente)*')
+        lineas = ['✅ **Identificación oficial (INE / Licencia) analizada:**']
+        if sesion.datos.get('nombre_completo'):
+            if ine_nom:
+                lineas.append(f'• **Nombre:** {sesion.datos.get("nombre_completo")} *(Corroborado con identificación ✅)*')
             else:
-                lineas.append(f'• **Nombre:** {ine_nom}')
-        if ine_curp:
-            if 'curp' in sesion.campos_confirmados:
-                lineas.append(f'• **CURP en INE:** {ine_curp} *(Se mantiene tu CURP confirmada: {sesion.datos.get("curp")})*')
+                lineas.append(f'• **Nombre:** {sesion.datos.get("nombre_completo")}')
+        elif ine_nom:
+            lineas.append(f'• **Nombre:** {ine_nom}')
+
+        if sesion.datos.get('curp'):
+            if ine_curp:
+                lineas.append(f'• **CURP:** {sesion.datos.get("curp")} *(Corroborado con identificación ✅)*')
             else:
-                lineas.append(f'• **CURP:** {ine_curp}')
-        if ine_sexo:
-            lineas.append(f'• **Sexo:** {ine_sexo} *(M=Mujer, H=Hombre)*')
-        if ine_fn:
-            lineas.append(f'• **Fecha nac.:** {ine_fn}')
-        if ine_dom:
-            lineas.append(f'• **Domicilio INE:** {ine_dom}')
+                lineas.append(f'• **CURP:** {sesion.datos.get("curp")}')
+        elif ine_curp:
+            lineas.append(f'• **CURP:** {ine_curp}')
+
+        if sesion.datos.get('genero'):
+            lineas.append(f'• **Sexo:** {sesion.datos.get("genero")}')
+        if sesion.datos.get('fecha_nac'):
+            lineas.append(f'• **Fecha nac.:** {sesion.datos.get("fecha_nac")}')
 
         resumen = '\n'.join(lineas)
 
@@ -1278,16 +1273,16 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
 
         criticos = []
-        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados:
+        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
             criticos.append('nombre_completo')
-        if ine_curp and 'curp' not in sesion.campos_confirmados and sesion.datos.get('curp') == ine_curp:
+        if ine_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
             criticos.append('curp')
 
         if criticos:
             await iniciar_confirmacion_critica(
                 update, sesion, criticos,
                 siguiente_estado=siguiente,
-                doc_origen='INE',
+                doc_origen='Identificación oficial',
                 prefijo=resumen
             )
         else:
@@ -1303,13 +1298,15 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 raise ValueError('No se detectaron campos legibles en el documento de CURP.')
         except Exception as exc:
             logger.warning('Falla en escaneo de CURP: %s', exc)
+            sesion.campo_confirmando = 'curp'
+            sesion.ultimo_doc_para_reintentar = 'Constancia de CURP'
             await responder(
                 update,
                 '⚠️ No pude leer con claridad la constancia de CURP.\n'
                 'Por favor envía una foto más nítida o escribe la CURP directamente por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('✏️ Escribir CURP', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
-                    [boton('❌ Cancelar', 'reg:cancelar')]
+                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
+                    [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
             return True
@@ -1322,13 +1319,15 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # Validación estricta: debe contener una clave CURP con formato oficial de 18 caracteres
         es_valida_curp, err_curp = validar_curp_formato(curp_extraida)
         if not es_valida_curp:
+            sesion.campo_confirmando = 'curp'
+            sesion.ultimo_doc_para_reintentar = 'Constancia de CURP'
             await responder(
                 update,
                 f'⚠️ La clave detectada (`{curp_extraida or "No detectada"}`) no cumple con la estructura oficial de 18 caracteres ({err_curp}).\n'
                 'Por favor toma una foto más clara y enfocada de la constancia de CURP o escribe la CURP directamente por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('✏️ Escribir CURP', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
-                    [boton('❌ Cancelar', 'reg:cancelar')]
+                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
+                    [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
             return True
@@ -1371,49 +1370,42 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 raise ValueError('No se pudieron detectar campos legibles en la CSF.')
         except Exception as exc:
             logger.warning('Falla en escaneo de CSF: %s', exc)
+            sesion.campo_confirmando = 'rfc'
+            sesion.ultimo_doc_para_reintentar = 'Constancia de Situación Fiscal'
             await responder(
                 update,
                 '⚠️ No pude leer la Constancia Fiscal. Envía una foto más legible o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                reply_markup=_teclado_paso_doc('csf'),
             )
             return True
 
+        # ÚNICAMENTE extraer RFC de la Constancia Fiscal. NUNCA tomar dirección, CURP ni nombre.
         rfc = str(leidos.get('rfc') or '').strip().upper()
-        csf_curp = str(leidos.get('curp') or '').strip().upper()
-        csf_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
 
         # Validación estricta: debe contener RFC de 12 o 13 caracteres con formato oficial
         es_valido_rfc, err_rfc = validar_rfc_formato(rfc)
         if not es_valido_rfc:
+            sesion.campo_confirmando = 'rfc'
+            sesion.ultimo_doc_para_reintentar = 'Constancia de Situación Fiscal'
             await responder(
                 update,
                 f'⚠️ El RFC detectado en la Constancia Fiscal (`{rfc or "No detectado"}`) no es válido ({err_rfc}).\n'
                 'Por favor asegúrate de enviar la constancia oficial del SAT, toma una foto más nítida o escribe tu RFC por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('✏️ Escribir RFC', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
-                    [boton('❌ Cancelar', 'reg:cancelar')]
+                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir RFC', 'reg:conf_paso_corregir')],
+                    [boton('⏩ Omitir constancia', 'reg:omitir_csf'), boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
             return True
 
-        sesion.datos['csf'] = {'rfc': rfc, 'curp': csf_curp, 'nombre_completo': csf_nom}
-        if rfc and 'rfc' not in sesion.campos_confirmados:
+        sesion.datos['csf'] = {'rfc': rfc}
+        if 'rfc' not in sesion.campos_confirmados:
             sesion.datos['rfc'] = rfc
-        if csf_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
-            sesion.datos['curp'] = csf_curp
 
-        lineas = ['✅ **Constancia de Situación Fiscal analizada:**']
-        if rfc:
-            lineas.append(f'• **RFC:** {rfc}')
-        if csf_curp:
-            if 'curp' in sesion.campos_confirmados:
-                lineas.append(f'• **CURP en constancia:** {csf_curp} *(Se respeta tu CURP confirmada: {sesion.datos.get("curp")})*')
-            else:
-                lineas.append(f'• **CURP:** {csf_curp}')
-        if csf_nom:
-            lineas.append(f'• **Nombre:** {csf_nom}')
-
-        resumen = '\n'.join(lineas)
+        resumen = (
+            "✅ **Constancia de Situación Fiscal analizada:**\n"
+            f"• **RFC:** {rfc}"
+        )
         criticos = ['rfc'] if (rfc and 'rfc' not in sesion.campos_confirmados) else []
 
         if criticos:
@@ -1436,40 +1428,42 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 raise ValueError('No se pudieron detectar campos legibles en el documento de NSS.')
         except Exception as exc:
             logger.warning('Falla en escaneo de NSS: %s', exc)
+            sesion.campo_confirmando = 'nss'
+            sesion.ultimo_doc_para_reintentar = 'Número de Seguro Social'
             await responder(
                 update,
                 '⚠️ No pude leer el NSS. Envía una foto más clara o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                reply_markup=_teclado_paso_doc('nss'),
             )
             return True
 
-        nss = str(leidos.get('nss') or '').strip()
-        nss_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
-        nss_curp = str(leidos.get('curp') or '').strip().upper()
+        # ÚNICAMENTE extraer NSS (11 dígitos numéricos). NUNCA tomar CURP ni nombre.
+        nss_raw = str(leidos.get('nss') or '').strip()
+        nss = ''.join(c for c in nss_raw if c.isdigit())
 
         # Validación estricta: debe contener un NSS de 11 dígitos
         if not nss or len(nss) != 11:
+            sesion.campo_confirmando = 'nss'
+            sesion.ultimo_doc_para_reintentar = 'Número de Seguro Social'
             await responder(
                 update,
-                '⚠️ El documento enviado no parece ser el documento del **Número de Seguro Social (IMSS)** (no se detectó un NSS válido de 11 dígitos).\n'
-                'Por favor asegúrate de enviar la hoja o constancia oficial del IMSS, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                '⚠️ El documento enviado no parece ser el documento del **Número de Seguro Social (IMSS)** (no se detectó un NSS válido de 11 dígitos numéricos).\n'
+                'Por favor asegúrate de enviar la constancia oficial del IMSS, toma una foto más nítida o escribe tu NSS por texto:',
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir NSS', 'reg:conf_paso_corregir')],
+                    [boton('⏩ Omitir NSS', 'reg:omitir_nss'), boton('❌ Cancelar', 'reg:cancelar')]
+                ])
             )
             return True
 
-        sesion.datos['nss_doc'] = {'nss': nss, 'nombre_completo': nss_nom, 'curp': nss_curp}
-        if nss and 'nss' not in sesion.campos_confirmados:
+        sesion.datos['nss_doc'] = {'nss': nss}
+        if 'nss' not in sesion.campos_confirmados:
             sesion.datos['nss'] = nss
-        if nss_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
-            sesion.datos['curp'] = nss_curp
 
-        lineas = ['✅ **Número de Seguro Social analizado:**']
-        if nss:
-            lineas.append(f'• **NSS:** {nss}')
-        if nss_nom:
-            lineas.append(f'• **Nombre:** {nss_nom}')
-
-        resumen = '\n'.join(lineas)
+        resumen = (
+            "✅ **Número de Seguro Social analizado:**\n"
+            f"• **NSS:** {nss}"
+        )
         criticos = ['nss'] if (nss and 'nss' not in sesion.campos_confirmados) else []
 
         if criticos:
@@ -1500,298 +1494,307 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
     if not sesion:
         return False
 
-    texto = (texto_libre if texto_libre is not None else update.effective_message.text or '').strip()
+    try:
+        texto = (texto_libre if texto_libre is not None else update.effective_message.text or '').strip()
 
-    if texto.lower() in ('/cancelar', 'cancelar', 'salir'):
-        cancelar_registro(user_id)
-        await responder(update, '✖️ Registro de candidato cancelado.')
-        return True
-
-    estado = sesion.estado
-
-    # CORRECCIÓN EN TEXTO DE DATO CRÍTICO (PASO A PASO)
-    if estado == EstadoRegistro.ESPERANDO_CORRECCION_PASO:
-        campo = sesion.campo_confirmando
-        if campo:
-            val_limpio = texto.strip()
-            aviso_formato = ""
-            formato_invalido = False
-            if campo == 'nombre_completo':
-                val_limpio = ordenar_nombre_natural(val_limpio)
-            elif campo == 'curp':
-                val_limpio = val_limpio.upper()
-                ok_curp, err_curp = validar_curp_formato(val_limpio)
-                if not ok_curp:
-                    formato_invalido = True
-                    aviso_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
-            elif campo == 'rfc':
-                val_limpio = val_limpio.upper()
-                ok_rfc, err_rfc = validar_rfc_formato(val_limpio)
-                if not ok_rfc:
-                    formato_invalido = True
-                    aviso_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
-            sesion.datos[campo] = val_limpio
-            sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
-            etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
-            if formato_invalido:
-                texto_conf = (
-                    f"⚠️ **Dato ingresado:**\n"
-                    f"• **{etiqueta}:** `{val_limpio}`{aviso_formato}\n\n"
-                    "La clave no cumple con la estructura oficial. Por favor escríbela de nuevo o toma otra foto:"
-                )
-                teclado = InlineKeyboardMarkup([
-                    [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
-                    [boton('❌ Cancelar', 'reg:cancelar')],
-                ])
-            else:
-                texto_conf = (
-                    f"✅ **Dato corregido:**\n"
-                    f"• **{etiqueta}:** `{val_limpio}`\n\n"
-                    f"¿Este dato ya está correcto?"
-                )
-                teclado = InlineKeyboardMarkup([
-                    [boton('✅ Es correcto', 'reg:conf_paso_ok')],
-                    [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
-                    [boton('❌ Cancelar', 'reg:cancelar')],
-                ])
-            await responder(update, texto_conf, reply_markup=teclado)
+        if texto.lower() in ('/cancelar', 'cancelar', 'salir'):
+            cancelar_registro(user_id)
+            await responder(update, '✖️ Registro de candidato cancelado.')
             return True
 
-    # CAPTURA DE CURP POR TEXTO SI ESTABA EN ESPERANDO_DOC_CURP
-    if estado == EstadoRegistro.ESPERANDO_DOC_CURP:
-        if texto.lower() in ('omitir', '/omitir', 'no tengo'):
-            await procesar_omision(update, context, sesion)
+        estado = sesion.estado
+
+        # CORRECCIÓN EN TEXTO DE DATO CRÍTICO (PASO A PASO)
+        if estado == EstadoRegistro.ESPERANDO_CORRECCION_PASO:
+            campo = sesion.campo_confirmando
+            if campo:
+                val_limpio = texto.strip()
+                aviso_formato = ""
+                formato_invalido = False
+                if campo == 'nombre_completo':
+                    val_limpio = ordenar_nombre_natural(val_limpio)
+                elif campo == 'curp':
+                    val_limpio = val_limpio.upper()
+                    ok_curp, err_curp = validar_curp_formato(val_limpio)
+                    if not ok_curp:
+                        formato_invalido = True
+                        aviso_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
+                elif campo == 'rfc':
+                    val_limpio = val_limpio.upper()
+                    ok_rfc, err_rfc = validar_rfc_formato(val_limpio)
+                    if not ok_rfc:
+                        formato_invalido = True
+                        aviso_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
+                elif campo == 'nss':
+                    val_limpio = ''.join(c for c in val_limpio if c.isdigit())
+                    if len(val_limpio) != 11:
+                        formato_invalido = True
+                        aviso_formato = "\n⚠️ **Formato NSS no válido:** Debe contener exactamente 11 dígitos numéricos."
+                sesion.datos[campo] = val_limpio
+                sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
+                etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
+                if formato_invalido:
+                    texto_conf = (
+                        f"⚠️ **Dato ingresado:**\n"
+                        f"• **{etiqueta}:** `{val_limpio}`{aviso_formato}\n\n"
+                        "La clave no cumple con la estructura oficial. Por favor escríbela de nuevo o toma otra foto:"
+                    )
+                    teclado = InlineKeyboardMarkup([
+                        [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                        [boton('❌ Cancelar', 'reg:cancelar')],
+                    ])
+                else:
+                    texto_conf = (
+                        f"✅ **Dato corregido:**\n"
+                        f"• **{etiqueta}:** `{val_limpio}`\n\n"
+                        f"¿Este dato ya está correcto?"
+                    )
+                    teclado = InlineKeyboardMarkup([
+                        [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+                        [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                        [boton('❌ Cancelar', 'reg:cancelar')],
+                    ])
+                await responder(update, texto_conf, reply_markup=teclado)
+                return True
+
+        # CAPTURA DE CURP POR TEXTO SI ESTABA EN ESPERANDO_DOC_CURP
+        if estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+            if texto.lower() in ('omitir', '/omitir', 'no tengo'):
+                await procesar_omision(update, context, sesion)
+                return True
+            curp_text = texto.strip().upper()
+            sesion.datos['curp'] = curp_text
+            ok_curp, err_curp = validar_curp_formato(curp_text)
+            pref = f"✅ CURP ingresada: `{curp_text}`"
+            if not ok_curp:
+                pref += f"\n⚠️ {err_curp}"
+            await iniciar_confirmacion_critica(
+                update, sesion, ['curp'],
+                siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
+                doc_origen='Documento CURP',
+                prefijo=pref
+            )
             return True
-        curp_text = texto.strip().upper()
-        sesion.datos['curp'] = curp_text
-        ok_curp, err_curp = validar_curp_formato(curp_text)
-        pref = f"✅ CURP ingresada: `{curp_text}`"
-        if not ok_curp:
-            pref += f"\n⚠️ {err_curp}"
-        await iniciar_confirmacion_critica(
-            update, sesion, ['curp'],
-            siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
-            doc_origen='Documento CURP',
-            prefijo=pref
-        )
-        return True
 
-    # PASO PROCEDENCIA (¿DE DÓNDE VIENES?) POR TEXTO
-    if estado == EstadoRegistro.ESPERANDO_PROCEDENCIA:
-        sesion.datos['procedencia'] = texto.strip()
-        await responder(update, f"✅ Procedencia registrada: {texto.strip()}")
-        await mostrar_pantalla_confirmacion(update, sesion)
-        return True
-
-    # FOTO DE CANDIDATO OMITIDA POR TEXTO
-    if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
-        if texto.lower() in ('omitir', '/omitir', 'no', 'no tengo'):
-            sesion.datos['fotografia_base64'] = None
-            await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Fotografía para expediente omitida.')
+        # PASO PROCEDENCIA (¿DE DÓNDE VIENES?) POR TEXTO
+        if estado == EstadoRegistro.ESPERANDO_PROCEDENCIA:
+            sesion.datos['procedencia'] = texto.strip()
+            await responder(update, f"✅ Procedencia registrada: {texto.strip()}")
+            await mostrar_pantalla_confirmacion(update, sesion)
             return True
-        await responder(
-            update,
-            "📸 Para la foto del candidato envía una imagen con la cámara de tu celular o selecciona una foto de tu galería, "
-            "o pulsa «Omitir foto» si no la tienes en este momento.",
-            reply_markup=InlineKeyboardMarkup([
-                [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
-            ])
-        )
-        return True
 
-    # Si está esperando una foto pero manda texto:
-    if estado in (EstadoRegistro.ESPERANDO_ACTA, EstadoRegistro.ESPERANDO_DOMICILIO,
-                  EstadoRegistro.ESPERANDO_INE, EstadoRegistro.ESPERANDO_CSF, EstadoRegistro.ESPERANDO_NSS):
-        if texto.lower() in ('omitir', '/omitir', 'no tengo'):
-            await procesar_omision(update, context, sesion)
-            return True
-        await responder(
-            update,
-            '📸 Para este paso envía la foto o PDF del documento correspondiente, '
-            'o pulsa «Omitir» si no lo tienes.',
-            reply_markup=_teclado_paso_doc()
-        )
-        return True
-
-    # PASO 2.1: PARENTESCO DE DOMICILIO
-    if estado == EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO:
-        sesion.datos['parentesco_propietario'] = texto
-        await _pedir_ine(update, sesion, prefijo=f'✅ Parentesco guardado: {texto}')
-        return True
-
-    # PASO 6.1: CONTACTO EMERGENCIA - NOMBRE
-    elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE:
-        if texto.lower() in ('omitir', 'no'):
-            sesion.datos['nom_eme1'] = ''
-            sesion.datos['par_eme1'] = ''
-            sesion.datos['tel_eme1'] = ''
-            await _pedir_tel_candidato(update, sesion, prefijo='⏩ Contacto de emergencia omitido.')
-            return True
-        sesion.datos['nom_eme1'] = texto
-        sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO
-        teclado = InlineKeyboardMarkup([
-            [boton(p, f'reg:par:{p}')] for p in PARENTESCOS_COMUNES
-        ] + [[boton('⏩ Omitir parentesco', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
-        await responder(
-            update,
-            f"¿Qué **parentesco** tienes con {texto}?\nElige una opción con los botones o escríbelo:",
-            reply_markup=teclado
-        )
-        return True
-
-    # PASO 6.2: CONTACTO EMERGENCIA - PARENTESCO
-    elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO:
-        sesion.datos['par_eme1'] = texto
-        sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO
-        teclado = InlineKeyboardMarkup([[boton('⏩ Omitir teléfono', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
-        await responder(update, f"Escribe el **teléfono de contacto** de emergencia para {sesion.datos.get('nom_eme1')}:", reply_markup=teclado)
-        return True
-
-    # PASO 6.3: CONTACTO EMERGENCIA - TELÉFONO
-    elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO:
-        sesion.datos['tel_eme1'] = texto
-        await _pedir_tel_candidato(update, sesion, prefijo='✅ Contacto de emergencia registrado.')
-        return True
-
-    # PASO 6.4: TELÉFONO MÓVIL DEL CANDIDATO
-    elif estado == EstadoRegistro.ESPERANDO_TEL_CANDIDATO:
-        sesion.datos['tel_movil'] = texto
-        await _pedir_correo_candidato(update, sesion, prefijo='✅ Teléfono móvil registrado.')
-        return True
-
-    # PASO 6.5: CORREO ELECTRÓNICO DEL CANDIDATO
-    elif estado == EstadoRegistro.ESPERANDO_CORREO_CANDIDATO:
-        if texto.lower() not in ('omitir', 'no', 'no tengo'):
-            sesion.datos['correo'] = texto
-            pref = f'✅ Correo guardado: {texto}'
-        else:
-            sesion.datos['correo'] = ''
-            pref = '⏩ Correo electrónico omitido.'
-        await _pedir_edo_civil(update, sesion, prefijo=pref)
-        return True
-
-    # PASO 6.6: ESTADO CIVIL DEL CANDIDATO
-    elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
-        if texto.lower() not in ('omitir', 'no'):
-            sesion.datos['edo_civil'] = texto.strip().upper()
-            pref = f'✅ Estado Civil guardado: {texto}'
-        else:
-            sesion.datos['edo_civil'] = ''
-            pref = '⏩ Estado Civil omitido.'
-        await _pedir_nacionalidad(update, sesion, prefijo=pref)
-        return True
-
-    # PASO 6.7: OTRA NACIONALIDAD
-    elif estado == EstadoRegistro.ESPERANDO_OTRA_NACIONALIDAD:
-        nac = texto.strip().upper() or 'MEXICANA'
-        sesion.datos['nacionalidad'] = nac
-        await _pedir_foto_candidato(update, sesion, prefijo=f'✅ Nacionalidad registrada: {nac}')
-        return True
-
-    # PASO 7.1: ENCUESTA FUENTE
-    elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE:
-        # Verificar si escribió un reclutador por error
-        if any(cadenas_coinciden(texto, r) for r in sesion.reclutadores):
+        # FOTO DE CANDIDATO OMITIDA POR TEXTO
+        if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
+            if texto.lower() in ('omitir', '/omitir', 'no', 'no tengo'):
+                sesion.datos['fotografia_base64'] = None
+                await _pedir_encuesta_fuente(update, sesion, prefijo='⏩ Fotografía para expediente omitida.')
+                return True
             await responder(
                 update,
-                f"⚠️ «{texto}» es el nombre de un reclutador, no el medio de reclutamiento.\n"
-                "Por favor selecciona primero por qué medio nos conoció el candidato:",
-                reply_markup=InlineKeyboardMarkup([[boton(f, f'reg:f:{f}')] for f in FUENTES_REGISTRO] + [[boton('❌ Cancelar', 'reg:cancelar')]])
+                "📸 Para la foto del candidato envía una imagen con la cámara de tu celular o selecciona una foto de tu galería, "
+                "o pulsa «Omitir foto» si no la tienes en este momento.",
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
+                ])
             )
             return True
 
-        sesion.datos['fuente'] = texto
-        fuente_norm = normalizar_texto(texto)
-        # Solo Facebook o Reclu CW requieren seleccionar reclutador
-        if fuente_norm in ('facebook', 'reclu cw', 'reclutamiento cheong woon', 'cheong woon'):
-            await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio de reclutamiento: {texto}')
-        elif 'recomen' in fuente_norm:
-            sesion.estado = EstadoRegistro.ESPERANDO_ENCUESTA_RECOMENDO
-            sesion.datos['nombre_reclutador'] = ''
-            texto_rec = (
-                f"✅ Medio: **Recomendación**\n\n"
-                f"🤝 Escribe el **Nombre del empleado de la empresa que te recomendó**\n"
-                f"*(o escribe «Omitir» si no lo recuerdas)*:"
+        # Si está esperando una foto pero manda texto:
+        if estado in (EstadoRegistro.ESPERANDO_ACTA, EstadoRegistro.ESPERANDO_DOMICILIO,
+                      EstadoRegistro.ESPERANDO_INE, EstadoRegistro.ESPERANDO_CSF, EstadoRegistro.ESPERANDO_NSS):
+            if texto.lower() in ('omitir', '/omitir', 'no tengo'):
+                await procesar_omision(update, context, sesion)
+                return True
+            await responder(
+                update,
+                '📸 Para este paso envía la foto o PDF del documento correspondiente, '
+                'o pulsa «Omitir» si no lo tienes.',
+                reply_markup=_teclado_paso_doc()
             )
-            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir recomendador', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
-            await responder(update, texto_rec, reply_markup=teclado)
-        else:
-            sesion.datos['nombre_reclutador'] = ''
-            sesion.datos['nombre_recomendador'] = ''
-            await verificar_faltantes_o_confirmar(update, sesion)
-        return True
+            return True
 
-    # PASO 7.1.1: ENCUESTA RECOMENDADOR
-    elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECOMENDO:
-        if texto.lower() not in ('omitir', 'no'):
-            sesion.datos['nombre_recomendador'] = texto.strip()
-            sesion.datos['nombre_empleado_encuesta'] = texto.strip()
-            pref = f'✅ Empleado que recomendó: {texto.strip()}'
-        else:
-            sesion.datos['nombre_recomendador'] = ''
-            pref = '⏩ Recomendador omitido.'
-        await verificar_faltantes_o_confirmar(update, sesion)
-        return True
+        # PASO 2.1: PARENTESCO DE DOMICILIO
+        if estado == EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO:
+            sesion.datos['parentesco_propietario'] = texto
+            await _pedir_ine(update, sesion, prefijo=f'✅ Parentesco guardado: {texto}')
+            return True
 
-    # PASO 7.2: ENCUESTA RECLUTADOR
-    elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECLUTADOR:
-        sesion.datos['nombre_reclutador'] = texto
-        await verificar_faltantes_o_confirmar(update, sesion)
-        return True
+        # PASO 6.1: CONTACTO EMERGENCIA - NOMBRE
+        elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE:
+            if texto.lower() in ('omitir', 'no'):
+                sesion.datos['nom_eme1'] = ''
+                sesion.datos['par_eme1'] = ''
+                sesion.datos['tel_eme1'] = ''
+                await _pedir_tel_candidato(update, sesion, prefijo='⏩ Contacto de emergencia omitido.')
+                return True
+            sesion.datos['nom_eme1'] = texto
+            sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO
+            teclado = InlineKeyboardMarkup([
+                [boton(p, f'reg:par:{p}')] for p in PARENTESCOS_COMUNES
+            ] + [[boton('⏩ Omitir parentesco', 'reg:omitir_par_eme'), boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(
+                update,
+                f"¿Qué **parentesco** tienes con {texto}?\nElige una opción con los botones o escríbelo:",
+                reply_markup=teclado
+            )
+            return True
 
-    # PASO: SOLICITANDO DATO EN BLANCO FALTANTE
-    elif estado == EstadoRegistro.SOLICITANDO_FALTANTE:
-        if sesion.faltantes_pendientes:
-            campo = sesion.faltantes_pendientes.pop(0)
+        # PASO 6.2: CONTACTO EMERGENCIA - PARENTESCO
+        elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO:
+            sesion.datos['par_eme1'] = texto
+            sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO
+            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir teléfono', 'reg:omitir_tel_eme'), boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(update, f"Escribe el **teléfono de contacto** de emergencia para {sesion.datos.get('nom_eme1')}:", reply_markup=teclado)
+            return True
+
+        # PASO 6.3: CONTACTO EMERGENCIA - TELÉFONO
+        elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO:
+            sesion.datos['tel_eme1'] = texto
+            await _pedir_tel_candidato(update, sesion, prefijo='✅ Contacto de emergencia registrado.')
+            return True
+
+        # PASO 6.4: TELÉFONO MÓVIL DEL CANDIDATO
+        elif estado == EstadoRegistro.ESPERANDO_TEL_CANDIDATO:
+            sesion.datos['tel_movil'] = texto
+            await _pedir_correo_candidato(update, sesion, prefijo='✅ Teléfono móvil registrado.')
+            return True
+
+        # PASO 6.5: CORREO ELECTRÓNICO DEL CANDIDATO
+        elif estado == EstadoRegistro.ESPERANDO_CORREO_CANDIDATO:
+            if texto.lower() not in ('omitir', 'no', 'no tengo'):
+                sesion.datos['correo'] = texto
+                pref = f'✅ Correo guardado: {texto}'
+            else:
+                sesion.datos['correo'] = ''
+                pref = '⏩ Correo electrónico omitido.'
+            await _pedir_edo_civil(update, sesion, prefijo=pref)
+            return True
+
+        # PASO 6.6: ESTADO CIVIL DEL CANDIDATO
+        elif estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
             if texto.lower() not in ('omitir', 'no'):
+                sesion.datos['edo_civil'] = texto.strip().upper()
+                pref = f'✅ Estado Civil guardado: {texto}'
+            else:
+                sesion.datos['edo_civil'] = ''
+                pref = '⏩ Estado Civil omitido.'
+            await _pedir_nacionalidad(update, sesion, prefijo=pref)
+            return True
+
+        # PASO 6.7: OTRA NACIONALIDAD
+        elif estado == EstadoRegistro.ESPERANDO_OTRA_NACIONALIDAD:
+            nac = texto.strip().upper() or 'MEXICANA'
+            sesion.datos['nacionalidad'] = nac
+            await _pedir_foto_candidato(update, sesion, prefijo=f'✅ Nacionalidad registrada: {nac}')
+            return True
+
+        # PASO 7.1: ENCUESTA FUENTE
+        elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_FUENTE:
+            if any(cadenas_coinciden(texto, r) for r in sesion.reclutadores):
+                await responder(
+                    update,
+                    f"⚠️ «{texto}» es el nombre de un reclutador, no el medio de reclutamiento.\n"
+                    "Por favor selecciona primero por qué medio nos conoció el candidato:",
+                    reply_markup=InlineKeyboardMarkup([[boton(f, f'reg:f:{f}')] for f in FUENTES_REGISTRO] + [[boton('❌ Cancelar', 'reg:cancelar')]])
+                )
+                return True
+
+            sesion.datos['fuente'] = texto
+            fuente_norm = normalizar_texto(texto)
+            if fuente_norm in ('facebook', 'reclu cw', 'reclutamiento cheong woon', 'cheong woon'):
+                await _pedir_encuesta_reclutador(update, sesion, prefijo=f'✅ Medio de reclutamiento: {texto}')
+            elif 'recomen' in fuente_norm:
+                sesion.estado = EstadoRegistro.ESPERANDO_ENCUESTA_RECOMENDO
+                sesion.datos['nombre_reclutador'] = ''
+                texto_rec = (
+                    f"✅ Medio: **Recomendación**\n\n"
+                    f"🤝 Escribe el **Nombre del empleado de la empresa que te recomendó**\n"
+                    f"*(o escribe «Omitir» si no lo recuerdas)*:"
+                )
+                teclado = InlineKeyboardMarkup([[boton('⏩ Omitir recomendador', 'reg:omitir_rec'), boton('❌ Cancelar', 'reg:cancelar')]])
+                await responder(update, texto_rec, reply_markup=teclado)
+            else:
+                sesion.datos['nombre_reclutador'] = ''
+                sesion.datos['nombre_recomendador'] = ''
+                await verificar_faltantes_o_confirmar(update, sesion)
+            return True
+
+        # PASO 7.1.1: ENCUESTA RECOMENDADOR
+        elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECOMENDO:
+            if texto.lower() not in ('omitir', 'no'):
+                sesion.datos['nombre_recomendador'] = texto.strip()
+                sesion.datos['nombre_empleado_encuesta'] = texto.strip()
+                pref = f'✅ Empleado que recomendó: {texto.strip()}'
+            else:
+                sesion.datos['nombre_recomendador'] = ''
+                pref = '⏩ Recomendador omitido.'
+            await verificar_faltantes_o_confirmar(update, sesion)
+            return True
+
+        # PASO 7.2: ENCUESTA RECLUTADOR
+        elif estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECLUTADOR:
+            sesion.datos['nombre_reclutador'] = texto
+            await verificar_faltantes_o_confirmar(update, sesion)
+            return True
+
+        # PASO: SOLICITANDO DATO EN BLANCO FALTANTE
+        elif estado == EstadoRegistro.SOLICITANDO_FALTANTE:
+            if sesion.faltantes_pendientes:
+                campo = sesion.faltantes_pendientes.pop(0)
+                if texto.lower() not in ('omitir', 'no'):
+                    if campo == 'nombre_completo':
+                        sesion.datos['nombre_completo'] = ordenar_nombre_natural(texto)
+                    elif campo == 'domicilio':
+                        sesion.datos['calle'] = texto
+                    elif campo in ('curp', 'rfc'):
+                        sesion.datos[campo] = texto.strip().upper()
+                    else:
+                        sesion.datos[campo] = texto
+
+            if sesion.faltantes_pendientes:
+                siguiente = sesion.faltantes_pendientes[0]
+                etiqueta = ETIQUETAS_CAMPOS.get(siguiente, siguiente)
+                teclado = InlineKeyboardMarkup([[boton('⏩ Omitir este dato', 'reg:omitir_faltante'), boton('❌ Cancelar', 'reg:cancelar')]])
+                await responder(update, f"Ahora escribe el dato para **{etiqueta}**:", reply_markup=teclado)
+            else:
+                await mostrar_pantalla_confirmacion(update, sesion)
+            return True
+
+        # PASO: EDITANDO UN CAMPO SELECCIONADO POR EL USUARIO
+        elif estado == EstadoRegistro.EDITANDO_CAMPO:
+            campo = sesion.campo_editando
+            if campo:
                 if campo == 'nombre_completo':
                     sesion.datos['nombre_completo'] = ordenar_nombre_natural(texto)
                 elif campo == 'domicilio':
                     sesion.datos['calle'] = texto
+                elif campo == 'genero':
+                    sesion.datos['genero'] = normalizar_sexo(texto)
+                    sesion.datos['sexo'] = sesion.datos['genero']
+                elif campo == 'emergencia':
+                    sesion.datos['nom_eme1'] = texto
+                elif campo == 'encuesta':
+                    sesion.datos['fuente'] = texto
                 elif campo in ('curp', 'rfc'):
                     sesion.datos[campo] = texto.strip().upper()
                 else:
                     sesion.datos[campo] = texto
+                sesion.campo_editando = None
 
-        if sesion.faltantes_pendientes:
-            siguiente = sesion.faltantes_pendientes[0]
-            etiqueta = ETIQUETAS_CAMPOS.get(siguiente, siguiente)
-            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir este dato', 'reg:omitir_faltante'), boton('❌ Cancelar', 'reg:cancelar')]])
-            await responder(update, f"Ahora escribe el dato para **{etiqueta}**:", reply_markup=teclado)
-        else:
+            await responder(update, f"✅ Dato actualizado correctamente.")
             await mostrar_pantalla_confirmacion(update, sesion)
-        return True
+            return True
 
-    # PASO: EDITANDO UN CAMPO SELECCIONADO POR EL USUARIO
-    elif estado == EstadoRegistro.EDITANDO_CAMPO:
-        campo = sesion.campo_editando
-        if campo:
-            if campo == 'nombre_completo':
-                sesion.datos['nombre_completo'] = ordenar_nombre_natural(texto)
-            elif campo == 'domicilio':
-                sesion.datos['calle'] = texto
-            elif campo == 'genero':
-                sesion.datos['genero'] = normalizar_sexo(texto)
-                sesion.datos['sexo'] = sesion.datos['genero']
-            elif campo == 'emergencia':
-                sesion.datos['nom_eme1'] = texto
-            elif campo == 'encuesta':
-                sesion.datos['fuente'] = texto
-            elif campo in ('curp', 'rfc'):
-                sesion.datos[campo] = texto.strip().upper()
-            else:
-                sesion.datos[campo] = texto
-            sesion.campo_editando = None
+        # PASO FINAL: NÚMERO TEMPORAL Y GUARDADO
+        elif estado == EstadoRegistro.ESPERANDO_NUMERO_TEMPORAL:
+            no_temp = normalizar_numero_temporal(texto)
+            sesion.datos['numero_temporal'] = no_temp
+            await finalizar_registro(update, context, sesion)
+            return True
 
-        await responder(update, f"✅ Dato actualizado correctamente.")
-        await mostrar_pantalla_confirmacion(update, sesion)
-        return True
-
-    # PASO FINAL: NÚMERO TEMPORAL Y GUARDADO
-    elif estado == EstadoRegistro.ESPERANDO_NUMERO_TEMPORAL:
-        no_temp = normalizar_numero_temporal(texto)
-        sesion.datos['numero_temporal'] = no_temp
-        await finalizar_registro(update, context, sesion)
+    except Exception as exc:
+        logger.error('Error en atender_texto de registro: %s', exc, exc_info=True)
+        await responder(update, '⚠️ Ocurrió un detalle al procesar el texto. Por favor intenta de nuevo o pulsa los botones:')
         return True
 
     return False
@@ -1814,56 +1817,82 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await consulta.edit_message_text('✖️ Registro de candidato cancelado.')
         return
 
+    # Botones específicos de omisión por paso (evitan omitir pasos posteriores por desfasamiento)
+    if data == 'reg:omitir_acta':
+        if sesion.estado == EstadoRegistro.ESPERANDO_ACTA:
+            await _pedir_domicilio(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
+        return
+
+    if data == 'reg:omitir_domicilio':
+        if sesion.estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
+            await _pedir_ine(update, sesion, prefijo='⏩ Comprobante de domicilio omitido.')
+        return
+
+    if data == 'reg:omitir_ine':
+        if sesion.estado == EstadoRegistro.ESPERANDO_INE:
+            tiene_curp = bool(sesion.datos.get('curp') or sesion.datos.get('acta', {}).get('curp'))
+            siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
+            await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Identificación (INE / Licencia) omitida.')
+        return
+
+    if data == 'reg:omitir_curp_doc':
+        if sesion.estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+            await _pedir_csf(update, sesion, prefijo='⏩ Documento de CURP omitido.')
+        return
+
+    if data == 'reg:omitir_csf':
+        if sesion.estado == EstadoRegistro.ESPERANDO_CSF:
+            await _pedir_nss(update, sesion, prefijo='⏩ Constancia Fiscal omitida.')
+        return
+
+    if data == 'reg:omitir_nss':
+        if sesion.estado == EstadoRegistro.ESPERANDO_NSS:
+            await _pedir_emergencia_nombre(update, sesion, prefijo='⏩ NSS omitido.')
+        return
+
+    if data == 'reg:omitir_contacto_eme':
+        if sesion.estado == EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE:
+            sesion.datos['nom_eme1'] = ''
+            sesion.datos['par_eme1'] = ''
+            sesion.datos['tel_eme1'] = ''
+            await _pedir_tel_candidato(update, sesion, prefijo='⏩ Contacto de emergencia omitido.')
+        return
+
+    if data == 'reg:omitir_par_eme':
+        if sesion.estado == EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO:
+            sesion.datos['par_eme1'] = 'No especificado'
+            sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO
+            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir teléfono', 'reg:omitir_tel_eme'), boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(update, 'Escribe el teléfono de contacto de emergencia:', reply_markup=teclado)
+        return
+
+    if data == 'reg:omitir_tel_eme':
+        if sesion.estado == EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO:
+            sesion.datos['tel_eme1'] = ''
+            await _pedir_tel_candidato(update, sesion, prefijo='⏩ Teléfono de emergencia omitido.')
+        return
+
+    if data == 'reg:omitir_correo':
+        if sesion.estado == EstadoRegistro.ESPERANDO_CORREO_CANDIDATO:
+            sesion.datos['correo'] = ''
+            await _pedir_edo_civil(update, sesion, prefijo='⏩ Correo electrónico omitido.')
+        return
+
+    if data == 'reg:omitir_edocivil':
+        if sesion.estado == EstadoRegistro.ESPERANDO_EDO_CIVIL:
+            sesion.datos['edo_civil'] = ''
+            await _pedir_nacionalidad(update, sesion, prefijo='⏩ Estado Civil omitido.')
+        return
+
+    if data == 'reg:omitir_rec':
+        if sesion.estado == EstadoRegistro.ESPERANDO_ENCUESTA_RECOMENDO:
+            sesion.datos['nombre_recomendador'] = ''
+            await verificar_faltantes_o_confirmar(update, sesion)
+        return
+
     # Confirmación o retoma de foto de expediente
     if data == 'reg:foto_ok':
         await _pedir_encuesta_fuente(update, sesion, prefijo='✅ Fotografía confirmada para el expediente digital.')
-        return
-
-    if data in ('reg:foto_subir', 'reg:foto_bajar'):
-        raw = sesion.datos.get('_foto_raw')
-        if not raw:
-            await consulta.answer('No hay fotografía previa para reencuadrar.', show_alert=True)
-            return
-        factor_actual = float(sesion.datos.get('_factor_y', 0.20))
-        if data == 'reg:foto_subir':
-            nuevo_factor = max(0.0, factor_actual - 0.08)
-        else:
-            nuevo_factor = min(0.90, factor_actual + 0.08)
-        sesion.datos['_factor_y'] = nuevo_factor
-        foto_ajustada = recortar_foto_cuadrada_1a1(raw, factor_y=nuevo_factor)
-        b64_foto = f"data:image/jpeg;base64,{base64.b64encode(foto_ajustada).decode('ascii')}"
-        sesion.datos['fotografia_base64'] = b64_foto
-
-        pct = int(nuevo_factor * 100)
-        try:
-            from telegram import InputMediaPhoto
-            await consulta.edit_message_media(
-                media=InputMediaPhoto(
-                    media=foto_ajustada,
-                    caption=(
-                        f"📸 **Encuadre 1:1 ajustado (altura: {pct}%)**\n\n"
-                        "Usa «Subir/Bajar encuadre» para centrar el rostro o pulsa «Continuar»."
-                    ),
-                ),
-                reply_markup=InlineKeyboardMarkup([
-                    [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
-                    [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
-                    [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
-                    [boton('❌ Cancelar', 'reg:cancelar')],
-                ])
-            )
-        except Exception as exc:
-            logger.warning('No se pudo editar mensaje de foto: %s', exc)
-            await update.effective_message.reply_photo(
-                photo=foto_ajustada,
-                caption=f"📸 **Encuadre 1:1 ajustado (altura: {pct}%)**",
-                reply_markup=InlineKeyboardMarkup([
-                    [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
-                    [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
-                    [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
-                    [boton('❌ Cancelar', 'reg:cancelar')],
-                ])
-            )
         return
 
     if data == 'reg:foto_retomar':
@@ -2045,7 +2074,7 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         # Si no hay CURP, solicitar Documento CURP; si ya hay, pasar a CSF
         tiene_curp = bool(sesion.datos.get('curp') or sesion.datos.get('acta', {}).get('curp'))
         siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
-        await ir_al_estado(update, sesion, siguiente, prefijo='⏩ INE omitida.')
+        await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Identificación (INE / Licencia) omitida.')
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
         await _pedir_csf(update, sesion, prefijo='⏩ Documento de CURP omitido.')
     elif estado == EstadoRegistro.ESPERANDO_CSF:
@@ -2060,7 +2089,7 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
     elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_PARENTESCO:
         sesion.datos['par_eme1'] = 'No especificado'
         sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO
-        teclado = InlineKeyboardMarkup([[boton('⏩ Omitir teléfono', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
+        teclado = InlineKeyboardMarkup([[boton('⏩ Omitir teléfono', 'reg:omitir_tel_eme'), boton('❌ Cancelar', 'reg:cancelar')]])
         await responder(update, 'Escribe el teléfono de contacto de emergencia:', reply_markup=teclado)
     elif estado == EstadoRegistro.ESPERANDO_EMERGENCIA_TELEFONO:
         sesion.datos['tel_eme1'] = ''
