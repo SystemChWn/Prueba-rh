@@ -178,28 +178,32 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'Haz el máximo esfuerzo por leer los datos visibles aunque la calidad no sea perfecta; nunca devuelvas todo null si el documento es discernible.'
     ),
     'Comprobante de Domicilio': (
-        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de un recibo o comprobante de servicios (luz CFE, agua, teléfono, internet, banco, gas). '
-        'PRIORIDAD NÚMERO UNO: LOCALIZAR EL CÓDIGO POSTAL (C.P.) DEL DOMICILIO DEL CLIENTE/TITULAR. '
-        'Busca con máxima atención el código de 5 dígitos numéricos (ej. C.P. 64000, CP 66600, etc.) que pertenece al domicilio particular donde se presta o entrega el servicio (suministro). '
-        'Extrae obligatoriamente el campo cp (exactamente 5 dígitos numéricos). '
-        'Extrae también el titular (nombre_propietario) y la dirección desglosada si aparece: calle, num_ext, num_int, colonia, municipio y estado. '
-        'NUNCA extraigas la dirección corporativa ni oficinas centrales de la empresa emisora.'
+        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de un comprobante o recibo de domicilio (CFE, agua, teléfono, internet, gas, estado de cuenta bancario). '
+        'La imagen puede tener fondos (mesas, escritorios), sombras o estar rotada 90° o 270°. '
+        'OBJETIVO PRINCIPAL: Localizar y extraer con máxima fidelidad la dirección del domicilio particular de servicio/suministro desglosada en: '
+        'calle, num_ext (número exterior), num_int (número interior si existe), colonia, cp (código postal de 5 dígitos), '
+        'municipio (o alcaldía), estado y nombre_propietario (nombre del titular o cliente del servicio que aparece en el recibo). '
+        'REGLAS CRÍTICAS: '
+        '1) La dirección del domicilio particular suele venir ubicada inmediatamente debajo del nombre del cliente o etiquetada como «Dirección del servicio», «Lugar de entrega / suministro». '
+        '2) NUNCA extraigas la dirección corporativa de las oficinas centrales de la empresa emisora (por ejemplo, nunca oficinas de CFE en Río Ródano). '
+        '3) Extrae todos los campos visibles con el máximo detalle posible.'
     ),
     'INE': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una IDENTIFICACIÓN OFICIAL MEXICANA: '
         'puede ser una Credencial para Votar (INE / IFE), una Licencia de Conducir oficial o un Pasaporte Mexicano. '
-        'La imagen puede tener reflejos de plástico, micas, hologramas, sombras o estar en cualquier orientación (horizontal, vertical o rotada). '
+        'La imagen puede tener reflejos de plástico, micas, hologramas, sombras o estar en cualquier orientación (horizontal, vertical o rotada 90°/270°). '
+        'IMPORTANTE: Esta identificación es para corroborar datos ya registrados. '
         'LOCALIZACIÓN DE DATOS CON MÁXIMA PRIORIDAD: '
         '1) CURP (18 caracteres alfanuméricos en mayúsculas): '
-        '   - En INE/IFE: en el frente viene etiquetada como «CURP» (cerca de sexo, clave de elector o fecha de nacimiento) o en el reverso en las líneas de lectura mecánica (MRZ). '
-        '   - En Licencia de Conducir: viene claramente identificada con la etiqueta «CURP» o «C.U.R.P.». '
-        '   - En Pasaporte Mexicano: en la página de datos principales viene con la etiqueta «CURP» o «No. Personal / Personal No.», o en las dos líneas MRZ del borde inferior. '
+        '   - En INE/IFE: en el frente etiquetada como «CURP» o en el reverso en las líneas de lectura mecánica (MRZ). '
+        '   - En Licencia de Conducir: etiquetada como «CURP» o «C.U.R.P.». '
+        '   - En Pasaporte Mexicano: en la página de datos principales con etiqueta «CURP» o «No. Personal», o en las dos líneas MRZ del borde inferior. '
         '   Extrae con absoluta prioridad la CURP completa de 18 caracteres. '
         '2) Nombre Completo: '
         '   - En INE/IFE suele venir en líneas separadas (Apellido Paterno, Apellido Materno, Nombre(s)). Concaténalo en orden: Nombre(s) Apellido_Paterno Apellido_Materno. '
         '   - En Licencia y Pasaporte extrae los nombres y apellidos de la persona titular. '
         '3) Fecha de Nacimiento (YYYY-MM-DD), Género/Sexo (MASCULINO o FEMENINO) y Domicilio si aparece (calle, num_ext, num_int, colonia, municipio, estado, cp). '
-        'Haz el máximo esfuerzo por extraer la CURP y el nombre legible aunque la imagen tenga sombras o reflejos.'
+        'Haz el máximo esfuerzo por extraer los datos legibles aunque la imagen tenga sombras o reflejos.'
     ),
     'Constancia de Situación Fiscal': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de Situación Fiscal o Cédula del SAT. '
@@ -214,10 +218,16 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'curp (18 caracteres si aparece) y nombre_completo del asegurado titular.'
     ),
     'Documento CURP': (
-        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de CURP oficial emitida por RENAPO. '
-        'La imagen puede tener fondos, reflejos, sombras o estar en cualquier ángulo de orientación. '
-        'OBJETIVO PRINCIPAL Y ABSOLUTO: Localizar el recuadro principal central donde aparece la Clave Única de Registro de Población (18 caracteres alfanuméricos en mayúsculas, formato: 4 letras, 6 dígitos numéricos AAMMDD, H o M, 2 letras entidad federativa, 3 letras consonantes y 2 caracteres homoclave). '
-        'Extrae fielmente: curp (18 caracteres sin espacios), nombre_completo (nombres y apellidos de la persona), fecha_nac (YYYY-MM-DD), genero (MASCULINO o FEMENINO) y lugar_nacimiento. '
+        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de CURP oficial emitida por RENAPO / SEGOB. '
+        'IMPORTANTE DE ORIENTACIÓN: La fotografía puede estar ROTADA 90° o 270° (por ejemplo si el documento está en horizontal sobre una mesa o teclado y el celular lo capturó en vertical con texto en orientación vertical o lateral). '
+        'GIRA MENTALMENTE LA IMAGEN si el texto está de lado (lectura de abajo a arriba o de arriba a abajo). '
+        'OBJETIVO PRINCIPAL Y ABSOLUTO: Localizar el recuadro principal central donde dice «Clave:» o «CURP:» y transcribir la Clave Única de Registro de Población (exactamente 18 caracteres alfanuméricos en mayúsculas, ejemplo: TAAR010823HVZPZMA6). '
+        'Extrae fielmente: '
+        '- curp (18 caracteres sin espacios), '
+        '- nombre_completo (donde dice «Nombre:», nombres y apellidos completos), '
+        '- fecha_nac (YYYY-MM-DD), '
+        '- genero (MASCULINO o FEMENINO), '
+        '- lugar_nacimiento o entidad_nacimiento (donde dice «Entidad de registro:», ej. VERACRUZ, NUEVO LEÓN, ETC.). '
         'Inspecciona minuciosamente todo el texto para transcribir la CURP exacta.'
     ),
 }
@@ -265,6 +275,19 @@ MIMES_DOCUMENTO_ESCANEABLE = {
         ),
     ),
 }
+
+
+def _rotar_imagen_bytes(contenido: bytes, grados: int) -> bytes | None:
+    """Rota una imagen JPEG/PNG por el número de grados especificado (ej. 90, 270) preservando calidad."""
+    try:
+        from PIL import Image
+        img = Image.open(BytesIO(contenido))
+        img = img.rotate(grados, expand=True)
+        buf = BytesIO()
+        img.save(buf, format='JPEG', quality=95)
+        return buf.getvalue()
+    except Exception:
+        return None
 
 
 def _extraer_texto_de_pdf(contenido: bytes) -> str:
@@ -326,14 +349,6 @@ def escanear_documento():
         return jsonify({'error': 'El servicio de escaneo no está configurado.'}), 503
 
     data_url = f"data:{mime_type};base64,{base64.b64encode(contenido).decode('ascii')}"
-    if mime_type == 'application/pdf':
-        archivo_modelo = {
-            'type': 'input_file',
-            'filename': 'documento.pdf',
-            'file_data': data_url,
-        }
-    else:
-        archivo_modelo = {'type': 'input_image', 'image_url': data_url}
 
     propiedades = {
         campo: {
@@ -348,55 +363,64 @@ def escanear_documento():
         'required': list(campos_documento),
         'additionalProperties': False,
     }
-    solicitud_openai = {
-        'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
-        'input': [{
-            'role': 'user',
-            'content': [
-                {
-                    'type': 'input_text',
-                    'text': (
-                        f"Tipo de documento seleccionado: «{tipo_documento}».\n"
-                        f"{INSTRUCCIONES_TIPO_DOCUMENTO[tipo_documento]}\n"
-                        "IMPORTANTE: Es una captura o fotografía tomada en tiempo real con cámara de teléfono móvil, "
-                        "por lo que puede presentar fondos (mesas, escritorios, manos), sombras, brillos, reflejos o estar inclinada o rotada. "
-                        "Localiza el documento físico y realiza tu máximo esfuerzo de lectura OCR para extraer todos los datos solicitados. "
-                        "Para claves y códigos oficiales (CURP de 18 caracteres, RFC de 12 o 13 caracteres, NSS de 11 dígitos, Código Postal de 5 dígitos), "
-                        "identifícalos con absoluta prioridad revisando minuciosamente todo el texto visible. "
-                        "Solo usa null para campos que realmente no aparezcan en el documento."
-                    ),
-                },
-                archivo_modelo,
-            ],
-        }],
-        'text': {
-            'format': {
-                'type': 'json_schema',
-                'name': 'campos_documento',
-                'strict': True,
-                'schema': esquema,
-            },
-        },
-        'max_output_tokens': 800,
-    }
 
-    cuerpo = None
-    try:
-        respuesta = requests.post(
-            'https://api.openai.com/v1/responses',
-            headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
+    def _consultar_openai(url_doc: str, es_pdf: bool, raw_bytes: bytes):
+        if es_pdf:
+            archivo_modelo = {
+                'type': 'input_file',
+                'filename': 'documento.pdf',
+                'file_data': url_doc,
+            }
+        else:
+            archivo_modelo = {'type': 'input_image', 'image_url': url_doc}
+
+        solicitud_openai = {
+            'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+            'input': [{
+                'role': 'user',
+                'content': [
+                    {
+                        'type': 'input_text',
+                        'text': (
+                            f"Tipo de documento seleccionado: «{tipo_documento}».\n"
+                            f"{INSTRUCCIONES_TIPO_DOCUMENTO[tipo_documento]}\n"
+                            "IMPORTANTE: Es una captura o fotografía tomada en tiempo real con cámara de teléfono móvil, "
+                            "por lo que puede presentar fondos (mesas, escritorios, teclados, manos), sombras, brillos, reflejos o estar inclinada o rotada 90°/270°. "
+                            "Localiza el documento físico y realiza tu máximo esfuerzo de lectura OCR para extraer todos los datos solicitados. "
+                            "Para claves y códigos oficiales (CURP de 18 caracteres, RFC de 12 o 13 caracteres, NSS de 11 dígitos, Código Postal de 5 dígitos), "
+                            "identifícalos con absoluta prioridad revisando minuciosamente todo el texto visible. "
+                            "Solo usa null para campos que realmente no aparezcan en el documento."
+                        ),
+                    },
+                    archivo_modelo,
+                ],
+            }],
+            'text': {
+                'format': {
+                    'type': 'json_schema',
+                    'name': 'campos_documento',
+                    'strict': True,
+                    'schema': esquema,
+                },
             },
-            json=solicitud_openai,
-            timeout=(5, 45),
-        )
-        respuesta.raise_for_status()
-        cuerpo = respuesta.json()
-    except Exception as error_resp:
-        app.logger.warning('Fallo en /v1/responses (%s), intentando fallback con /v1/chat/completions…', error_resp)
+            'max_output_tokens': 800,
+        }
+
+        cuerpo_res = None
         try:
-            # Fallback universal con Chat Completions Vision
+            respuesta = requests.post(
+                'https://api.openai.com/v1/responses',
+                headers={
+                    'Authorization': f'Bearer {api_key}',
+                    'Content-Type': 'application/json',
+                },
+                json=solicitud_openai,
+                timeout=(5, 45),
+            )
+            respuesta.raise_for_status()
+            cuerpo_res = respuesta.json()
+        except Exception as error_resp:
+            app.logger.warning('Fallo en /v1/responses (%s), intentando fallback con /v1/chat/completions…', error_resp)
             contenido_usuario = [
                 {
                     'type': 'text',
@@ -404,17 +428,17 @@ def escanear_documento():
                         f"Documento a analizar: «{tipo_documento}».\n"
                         f"{INSTRUCCIONES_TIPO_DOCUMENTO.get(tipo_documento, '')}\n"
                         "ATENCIÓN: Analiza minuciosamente esta fotografía tomada con cámara de celular en tiempo real de papelería física. "
-                        "Puede tener fondos de mesa, sombras, reflejos o iluminación variable. "
+                        "Puede tener fondos de mesa, teclados, sombras, reflejos o estar rotada 90° o 270°. "
                         "Localiza el documento y extrae con máxima fidelidad cada campo visible en formato JSON. "
                         "Presta especial atención a claves alfanuméricas: CURP (18 caracteres), RFC (12-13 caracteres), NSS (11 dígitos) y nombres completos. "
                         "Haz el máximo esfuerzo por extraer los datos legibles."
                     ),
                 }
             ]
-            if mime_type != 'application/pdf':
-                contenido_usuario.append({'type': 'image_url', 'image_url': {'url': data_url, 'detail': 'high'}})
+            if not es_pdf:
+                contenido_usuario.append({'type': 'image_url', 'image_url': {'url': url_doc, 'detail': 'high'}})
             else:
-                texto_pdf_in = _extraer_texto_de_pdf(contenido)
+                texto_pdf_in = _extraer_texto_de_pdf(raw_bytes)
                 if texto_pdf_in:
                     contenido_usuario.append({'type': 'text', 'text': f"Texto íntegro extraído del documento PDF:\n{texto_pdf_in[:4000]}"})
 
@@ -443,58 +467,92 @@ def escanear_documento():
                 timeout=(5, 55),
             )
             resp_chat.raise_for_status()
-            cuerpo = resp_chat.json()
-        except requests.Timeout:
-            app.logger.warning('Tiempo de espera agotado al escanear un documento.')
-            return jsonify({'error': 'El escaneo tardó demasiado. Inténtalo de nuevo.'}), 504
-        except requests.HTTPError as error:
-            estado = error.response.status_code if error.response is not None else 'desconocido'
-            app.logger.error('OpenAI rechazó el escaneo de documento (HTTP %s).', estado)
-            return jsonify({'error': 'No fue posible analizar el documento.'}), 502
-        except Exception:
-            app.logger.exception('Error de conexión al escanear un documento.')
-            return jsonify({'error': 'No fue posible conectar con el servicio de escaneo.'}), 502
+            cuerpo_res = resp_chat.json()
 
-    texto_resultado = cuerpo.get('output_text') if isinstance(cuerpo, dict) else None
-    if not isinstance(texto_resultado, str) and isinstance(cuerpo, dict):
-        # Intentar extraer de choices (Chat Completions)
-        choices = cuerpo.get('choices')
-        if isinstance(choices, list) and choices:
-            msg = choices[0].get('message') if isinstance(choices[0], dict) else {}
-            texto_resultado = msg.get('content')
+        texto_res = cuerpo_res.get('output_text') if isinstance(cuerpo_res, dict) else None
+        if not isinstance(texto_res, str) and isinstance(cuerpo_res, dict):
+            choices = cuerpo_res.get('choices')
+            if isinstance(choices, list) and choices:
+                msg = choices[0].get('message') if isinstance(choices[0], dict) else {}
+                texto_res = msg.get('content')
 
-    if not isinstance(texto_resultado, str):
-        elementos_salida = cuerpo.get('output', []) if isinstance(cuerpo, dict) else []
-        if isinstance(elementos_salida, list):
-            for elemento in elementos_salida:
-                if not isinstance(elemento, dict):
-                    continue
-                partes_salida = elemento.get('content', [])
-                if not isinstance(partes_salida, list):
-                    continue
-                texto_resultado = next(
-                    (
-                        parte.get('text')
-                        for parte in partes_salida
-                        if isinstance(parte, dict)
-                        and parte.get('type') == 'output_text'
-                        and isinstance(parte.get('text'), str)
-                    ),
-                    None,
-                )
-                if texto_resultado:
+        if not isinstance(texto_res, str):
+            elementos_salida = cuerpo_res.get('output', []) if isinstance(cuerpo_res, dict) else []
+            if isinstance(elementos_salida, list):
+                for elemento in elementos_salida:
+                    if not isinstance(elemento, dict):
+                        continue
+                    partes_salida = elemento.get('content', [])
+                    if not isinstance(partes_salida, list):
+                        continue
+                    texto_res = next(
+                        (
+                            parte.get('text')
+                            for parte in partes_salida
+                            if isinstance(parte, dict)
+                            and parte.get('type') == 'output_text'
+                            and isinstance(parte.get('text'), str)
+                        ),
+                        None,
+                    )
+                    if texto_res:
+                        break
+
+        vals = None
+        if texto_res:
+            texto_limpio = texto_res.strip()
+            if texto_limpio.startswith('```'):
+                texto_limpio = re.sub(r'^```(?:json)?\s*', '', texto_limpio, flags=re.IGNORECASE)
+                texto_limpio = re.sub(r'\s*```$', '', texto_limpio)
+            try:
+                vals = json.loads(texto_limpio)
+            except (TypeError, ValueError):
+                vals = None
+
+        return cuerpo_res, texto_res, vals
+
+    try:
+        cuerpo, texto_resultado, valores = _consultar_openai(data_url, mime_type == 'application/pdf', contenido)
+    except requests.Timeout:
+        app.logger.warning('Tiempo de espera agotado al escanear un documento.')
+        return jsonify({'error': 'El escaneo tardó demasiado. Inténtalo de nuevo.'}), 504
+    except requests.HTTPError as error:
+        estado = error.response.status_code if error.response is not None else 'desconocido'
+        app.logger.error('OpenAI rechazó el escaneo de documento (HTTP %s).', estado)
+        return jsonify({'error': 'No fue posible analizar el documento.'}), 502
+    except Exception:
+        app.logger.exception('Error de conexión al escanear un documento.')
+        return jsonify({'error': 'No fue posible conectar con el servicio de escaneo.'}), 502
+
+    # Verificación de datos críticos y reintento por rotación (fotos tomadas de lado)
+    def _falta_dato_critico(v, tipo):
+        if not isinstance(v, dict):
+            return True
+        if tipo == 'Documento CURP':
+            curp_val = re.sub(r'[^A-Z0-9]', '', str(v.get('curp') or ''))
+            return len(curp_val) != 18
+        if tipo == 'INE':
+            curp_val = re.sub(r'[^A-Z0-9]', '', str(v.get('curp') or ''))
+            return len(curp_val) != 18 and not v.get('nombre_completo')
+        if tipo == 'Comprobante de Domicilio':
+            return not (v.get('cp') or v.get('calle') or v.get('colonia'))
+        if tipo == 'Acta de Nacimiento':
+            return not (v.get('nombre_completo') or v.get('curp'))
+        return False
+
+    if mime_type != 'application/pdf' and _falta_dato_critico(valores, tipo_documento):
+        for grados in (270, 90):
+            rotado_bytes = _rotar_imagen_bytes(contenido, grados)
+            if not rotado_bytes:
+                break
+            url_rotada = f"data:image/jpeg;base64,{base64.b64encode(rotado_bytes).decode('ascii')}"
+            try:
+                c_rot, t_rot, v_rot = _consultar_openai(url_rotada, False, rotado_bytes)
+                if isinstance(v_rot, dict) and not _falta_dato_critico(v_rot, tipo_documento):
+                    cuerpo, texto_resultado, valores = c_rot, t_rot, v_rot
                     break
-
-    valores = None
-    if texto_resultado:
-        texto_limpio = texto_resultado.strip()
-        if texto_limpio.startswith('```'):
-            texto_limpio = re.sub(r'^```(?:json)?\s*', '', texto_limpio, flags=re.IGNORECASE)
-            texto_limpio = re.sub(r'\s*```$', '', texto_limpio)
-        try:
-            valores = json.loads(texto_limpio)
-        except (TypeError, ValueError):
-            valores = None
+            except Exception as e_rot:
+                app.logger.warning('Fallo en intento de rotación %s°: %s', grados, e_rot)
 
     if not isinstance(valores, dict):
         app.logger.error('OpenAI no devolvió campos estructurados para el documento.')
