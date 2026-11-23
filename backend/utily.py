@@ -208,9 +208,9 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
     ),
     'Documento CURP': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de CURP oficial emitida por RENAPO. '
-        'La imagen puede estar tomada sobre una mesa, con sombras, reflejos o ligeramente inclinada o rotada. '
-        'Localiza el recuadro principal donde aparece la Clave Única de Registro de Población (18 caracteres alfanuméricos, ej. ABCD900101HDFRRN01). '
-        'Extrae con exactitud: curp (18 caracteres en mayúsculas, no confundas 0 con O ni 1 con I), '
+        'La imagen puede estar tomada sobre una mesa, con sombras, reflejos o estar rotada, inclinada o en cualquier orientación. '
+        'Localiza el recuadro principal donde aparece la Clave Única de Registro de Población (18 caracteres alfanuméricos en mayúsculas, formato: 4 letras, 6 dígitos numéricos AAMMDD, H o M, 2 letras de entidad federativa, 3 letras consonantes y 2 dígitos/caracteres de homoclave, ej. ABCD900101HDFRRN01). '
+        'Extrae con exactitud y prioridad absoluta: curp (18 caracteres sin espacios), '
         'nombre_completo (nombres y apellidos de la persona), fecha_nac (YYYY-MM-DD), genero (MASCULINO o FEMENINO) '
         'y lugar_nacimiento (entidad federativa de nacimiento asentada). '
         'Haz el máximo esfuerzo por transcribir la CURP y datos visibles.'
@@ -356,7 +356,7 @@ def escanear_documento():
                 'Content-Type': 'application/json',
             },
             json=solicitud_openai,
-            timeout=(3, 6),
+            timeout=(5, 45),
         )
         respuesta.raise_for_status()
         cuerpo = respuesta.json()
@@ -467,11 +467,11 @@ def escanear_documento():
     texto_total = str(texto_resultado or '')
 
     # Normalización / corrección OCR de CURP
-    curp_candidata = str(valores.get('curp') or '').strip().upper()
+    curp_candidata = re.sub(r'[^A-Z0-9]', '', str(valores.get('curp') or '').strip().upper())
     if not curp_candidata or len(curp_candidata) != 18:
-        match_curp = re.search(r'\b([A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z0-9]{5})\b', texto_total.upper())
+        match_curp = re.search(r'\b([A-Z]{4}\s*\d{6}\s*[HM]\s*[A-Z]{2}\s*[A-Z0-9]{3}\s*[A-Z0-9]{2})\b', texto_total.upper())
         if match_curp:
-            curp_candidata = match_curp.group(1)
+            curp_candidata = re.sub(r'[^A-Z0-9]', '', match_curp.group(1))
 
     if curp_candidata:
         # Limpiar caracteres accidentales

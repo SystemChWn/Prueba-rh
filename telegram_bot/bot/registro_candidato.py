@@ -94,6 +94,7 @@ class SesionRegistro:
     # Control de confirmación paso a paso de datos críticos
     cola_confirmacion: list[str] = field(default_factory=list)
     campo_confirmando: str | None = None
+    campos_confirmados: set[str] = field(default_factory=set)
     siguiente_estado_post_conf: EstadoRegistro = EstadoRegistro.ESPERANDO_DOMICILIO
     ultimo_doc_para_reintentar: str = 'Acta de Nacimiento'
 
@@ -224,8 +225,8 @@ def validar_rfc_formato(rfc: str) -> tuple[bool, str]:
     return True, "RFC válido"
 
 
-def recortar_foto_cuadrada_1a1(contenido_bytes: bytes) -> bytes:
-    """Recorta la foto a proporción 1:1 centrada en la mitad superior (rostro/cabeza) y la redimensiona a 600x600."""
+def recortar_foto_cuadrada_1a1(contenido_bytes: bytes, factor_y: float = 0.20) -> bytes:
+    """Recorta la foto a proporción 1:1 centrada horizontalmente con ajuste de altura personalizable y redimensionada a 600x600."""
     try:
         from PIL import Image, ImageOps
         img = Image.open(BytesIO(contenido_bytes))
@@ -242,15 +243,14 @@ def recortar_foto_cuadrada_1a1(contenido_bytes: bytes) -> bytes:
         else:
             izq = 0
             der = lado
-            # Enfoque en el tercio superior para capturar rostro completo sin cortar cabeza
-            arr = int((h - lado) * 0.20)
+            arr = int((h - lado) * factor_y)
             arr = max(0, min(arr, h - lado))
             abj = arr + lado
 
         recorte = img.crop((izq, arr, der, abj))
         recorte = recorte.resize((600, 600), Image.Resampling.LANCZOS)
         out = BytesIO()
-        recorte.save(out, format='JPEG', quality=90, optimize=True)
+        recorte.save(out, format='JPEG', quality=95, optimize=True)
         return out.getvalue()
     except Exception as exc:
         logger.warning('No se pudo recortar foto a 1:1: %s', exc)
@@ -460,27 +460,36 @@ async def avanzar_confirmacion_critica(update: Update, sesion: SesionRegistro, p
     partes.append(f"🔍 **Confirmación de dato extraído:**\n")
     partes.append(f"• **{etiqueta}:** `{valor}`")
 
-    # Validación de formato CURP / RFC
+    # Validación estricta de formato CURP / RFC
+    formato_invalido = False
     if campo == 'curp' and valor != 'Sin dato':
         es_valida, advertencia = validar_curp_formato(valor)
         if not es_valida:
-            partes.append(f"\n⚠️ **Atención a formato CURP:** {advertencia}")
+            partes.append(f"\n⚠️ **Formato CURP no válido:** {advertencia}")
+            formato_invalido = True
         else:
             partes.append(f"   *(Estructura oficial de 18 caracteres correcta ✅)*")
     elif campo == 'rfc' and valor != 'Sin dato':
         es_valido, advertencia = validar_rfc_formato(valor)
         if not es_valido:
-            partes.append(f"\n⚠️ **Atención a formato RFC:** {advertencia}")
+            partes.append(f"\n⚠️ **Formato RFC no válido:** {advertencia}")
+            formato_invalido = True
         else:
             partes.append(f"   *(Estructura oficial correcta ✅)*")
 
-    partes.append(f"\n¿Este dato es correcto?")
-
-    teclado = InlineKeyboardMarkup([
-        [boton('✅ Es correcto', 'reg:conf_paso_ok')],
-        [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
-        [boton('❌ Cancelar', 'reg:cancelar')],
-    ])
+    if formato_invalido:
+        partes.append(f"\n⚠️ La clave no concuerda con la estructura oficial. Toma la foto de nuevo con mejor enfoque o escribe el dato:")
+        teclado = InlineKeyboardMarkup([
+            [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir')],
+            [boton('❌ Cancelar', 'reg:cancelar')],
+        ])
+    else:
+        partes.append(f"\n¿Este dato es correcto?")
+        teclado = InlineKeyboardMarkup([
+            [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+            [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+            [boton('❌ Cancelar', 'reg:cancelar')],
+        ])
     await responder(update, '\n'.join(partes), reply_markup=teclado)
 
 
@@ -621,10 +630,16 @@ async def _pedir_foto_candidato(update: Update, sesion: SesionRegistro, prefijo:
     sesion.estado = EstadoRegistro.ESPERANDO_FOTO_CANDIDATO
     texto = (
         f"{prefijo}\n\n"
-        "📸 **Fotografía para Expediente Digital**\n"
-        "Por favor toma o envía una fotografía del empleado/candidato (rostro de frente) "
-        "para adjuntarla a su expediente digital.\n\n"
-        "*(Pulsa «Omitir foto» si no la tienes en este momento)*"
+        "📸 **Fotografía para Expediente Digital (Formato 1:1 Cuadrado)**\n\n"
+        "📱 **Guía de encuadre al abrir tu cámara:**\n"
+        "```text\n"
+        "┌────────────────────────┐\n"
+        "│        (Cabeza)        │  ← Deja espacio arriba\n"
+        "│     [ ROSTRO 1:1 ]     │  ← Centrado en pantalla\n"
+        "│        (Hombros)       │  ← Corte en el pecho\n"
+        "└────────────────────────┘\n"
+        "```\n"
+        "Toma la foto de frente con buena iluminación. El sistema la recortará en formato cuadrado 1:1 centrado en el rostro y te mostrará la vista previa para que puedas confirmar o ajustar el encuadre."
     ).strip()
     teclado = InlineKeyboardMarkup([
         [boton('⏩ Omitir foto', 'reg:omitir_foto'), boton('❌ Cancelar', 'reg:cancelar')]
@@ -667,34 +682,36 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
     d = sesion.datos
     avisos: list[str] = []
 
-    # 1. CURP
-    curps = [
-        d.get('curp_doc', {}).get('curp'),
-        d.get('acta', {}).get('curp'),
-        d.get('ine', {}).get('curp'),
-        d.get('csf', {}).get('curp'),
-        d.get('nss_doc', {}).get('curp'),
-    ]
-    curp_win, hay_disc_curp, vars_curp = resolver_por_mayoria(curps)
-    if curp_win:
-        d['curp'] = curp_win
+    # 1. CURP (si ya fue confirmada previamente por el usuario, NUNCA se sobreescribe)
+    if 'curp' not in sesion.campos_confirmados:
+        curps = [
+            d.get('curp_doc', {}).get('curp'),
+            d.get('acta', {}).get('curp'),
+            d.get('ine', {}).get('curp'),
+            d.get('csf', {}).get('curp'),
+            d.get('nss_doc', {}).get('curp'),
+        ]
+        curp_win, hay_disc_curp, vars_curp = resolver_por_mayoria(curps)
+        if curp_win:
+            d['curp'] = curp_win
 
-    # 2. NOMBRE COMPLETO (Acomodado iniciando por el nombre)
-    nom_acta = d.get('acta', {}).get('nombre_completo')
-    nom_pila = d.get('acta', {}).get('nombre', '')
-    ap_pat = d.get('acta', {}).get('primer_apellido', '')
-    ap_mat = d.get('acta', {}).get('segundo_apellido', '')
+    # 2. NOMBRE COMPLETO (si ya fue confirmado, NUNCA se sobreescribe)
+    if 'nombre_completo' not in sesion.campos_confirmados:
+        nom_acta = d.get('acta', {}).get('nombre_completo')
+        nom_pila = d.get('acta', {}).get('nombre', '')
+        ap_pat = d.get('acta', {}).get('primer_apellido', '')
+        ap_mat = d.get('acta', {}).get('segundo_apellido', '')
 
-    nom_curp = ordenar_nombre_natural(d.get('curp_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
-    nom_ine = ordenar_nombre_natural(d.get('ine', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
-    nom_csf = ordenar_nombre_natural(d.get('csf', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
-    nom_nss = ordenar_nombre_natural(d.get('nss_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
-    nom_acta_nat = ordenar_nombre_natural(nom_acta, nom_pila, ap_pat, ap_mat) if nom_acta else ''
+        nom_curp = ordenar_nombre_natural(d.get('curp_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
+        nom_ine = ordenar_nombre_natural(d.get('ine', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
+        nom_csf = ordenar_nombre_natural(d.get('csf', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
+        nom_nss = ordenar_nombre_natural(d.get('nss_doc', {}).get('nombre_completo', ''), nom_pila, ap_pat, ap_mat)
+        nom_acta_nat = ordenar_nombre_natural(nom_acta, nom_pila, ap_pat, ap_mat) if nom_acta else ''
 
-    nombres = [nom_acta_nat, nom_curp, nom_ine, nom_csf, nom_nss]
-    nom_win, _, _ = resolver_por_mayoria(nombres)
-    if nom_win:
-        d['nombre_completo'] = nom_win
+        nombres = [nom_acta_nat, nom_curp, nom_ine, nom_csf, nom_nss]
+        nom_win, _, _ = resolver_por_mayoria(nombres)
+        if nom_win:
+            d['nombre_completo'] = nom_win
 
     # 3. SEXO
     sex_acta = d.get('acta', {}).get('sexo')
@@ -714,15 +731,17 @@ def ejecutar_validacion_consenso(sesion: SesionRegistro) -> tuple[dict[str, str]
     if fn_win:
         d['fecha_nac'] = fn_win
 
-    # 5. RFC
-    rfc_csf = d.get('csf', {}).get('rfc')
-    if rfc_csf:
-        d['rfc'] = rfc_csf
+    # 5. RFC (si ya fue confirmado, se respeta)
+    if 'rfc' not in sesion.campos_confirmados:
+        rfc_csf = d.get('csf', {}).get('rfc')
+        if rfc_csf:
+            d['rfc'] = rfc_csf
 
-    # 6. NSS
-    nss_doc = d.get('nss_doc', {}).get('nss')
-    if nss_doc:
-        d['nss'] = nss_doc
+    # 6. NSS (si ya fue confirmado, se respeta)
+    if 'nss' not in sesion.campos_confirmados:
+        nss_doc = d.get('nss_doc', {}).get('nss')
+        if nss_doc:
+            d['nss'] = nss_doc
 
     # Nacionalidad por defecto Mexicana si no está establecida
     if not d.get('nacionalidad'):
@@ -897,8 +916,10 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # FOTO DEL CANDIDATO (EXPEDIENTE DIGITAL)
     if estado == EstadoRegistro.ESPERANDO_FOTO_CANDIDATO:
-        # Recortar a proporción 1:1 centrado en el área de rostro/cabeza
-        foto_1a1 = recortar_foto_cuadrada_1a1(contenido)
+        # Guardar imagen original y recortar a proporción 1:1
+        sesion.datos['_foto_raw'] = contenido
+        sesion.datos['_factor_y'] = 0.20
+        foto_1a1 = recortar_foto_cuadrada_1a1(contenido, factor_y=0.20)
         b64_foto = f"data:image/jpeg;base64,{base64.b64encode(foto_1a1).decode('ascii')}"
         sesion.datos['fotografia_base64'] = b64_foto
         sesion.estado = EstadoRegistro.CONFIRMANDO_FOTO_CANDIDATO
@@ -907,11 +928,12 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             photo=foto_1a1,
             caption=(
                 "📸 **Vista previa de la fotografía (formato 1:1 para expediente digital)**\n\n"
-                "La imagen se centró y ajustó para el expediente del empleado.\n\n"
-                "¿La fotografía se ve bien o deseas tomar otra?"
+                "Puedes usar los botones para subir o bajar el encuadre si la cabeza o el rostro quedaron desfasados.\n\n"
+                "¿El encuadre se ve bien o deseas ajustarlo?"
             ),
             reply_markup=InlineKeyboardMarkup([
                 [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
+                [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
                 [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
                 [boton('❌ Cancelar', 'reg:cancelar')],
             ])
@@ -940,25 +962,46 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         campo = sesion.campo_confirmando
         if campo and leidos.get(campo):
             val_nuevo = str(leidos.get(campo)).strip()
+            formato_invalido = False
+            adv_formato = ""
             if campo == 'nombre_completo':
                 val_nuevo = ordenar_nombre_natural(val_nuevo)
             elif campo == 'curp':
                 val_nuevo = val_nuevo.upper()
+                ok_curp, err_curp = validar_curp_formato(val_nuevo)
+                if not ok_curp:
+                    formato_invalido = True
+                    adv_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
             elif campo == 'rfc':
                 val_nuevo = val_nuevo.upper()
+                ok_rfc, err_rfc = validar_rfc_formato(val_nuevo)
+                if not ok_rfc:
+                    formato_invalido = True
+                    adv_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
             sesion.datos[campo] = val_nuevo
             sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
             etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
-            texto = (
-                f"✅ **Dato detectado nuevamente:**\n"
-                f"• **{etiqueta}:** `{val_nuevo}`\n\n"
-                f"¿Este dato es correcto ahora?"
-            )
-            teclado = InlineKeyboardMarkup([
-                [boton('✅ Es correcto', 'reg:conf_paso_ok')],
-                [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
-                [boton('❌ Cancelar', 'reg:cancelar')],
-            ])
+            if formato_invalido:
+                texto = (
+                    f"⚠️ **Dato detectado nuevamente:**\n"
+                    f"• **{etiqueta}:** `{val_nuevo}`{adv_formato}\n\n"
+                    "La clave no cumple con la estructura oficial. Toma otra foto o escríbela:"
+                )
+                teclado = InlineKeyboardMarkup([
+                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
+            else:
+                texto = (
+                    f"✅ **Dato detectado nuevamente:**\n"
+                    f"• **{etiqueta}:** `{val_nuevo}`\n\n"
+                    f"¿Este dato es correcto ahora?"
+                )
+                teclado = InlineKeyboardMarkup([
+                    [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+                    [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
             await responder(update, texto, reply_markup=teclado)
             return True
 
@@ -1198,10 +1241,12 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return True
 
         sesion.datos['ine'] = {'nombre_completo': ine_nom, 'curp': ine_curp, 'sexo': ine_sexo, 'fecha_nac': ine_fn, 'domicilio': ine_dom}
-        if ine_nom and not sesion.datos.get('nombre_completo'):
+        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
             sesion.datos['nombre_completo'] = ine_nom
-        if ine_curp and not sesion.datos.get('curp'):
-            sesion.datos['curp'] = ine_curp
+        if ine_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
+            ok_curp_ine, _ = validar_curp_formato(ine_curp)
+            if ok_curp_ine:
+                sesion.datos['curp'] = ine_curp
         if ine_sexo and not sesion.datos.get('genero'):
             sesion.datos['genero'] = ine_sexo
             sesion.datos['sexo'] = ine_sexo
@@ -1210,9 +1255,15 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         lineas = ['✅ **INE analizada con éxito:**']
         if ine_nom:
-            lineas.append(f'• **Nombre:** {ine_nom}')
+            if 'nombre_completo' in sesion.campos_confirmados:
+                lineas.append(f'• **Nombre en INE:** {ine_nom} *(Confirmado previamente)*')
+            else:
+                lineas.append(f'• **Nombre:** {ine_nom}')
         if ine_curp:
-            lineas.append(f'• **CURP:** {ine_curp}')
+            if 'curp' in sesion.campos_confirmados:
+                lineas.append(f'• **CURP en INE:** {ine_curp} *(Se mantiene tu CURP confirmada: {sesion.datos.get("curp")})*')
+            else:
+                lineas.append(f'• **CURP:** {ine_curp}')
         if ine_sexo:
             lineas.append(f'• **Sexo:** {ine_sexo} *(M=Mujer, H=Hombre)*')
         if ine_fn:
@@ -1222,14 +1273,14 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         resumen = '\n'.join(lineas)
 
-        # Determinar siguiente paso: si aún no hay CURP, pedir documento de CURP
-        tiene_curp = bool(sesion.datos.get('curp') or ine_curp or sesion.datos.get('acta', {}).get('curp'))
+        # Determinar siguiente paso: si aún no hay CURP confirmada o válida, pedir documento de CURP
+        tiene_curp = bool(sesion.datos.get('curp') or ('curp' in sesion.campos_confirmados))
         siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
 
         criticos = []
-        if ine_nom:
+        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados:
             criticos.append('nombre_completo')
-        if ine_curp:
+        if ine_curp and 'curp' not in sesion.campos_confirmados and sesion.datos.get('curp') == ine_curp:
             criticos.append('curp')
 
         if criticos:
@@ -1257,7 +1308,8 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 '⚠️ No pude leer con claridad la constancia de CURP.\n'
                 'Por favor envía una foto más nítida o escribe la CURP directamente por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('⏩ Omitir', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+                    [boton('✏️ Escribir CURP', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
+                    [boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
             return True
@@ -1267,14 +1319,16 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         sex_curp = normalizar_sexo(leidos.get('genero') or leidos.get('sexo'))
         fn_curp = str(leidos.get('fecha_nac') or '').strip()
 
-        # Validación estricta: debe contener una clave CURP de 18 caracteres
-        if not curp_extraida or len(curp_extraida) != 18:
+        # Validación estricta: debe contener una clave CURP con formato oficial de 18 caracteres
+        es_valida_curp, err_curp = validar_curp_formato(curp_extraida)
+        if not es_valida_curp:
             await responder(
                 update,
-                '⚠️ El documento enviado no parece ser una **Constancia de CURP** válida (no se detectó la clave de 18 caracteres).\n'
-                'Por favor envía la constancia oficial de CURP o escribe tu CURP directamente por texto:',
+                f'⚠️ La clave detectada (`{curp_extraida or "No detectada"}`) no cumple con la estructura oficial de 18 caracteres ({err_curp}).\n'
+                'Por favor toma una foto más clara y enfocada de la constancia de CURP o escribe la CURP directamente por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('⏩ Omitir', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+                    [boton('✏️ Escribir CURP', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
+                    [boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
             return True
@@ -1285,20 +1339,21 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             'sexo': sex_curp,
             'fecha_nac': fn_curp,
         }
-        if curp_extraida:
+        if 'curp' not in sesion.campos_confirmados:
             sesion.datos['curp'] = curp_extraida
-        if nom_curp and not sesion.datos.get('nombre_completo'):
+        if nom_curp and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
             sesion.datos['nombre_completo'] = nom_curp
 
         resumen = (
             "✅ **Documento de CURP analizado:**\n"
-            f"• **CURP:** {curp_extraida or 'No legible'}\n"
+            f"• **CURP:** {curp_extraida}\n"
             f"• **Nombre:** {nom_curp or 'No especificado'}"
         )
 
-        if curp_extraida:
+        criticos = ['curp'] if 'curp' not in sesion.campos_confirmados else []
+        if criticos:
             await iniciar_confirmacion_critica(
-                update, sesion, ['curp'],
+                update, sesion, criticos,
                 siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
                 doc_origen='Documento CURP',
                 prefijo=resumen
@@ -1327,32 +1382,39 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         csf_curp = str(leidos.get('curp') or '').strip().upper()
         csf_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
 
-        # Validación estricta: debe contener RFC de 12 o 13 caracteres
-        if not rfc or len(rfc) not in (12, 13):
+        # Validación estricta: debe contener RFC de 12 o 13 caracteres con formato oficial
+        es_valido_rfc, err_rfc = validar_rfc_formato(rfc)
+        if not es_valido_rfc:
             await responder(
                 update,
-                '⚠️ El documento enviado no parece ser la **Constancia de Situación Fiscal (SAT)** (no se detectó un RFC de contribuyente válido).\n'
-                'Por favor asegúrate de enviar la constancia o cédula emitida por el SAT, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc(),
+                f'⚠️ El RFC detectado en la Constancia Fiscal (`{rfc or "No detectado"}`) no es válido ({err_rfc}).\n'
+                'Por favor asegúrate de enviar la constancia oficial del SAT, toma una foto más nítida o escribe tu RFC por texto:',
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('✏️ Escribir RFC', 'reg:conf_paso_corregir'), boton('⏩ Omitir', 'reg:omitir')],
+                    [boton('❌ Cancelar', 'reg:cancelar')]
+                ])
             )
             return True
 
         sesion.datos['csf'] = {'rfc': rfc, 'curp': csf_curp, 'nombre_completo': csf_nom}
-        if rfc:
+        if rfc and 'rfc' not in sesion.campos_confirmados:
             sesion.datos['rfc'] = rfc
-        if csf_curp and not sesion.datos.get('curp'):
+        if csf_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
             sesion.datos['curp'] = csf_curp
 
         lineas = ['✅ **Constancia de Situación Fiscal analizada:**']
         if rfc:
             lineas.append(f'• **RFC:** {rfc}')
         if csf_curp:
-            lineas.append(f'• **CURP:** {csf_curp}')
+            if 'curp' in sesion.campos_confirmados:
+                lineas.append(f'• **CURP en constancia:** {csf_curp} *(Se respeta tu CURP confirmada: {sesion.datos.get("curp")})*')
+            else:
+                lineas.append(f'• **CURP:** {csf_curp}')
         if csf_nom:
             lineas.append(f'• **Nombre:** {csf_nom}')
 
         resumen = '\n'.join(lineas)
-        criticos = ['rfc'] if rfc else []
+        criticos = ['rfc'] if (rfc and 'rfc' not in sesion.campos_confirmados) else []
 
         if criticos:
             await iniciar_confirmacion_critica(
@@ -1395,14 +1457,10 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             return True
 
-        nss = str(leidos.get('nss') or '').strip()
-        nss_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
-        nss_curp = str(leidos.get('curp') or '').strip().upper()
-
         sesion.datos['nss_doc'] = {'nss': nss, 'nombre_completo': nss_nom, 'curp': nss_curp}
-        if nss:
+        if nss and 'nss' not in sesion.campos_confirmados:
             sesion.datos['nss'] = nss
-        if nss_curp and not sesion.datos.get('curp'):
+        if nss_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
             sesion.datos['curp'] = nss_curp
 
         lineas = ['✅ **Número de Seguro Social analizado:**']
@@ -1412,7 +1470,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             lineas.append(f'• **Nombre:** {nss_nom}')
 
         resumen = '\n'.join(lineas)
-        criticos = ['nss'] if nss else []
+        criticos = ['nss'] if (nss and 'nss' not in sesion.campos_confirmados) else []
 
         if criticos:
             await iniciar_confirmacion_critica(
@@ -1457,31 +1515,45 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
         if campo:
             val_limpio = texto.strip()
             aviso_formato = ""
+            formato_invalido = False
             if campo == 'nombre_completo':
                 val_limpio = ordenar_nombre_natural(val_limpio)
             elif campo == 'curp':
                 val_limpio = val_limpio.upper()
                 ok_curp, err_curp = validar_curp_formato(val_limpio)
                 if not ok_curp:
-                    aviso_formato = f"\n⚠️ **Atención:** {err_curp}"
+                    formato_invalido = True
+                    aviso_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
             elif campo == 'rfc':
                 val_limpio = val_limpio.upper()
                 ok_rfc, err_rfc = validar_rfc_formato(val_limpio)
                 if not ok_rfc:
-                    aviso_formato = f"\n⚠️ **Atención:** {err_rfc}"
+                    formato_invalido = True
+                    aviso_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
             sesion.datos[campo] = val_limpio
             sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
             etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
-            texto_conf = (
-                f"✅ **Dato corregido:**\n"
-                f"• **{etiqueta}:** `{val_limpio}`{aviso_formato}\n\n"
-                f"¿Este dato ya está correcto?"
-            )
-            teclado = InlineKeyboardMarkup([
-                [boton('✅ Es correcto', 'reg:conf_paso_ok')],
-                [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
-                [boton('❌ Cancelar', 'reg:cancelar')],
-            ])
+            if formato_invalido:
+                texto_conf = (
+                    f"⚠️ **Dato ingresado:**\n"
+                    f"• **{etiqueta}:** `{val_limpio}`{aviso_formato}\n\n"
+                    "La clave no cumple con la estructura oficial. Por favor escríbela de nuevo o toma otra foto:"
+                )
+                teclado = InlineKeyboardMarkup([
+                    [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
+            else:
+                texto_conf = (
+                    f"✅ **Dato corregido:**\n"
+                    f"• **{etiqueta}:** `{val_limpio}`\n\n"
+                    f"¿Este dato ya está correcto?"
+                )
+                teclado = InlineKeyboardMarkup([
+                    [boton('✅ Es correcto', 'reg:conf_paso_ok')],
+                    [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir'), boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
             await responder(update, texto_conf, reply_markup=teclado)
             return True
 
@@ -1747,6 +1819,53 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await _pedir_encuesta_fuente(update, sesion, prefijo='✅ Fotografía confirmada para el expediente digital.')
         return
 
+    if data in ('reg:foto_subir', 'reg:foto_bajar'):
+        raw = sesion.datos.get('_foto_raw')
+        if not raw:
+            await consulta.answer('No hay fotografía previa para reencuadrar.', show_alert=True)
+            return
+        factor_actual = float(sesion.datos.get('_factor_y', 0.20))
+        if data == 'reg:foto_subir':
+            nuevo_factor = max(0.0, factor_actual - 0.08)
+        else:
+            nuevo_factor = min(0.90, factor_actual + 0.08)
+        sesion.datos['_factor_y'] = nuevo_factor
+        foto_ajustada = recortar_foto_cuadrada_1a1(raw, factor_y=nuevo_factor)
+        b64_foto = f"data:image/jpeg;base64,{base64.b64encode(foto_ajustada).decode('ascii')}"
+        sesion.datos['fotografia_base64'] = b64_foto
+
+        pct = int(nuevo_factor * 100)
+        try:
+            from telegram import InputMediaPhoto
+            await consulta.edit_message_media(
+                media=InputMediaPhoto(
+                    media=foto_ajustada,
+                    caption=(
+                        f"📸 **Encuadre 1:1 ajustado (altura: {pct}%)**\n\n"
+                        "Usa «Subir/Bajar encuadre» para centrar el rostro o pulsa «Continuar»."
+                    ),
+                ),
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
+                    [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
+                    [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
+            )
+        except Exception as exc:
+            logger.warning('No se pudo editar mensaje de foto: %s', exc)
+            await update.effective_message.reply_photo(
+                photo=foto_ajustada,
+                caption=f"📸 **Encuadre 1:1 ajustado (altura: {pct}%)**",
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('✅ Se ve bien, continuar', 'reg:foto_ok')],
+                    [boton('⬆️ Subir encuadre', 'reg:foto_subir'), boton('⬇️ Bajar encuadre', 'reg:foto_bajar')],
+                    [boton('📸 Tomar otra foto', 'reg:foto_retomar'), boton('⏩ Omitir foto', 'reg:omitir_foto')],
+                    [boton('❌ Cancelar', 'reg:cancelar')],
+                ])
+            )
+        return
+
     if data == 'reg:foto_retomar':
         await _pedir_foto_candidato(update, sesion, prefijo='📸 Por favor toma o envía nuevamente la fotografía del candidato:')
         return
@@ -1759,6 +1878,8 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Confirmación paso a paso de datos críticos
     if data == 'reg:conf_paso_ok':
+        if sesion.campo_confirmando:
+            sesion.campos_confirmados.add(sesion.campo_confirmando)
         await avanzar_confirmacion_critica(update, sesion)
         return
 
