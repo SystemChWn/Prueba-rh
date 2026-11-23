@@ -46,6 +46,14 @@ except ImportError:
     async def responder(update, texto, reply_markup=None):
         pass
 
+try:
+    from bot import catalogo_cp
+except ImportError:
+    try:
+        import catalogo_cp  # type: ignore
+    except ImportError:
+        catalogo_cp = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 FUENTES_REGISTRO = ['Facebook', 'Posteo', 'Volante', 'Recomendación', 'Reclu CW', 'Reclu puro']
@@ -58,6 +66,12 @@ class EstadoRegistro(str, Enum):
     CONFIRMANDO_DATO_PASO = 'confirmando_dato_paso'
     ESPERANDO_CORRECCION_PASO = 'esperando_correccion_paso'
     ESPERANDO_DOMICILIO = 'esperando_domicilio'
+    ESPERANDO_DOMICILIO_CP = 'esperando_domicilio_cp'
+    ESPERANDO_DOMICILIO_COLONIA = 'esperando_domicilio_colonia'
+    ESPERANDO_DOMICILIO_CALLE = 'esperando_domicilio_calle'
+    ESPERANDO_DOMICILIO_NUM_EXT = 'esperando_domicilio_num_ext'
+    ESPERANDO_DOMICILIO_NUM_INT = 'esperando_domicilio_num_int'
+    CONFIRMANDO_DOMICILIO = 'confirmando_domicilio'
     ESPERANDO_PARENTESCO_DOMICILIO = 'esperando_parentesco_domicilio'
     ESPERANDO_INE = 'esperando_ine'
     ESPERANDO_DOC_CURP = 'esperando_doc_curp'
@@ -95,8 +109,11 @@ class SesionRegistro:
     cola_confirmacion: list[str] = field(default_factory=list)
     campo_confirmando: str | None = None
     campos_confirmados: set[str] = field(default_factory=set)
-    siguiente_estado_post_conf: EstadoRegistro = EstadoRegistro.ESPERANDO_DOMICILIO
+    siguiente_estado_post_conf: EstadoRegistro = EstadoRegistro.ESPERANDO_DOMICILIO_CP
     ultimo_doc_para_reintentar: str = 'Acta de Nacimiento'
+    # Catálogo de colonias para selección en paso de domicilio
+    colonias_disponibles: list[str] = field(default_factory=list)
+    colonia_pagina: int = 0
 
 
 #: Almacenamiento centralizado de sesiones activas de registro por telegram_id
@@ -469,7 +486,23 @@ async def avanzar_confirmacion_critica(update: Update, sesion: SesionRegistro, p
         else:
             partes.append(f"   *(Estructura oficial correcta ✅)*")
 
-    if formato_invalido:
+    if campo == 'curp':
+        if formato_invalido:
+            partes.append(f"\n⚠️ La CURP no concuerda con la estructura oficial. Puedes enviar la Constancia de CURP oficial o escribirla por texto:")
+            teclado = InlineKeyboardMarkup([
+                [boton('📄 Enviar Constancia de CURP', 'reg:ir_doc_curp')],
+                [boton('✏️ Escribir CURP', 'reg:conf_paso_corregir'), boton('📸 Reintentar foto Acta', 'reg:conf_paso_refoto')],
+                [boton('❌ Cancelar', 'reg:cancelar')],
+            ])
+        else:
+            partes.append(f"\n¿Esta CURP es correcta?")
+            teclado = InlineKeyboardMarkup([
+                [boton('✅ Es correcta', 'reg:conf_paso_ok')],
+                [boton('📄 No es correcta / Enviar Constancia', 'reg:ir_doc_curp')],
+                [boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir')],
+                [boton('❌ Cancelar', 'reg:cancelar')],
+            ])
+    elif formato_invalido:
         partes.append(f"\n⚠️ La clave no concuerda con la estructura oficial. Toma la foto de nuevo con mejor enfoque o escribe el dato:")
         teclado = InlineKeyboardMarkup([
             [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Corregir / Escribir', 'reg:conf_paso_corregir')],
@@ -486,8 +519,8 @@ async def avanzar_confirmacion_critica(update: Update, sesion: SesionRegistro, p
 
 
 async def ir_al_estado(update: Update, sesion: SesionRegistro, estado: EstadoRegistro, prefijo: str = '') -> None:
-    if estado == EstadoRegistro.ESPERANDO_DOMICILIO:
-        await _pedir_domicilio(update, sesion, prefijo=prefijo)
+    if estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_DOMICILIO_CP):
+        await _pedir_domicilio_cp(update, sesion, prefijo=prefijo)
     elif estado == EstadoRegistro.ESPERANDO_INE:
         await _pedir_ine(update, sesion, prefijo=prefijo)
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
@@ -514,13 +547,82 @@ async def ir_al_estado(update: Update, sesion: SesionRegistro, estado: EstadoReg
         await verificar_faltantes_o_confirmar(update, sesion)
 
 
-async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
-    sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO
+COLONIAS_POR_PAGINA = 6
+
+
+def _teclado_colonias(colonias: list[str], pagina: int = 0) -> InlineKeyboardMarkup:
+    total = len(colonias)
+    total_paginas = max(1, (total + COLONIAS_POR_PAGINA - 1) // COLONIAS_POR_PAGINA)
+    pagina = max(0, min(pagina, total_paginas - 1))
+
+    inicio = pagina * COLONIAS_POR_PAGINA
+    fin = inicio + COLONIAS_POR_PAGINA
+    sub_cols = colonias[inicio:fin]
+
+    filas = []
+    for idx_rel, col in enumerate(sub_cols):
+        idx_abs = inicio + idx_rel
+        filas.append([boton(f"🏘️ {col}", f"reg:col:{idx_abs}")])
+
+    nav = []
+    if total_paginas > 1:
+        if pagina > 0:
+            nav.append(boton("⬅️ Anterior", f"reg:col_pag:{pagina - 1}"))
+        nav.append(boton(f"{pagina + 1}/{total_paginas}", "reg:noop"))
+        if pagina < total_paginas - 1:
+            nav.append(boton("Siguiente ➡️", f"reg:col_pag:{pagina + 1}"))
+        filas.append(nav)
+
+    filas.append([boton("✏️ Escribir otra colonia", "reg:col_escribir")])
+    filas.append([boton("❌ Cancelar", "reg:cancelar")])
+    return InlineKeyboardMarkup(filas)
+
+
+async def _pedir_domicilio_cp(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_CP
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF del **Comprobante de Domicilio** (CFE, agua, teléfono, etc.):"
+        "🏠 **Domicilio del Candidato**\n\n"
+        "Por favor escribe el **Código Postal (C.P.)** de 5 dígitos (ej. `64000`):"
     ).strip()
-    await responder(update, texto, reply_markup=_teclado_paso_doc('domicilio'))
+    teclado = InlineKeyboardMarkup([
+        [boton('⏩ Omitir domicilio', 'reg:omitir_domicilio'), boton('❌ Cancelar', 'reg:cancelar')]
+    ])
+    await responder(update, texto, reply_markup=teclado)
+
+
+async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
+    await _pedir_domicilio_cp(update, sesion, prefijo=prefijo)
+
+
+async def _mostrar_confirmacion_domicilio(update: Update, sesion: SesionRegistro) -> None:
+    sesion.estado = EstadoRegistro.CONFIRMANDO_DOMICILIO
+    calle = sesion.datos.get('calle', '').strip()
+    num_ext = sesion.datos.get('num_ext', '').strip()
+    num_int = sesion.datos.get('num_int', '').strip()
+    colonia = sesion.datos.get('colonia', '').strip()
+    cp = sesion.datos.get('cp', '').strip()
+    municipio = sesion.datos.get('municipio', '').strip()
+    estado = sesion.datos.get('estado', '').strip()
+
+    num_txt = f"#{num_ext}" if num_ext else "S/N"
+    if num_int:
+        num_txt += f" Int. {num_int}"
+
+    texto_conf = (
+        "🏠 **Confirmación de Domicilio:**\n\n"
+        f"• **Calle y Número:** {calle} {num_txt}\n"
+        f"• **Colonia:** {colonia or 'No especificada'}\n"
+        f"• **Código Postal (C.P.):** {cp or 'No especificado'}\n"
+        f"• **Municipio:** {municipio or 'No especificado'}\n"
+        f"• **Estado:** {estado or 'No especificado'}\n\n"
+        "¿La dirección del candidato es correcta?"
+    )
+    teclado = InlineKeyboardMarkup([
+        [boton('✅ Sí, dirección correcta', 'reg:domicilio_ok')],
+        [boton('✏️ Modificar dirección', 'reg:domicilio_reiniciar'), boton('❌ Cancelar', 'reg:cancelar')]
+    ])
+    await responder(update, texto_conf, reply_markup=teclado)
 
 
 async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
@@ -1088,103 +1190,30 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if criticos:
             await iniciar_confirmacion_critica(
                 update, sesion, criticos,
-                siguiente_estado=EstadoRegistro.ESPERANDO_DOMICILIO,
+                siguiente_estado=EstadoRegistro.ESPERANDO_DOMICILIO_CP,
                 doc_origen='Acta de Nacimiento',
                 prefijo=resumen
             )
         else:
-            await _pedir_domicilio(update, sesion, prefijo=resumen)
+            await _pedir_domicilio_cp(update, sesion, prefijo=resumen)
         return True
 
-    # COMPROBANTE DE DOMICILIO
-    elif estado == EstadoRegistro.ESPERANDO_DOMICILIO:
-        await responder(update, '🔍 Analizando...')
-        try:
-            leidos = await _escanear_en_backend(context, user_id, 'Comprobante de Domicilio', archivo)
-            if not leidos or not any(leidos.values()):
-                raise ValueError('No se pudieron detectar campos legibles en el Comprobante.')
-        except Exception as exc:
-            logger.warning('Falla en escaneo de Domicilio: %s', exc)
-            await responder(
-                update,
-                '⚠️ No pude leer el comprobante de domicilio.\n'
-                'Por favor envía una foto con mejor iluminación y nítida, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc('domicilio'),
-            )
-            return True
-
-        prop = str(leidos.get('nombre_propietario') or '').strip()
-        calle = str(leidos.get('calle') or '').strip()
-        num_ext = str(leidos.get('num_ext') or leidos.get('numero_exterior') or '').strip()
-        num_int = str(leidos.get('num_int') or leidos.get('numero_interior') or '').strip()
-        colonia = str(leidos.get('colonia') or '').strip()
-        municipio = str(leidos.get('municipio') or '').strip()
-        estado_dir = str(leidos.get('estado') or '').strip()
-        cp = str(leidos.get('cp') or leidos.get('codigo_postal') or '').strip()
-
-        # Validación estricta: debe contener al menos un elemento de dirección
-        es_dom_valido = bool(calle or cp or colonia or municipio)
-        if not es_dom_valido:
-            await responder(
-                update,
-                '⚠️ El documento enviado no parece ser un **Comprobante de Domicilio** válido (recibo de luz CFE, agua, teléfono, etc.).\n'
-                'Por favor envía un recibo de servicios donde se aprecie claramente la dirección del cliente o suministro, o pulsa «Omitir».',
-                reply_markup=_teclado_paso_doc('domicilio'),
-            )
-            return True
-
-        sesion.datos['domicilio'] = {
-            'nombre_propietario': prop,
-            'calle': calle,
-            'num_ext': num_ext,
-            'num_int': num_int,
-            'colonia': colonia,
-            'municipio': municipio,
-            'estado': estado_dir,
-            'cp': cp,
-        }
-        sesion.datos['calle'] = calle
-        sesion.datos['num_ext'] = num_ext
-        sesion.datos['num_int'] = num_int
-        sesion.datos['colonia'] = colonia
-        sesion.datos['municipio'] = municipio
-        sesion.datos['estado'] = estado_dir
-        sesion.datos['cp'] = cp
-        # Proteger dirección para que ningún otro documento la modifique
-        sesion.campos_confirmados.add('domicilio')
-
-        partes_dir = filter(None, [calle, f"Ext. {num_ext}" if num_ext else None, f"Int. {num_int}" if num_int else None, f"Col. {colonia}" if colonia else None, f"C.P. {cp}" if cp else None, municipio, estado_dir])
-        dir_resumen = ', '.join(partes_dir) or 'Dirección detectada'
-
-        cand_nombre = sesion.datos.get('nombre_completo', '')
-        es_titular = bool(prop and cand_nombre and cadenas_coinciden(prop, cand_nombre))
-
-        if es_titular:
-            sesion.datos['parentesco_propietario'] = 'Titular / Mismo'
-            resumen = (
-                "✅ **Comprobante de Domicilio analizado:**\n"
-                f"• **Titular:** {prop} (Coincide con candidato ✅)\n"
-                f"• **Dirección:** {dir_resumen}"
-            )
-            await _pedir_ine(update, sesion, prefijo=resumen)
-        elif prop:
-            sesion.estado = EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO
-            resumen = (
-                "✅ **Comprobante de Domicilio analizado:**\n"
-                f"• **Titular:** {prop}\n"
-                f"• **Dirección:** {dir_resumen}\n\n"
-                f"❓ El comprobante está a nombre de «{prop}».\n"
-                f"¿Qué parentesco tienes con esta persona? (ej. Madre, Padre, Cónyuge, Familiar, o escribe «Propio» si eres tú):"
-            )
-            teclado = InlineKeyboardMarkup([[boton('⏩ Omitir parentesco', 'reg:omitir_domicilio'), boton('❌ Cancelar', 'reg:cancelar')]])
-            await responder(update, resumen, reply_markup=teclado)
-        else:
-            sesion.datos['parentesco_propietario'] = 'No especificado'
-            resumen = (
-                "✅ **Comprobante de Domicilio analizado:**\n"
-                f"• **Dirección:** {dir_resumen}"
-            )
-            await _pedir_ine(update, sesion, prefijo=resumen)
+    # PASOS DE DOMICILIO GUIADOS (NO REQUIEREN FOTO)
+    elif estado in (
+        EstadoRegistro.ESPERANDO_DOMICILIO,
+        EstadoRegistro.ESPERANDO_DOMICILIO_CP,
+        EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA,
+        EstadoRegistro.ESPERANDO_DOMICILIO_CALLE,
+        EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT,
+        EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT,
+        EstadoRegistro.CONFIRMANDO_DOMICILIO,
+        EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO,
+    ):
+        await responder(
+            update,
+            "🏠 En este paso de domicilio no es necesario enviar foto de comprobante.\n"
+            "Por favor escribe el dato solicitado o utiliza los botones:"
+        )
         return True
 
     # CREDENCIAL DE ELECTOR (INE / IFE) O LICENCIA DE CONDUCIR
@@ -1350,15 +1379,16 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         criticos = ['curp'] if 'curp' not in sesion.campos_confirmados else []
+        sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
         if criticos:
             await iniciar_confirmacion_critica(
                 update, sesion, criticos,
-                siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
+                siguiente_estado=sig_post_curp,
                 doc_origen='Documento CURP',
                 prefijo=resumen
             )
         else:
-            await _pedir_csf(update, sesion, prefijo=resumen)
+            await ir_al_estado(update, sesion, sig_post_curp, prefijo=resumen)
         return True
 
     # CONSTANCIA DE SITUACIÓN FISCAL (SAT)
@@ -1560,7 +1590,8 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
         # CAPTURA DE CURP POR TEXTO SI ESTABA EN ESPERANDO_DOC_CURP
         if estado == EstadoRegistro.ESPERANDO_DOC_CURP:
             if texto.lower() in ('omitir', '/omitir', 'no tengo'):
-                await procesar_omision(update, context, sesion)
+                sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
+                await ir_al_estado(update, sesion, sig_post_curp, prefijo='⏩ Documento de CURP omitido.')
                 return True
             curp_text = texto.strip().upper()
             sesion.datos['curp'] = curp_text
@@ -1568,9 +1599,10 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
             pref = f"✅ CURP ingresada: `{curp_text}`"
             if not ok_curp:
                 pref += f"\n⚠️ {err_curp}"
+            sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
             await iniciar_confirmacion_critica(
                 update, sesion, ['curp'],
-                siguiente_estado=EstadoRegistro.ESPERANDO_CSF,
+                siguiente_estado=sig_post_curp,
                 doc_origen='Documento CURP',
                 prefijo=pref
             )
@@ -1581,6 +1613,101 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
             sesion.datos['procedencia'] = texto.strip()
             await responder(update, f"✅ Procedencia registrada: {texto.strip()}")
             await mostrar_pantalla_confirmacion(update, sesion)
+            return True
+
+        # PASOS DE DOMICILIO SIN FOTO (CP -> COLONIA -> CALLE -> NUM EXT -> NUM INT -> CONFIRMACIÓN)
+        if estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_DOMICILIO_CP):
+            if texto.lower() in ('omitir', '/omitir', 'no tengo'):
+                await _pedir_ine(update, sesion, prefijo='⏩ Domicilio omitido.')
+                return True
+
+            cp_candidato = ''.join(c for c in texto if c.isdigit())
+            if len(cp_candidato) != 5:
+                await responder(
+                    update,
+                    "⚠️ El Código Postal debe contener exactamente 5 dígitos numéricos (ej. `64000`).\n"
+                    "Por favor ingrésalo de nuevo o pulsa «Omitir»:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [boton('⏩ Omitir domicilio', 'reg:omitir_domicilio'), boton('❌ Cancelar', 'reg:cancelar')]
+                    ])
+                )
+                return True
+
+            sesion.datos['cp'] = cp_candidato
+            info_cp = catalogo_cp.buscar_cp(cp_candidato) if catalogo_cp else None
+            if info_cp and info_cp.get('colonias'):
+                sesion.datos['municipio'] = info_cp['municipio']
+                sesion.datos['estado'] = info_cp['estado']
+                sesion.colonias_disponibles = list(info_cp['colonias'])
+                sesion.colonia_pagina = 0
+                sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA
+
+                mun = info_cp['municipio']
+                est = info_cp['estado']
+                texto_col = (
+                    f"📍 **Código Postal:** `{cp_candidato}`\n"
+                    f"🏛️ **Municipio:** {mun} | 🗺️ **Estado:** {est}\n\n"
+                    "📋 **Selecciona la Colonia del candidato:**\n"
+                    "*(Toca una opción o escribe el nombre si es otra)*"
+                )
+                await responder(update, texto_col, reply_markup=_teclado_colonias(sesion.colonias_disponibles, 0))
+                return True
+            else:
+                sesion.colonias_disponibles = []
+                sesion.colonia_pagina = 0
+                sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA
+                texto_col = (
+                    f"📍 **Código Postal:** `{cp_candidato}`\n\n"
+                    "Escribe por favor el nombre de la **Colonia** del candidato:"
+                )
+                teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+                await responder(update, texto_col, reply_markup=teclado)
+                return True
+
+        elif estado == EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA:
+            colonia = texto.strip()
+            sesion.datos['colonia'] = colonia
+            sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_CALLE
+            texto_calle = (
+                f"✅ Colonia: **{colonia}**\n\n"
+                "🛣️ Escribe el nombre de la **Calle** del domicilio:"
+            )
+            teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(update, texto_calle, reply_markup=teclado)
+            return True
+
+        elif estado == EstadoRegistro.ESPERANDO_DOMICILIO_CALLE:
+            calle = texto.strip()
+            sesion.datos['calle'] = calle
+            sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT
+            texto_num = (
+                f"✅ Calle: **{calle}**\n\n"
+                "🚪 Escribe el **Número Exterior** (ej. `123`, `450-B` o `S/N`):"
+            )
+            teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(update, texto_num, reply_markup=teclado)
+            return True
+
+        elif estado == EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT:
+            num_ext = texto.strip()
+            sesion.datos['num_ext'] = num_ext
+            sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT
+            texto_int = (
+                f"✅ Número Exterior: **{num_ext}**\n\n"
+                "🏢 Escribe el **Número Interior** (depto, piso, int.) o pulsa «Omitir» si no tiene:"
+            )
+            teclado = InlineKeyboardMarkup([
+                [boton('⏩ Omitir número interior', 'reg:omitir_num_int'), boton('❌ Cancelar', 'reg:cancelar')]
+            ])
+            await responder(update, texto_int, reply_markup=teclado)
+            return True
+
+        elif estado == EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT:
+            if texto.lower() in ('omitir', 'no', 's/n', 'ninguno', 'no tiene'):
+                sesion.datos['num_int'] = ''
+            else:
+                sesion.datos['num_int'] = texto.strip()
+            await _mostrar_confirmacion_domicilio(update, sesion)
             return True
 
         # FOTO DE CANDIDATO OMITIDA POR TEXTO
@@ -1600,7 +1727,7 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
             return True
 
         # Si está esperando una foto pero manda texto:
-        if estado in (EstadoRegistro.ESPERANDO_ACTA, EstadoRegistro.ESPERANDO_DOMICILIO,
+        if estado in (EstadoRegistro.ESPERANDO_ACTA,
                       EstadoRegistro.ESPERANDO_INE, EstadoRegistro.ESPERANDO_CSF, EstadoRegistro.ESPERANDO_NSS):
             if texto.lower() in ('omitir', '/omitir', 'no tengo'):
                 await procesar_omision(update, context, sesion)
@@ -1820,12 +1947,98 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Botones específicos de omisión por paso (evitan omitir pasos posteriores por desfasamiento)
     if data == 'reg:omitir_acta':
         if sesion.estado == EstadoRegistro.ESPERANDO_ACTA:
-            await _pedir_domicilio(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
+            await _pedir_domicilio_cp(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
         return
 
     if data == 'reg:omitir_domicilio':
-        if sesion.estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
-            await _pedir_ine(update, sesion, prefijo='⏩ Comprobante de domicilio omitido.')
+        if sesion.estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_DOMICILIO_CP,
+                             EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA, EstadoRegistro.ESPERANDO_DOMICILIO_CALLE,
+                             EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT, EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT,
+                             EstadoRegistro.CONFIRMANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
+            await _pedir_ine(update, sesion, prefijo='⏩ Domicilio omitido.')
+        return
+
+    if data == 'reg:noop':
+        return
+
+    if data.startswith('reg:col:'):
+        idx_str = data.removeprefix('reg:col:')
+        try:
+            idx = int(idx_str)
+            colonia_sel = sesion.colonias_disponibles[idx]
+        except (ValueError, IndexError):
+            colonia_sel = ''
+        if colonia_sel:
+            sesion.datos['colonia'] = colonia_sel
+            sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_CALLE
+            texto_calle = (
+                f"✅ Colonia seleccionada: **{colonia_sel}**\n\n"
+                "🛣️ Escribe el nombre de la **Calle** del domicilio:"
+            )
+            teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+            await responder(update, texto_calle, reply_markup=teclado)
+        return
+
+    if data.startswith('reg:col_pag:'):
+        pag_str = data.removeprefix('reg:col_pag:')
+        try:
+            nueva_pag = int(pag_str)
+        except ValueError:
+            nueva_pag = 0
+        sesion.colonia_pagina = nueva_pag
+        mun = sesion.datos.get('municipio', '')
+        est = sesion.datos.get('estado', '')
+        cp_val = sesion.datos.get('cp', '')
+        texto_col = (
+            f"📍 **Código Postal:** `{cp_val}`\n"
+            f"🏛️ **Municipio:** {mun} | 🗺️ **Estado:** {est}\n\n"
+            "📋 **Selecciona la Colonia del candidato:**\n"
+            "*(Toca una opción o escribe el nombre si es otra)*"
+        )
+        await consulta.edit_message_text(texto_col, reply_markup=_teclado_colonias(sesion.colonias_disponibles, nueva_pag))
+        return
+
+    if data == 'reg:col_escribir':
+        sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA
+        await responder(update, "Escribe por favor el nombre de la **Colonia** del candidato:")
+        return
+
+    if data == 'reg:omitir_num_int':
+        sesion.datos['num_int'] = ''
+        await _mostrar_confirmacion_domicilio(update, sesion)
+        return
+
+    if data == 'reg:domicilio_ok':
+        sesion.campos_confirmados.add('domicilio')
+        calle = sesion.datos.get('calle', '').strip()
+        num_ext = sesion.datos.get('num_ext', '').strip()
+        num_int = sesion.datos.get('num_int', '').strip()
+        colonia = sesion.datos.get('colonia', '').strip()
+        mun = sesion.datos.get('municipio', '').strip()
+        edo = sesion.datos.get('estado', '').strip()
+        cp = sesion.datos.get('cp', '').strip()
+
+        partes_dir = [calle, f"#{num_ext}" if num_ext else ""]
+        if num_int:
+            partes_dir.append(f"Int. {num_int}")
+        if colonia:
+            partes_dir.append(f"Col. {colonia}")
+        if mun:
+            partes_dir.append(mun)
+        if edo:
+            partes_dir.append(edo)
+        if cp:
+            partes_dir.append(f"C.P. {cp}")
+        sesion.datos['domicilio'] = ', '.join(p for p in partes_dir if p)
+        await _pedir_ine(update, sesion, prefijo='✅ Domicilio confirmado.')
+        return
+
+    if data == 'reg:domicilio_reiniciar':
+        await _pedir_domicilio_cp(update, sesion, prefijo='🔄 Vamos a capturar la dirección nuevamente.')
+        return
+
+    if data == 'reg:ir_doc_curp':
+        await _pedir_doc_curp(update, sesion, prefijo='📄 Vamos a validar la CURP con el documento oficial:')
         return
 
     if data == 'reg:omitir_ine':
@@ -2052,7 +2265,8 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
         val_actual = sesion.datos.get(campo) or 'Vacío'
         if campo == 'domicilio':
-            val_actual = f"{sesion.datos.get('calle', '')} {sesion.datos.get('num_ext', '')} {sesion.datos.get('colonia', '')}".strip() or 'Vacío'
+            await _pedir_domicilio_cp(update, sesion, prefijo='✏️ Modificar dirección del candidato:')
+            return
 
         texto = (
             f"✏️ **Modificar {etiqueta}**\n\n"
@@ -2067,16 +2281,20 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, sesion: SesionRegistro) -> None:
     estado = sesion.estado
     if estado == EstadoRegistro.ESPERANDO_ACTA:
-        await _pedir_domicilio(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
-    elif estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
-        await _pedir_ine(update, sesion, prefijo='⏩ Comprobante de domicilio omitido.')
+        await _pedir_domicilio_cp(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
+    elif estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_DOMICILIO_CP,
+                    EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA, EstadoRegistro.ESPERANDO_DOMICILIO_CALLE,
+                    EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT, EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT,
+                    EstadoRegistro.CONFIRMANDO_DOMICILIO, EstadoRegistro.ESPERANDO_PARENTESCO_DOMICILIO):
+        await _pedir_ine(update, sesion, prefijo='⏩ Domicilio omitido.')
     elif estado == EstadoRegistro.ESPERANDO_INE:
         # Si no hay CURP, solicitar Documento CURP; si ya hay, pasar a CSF
         tiene_curp = bool(sesion.datos.get('curp') or sesion.datos.get('acta', {}).get('curp'))
         siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
         await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Identificación (INE / Licencia) omitida.')
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
-        await _pedir_csf(update, sesion, prefijo='⏩ Documento de CURP omitido.')
+        siguiente = EstadoRegistro.ESPERANDO_DOMICILIO_CP if 'domicilio' not in sesion.campos_confirmados else EstadoRegistro.ESPERANDO_CSF
+        await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Documento de CURP omitido.')
     elif estado == EstadoRegistro.ESPERANDO_CSF:
         await _pedir_nss(update, sesion, prefijo='⏩ Constancia Fiscal omitida.')
     elif estado == EstadoRegistro.ESPERANDO_NSS:

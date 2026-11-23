@@ -87,6 +87,36 @@ class RegistroCandidatoTests(unittest.TestCase):
         self.assertEqual(EstadoRegistro.ESPERANDO_FOTO_CANDIDATO.value, 'esperando_foto_candidato')
         self.assertEqual(EstadoRegistro.CONFIRMANDO_DATO_PASO.value, 'confirmando_dato_paso')
         self.assertEqual(EstadoRegistro.ESPERANDO_CORRECCION_PASO.value, 'esperando_correccion_paso')
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOMICILIO_CP.value, 'esperando_domicilio_cp')
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA.value, 'esperando_domicilio_colonia')
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOMICILIO_CALLE.value, 'esperando_domicilio_calle')
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT.value, 'esperando_domicilio_num_ext')
+        self.assertEqual(EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT.value, 'esperando_domicilio_num_int')
+        self.assertEqual(EstadoRegistro.CONFIRMANDO_DOMICILIO.value, 'confirmando_domicilio')
+
+    def test_catalogo_cp_busqueda(self):
+        from bot import catalogo_cp
+        info = catalogo_cp.buscar_cp('64000')
+        self.assertIsNotNone(info)
+        self.assertEqual(info['municipio'], 'Monterrey')
+        self.assertEqual(info['estado'], 'Nuevo León')
+        self.assertIn('Monterrey Centro', info['colonias'])
+
+        # CP con ceros o inexistente
+        self.assertIsNone(catalogo_cp.buscar_cp('00000'))
+        self.assertIsNone(catalogo_cp.buscar_cp('abcde'))
+
+    def test_formato_teclado_colonias(self):
+        colonias = [f"Colonia {i}" for i in range(15)]
+        teclado = registro_candidato._teclado_colonias(colonias, pagina=0)
+        # 6 colonias por página + 1 fila paginación + 1 fila escribir/cancelar
+        self.assertTrue(len(teclado.inline_keyboard) >= 7)
+        # Primera página debe tener botón '>' para página 1
+        callbacks = [btn.callback_data for row in teclado.inline_keyboard for btn in row]
+        self.assertIn('reg:col:0', callbacks)
+        self.assertIn('reg:col_pag:1', callbacks)
+        self.assertIn('reg:col_escribir', callbacks)
+
 
 
 if __name__ == '__main__':
