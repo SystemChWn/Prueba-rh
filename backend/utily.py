@@ -181,7 +181,10 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de un recibo de servicios (luz CFE, agua, teléfono, internet, banco, gas). '
         'Localiza el recibo sobre la superficie y extrae el titular del servicio (nombre_propietario) y la dirección desglosada: '
         'calle, num_ext, num_int, colonia, municipio, estado y cp (código postal de 5 dígitos). '
-        'Haz el máximo esfuerzo por extraer los datos legibles.'
+        'MUY IMPORTANTE PARA LA DIRECCIÓN: En recibos de servicios como CFE, agua, Totalplay o telefonía, '
+        'extrae EXCLUSIVAMENTE la dirección donde se presta o entrega el servicio al CLIENTE (la dirección de suministro o domicilio del titular). '
+        'NUNCA extraigas la dirección corporativa, fiscal o matriz de la empresa emisora (por ejemplo, nunca extraigas oficinas centrales de CFE en Río Ródano ni sucursales de la empresa). '
+        'Si la imagen claramente no corresponde a un comprobante de domicilio (por ejemplo si es un INE o Acta), devuelve null en los campos.'
     ),
     'INE': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una credencial para votar INE/IFE. '
@@ -3650,10 +3653,10 @@ def exportar_reclutamiento():
                     SELECT
                         COALESCE(r.fecha_registro, e.fecha_registro, CURRENT_DATE) AS f_reg,
                         CASE 
-                            WHEN UPPER(TRIM(COALESCE(e.fuente, ''))) LIKE '%RECOMEN%' 
+                            WHEN POSITION('RECOMEN' IN UPPER(COALESCE(e.fuente, ''))) > 0
                                  AND NULLIF(TRIM(COALESCE(r.nombre_completo, '')), '') IS NOT NULL 
                             THEN TRIM(r.nombre_completo)
-                            WHEN UPPER(TRIM(COALESCE(e.fuente, ''))) LIKE '%RECOMEN%' 
+                            WHEN POSITION('RECOMEN' IN UPPER(COALESCE(e.fuente, ''))) > 0
                                  AND NULLIF(TRIM(COALESCE(r.nombre_completo, '')), '') IS NULL 
                             THEN COALESCE(NULLIF(TRIM(e.nombre_empleado), ''), 'Sin nombre')
                             ELSE COALESCE(NULLIF(TRIM(r.nombre_completo), ''), NULLIF(TRIM(e.nombre_empleado), ''), 'Sin nombre')
@@ -3666,7 +3669,7 @@ def exportar_reclutamiento():
                             ELSE ''
                         END AS reclutador,
                         CASE
-                            WHEN UPPER(TRIM(COALESCE(e.fuente, ''))) LIKE '%RECOMEN%'
+                            WHEN POSITION('RECOMEN' IN UPPER(COALESCE(e.fuente, ''))) > 0
                             THEN COALESCE(NULLIF(TRIM(e.nombre_empleado), ''), NULLIF(TRIM(e.nombre_reclutador), ''), 'No especificado')
                             ELSE ''
                         END AS persona_recomendo
@@ -3683,7 +3686,7 @@ def exportar_reclutamiento():
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = 'Reclutamiento'
-        worksheet.views.sheetView[0].showGridLines = True
+        worksheet.sheet_view.showGridLines = True
 
         encabezados = [
             'Fecha de Registro',
@@ -3717,7 +3720,15 @@ def exportar_reclutamiento():
         ]
         for idx, fila in enumerate(filas, start=2):
             f_fecha = fila[0]
-            nombre_mes = nombres_meses[f_fecha.month - 1] if f_fecha and hasattr(f_fecha, 'month') else ''
+            if hasattr(f_fecha, 'month'):
+                nombre_mes = nombres_meses[f_fecha.month - 1]
+            elif isinstance(f_fecha, str) and len(f_fecha) >= 7:
+                try:
+                    nombre_mes = nombres_meses[int(f_fecha.split('-')[1]) - 1]
+                except Exception:
+                    nombre_mes = nombres_meses[mes - 1]
+            else:
+                nombre_mes = nombres_meses[mes - 1]
             worksheet.append([
                 f_fecha,
                 nombre_mes,

@@ -399,15 +399,7 @@ async def iniciar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE, r
 
     texto = (
         "✍️ **Generar Registro de Candidato**\n\n"
-        "**Paso 1 — Acta de Nacimiento**\n"
-        "📸 Por favor envía la foto o PDF del **Acta de Nacimiento** mexicana.\n\n"
-        "Extraeremos automáticamente:\n"
-        "• CURP\n"
-        "• Nombre completo (iniciando por el nombre)\n"
-        "• Sexo\n"
-        "• Fecha de nacimiento\n"
-        "• Lugar de nacimiento\n\n"
-        "*(La foto puede estar rotada en cualquier dirección. Usa «Omitir» si no la tienes o «Cancelar» para salir)*"
+        "📸 Por favor envía la foto o PDF del **Acta de Nacimiento**:"
     )
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
@@ -525,9 +517,7 @@ async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str 
     sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 2 — Comprobante de Domicilio**\n"
-        "📸 Envía la foto o PDF del **Comprobante de Domicilio** (CFE, agua, teléfono, etc.).\n\n"
-        "Extraeremos el titular del recibo y la dirección completa."
+        "📸 Por favor envía la foto o PDF del **Comprobante de Domicilio** (CFE, agua, teléfono, etc.):"
     ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
@@ -536,14 +526,7 @@ async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_INE
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 3 — Credencial de Elector (INE / IFE)**\n"
-        "📸 Envía la foto o PDF de la **INE** del candidato.\n\n"
-        "Se capturarán y validarán:\n"
-        "• Nombre completo (se reordena iniciando por nombre)\n"
-        "• Sexo (M = Mujer, H = Hombre)\n"
-        "• Domicilio oficial\n"
-        "• CURP\n"
-        "• Fecha de nacimiento"
+        "📸 Por favor envía la foto o PDF de la **Credencial de Elector (INE / IFE)**:"
     ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
@@ -552,10 +535,7 @@ async def _pedir_doc_curp(update: Update, sesion: SesionRegistro, prefijo: str =
     sesion.estado = EstadoRegistro.ESPERANDO_DOC_CURP
     texto = (
         f"{prefijo}\n\n"
-        "📄 **Constancia de CURP requerida**\n"
-        "No detectamos la clave CURP en el Acta de Nacimiento ni en la INE.\n\n"
-        "📸 Por favor envía la foto o PDF del **Documento oficial de la CURP**, "
-        "o escríbela directamente por texto (18 caracteres):"
+        "📸 Por favor envía la foto o PDF de la **Constancia de CURP** oficial (o escríbela directamente por texto):"
     ).strip()
     teclado = InlineKeyboardMarkup([
         [boton('⏩ Omitir por ahora', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
@@ -567,9 +547,7 @@ async def _pedir_csf(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_CSF
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 4 — Constancia de Situación Fiscal (SAT)**\n"
-        "📸 Envía la foto o PDF de la **Constancia Fiscal**.\n\n"
-        "Se capturarán RFC, CURP y Nombre del contribuyente."
+        "📸 Por favor envía la foto o PDF de la **Constancia de Situación Fiscal (SAT)**:"
     ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
@@ -578,9 +556,7 @@ async def _pedir_nss(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_NSS
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 5 — Número de Seguro Social (IMSS)**\n"
-        "📸 Envía la foto o PDF del documento con el **NSS**.\n\n"
-        "Se capturarán NSS (11 dígitos), Nombre y CURP."
+        "📸 Por favor envía la foto o PDF del documento del **Número de Seguro Social (IMSS)**:"
     ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc())
 
@@ -589,7 +565,6 @@ async def _pedir_emergencia_nombre(update: Update, sesion: SesionRegistro, prefi
     sesion.estado = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
     texto = (
         f"{prefijo}\n\n"
-        "**Paso 6 — Contacto de Emergencia**\n"
         "🚨 Escribe el **Nombre completo** de la persona para contactar en caso de emergencia:"
     ).strip()
     teclado = InlineKeyboardMarkup([[boton('⏩ Omitir contacto', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]])
@@ -946,7 +921,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # REINTENTO POR FOTO TRAS RECHAZAR UN DATO
     if estado in (EstadoRegistro.CONFIRMANDO_DATO_PASO, EstadoRegistro.ESPERANDO_CORRECCION_PASO):
         doc_tipo = sesion.ultimo_doc_para_reintentar or 'Acta de Nacimiento'
-        await responder(update, f'🔍 Analizando nuevamente {doc_tipo}…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, doc_tipo, archivo)
             if not leidos or not any(leidos.values()):
@@ -987,9 +962,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await responder(update, texto, reply_markup=teclado)
             return True
 
-    # PASO 1: ACTA DE NACIMIENTO
+    # ACTA DE NACIMIENTO
     if estado == EstadoRegistro.ESPERANDO_ACTA:
-        await responder(update, '🔍 Analizando Acta de Nacimiento con visión artificial…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'Acta de Nacimiento', archivo)
             if not leidos or not any(leidos.values()):
@@ -998,8 +973,8 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.warning('Falla en escaneo de Acta: %s', exc)
             await responder(
                 update,
-                '⚠️ No pude leer con claridad el Acta de Nacimiento.\n'
-                'Por favor envía una foto más clara, derecha y enfocada, o pulsa «Omitir» para continuar.',
+                '⚠️ No pude leer el documento enviado.\n'
+                'Por favor envía una foto clara y enfocada del **Acta de Nacimiento**, o pulsa «Omitir» si no cuentas con ella.',
                 reply_markup=_teclado_paso_doc(),
             )
             return True
@@ -1017,6 +992,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ent_nac = str(leidos.get('entidad_nacimiento') or '').strip()
         lugar_reg = str(leidos.get('lugar_registro') or '').strip()
         ent_reg = str(leidos.get('entidad_registro') or '').strip()
+
+        # Validación estricta de que el documento enviado sea un Acta de Nacimiento
+        es_acta_valida = bool(curp or (nombre_nat and (fecha_nac or lugar_nac or ent_nac or lugar_reg or ent_reg)))
+        if not es_acta_valida:
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser un **Acta de Nacimiento** válida.\n'
+                'Por favor asegúrate de enviar la foto o PDF del **Acta de Nacimiento** oficial, o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc(),
+            )
+            return True
 
         # Construir procedencia: de dónde vienes
         partes_proc = []
@@ -1083,9 +1069,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await _pedir_domicilio(update, sesion, prefijo=resumen)
         return True
 
-    # PASO 2: COMPROBANTE DE DOMICILIO
+    # COMPROBANTE DE DOMICILIO
     elif estado == EstadoRegistro.ESPERANDO_DOMICILIO:
-        await responder(update, '🔍 Analizando Comprobante de Domicilio…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'Comprobante de Domicilio', archivo)
             if not leidos or not any(leidos.values()):
@@ -1108,6 +1094,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         municipio = str(leidos.get('municipio') or '').strip()
         estado_dir = str(leidos.get('estado') or '').strip()
         cp = str(leidos.get('cp') or leidos.get('codigo_postal') or '').strip()
+
+        # Validación estricta: debe contener al menos un elemento de dirección
+        es_dom_valido = bool(calle or cp or colonia or municipio)
+        if not es_dom_valido:
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser un **Comprobante de Domicilio** válido (recibo de luz CFE, agua, teléfono, etc.).\n'
+                'Por favor envía un recibo de servicios donde se aprecie claramente la dirección del cliente o suministro, o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc(),
+            )
+            return True
 
         sesion.datos['domicilio'] = {
             'nombre_propietario': prop,
@@ -1161,9 +1158,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await _pedir_ine(update, sesion, prefijo=resumen)
         return True
 
-    # PASO 3: INE
+    # CREDENCIAL DE ELECTOR (INE / IFE)
     elif estado == EstadoRegistro.ESPERANDO_INE:
-        await responder(update, '🔍 Analizando Credencial de Elector (INE)…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'INE', archivo)
             if not leidos or not any(leidos.values()):
@@ -1188,6 +1185,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ine_sexo = normalizar_sexo(leidos.get('sexo') or leidos.get('genero'), es_ine=True)
         ine_fn = str(leidos.get('fecha_nac') or leidos.get('fecha_nacimiento') or '').strip()
         ine_dom = str(leidos.get('domicilio') or '').strip()
+
+        # Validación estricta: debe contener al menos CURP o datos personales clave de INE
+        es_ine_valida = bool(ine_curp or (ine_nom and (ine_fn or ine_dom or ine_sexo)))
+        if not es_ine_valida:
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser una **Credencial de Elector (INE / IFE)** válida.\n'
+                'Por favor asegúrate de enviar la foto o PDF de la credencial oficial vigente, o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc(),
+            )
+            return True
 
         sesion.datos['ine'] = {'nombre_completo': ine_nom, 'curp': ine_curp, 'sexo': ine_sexo, 'fecha_nac': ine_fn, 'domicilio': ine_dom}
         if ine_nom and not sesion.datos.get('nombre_completo'):
@@ -1235,9 +1243,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await ir_al_estado(update, sesion, siguiente, prefijo=resumen)
         return True
 
-    # PASO FALLBACK: DOCUMENTO DE CURP
+    # DOCUMENTO DE CURP
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
-        await responder(update, '🔍 Analizando Documento de CURP…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'Documento CURP', archivo)
             if not leidos or not any(leidos.values()):
@@ -1258,6 +1266,18 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         nom_curp = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
         sex_curp = normalizar_sexo(leidos.get('genero') or leidos.get('sexo'))
         fn_curp = str(leidos.get('fecha_nac') or '').strip()
+
+        # Validación estricta: debe contener una clave CURP de 18 caracteres
+        if not curp_extraida or len(curp_extraida) != 18:
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser una **Constancia de CURP** válida (no se detectó la clave de 18 caracteres).\n'
+                'Por favor envía la constancia oficial de CURP o escribe tu CURP directamente por texto:',
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('⏩ Omitir', 'reg:omitir'), boton('❌ Cancelar', 'reg:cancelar')]
+                ])
+            )
+            return True
 
         sesion.datos['curp_doc'] = {
             'curp': curp_extraida,
@@ -1287,9 +1307,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await _pedir_csf(update, sesion, prefijo=resumen)
         return True
 
-    # PASO 4: CSF
+    # CONSTANCIA DE SITUACIÓN FISCAL (SAT)
     elif estado == EstadoRegistro.ESPERANDO_CSF:
-        await responder(update, '🔍 Analizando Constancia de Situación Fiscal (SAT)…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'Constancia de Situación Fiscal', archivo)
             if not leidos or not any(leidos.values()):
@@ -1306,6 +1326,16 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         rfc = str(leidos.get('rfc') or '').strip().upper()
         csf_curp = str(leidos.get('curp') or '').strip().upper()
         csf_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
+
+        # Validación estricta: debe contener RFC de 12 o 13 caracteres
+        if not rfc or len(rfc) not in (12, 13):
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser la **Constancia de Situación Fiscal (SAT)** (no se detectó un RFC de contribuyente válido).\n'
+                'Por favor asegúrate de enviar la constancia o cédula emitida por el SAT, o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc(),
+            )
+            return True
 
         sesion.datos['csf'] = {'rfc': rfc, 'curp': csf_curp, 'nombre_completo': csf_nom}
         if rfc:
@@ -1335,9 +1365,9 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await _pedir_nss(update, sesion, prefijo=resumen)
         return True
 
-    # PASO 5: NSS
+    # NÚMERO DE SEGURO SOCIAL (IMSS)
     elif estado == EstadoRegistro.ESPERANDO_NSS:
-        await responder(update, '🔍 Analizando Número de Seguro Social (IMSS)…')
+        await responder(update, '🔍 Analizando...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'Número de Seguro Social', archivo)
             if not leidos or not any(leidos.values()):
@@ -1347,6 +1377,20 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await responder(
                 update,
                 '⚠️ No pude leer el NSS. Envía una foto más clara o pulsa «Omitir».',
+                reply_markup=_teclado_paso_doc(),
+            )
+            return True
+
+        nss = str(leidos.get('nss') or '').strip()
+        nss_nom = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
+        nss_curp = str(leidos.get('curp') or '').strip().upper()
+
+        # Validación estricta: debe contener un NSS de 11 dígitos
+        if not nss or len(nss) != 11:
+            await responder(
+                update,
+                '⚠️ El documento enviado no parece ser el documento del **Número de Seguro Social (IMSS)** (no se detectó un NSS válido de 11 dígitos).\n'
+                'Por favor asegúrate de enviar la hoja o constancia oficial del IMSS, o pulsa «Omitir».',
                 reply_markup=_teclado_paso_doc(),
             )
             return True
@@ -1820,7 +1864,7 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if data == 'reg:confirmar_si':
         sesion.estado = EstadoRegistro.ESPERANDO_NUMERO_TEMPORAL
         texto = (
-            "🔢 **Paso Final — Número Temporal de Candidato**\n\n"
+            "🔢 **Número Temporal de Candidato**\n\n"
             "Ingresa el N° de empleado temporal asignado (ejemplo: `TEMP - 001` o `001`):"
         )
         teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
