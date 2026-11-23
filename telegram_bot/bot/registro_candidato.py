@@ -586,13 +586,25 @@ async def _pedir_domicilio_cp(update: Update, sesion: SesionRegistro, prefijo: s
         "Por favor escribe el **Código Postal (C.P.)** de 5 dígitos (ej. `64000`):"
     ).strip()
     teclado = InlineKeyboardMarkup([
+        [boton('📸 Enviar foto de comprobante', 'reg:domicilio_reiniciar')],
         [boton('⏩ Omitir domicilio', 'reg:omitir_domicilio'), boton('❌ Cancelar', 'reg:cancelar')]
     ])
     await responder(update, texto, reply_markup=teclado)
 
 
 async def _pedir_domicilio(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
-    await _pedir_domicilio_cp(update, sesion, prefijo=prefijo)
+    sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO
+    texto = (
+        f"{prefijo}\n\n"
+        "📸 Por favor envía la foto o PDF del **Comprobante de Domicilio** (luz CFE, agua, teléfono, internet, banco, etc.):\n"
+        "*(El sistema buscará el Código Postal (C.P.) automáticamente para obtener el municipio, estado y colonias)*\n\n"
+        "💡 O si prefieres escribir el C.P. por texto, pulsa «Escribir C.P.»:"
+    ).strip()
+    teclado = InlineKeyboardMarkup([
+        [boton('✏️ Escribir C.P. por texto', 'reg:domicilio_escribir_cp'), boton('⏩ Omitir comprobante', 'reg:omitir_domicilio')],
+        [boton('❌ Cancelar', 'reg:cancelar')]
+    ])
+    await responder(update, texto, reply_markup=teclado)
 
 
 async def _mostrar_confirmacion_domicilio(update: Update, sesion: SesionRegistro) -> None:
@@ -629,8 +641,8 @@ async def _pedir_ine(update: Update, sesion: SesionRegistro, prefijo: str = '') 
     sesion.estado = EstadoRegistro.ESPERANDO_INE
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF de la **Credencial de Elector (INE / IFE)** o **Licencia de Conducir**:\n"
-        "*(Se utilizará únicamente para corroborar los datos de Nombre y CURP)*"
+        "📸 Por favor envía la foto o PDF de la **Identificación Oficial** (Credencial para Votar INE / IFE, Licencia de Conducir o Pasaporte):\n"
+        "*(Se utilizará para corroborar los datos oficiales de Nombre y CURP)*"
     ).strip()
     await responder(update, texto, reply_markup=_teclado_paso_doc('ine'))
 
@@ -1190,17 +1202,82 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if criticos:
             await iniciar_confirmacion_critica(
                 update, sesion, criticos,
-                siguiente_estado=EstadoRegistro.ESPERANDO_DOMICILIO_CP,
+                siguiente_estado=EstadoRegistro.ESPERANDO_DOMICILIO,
                 doc_origen='Acta de Nacimiento',
                 prefijo=resumen
             )
         else:
-            await _pedir_domicilio_cp(update, sesion, prefijo=resumen)
+            await _pedir_domicilio(update, sesion, prefijo=resumen)
         return True
 
-    # PASOS DE DOMICILIO GUIADOS (NO REQUIEREN FOTO)
+    # COMPROBANTE DE DOMICILIO (BUSCAR CÓDIGO POSTAL DE 5 DÍGITOS)
+    elif estado == EstadoRegistro.ESPERANDO_DOMICILIO:
+        await responder(update, '🔍 Analizando...')
+        try:
+            leidos = await _escanear_en_backend(context, user_id, 'Comprobante de Domicilio', archivo)
+            if not leidos or not any(leidos.values()):
+                raise ValueError('No se detectaron campos legibles en el comprobante.')
+        except Exception as exc:
+            logger.warning('Falla en escaneo de Comprobante: %s', exc)
+            leidos = {}
+
+        cp_extraido = re.sub(r'\D', '', str(leidos.get('cp') or ''))
+        if leidos.get('calle') and not sesion.datos.get('calle'):
+            sesion.datos['calle'] = str(leidos['calle']).strip()
+        if leidos.get('num_ext') and not sesion.datos.get('num_ext'):
+            sesion.datos['num_ext'] = str(leidos['num_ext']).strip()
+        if leidos.get('num_int') and not sesion.datos.get('num_int'):
+            sesion.datos['num_int'] = str(leidos['num_int']).strip()
+        if leidos.get('nombre_propietario'):
+            sesion.datos['nombre_propietario'] = str(leidos['nombre_propietario']).strip()
+
+        if len(cp_extraido) == 5:
+            sesion.datos['cp'] = cp_extraido
+            info_cp = catalogo_cp.buscar_cp(cp_extraido) if catalogo_cp else None
+            if info_cp and info_cp.get('colonias'):
+                sesion.datos['municipio'] = info_cp['municipio']
+                sesion.datos['estado'] = info_cp['estado']
+                sesion.colonias_disponibles = list(info_cp['colonias'])
+                sesion.colonia_pagina = 0
+                sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA
+
+                mun = info_cp['municipio']
+                est = info_cp['estado']
+                texto_col = (
+                    f"✅ **Comprobante de Domicilio analizado con éxito:**\n"
+                    f"• 📍 **Código Postal detectado:** `{cp_extraido}`\n"
+                    f"• 🏛️ **Municipio:** {mun} | 🗺️ **Estado:** {est}\n\n"
+                    "📋 **Selecciona la Colonia del candidato:**\n"
+                    "*(Toca una opción o escribe el nombre si es otra)*"
+                )
+                await responder(update, texto_col, reply_markup=_teclado_colonias(sesion.colonias_disponibles, 0))
+                return True
+            else:
+                sesion.colonias_disponibles = []
+                sesion.colonia_pagina = 0
+                sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA
+                texto_col = (
+                    f"✅ **Código Postal detectado:** `{cp_extraido}`\n\n"
+                    "Escribe por favor el nombre de la **Colonia** del candidato:"
+                )
+                teclado = InlineKeyboardMarkup([[boton('❌ Cancelar', 'reg:cancelar')]])
+                await responder(update, texto_col, reply_markup=teclado)
+                return True
+        else:
+            sesion.estado = EstadoRegistro.ESPERANDO_DOMICILIO_CP
+            await responder(
+                update,
+                "⚠️ No se pudo leer claramente el **Código Postal (C.P.)** en el comprobante.\n\n"
+                "Por favor escribe el **Código Postal de 5 dígitos** por texto (ej. `64000`):",
+                reply_markup=InlineKeyboardMarkup([
+                    [boton('📸 Tomar otra foto', 'reg:domicilio_reiniciar'), boton('⏩ Omitir domicilio', 'reg:omitir_domicilio')],
+                    [boton('❌ Cancelar', 'reg:cancelar')]
+                ])
+            )
+            return True
+
+    # PASOS DE CAPTURA DE DOMICILIO POR TEXTO
     elif estado in (
-        EstadoRegistro.ESPERANDO_DOMICILIO,
         EstadoRegistro.ESPERANDO_DOMICILIO_CP,
         EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA,
         EstadoRegistro.ESPERANDO_DOMICILIO_CALLE,
@@ -1211,23 +1288,22 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     ):
         await responder(
             update,
-            "🏠 En este paso de domicilio no es necesario enviar foto de comprobante.\n"
-            "Por favor escribe el dato solicitado o utiliza los botones:"
+            "🏠 En este paso por favor escribe el dato solicitado o utiliza los botones interactivos:"
         )
         return True
 
-    # CREDENCIAL DE ELECTOR (INE / IFE) O LICENCIA DE CONDUCIR
+    # IDENTIFICACIÓN OFICIAL (INE / IFE / LICENCIA DE CONDUCIR / PASAPORTE)
     elif estado == EstadoRegistro.ESPERANDO_INE:
-        await responder(update, '🔍 Analizando...')
+        await responder(update, '🔍 Analizando identificación oficial...')
         try:
             leidos = await _escanear_en_backend(context, user_id, 'INE', archivo)
             if not leidos or not any(leidos.values()):
                 raise ValueError('No se pudieron detectar campos legibles en la identificación.')
         except Exception as exc:
-            logger.warning('Falla en escaneo de INE / Licencia: %s', exc)
+            logger.warning('Falla en escaneo de Identificación: %s', exc)
             await responder(
                 update,
-                '⚠️ No pude leer la identificación (INE / Licencia). Envía una foto más clara o pulsa «Omitir».',
+                '⚠️ No pude leer la identificación oficial (INE / Licencia / Pasaporte). Envía una foto más clara o pulsa «Omitir».',
                 reply_markup=_teclado_paso_doc('ine'),
             )
             return True
@@ -1244,12 +1320,12 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ine_fn = str(leidos.get('fecha_nac') or leidos.get('fecha_nacimiento') or '').strip()
         ine_dom = str(leidos.get('domicilio') or '').strip()
 
-        # Validación estricta: debe contener al menos CURP o datos personales clave
+        # Validación: debe contener al menos CURP o datos personales clave
         es_ine_valida = bool(ine_curp or (ine_nom and (ine_fn or ine_dom or ine_sexo)))
         if not es_ine_valida:
             await responder(
                 update,
-                '⚠️ El documento enviado no parece ser una **Credencial de Elector (INE / IFE)** o **Licencia de Conducir** válida.\n'
+                '⚠️ El documento enviado no parece ser una **Identificación Oficial** (INE / Licencia / Pasaporte) válida.\n'
                 'Por favor asegúrate de enviar la foto o PDF de la credencial oficial vigente, o pulsa «Omitir».',
                 reply_markup=_teclado_paso_doc('ine'),
             )
@@ -1257,23 +1333,23 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         sesion.datos['ine'] = {'nombre_completo': ine_nom, 'curp': ine_curp, 'sexo': ine_sexo, 'fecha_nac': ine_fn, 'domicilio': ine_dom}
 
-        # La INE / Licencia corrobora los datos; no sobrescribe datos ya confirmados
-        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
-            sesion.datos['nombre_completo'] = ine_nom
-        if ine_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
+        # La Identificación corrobora los datos; si la CURP no estaba confirmada, actualizarla
+        if ine_curp:
             ok_curp_ine, _ = validar_curp_formato(ine_curp)
-            if ok_curp_ine:
+            if ok_curp_ine and 'curp' not in sesion.campos_confirmados:
                 sesion.datos['curp'] = ine_curp
+        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados:
+            sesion.datos['nombre_completo'] = ine_nom
         if ine_sexo and not sesion.datos.get('genero'):
             sesion.datos['genero'] = ine_sexo
             sesion.datos['sexo'] = ine_sexo
         if ine_fn and not sesion.datos.get('fecha_nac'):
             sesion.datos['fecha_nac'] = ine_fn
-        # Si la dirección no se ha tomado y no está confirmada por comprobante, usar la de INE
+        # Si la dirección no se ha tomado y no está confirmada por comprobante, usar la de la identificación
         if 'domicilio' not in sesion.campos_confirmados and not sesion.datos.get('calle') and ine_dom:
             sesion.datos['calle'] = ine_dom
 
-        lineas = ['✅ **Identificación oficial (INE / Licencia) analizada:**']
+        lineas = ['✅ **Identificación oficial (INE / Licencia / Pasaporte) analizada:**']
         if sesion.datos.get('nombre_completo'):
             if ine_nom:
                 lineas.append(f'• **Nombre:** {sesion.datos.get("nombre_completo")} *(Corroborado con identificación ✅)*')
@@ -1297,14 +1373,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         resumen = '\n'.join(lineas)
 
-        # Determinar siguiente paso: si aún no hay CURP confirmada o válida, pedir documento de CURP
-        tiene_curp = bool(sesion.datos.get('curp') or ('curp' in sesion.campos_confirmados))
-        siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
+        # Determinar siguiente paso: verificar si la CURP actual tiene formato válido
+        curp_actual = sesion.datos.get('curp') or ''
+        ok_curp_valida, _ = validar_curp_formato(curp_actual)
+        tiene_curp_valida = bool(ok_curp_valida)
+
+        siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp_valida else EstadoRegistro.ESPERANDO_DOC_CURP
 
         criticos = []
-        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados and not sesion.datos.get('nombre_completo'):
+        if ine_nom and 'nombre_completo' not in sesion.campos_confirmados:
             criticos.append('nombre_completo')
-        if ine_curp and 'curp' not in sesion.campos_confirmados and not sesion.datos.get('curp'):
+        if ine_curp and 'curp' not in sesion.campos_confirmados:
             criticos.append('curp')
 
         if criticos:
@@ -1947,7 +2026,7 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Botones específicos de omisión por paso (evitan omitir pasos posteriores por desfasamiento)
     if data == 'reg:omitir_acta':
         if sesion.estado == EstadoRegistro.ESPERANDO_ACTA:
-            await _pedir_domicilio_cp(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
+            await _pedir_domicilio(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
         return
 
     if data == 'reg:omitir_domicilio':
@@ -2034,7 +2113,11 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if data == 'reg:domicilio_reiniciar':
-        await _pedir_domicilio_cp(update, sesion, prefijo='🔄 Vamos a capturar la dirección nuevamente.')
+        await _pedir_domicilio(update, sesion, prefijo='🔄 Vamos a capturar el comprobante nuevamente:')
+        return
+
+    if data == 'reg:domicilio_escribir_cp':
+        await _pedir_domicilio_cp(update, sesion)
         return
 
     if data == 'reg:ir_doc_curp':
@@ -2265,7 +2348,7 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
         val_actual = sesion.datos.get(campo) or 'Vacío'
         if campo == 'domicilio':
-            await _pedir_domicilio_cp(update, sesion, prefijo='✏️ Modificar dirección del candidato:')
+            await _pedir_domicilio(update, sesion, prefijo='✏️ Modificar dirección del candidato:')
             return
 
         texto = (
@@ -2281,7 +2364,7 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, sesion: SesionRegistro) -> None:
     estado = sesion.estado
     if estado == EstadoRegistro.ESPERANDO_ACTA:
-        await _pedir_domicilio_cp(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
+        await _pedir_domicilio(update, sesion, prefijo='⏩ Acta de Nacimiento omitida.')
     elif estado in (EstadoRegistro.ESPERANDO_DOMICILIO, EstadoRegistro.ESPERANDO_DOMICILIO_CP,
                     EstadoRegistro.ESPERANDO_DOMICILIO_COLONIA, EstadoRegistro.ESPERANDO_DOMICILIO_CALLE,
                     EstadoRegistro.ESPERANDO_DOMICILIO_NUM_EXT, EstadoRegistro.ESPERANDO_DOMICILIO_NUM_INT,

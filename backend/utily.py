@@ -178,23 +178,28 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
         'Haz el máximo esfuerzo por leer los datos visibles aunque la calidad no sea perfecta; nunca devuelvas todo null si el documento es discernible.'
     ),
     'Comprobante de Domicilio': (
-        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de un recibo de servicios (luz CFE, agua, teléfono, internet, banco, gas). '
-        'Localiza el recibo sobre la superficie y extrae el titular del servicio (nombre_propietario) y la dirección desglosada: '
-        'calle, num_ext, num_int, colonia, municipio, estado y cp (código postal de 5 dígitos). '
-        'REGLAS CRÍTICAS PARA IDENTIFICAR LA DIRECCIÓN CORRECTA: '
-        '1) La dirección del domicilio suele venir ubicada inmediatamente debajo del nombre del titular o cliente. '
-        '2) O bien viene explícitamente etiquetada como «Dirección de servicio», «Domicilio del servicio», «Lugar de entrega / suministro». '
-        '3) La dirección debe contener elementos como Calle, Colonia, Municipio o Alcaldía (Mpo), Estado (Edo) y Código Postal (C.P.). '
-        '4) NUNCA extraigas la dirección corporativa, fiscal o matriz de la empresa emisora (por ejemplo, nunca extraigas oficinas centrales de CFE en Río Ródano ni sucursales de la empresa). '
-        'Si la imagen claramente no corresponde a un comprobante de domicilio (por ejemplo si es un INE o Acta), devuelve null en los campos.'
+        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de un recibo o comprobante de servicios (luz CFE, agua, teléfono, internet, banco, gas). '
+        'PRIORIDAD NÚMERO UNO: LOCALIZAR EL CÓDIGO POSTAL (C.P.) DEL DOMICILIO DEL CLIENTE/TITULAR. '
+        'Busca con máxima atención el código de 5 dígitos numéricos (ej. C.P. 64000, CP 66600, etc.) que pertenece al domicilio particular donde se presta o entrega el servicio (suministro). '
+        'Extrae obligatoriamente el campo cp (exactamente 5 dígitos numéricos). '
+        'Extrae también el titular (nombre_propietario) y la dirección desglosada si aparece: calle, num_ext, num_int, colonia, municipio y estado. '
+        'NUNCA extraigas la dirección corporativa ni oficinas centrales de la empresa emisora.'
     ),
     'INE': (
-        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Credencial para Votar (INE / IFE) o Licencia de Conducir oficial. '
-        'La imagen puede tener reflejos de plástico o mica, estar tomada sobre una superficie o en cualquier orientación. '
-        'Localiza la identificación oficial y extrae los datos para corroboración: nombre_completo (en orden: Nombre Primer_Apellido Segundo_Apellido), '
-        'curp (18 caracteres alfanuméricos), genero (si dice H es MASCULINO, si dice M es FEMENINO), '
-        'fecha_nac (YYYY-MM-DD), domicilio (dirección completa tal como aparece), calle, num_ext, num_int, colonia, municipio, estado y cp (5 dígitos). '
-        'Pon especial atención en extraer la CURP completa de 18 caracteres.'
+        'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una IDENTIFICACIÓN OFICIAL MEXICANA: '
+        'puede ser una Credencial para Votar (INE / IFE), una Licencia de Conducir oficial o un Pasaporte Mexicano. '
+        'La imagen puede tener reflejos de plástico, micas, hologramas, sombras o estar en cualquier orientación (horizontal, vertical o rotada). '
+        'LOCALIZACIÓN DE DATOS CON MÁXIMA PRIORIDAD: '
+        '1) CURP (18 caracteres alfanuméricos en mayúsculas): '
+        '   - En INE/IFE: en el frente viene etiquetada como «CURP» (cerca de sexo, clave de elector o fecha de nacimiento) o en el reverso en las líneas de lectura mecánica (MRZ). '
+        '   - En Licencia de Conducir: viene claramente identificada con la etiqueta «CURP» o «C.U.R.P.». '
+        '   - En Pasaporte Mexicano: en la página de datos principales viene con la etiqueta «CURP» o «No. Personal / Personal No.», o en las dos líneas MRZ del borde inferior. '
+        '   Extrae con absoluta prioridad la CURP completa de 18 caracteres. '
+        '2) Nombre Completo: '
+        '   - En INE/IFE suele venir en líneas separadas (Apellido Paterno, Apellido Materno, Nombre(s)). Concaténalo en orden: Nombre(s) Apellido_Paterno Apellido_Materno. '
+        '   - En Licencia y Pasaporte extrae los nombres y apellidos de la persona titular. '
+        '3) Fecha de Nacimiento (YYYY-MM-DD), Género/Sexo (MASCULINO o FEMENINO) y Domicilio si aparece (calle, num_ext, num_int, colonia, municipio, estado, cp). '
+        'Haz el máximo esfuerzo por extraer la CURP y el nombre legible aunque la imagen tenga sombras o reflejos.'
     ),
     'Constancia de Situación Fiscal': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de Situación Fiscal o Cédula del SAT. '
@@ -210,12 +215,10 @@ INSTRUCCIONES_TIPO_DOCUMENTO = {
     ),
     'Documento CURP': (
         'ATENCIÓN: Estás analizando una FOTOGRAFÍA TOMADA EN TIEMPO REAL CON CÁMARA DE CELULAR de una Constancia de CURP oficial emitida por RENAPO. '
-        'La imagen puede estar tomada sobre una mesa, con sombras, reflejos o estar rotada, inclinada o en cualquier orientación. '
-        'Localiza el recuadro principal donde aparece la Clave Única de Registro de Población (18 caracteres alfanuméricos en mayúsculas, formato: 4 letras, 6 dígitos numéricos AAMMDD, H o M, 2 letras de entidad federativa, 3 letras consonantes y 2 dígitos/caracteres de homoclave, ej. ABCD900101HDFRRN01). '
-        'Extrae con exactitud y prioridad absoluta: curp (18 caracteres sin espacios), '
-        'nombre_completo (nombres y apellidos de la persona), fecha_nac (YYYY-MM-DD), genero (MASCULINO o FEMENINO) '
-        'y lugar_nacimiento (entidad federativa de nacimiento asentada). '
-        'Haz el máximo esfuerzo por transcribir la CURP y datos visibles.'
+        'La imagen puede tener fondos, reflejos, sombras o estar en cualquier ángulo de orientación. '
+        'OBJETIVO PRINCIPAL Y ABSOLUTO: Localizar el recuadro principal central donde aparece la Clave Única de Registro de Población (18 caracteres alfanuméricos en mayúsculas, formato: 4 letras, 6 dígitos numéricos AAMMDD, H o M, 2 letras entidad federativa, 3 letras consonantes y 2 caracteres homoclave). '
+        'Extrae fielmente: curp (18 caracteres sin espacios), nombre_completo (nombres y apellidos de la persona), fecha_nac (YYYY-MM-DD), genero (MASCULINO o FEMENINO) y lugar_nacimiento. '
+        'Inspecciona minuciosamente todo el texto para transcribir la CURP exacta.'
     ),
 }
 MAX_DOCUMENTO_ESCANEABLE_BYTES = 9 * 1024 * 1024
@@ -262,6 +265,34 @@ MIMES_DOCUMENTO_ESCANEABLE = {
         ),
     ),
 }
+
+
+def _extraer_texto_de_pdf(contenido: bytes) -> str:
+    """Extrae texto plano incrustado en streams de archivos PDF para lectura directa y OCR de respaldo."""
+    if not contenido or not contenido.startswith(b'%PDF'):
+        return ''
+    textos = []
+    # Decomprimir streams con FlateDecode
+    partes = contenido.split(b'stream')
+    for p in partes[1:]:
+        end = p.find(b'endstream')
+        if end != -1:
+            raw = p[:end].strip(b'\r\n')
+            try:
+                dec = zlib.decompress(raw)
+                # Formato (texto) Tj
+                for m in re.finditer(rb'\((.*?)\)\s*T[jd]', dec):
+                    textos.append(m.group(1).decode('latin1', 'ignore'))
+                # Formato [(t)(e)(x)(t)] TJ
+                for m in re.finditer(rb'\[(.*?)\]\s*TJ', dec):
+                    inner = re.findall(rb'\((.*?)\)', m.group(1))
+                    textos.append(b''.join(inner).decode('latin1', 'ignore'))
+            except Exception:
+                pass
+    # Textos no comprimidos
+    for m in re.finditer(rb'\((.*?)\)\s*T[jd]', contenido):
+        textos.append(m.group(1).decode('latin1', 'ignore'))
+    return ' '.join(textos).strip()
 
 
 @app.route('/api/escanear-documento', methods=['POST'])
@@ -382,6 +413,10 @@ def escanear_documento():
             ]
             if mime_type != 'application/pdf':
                 contenido_usuario.append({'type': 'image_url', 'image_url': {'url': data_url, 'detail': 'high'}})
+            else:
+                texto_pdf_in = _extraer_texto_de_pdf(contenido)
+                if texto_pdf_in:
+                    contenido_usuario.append({'type': 'text', 'text': f"Texto íntegro extraído del documento PDF:\n{texto_pdf_in[:4000]}"})
 
             solicitud_chat = {
                 'model': os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
@@ -466,14 +501,21 @@ def escanear_documento():
         return jsonify({'error': 'No fue posible extraer datos del documento.'}), 502
 
     # Rescate y corrección OCR por expresiones regulares de claves críticas
-    texto_total = str(texto_resultado or '')
+    texto_pdf_extra = _extraer_texto_de_pdf(contenido) if mime_type == 'application/pdf' else ''
+    texto_total = f"{texto_resultado or ''} {texto_pdf_extra}".strip()
 
     # Normalización / corrección OCR de CURP
     curp_candidata = re.sub(r'[^A-Z0-9]', '', str(valores.get('curp') or '').strip().upper())
     if not curp_candidata or len(curp_candidata) != 18:
-        match_curp = re.search(r'\b([A-Z]{4}\s*\d{6}\s*[HM]\s*[A-Z]{2}\s*[A-Z0-9]{3}\s*[A-Z0-9]{2})\b', texto_total.upper())
+        match_curp = re.search(r'([A-Z]{4}\s*\d{6}\s*[HM]\s*[A-Z]{2}\s*[A-Z0-9]{3}\s*[A-Z0-9]{2})', texto_total.upper())
         if match_curp:
             curp_candidata = re.sub(r'[^A-Z0-9]', '', match_curp.group(1))
+        else:
+            match_curp_tol = re.search(r'([A-Z0-9]{4}\s*[0-9OIlL]{6}\s*[A-Z0-9]\s*[A-Z0-9]{2}\s*[A-Z0-9]{3}\s*[A-Z0-9]{2})', texto_total.upper())
+            if match_curp_tol:
+                cand = re.sub(r'[^A-Z0-9]', '', match_curp_tol.group(1))
+                if len(cand) == 18:
+                    curp_candidata = cand
 
     if curp_candidata:
         # Limpiar caracteres accidentales
@@ -481,26 +523,34 @@ def escanear_documento():
         if len(curp_limpia) == 18:
             # Corrección de confusiones comunes de OCR en fotos
             chars = list(curp_limpia)
-            # Pos 0..3 deben ser letras (sustituir 0->O, 1->I)
+            # Pos 0..3 deben ser letras (sustituir 0->O, 1->I, 8->B, 5->S)
             for idx in range(4):
                 if chars[idx] == '0': chars[idx] = 'O'
                 elif chars[idx] == '1': chars[idx] = 'I'
-            # Pos 4..9 deben ser números (sustituir O->0, I->1, L->1)
+                elif chars[idx] == '8': chars[idx] = 'B'
+                elif chars[idx] == '5': chars[idx] = 'S'
+            # Pos 4..9 deben ser números (sustituir O->0, I->1, L->1, Z->2, S->5, B->8)
             for idx in range(4, 10):
                 if chars[idx] == 'O': chars[idx] = '0'
                 elif chars[idx] in ('I', 'L'): chars[idx] = '1'
-            # Pos 10 debe ser H o M
-            if chars[10] not in ('H', 'M'):
-                if chars[10] == '0': chars[10] = 'M'
-                elif chars[10] == '1': chars[10] = 'H'
+                elif chars[idx] == 'Z': chars[idx] = '2'
+                elif chars[idx] == 'S': chars[idx] = '5'
+                elif chars[idx] == 'B': chars[idx] = '8'
+            # Pos 10 debe ser H, M o X
+            if chars[10] not in ('H', 'M', 'X'):
+                if chars[10] in ('0', 'O', 'N'): chars[10] = 'M'
+                elif chars[10] in ('1', 'I'): chars[10] = 'H'
             # Pos 11..12 deben ser letras (código de entidad federativa)
             for idx in (11, 12):
                 if chars[idx] == '0': chars[idx] = 'O'
                 elif chars[idx] == '1': chars[idx] = 'I'
+                elif chars[idx] == '8': chars[idx] = 'B'
             # Pos 13..15 deben ser letras consonantes
             for idx in range(13, 16):
                 if chars[idx] == '0': chars[idx] = 'O'
                 elif chars[idx] == '1': chars[idx] = 'I'
+                elif chars[idx] == '8': chars[idx] = 'B'
+                elif chars[idx] == '5': chars[idx] = 'S'
             curp_limpia = ''.join(chars)
             valores['curp'] = curp_limpia
 
@@ -590,9 +640,24 @@ def escanear_documento():
         valores['num_int'] = valores['numero_interior']
     if not valores.get('numero_interior') and valores.get('num_int'):
         valores['numero_interior'] = valores['num_int']
-    if not valores.get('cp') and valores.get('codigo_postal'):
+    # Rescate y normalización de Código Postal (5 dígitos)
+    cp_candidato = re.sub(r'\D', '', str(valores.get('cp') or valores.get('codigo_postal') or ''))
+    if len(cp_candidato) != 5:
+        match_cp = re.search(r'\b(?:C\.?P\.?|CODIGO\s*POSTAL|POSTAL)\s*[:.]?\s*(\d{5})\b', texto_total.upper())
+        if match_cp:
+            cp_candidato = match_cp.group(1)
+        else:
+            match_5d = re.findall(r'\b(\d{5})\b', texto_total)
+            for cand_cp in match_5d:
+                if not cand_cp.startswith('00'):
+                    cp_candidato = cand_cp
+                    break
+    if len(cp_candidato) == 5:
+        valores['cp'] = cp_candidato
+        valores['codigo_postal'] = cp_candidato
+    elif not valores.get('cp') and valores.get('codigo_postal'):
         valores['cp'] = valores['codigo_postal']
-    if not valores.get('codigo_postal') and valores.get('cp'):
+    elif not valores.get('codigo_postal') and valores.get('cp'):
         valores['codigo_postal'] = valores['cp']
 
     campos = {}
