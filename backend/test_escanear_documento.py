@@ -303,6 +303,15 @@ class EscanearDocumentoTests(unittest.TestCase):
         self.assertEqual(campos['entidad_nacimiento'], 'Ciudad de México')
         self.assertEqual(campos['lugar_nacimiento'], 'Ciudad de México')
 
+    def test_parsear_qr_renapo_curp(self):
+        qr_raw = 'LOCF720526MNLPRL09||LOPEZ|CORDOVA|FELIPA|MUJER|26/05/1972|NUEVO LEON|19|'
+        parsed = utily._parsear_qr_renapo_curp(qr_raw)
+        self.assertEqual(parsed['curp'], 'LOCF720526MNLPRL09')
+        self.assertEqual(parsed['nombre_completo'], 'FELIPA LOPEZ CORDOVA')
+        self.assertEqual(parsed['genero'], 'FEMENINO')
+        self.assertEqual(parsed['fecha_nac'], '1972-05-26')
+        self.assertEqual(parsed['lugar_nacimiento'], 'NUEVO LEON')
+
 
 if __name__ == '__main__':
     unittest.main()

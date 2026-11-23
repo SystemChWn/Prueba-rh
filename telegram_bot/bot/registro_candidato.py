@@ -660,10 +660,13 @@ async def _pedir_doc_curp(update: Update, sesion: SesionRegistro, prefijo: str =
     sesion.estado = EstadoRegistro.ESPERANDO_DOC_CURP
     texto = (
         f"{prefijo}\n\n"
-        "📸 Por favor envía la foto o PDF de la **Constancia de CURP** oficial (o escríbela directamente por texto):"
+        "📸 Por favor envía una foto enfocada al **Código QR** de la Constancia de CURP (o de la constancia completa donde se vea el QR):\n"
+        "*(El sistema escaneará el código QR para obtener tu CURP oficial de forma automática e inmediata)*\n\n"
+        "💡 O si lo prefieres, pulsa «Escribir CURP» para ingresarla por texto:"
     ).strip()
     teclado = InlineKeyboardMarkup([
-        [boton('⏩ Omitir por ahora', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
+        [boton('✏️ Escribir CURP por texto', 'reg:conf_paso_corregir'), boton('⏩ Omitir por ahora', 'reg:omitir_curp_doc')],
+        [boton('❌ Cancelar', 'reg:cancelar')]
     ])
     await responder(update, texto, reply_markup=teclado)
 
@@ -1392,13 +1395,13 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception as exc:
             logger.warning('Falla en escaneo de CURP: %s', exc)
             sesion.campo_confirmando = 'curp'
-            sesion.ultimo_doc_para_reintentar = 'Constancia de CURP'
+            sesion.ultimo_doc_para_reintentar = 'Código QR de CURP'
             await responder(
                 update,
-                '⚠️ No pude leer con claridad la constancia de CURP.\n'
-                'Por favor envía una foto más nítida o escribe la CURP directamente por texto:',
+                '⚠️ No pude leer el código QR de la constancia de CURP.\n'
+                'Por favor envía una foto enfocando directamente al **Código QR**, o escribe la CURP por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
+                    [boton('📸 Tomar foto al QR de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
                     [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )
@@ -1409,17 +1412,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         sex_curp = normalizar_sexo(leidos.get('genero') or leidos.get('sexo'))
         fn_curp = str(leidos.get('fecha_nac') or '').strip()
 
-        # Validación estricta: debe contener una clave CURP con formato oficial de 18 caracteres
+        # Validación: debe contener una clave CURP con formato oficial de 18 caracteres
         es_valida_curp, err_curp = validar_curp_formato(curp_extraida)
         if not es_valida_curp:
             sesion.campo_confirmando = 'curp'
-            sesion.ultimo_doc_para_reintentar = 'Constancia de CURP'
+            sesion.ultimo_doc_para_reintentar = 'Código QR de CURP'
             await responder(
                 update,
-                f'⚠️ La clave detectada (`{curp_extraida or "No detectada"}`) no cumple con la estructura oficial de 18 caracteres ({err_curp}).\n'
-                'Por favor toma una foto más clara y enfocada de la constancia de CURP o escribe la CURP directamente por texto:',
+                f'⚠️ La clave detectada (`{curp_extraida or "No detectada"}`) no cumple con la estructura oficial ({err_curp}).\n'
+                'Por favor toma una foto enfocando directamente al código QR de la constancia o escríbela por texto:',
                 reply_markup=InlineKeyboardMarkup([
-                    [boton('📸 Tomar foto de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
+                    [boton('📸 Tomar foto al QR de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
                     [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
                 ])
             )

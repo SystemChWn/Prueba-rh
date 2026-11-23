@@ -318,6 +318,63 @@ def _extraer_texto_de_pdf(contenido: bytes) -> str:
     return ' '.join(textos).strip()
 
 
+def _escanear_codigos_qr(contenido: bytes) -> list[str]:
+    """Intenta decodificar códigos QR y de barras a partir de los bytes de una imagen usando zxing-cpp."""
+    try:
+        import zxingcpp
+        from PIL import Image
+        img = Image.open(BytesIO(contenido))
+        resultados = zxingcpp.read_barcodes(img)
+        textos = [r.text for r in resultados if r and r.text]
+        if not textos:
+            # Si no encontró en orientación original, intentar con rotación de 90 y 270 grados
+            for g in (90, 270):
+                r_img = img.rotate(g, expand=True)
+                r_res = zxingcpp.read_barcodes(r_img)
+                textos = [r.text for r in r_res if r and r.text]
+                if textos:
+                    break
+        return textos
+    except Exception as exc:
+        app.logger.debug('zxingcpp no pudo leer códigos de barras/QR: %s', exc)
+        return []
+
+
+def _parsear_qr_renapo_curp(raw: str) -> dict[str, str]:
+    """Extrae datos de la cadena oficial RENAPO contenida en los códigos QR de la Constancia de CURP."""
+    res = {}
+    m = re.search(r'([A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z0-9]{3}[A-Z0-9]{2})', raw.upper())
+    if m:
+        res['curp'] = m.group(1)
+    partes = raw.split('|')
+    if len(partes) >= 7:
+        curp_cand = partes[0].strip().upper()
+        if len(curp_cand) == 18:
+            res['curp'] = curp_cand
+        ap1 = partes[2].strip().upper() if len(partes) > 2 else ''
+        ap2 = partes[3].strip().upper() if len(partes) > 3 else ''
+        noms = partes[4].strip().upper() if len(partes) > 4 else ''
+        if noms and ap1:
+            res['nombre_completo'] = f'{noms} {ap1} {ap2}'.strip()
+        sexo = partes[5].strip().upper() if len(partes) > 5 else ''
+        if sexo in ('MUJER', 'FEMENINO', 'F'):
+            res['genero'] = 'FEMENINO'
+            res['sexo'] = 'FEMENINO'
+        elif sexo in ('HOMBRE', 'MASCULINO', 'M'):
+            res['genero'] = 'MASCULINO'
+            res['sexo'] = 'MASCULINO'
+        fn = partes[6].strip() if len(partes) > 6 else ''
+        m_fn = re.match(r'(\d{2})/(\d{2})/(\d{4})', fn)
+        if m_fn:
+            res['fecha_nac'] = f'{m_fn.group(3)}-{m_fn.group(2)}-{m_fn.group(1)}'
+            res['fecha_nacimiento'] = res['fecha_nac']
+        ent = partes[7].strip().upper() if len(partes) > 7 else ''
+        if ent:
+            res['lugar_nacimiento'] = ent
+            res['entidad_nacimiento'] = ent
+    return res
+
+
 @app.route('/api/escanear-documento', methods=['POST'])
 def escanear_documento():
     tipo_documento = (request.form.get('tipo_documento') or '').strip()
@@ -342,6 +399,24 @@ def escanear_documento():
         return jsonify({'error': 'El archivo no coincide con su formato declarado.'}), 400
 
     contenido, mime_type = _corregir_orientacion_imagen(contenido, mime_type)
+
+    # 1. Detección instantánea por código QR físico (prioridad para Constancia de CURP y SAT)
+    valores_qr = {}
+    if mime_type != 'application/pdf':
+        textos_qr = _escanear_codigos_qr(contenido)
+        for t_qr in textos_qr:
+            datos_curp_qr = _parsear_qr_renapo_curp(t_qr)
+            if datos_curp_qr.get('curp'):
+                valores_qr.update(datos_curp_qr)
+                break
+
+    # Si es Documento CURP y se decodificó exitosamente el QR oficial:
+    if tipo_documento == 'Documento CURP' and valores_qr.get('curp') and len(valores_qr['curp']) == 18:
+        app.logger.info('CURP decodificada instantáneamente del código QR físico: %s', valores_qr['curp'])
+        campos = {}
+        for campo in campos_documento:
+            campos[campo] = valores_qr.get(campo) or None
+        return jsonify({'campos': campos}), 200
 
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:

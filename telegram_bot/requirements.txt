@@ -9,3 +9,5 @@ pydantic-settings==2.7.0
 pytest==8.3.4
 pytest-asyncio==0.25.0
 tzdata==2025.2
+Pillow
+zxing-cpp
