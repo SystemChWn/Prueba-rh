@@ -2166,6 +2166,11 @@
         document.getElementById('recruiter-chart-month').value = String(new Date().getMonth() + 1);
         document.getElementById('recruiter-chart-month').addEventListener('change', loadRecruiterDashboard);
         document.getElementById('btn-refresh-team-chart').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-refresh-team-chart');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.textContent = 'Descargando...';
+
             const month = document.getElementById('recruiter-chart-month').value;
             const year = new Date().getFullYear();
             const params = new URLSearchParams({ mes: month, anio: String(year) });
@@ -2192,7 +2197,7 @@
                 const urlBlob = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = urlBlob;
-                a.download = `reclutamiento_${year}_${month.padStart(2, '0')}.xlsx`;
+                a.download = `reporte_reclutamiento_${year}_${month.padStart(2, '0')}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -2200,6 +2205,9 @@
 
             } catch (error) {
                 window.alert(`No se pudo descargar el Excel: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
             }
         });
         loadRecruiterDashboard();

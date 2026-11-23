@@ -267,6 +267,42 @@ class EscanearDocumentoTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         post_openai.assert_not_called()
 
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch('utily.requests.post')
+    def test_deduces_birthdate_gender_and_state_from_curp(self, post_openai):
+        # CURP: ABCD950415HDFRRN01 -> Fecha 1995-04-15, MASCULINO, Ciudad de México
+        respuesta = Mock()
+        respuesta.json.return_value = {
+            'output_text': json.dumps({
+                'nombre_completo': 'Juan Perez',
+                'curp': 'ABCD950415HDFRRN01',
+                'fecha_nac': None,
+                'genero': None,
+                'lugar_nacimiento': None,
+                'entidad_nacimiento': None,
+                'lugar_registro': None,
+                'entidad_registro': None,
+            })
+        }
+        post_openai.return_value = respuesta
+
+        response = self.client.post(
+            '/api/escanear-documento',
+            data={
+                'tipo_documento': 'Acta de Nacimiento',
+                'archivo': (io.BytesIO(b'%PDF-1.7 documento'), 'acta.pdf'),
+            },
+            content_type='multipart/form-data',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        campos = response.get_json()['campos']
+        self.assertEqual(campos['curp'], 'ABCD950415HDFRRN01')
+        self.assertEqual(campos['fecha_nac'], '1995-04-15')
+        self.assertEqual(campos['genero'], 'MASCULINO')
+        self.assertEqual(campos['entidad_nacimiento'], 'Ciudad de México')
+        self.assertEqual(campos['lugar_nacimiento'], 'Ciudad de México')
+
 
 if __name__ == '__main__':
     unittest.main()

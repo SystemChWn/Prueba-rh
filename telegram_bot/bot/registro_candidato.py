@@ -326,7 +326,7 @@ def _corregir_orientacion(contenido: bytes, mime: str) -> bytes:
     if mime not in ('image/jpeg', 'image/png', 'image/webp'):
         return contenido
     try:
-        from PIL import Image, ImageOps, ImageEnhance, ImageStat
+        from PIL import Image, ImageOps, ImageEnhance, ImageStat, ImageFilter
         img = Image.open(BytesIO(contenido))
         img = ImageOps.exif_transpose(img)
         if img.mode not in ('RGB', 'L'):
@@ -336,18 +336,22 @@ def _corregir_orientacion(contenido: bytes, mime: str) -> bytes:
         brillo_medio = stat.mean[0] if stat.mean else 128
         if brillo_medio < 95:
             img = ImageOps.autocontrast(img, cutoff=2)
-            img = ImageEnhance.Brightness(img).enhance(1.3)
+            img = ImageEnhance.Brightness(img).enhance(1.35)
+            img = ImageEnhance.Contrast(img).enhance(1.15)
         elif brillo_medio > 215:
-            img = ImageEnhance.Contrast(img).enhance(1.25)
+            img = ImageEnhance.Contrast(img).enhance(1.35)
         else:
             img = ImageOps.autocontrast(img, cutoff=0.5)
+
+        # Filtro de nitidez para texto en fotos tomadas con cámara de celular en tiempo real
+        img = img.filter(ImageFilter.SHARPEN)
 
         max_dim = 2048
         if max(img.size) > max_dim:
             img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
         buf = BytesIO()
-        img.save(buf, format='JPEG', quality=92, optimize=True)
+        img.save(buf, format='JPEG', quality=95, optimize=True)
         return buf.getvalue()
     except Exception as exc:
         logger.warning('No se pudo corregir u optimizar imagen en bot: %s', exc)
@@ -360,7 +364,7 @@ async def _escanear_en_backend(context: ContextTypes.DEFAULT_TYPE, user_id: int,
     archivo_envio = (archivo.nombre, contenido_corregido, archivo.mime)
 
     respuesta = await backend.peticion(
-        user_id, 'POST', '/api/escanear-documento', timeout=75,
+        user_id, 'POST', '/api/escanear-documento', timeout=90,
         data={'tipo_documento': tipo_doc},
         files=[('archivo', archivo_envio)],
     )
