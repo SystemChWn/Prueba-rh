@@ -117,6 +117,16 @@ class RegistroCandidatoTests(unittest.TestCase):
         self.assertIn('reg:col_pag:1', callbacks)
         self.assertIn('reg:col_escribir', callbacks)
 
+    def test_escanear_qr_curp_local(self):
+        # Cadena oficial RENAPO
+        raw = "LOCF720526MNLPRL09||LOPEZ|CORDOVA|FELIPA|MUJER|26/05/1972|NUEVO LEON|19|"
+        # Probar parseo de cadena
+        m = registro_candidato.re.search(r'([A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z0-9]{3}[A-Z0-9]{2})', raw.upper())
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), 'LOCF720526MNLPRL09')
+        # Probar que maneja bytes vacíos sin excepción
+        self.assertEqual(registro_candidato._escanear_qr_curp_local(b''), {})
+
 
 
 if __name__ == '__main__':

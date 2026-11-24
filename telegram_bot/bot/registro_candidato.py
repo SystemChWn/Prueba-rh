@@ -381,6 +381,49 @@ async def _escanear_en_backend(context: ContextTypes.DEFAULT_TYPE, user_id: int,
     return datos.get('campos') or {}
 
 
+def _escanear_qr_curp_local(contenido: bytes) -> dict[str, str]:
+    """Decodifica instantáneamente códigos QR físicos (RENAPO) en fotos de constancia de CURP."""
+    try:
+        import zxingcpp
+        from PIL import Image
+        img = Image.open(BytesIO(contenido))
+        codigos = zxingcpp.read_barcodes(img)
+        textos = [c.text for c in codigos if c and c.text]
+        if not textos:
+            for g in (90, 180, 270):
+                r_cods = zxingcpp.read_barcodes(img.rotate(g, expand=True))
+                textos = [c.text for c in r_cods if c and c.text]
+                if textos:
+                    break
+        for t in textos:
+            m = re.search(r'([A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z0-9]{3}[A-Z0-9]{2})', t.upper())
+            if m:
+                res = {'curp': m.group(1)}
+                partes = t.split('|')
+                if len(partes) >= 7:
+                    ap1 = partes[2].strip().upper() if len(partes) > 2 else ''
+                    ap2 = partes[3].strip().upper() if len(partes) > 3 else ''
+                    noms = partes[4].strip().upper() if len(partes) > 4 else ''
+                    if noms and ap1:
+                        res['nombre_completo'] = f'{noms} {ap1} {ap2}'.strip()
+                    sexo = partes[5].strip().upper() if len(partes) > 5 else ''
+                    if sexo in ('MUJER', 'FEMENINO', 'F'):
+                        res['genero'] = 'FEMENINO'
+                    elif sexo in ('HOMBRE', 'MASCULINO', 'M'):
+                        res['genero'] = 'MASCULINO'
+                    fn = partes[6].strip() if len(partes) > 6 else ''
+                    m_fn = re.match(r'(\d{2})/(\d{2})/(\d{4})', fn)
+                    if m_fn:
+                        res['fecha_nac'] = f'{m_fn.group(3)}-{m_fn.group(2)}-{m_fn.group(1)}'
+                    ent = partes[7].strip().upper() if len(partes) > 7 else ''
+                    if ent:
+                        res['entidad_nac'] = ent
+                return res
+    except Exception as exc:
+        logger.debug('Fallo escaneo QR local: %s', exc)
+    return {}
+
+
 # --- INICIO Y MENSAJES DE CADA PASO ---
 
 async def iniciar_registro(update: Update, context: ContextTypes.DEFAULT_TYPE, reclutadores: list[str] | None = None) -> None:
@@ -728,8 +771,12 @@ async def _pedir_edo_civil(update: Update, sesion: SesionRegistro, prefijo: str 
         "💍 Selecciona el **Estado Civil** del candidato:\n"
         "Elige una opción con los botones o escríbelo:"
     ).strip()
-    filas = [[boton(opc, f'reg:edocivil:{opc}')] for opc in ESTADOS_CIVILES]
-    filas.append([boton('⏩ Omitir estado civil', 'reg:omitir_edocivil'), boton('❌ Cancelar', 'reg:cancelar')])
+    filas = [
+        [boton('SOLTERO(A)', 'reg:edocivil:SOLTERO(A)'), boton('CASADO(A)', 'reg:edocivil:CASADO(A)')],
+        [boton('DIVORCIADO(A)', 'reg:edocivil:DIVORCIADO(A)'), boton('VIUDO(A)', 'reg:edocivil:VIUDO(A)')],
+        [boton('UNIÓN LIBRE', 'reg:edocivil:UNIÓN LIBRE')],
+        [boton('⏩ Omitir estado civil', 'reg:omitir_edocivil'), boton('❌ Cancelar', 'reg:cancelar')],
+    ]
     await responder(update, texto, reply_markup=InlineKeyboardMarkup(filas))
 
 
@@ -1053,21 +1100,28 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # REINTENTO POR FOTO TRAS RECHAZAR UN DATO
     if estado in (EstadoRegistro.CONFIRMANDO_DATO_PASO, EstadoRegistro.ESPERANDO_CORRECCION_PASO):
         doc_tipo = sesion.ultimo_doc_para_reintentar or 'Acta de Nacimiento'
-        await responder(update, '🔍 Analizando...')
-        try:
-            leidos = await _escanear_en_backend(context, user_id, doc_tipo, archivo)
-            if not leidos or not any(leidos.values()):
-                raise ValueError(f'No se detectaron campos legibles en {doc_tipo}.')
-        except Exception as exc:
-            await responder(
-                update,
-                f'⚠️ No se pudo leer claramente {doc_tipo}.\n'
-                'Puedes escribir el dato por texto o intentar con otra foto:',
-                reply_markup=InlineKeyboardMarkup([
-                    [boton('✏️ Escribir dato', 'reg:conf_paso_corregir'), boton('❌ Cancelar', 'reg:cancelar')]
-                ])
-            )
-            return True
+        campo = sesion.campo_confirmando
+        leidos = {}
+        if campo == 'curp':
+            qr_local = _escanear_qr_curp_local(archivo.contenido)
+            if qr_local and qr_local.get('curp'):
+                leidos = qr_local
+        if not leidos:
+            await responder(update, '🔍 Analizando...')
+            try:
+                leidos = await _escanear_en_backend(context, user_id, doc_tipo, archivo)
+                if not leidos or not any(leidos.values()):
+                    raise ValueError(f'No se detectaron campos legibles en {doc_tipo}.')
+            except Exception as exc:
+                await responder(
+                    update,
+                    f'⚠️ No se pudo leer claramente {doc_tipo}.\n'
+                    'Puedes escribir el dato por texto o intentar con otra foto:',
+                    reply_markup=InlineKeyboardMarkup([
+                        [boton('✏️ Escribir dato', 'reg:conf_paso_corregir'), boton('❌ Cancelar', 'reg:cancelar')]
+                    ])
+                )
+                return True
 
         campo = sesion.campo_confirmando
         if campo and leidos.get(campo):
@@ -1387,25 +1441,27 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # DOCUMENTO DE CURP
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
-        await responder(update, '🔍 Analizando...')
-        try:
-            leidos = await _escanear_en_backend(context, user_id, 'Documento CURP', archivo)
-            if not leidos or not any(leidos.values()):
-                raise ValueError('No se detectaron campos legibles en el documento de CURP.')
-        except Exception as exc:
-            logger.warning('Falla en escaneo de CURP: %s', exc)
-            sesion.campo_confirmando = 'curp'
-            sesion.ultimo_doc_para_reintentar = 'Código QR de CURP'
-            await responder(
-                update,
-                '⚠️ No pude leer el código QR de la constancia de CURP.\n'
-                'Por favor envía una foto enfocando directamente al **Código QR**, o escribe la CURP por texto:',
-                reply_markup=InlineKeyboardMarkup([
-                    [boton('📸 Tomar foto al QR de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
-                    [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
-                ])
-            )
-            return True
+        leidos = _escanear_qr_curp_local(archivo.contenido)
+        if not leidos or not leidos.get('curp'):
+            await responder(update, '🔍 Analizando...')
+            try:
+                leidos = await _escanear_en_backend(context, user_id, 'Documento CURP', archivo)
+                if not leidos or not any(leidos.values()):
+                    raise ValueError('No se detectaron campos legibles en el documento de CURP.')
+            except Exception as exc:
+                logger.warning('Falla en escaneo de CURP: %s', exc)
+                sesion.campo_confirmando = 'curp'
+                sesion.ultimo_doc_para_reintentar = 'Documento CURP'
+                await responder(
+                    update,
+                    '⚠️ No pude leer el código QR de la constancia de CURP.\n'
+                    'Por favor envía una foto enfocando directamente al **Código QR**, o escribe la CURP por texto:',
+                    reply_markup=InlineKeyboardMarkup([
+                        [boton('📸 Tomar foto al QR de nuevo', 'reg:conf_paso_refoto'), boton('✏️ Escribir CURP', 'reg:conf_paso_corregir')],
+                        [boton('⏩ Omitir', 'reg:omitir_curp_doc'), boton('❌ Cancelar', 'reg:cancelar')]
+                    ])
+                )
+                return True
 
         curp_extraida = str(leidos.get('curp') or '').strip().upper()
         nom_curp = ordenar_nombre_natural(str(leidos.get('nombre_completo') or '').strip())
@@ -1416,7 +1472,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         es_valida_curp, err_curp = validar_curp_formato(curp_extraida)
         if not es_valida_curp:
             sesion.campo_confirmando = 'curp'
-            sesion.ultimo_doc_para_reintentar = 'Código QR de CURP'
+            sesion.ultimo_doc_para_reintentar = 'Documento CURP'
             await responder(
                 update,
                 f'⚠️ La clave detectada (`{curp_extraida or "No detectada"}`) no cumple con la estructura oficial ({err_curp}).\n'
@@ -1998,13 +2054,30 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
 
 async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     consulta = update.callback_query
-    await consulta.answer()
-    user_id = consulta.from_user.id
+    if consulta:
+        try:
+            await consulta.answer()
+        except Exception:
+            pass
+    user_id = consulta.from_user.id if consulta and consulta.from_user else 0
     sesion = registro_activo.get(user_id)
     if not sesion:
-        await consulta.edit_message_text('Este registro ya concluyó o fue cancelado.')
+        if consulta:
+            try:
+                await consulta.edit_message_text('Este registro ya concluyó o fue cancelado.')
+            except Exception:
+                pass
         return
 
+    try:
+        await _procesar_boton(update, context, sesion, consulta)
+    except Exception as exc:
+        logger.error('Error en al_boton de registro: %s', exc, exc_info=True)
+        await responder(update, '⚠️ Ocurrió un detalle al procesar la opción seleccionada. Por favor intenta de nuevo.')
+
+
+async def _procesar_boton(update: Update, context: ContextTypes.DEFAULT_TYPE, sesion: SesionRegistro, consulta: Any) -> None:
+    user_id = sesion.user_id
     data = consulta.data or ''
     if data == 'reg:cancelar':
         cancelar_registro(user_id)

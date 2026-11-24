@@ -327,8 +327,8 @@ def _escanear_codigos_qr(contenido: bytes) -> list[str]:
         resultados = zxingcpp.read_barcodes(img)
         textos = [r.text for r in resultados if r and r.text]
         if not textos:
-            # Si no encontró en orientación original, intentar con rotación de 90 y 270 grados
-            for g in (90, 270):
+            # Si no encontró en orientación original, intentar con rotación de 90, 180 y 270 grados
+            for g in (90, 180, 270):
                 r_img = img.rotate(g, expand=True)
                 r_res = zxingcpp.read_barcodes(r_img)
                 textos = [r.text for r in r_res if r and r.text]
@@ -375,9 +375,44 @@ def _parsear_qr_renapo_curp(raw: str) -> dict[str, str]:
     return res
 
 
+ALIAS_DOCUMENTOS_ESCANEABLES = {
+    'código qr de curp': 'Documento CURP',
+    'codigo qr de curp': 'Documento CURP',
+    'qr de curp': 'Documento CURP',
+    'constancia de curp': 'Documento CURP',
+    'documento curp': 'Documento CURP',
+    'documento de curp': 'Documento CURP',
+    'curp': 'Documento CURP',
+    'identificación oficial': 'INE',
+    'identificacion oficial': 'INE',
+    'identificación': 'INE',
+    'identificacion': 'INE',
+    'ine / ife': 'INE',
+    'ine / licencia': 'INE',
+    'ine': 'INE',
+    'comprobante de domicilio': 'Comprobante de Domicilio',
+    'comprobante': 'Comprobante de Domicilio',
+    'domicilio': 'Comprobante de Domicilio',
+    'acta de nacimiento': 'Acta de Nacimiento',
+    'acta': 'Acta de Nacimiento',
+    'constancia de situación fiscal': 'Constancia de Situación Fiscal',
+    'constancia de situacion fiscal': 'Constancia de Situación Fiscal',
+    'csf': 'Constancia de Situación Fiscal',
+    'situación fiscal': 'Constancia de Situación Fiscal',
+    'situacion fiscal': 'Constancia de Situación Fiscal',
+    'sat': 'Constancia de Situación Fiscal',
+    'número de seguro social': 'Número de Seguro Social',
+    'numero de seguro social': 'Número de Seguro Social',
+    'nss': 'Número de Seguro Social',
+    'seguro social': 'Número de Seguro Social',
+    'imss': 'Número de Seguro Social',
+}
+
+
 @app.route('/api/escanear-documento', methods=['POST'])
 def escanear_documento():
-    tipo_documento = (request.form.get('tipo_documento') or '').strip()
+    tipo_raw = (request.form.get('tipo_documento') or '').strip()
+    tipo_documento = ALIAS_DOCUMENTOS_ESCANEABLES.get(tipo_raw.lower(), tipo_raw)
     campos_documento = DOCUMENTOS_ESCANEABLES.get(tipo_documento)
     if not campos_documento:
         return jsonify({'error': 'El tipo de documento no es válido.'}), 400
