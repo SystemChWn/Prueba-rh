@@ -494,8 +494,13 @@ async def iniciar_confirmacion_critica(
 async def avanzar_confirmacion_critica(update: Update, sesion: SesionRegistro, prefijo: str = '') -> None:
     """Pide confirmación para el siguiente dato crítico en cola o continúa el flujo."""
     if not sesion.cola_confirmacion:
+        campo_terminado = sesion.campo_confirmando
         sesion.campo_confirmando = None
         sig = sesion.siguiente_estado_post_conf
+        if campo_terminado == 'rfc':
+            sig = EstadoRegistro.ESPERANDO_NSS
+        elif campo_terminado == 'nss':
+            sig = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
         await ir_al_estado(update, sesion, sig, prefijo=prefijo)
         return
 
@@ -1138,10 +1143,17 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     adv_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
             elif campo == 'rfc':
                 val_nuevo = val_nuevo.upper()
+                sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
                 ok_rfc, err_rfc = validar_rfc_formato(val_nuevo)
                 if not ok_rfc:
                     formato_invalido = True
                     adv_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
+            elif campo == 'nss':
+                val_nuevo = ''.join(c for c in val_nuevo if c.isdigit())
+                sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
+                if len(val_nuevo) != 11:
+                    formato_invalido = True
+                    adv_formato = "\n⚠️ **Formato NSS no válido:** Debe contener exactamente 11 dígitos numéricos."
             sesion.datos[campo] = val_nuevo
             sesion.estado = EstadoRegistro.CONFIRMANDO_DATO_PASO
             etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
@@ -1502,7 +1514,8 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         criticos = ['curp'] if 'curp' not in sesion.campos_confirmados else []
-        sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
+        tiene_dom = bool('domicilio' in sesion.campos_confirmados or sesion.datos.get('calle') or sesion.datos.get('cp') or sesion.datos.get('ine'))
+        sig_post_curp = EstadoRegistro.ESPERANDO_CSF if tiene_dom else EstadoRegistro.ESPERANDO_DOMICILIO_CP
         if criticos:
             await iniciar_confirmacion_critica(
                 update, sesion, criticos,
@@ -1524,6 +1537,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception as exc:
             logger.warning('Falla en escaneo de CSF: %s', exc)
             sesion.campo_confirmando = 'rfc'
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
             sesion.ultimo_doc_para_reintentar = 'Constancia de Situación Fiscal'
             await responder(
                 update,
@@ -1539,6 +1553,7 @@ async def atender_archivo(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         es_valido_rfc, err_rfc = validar_rfc_formato(rfc)
         if not es_valido_rfc:
             sesion.campo_confirmando = 'rfc'
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
             sesion.ultimo_doc_para_reintentar = 'Constancia de Situación Fiscal'
             await responder(
                 update,
@@ -1674,12 +1689,14 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
                         aviso_formato = f"\n⚠️ **Formato CURP no válido:** {err_curp}"
                 elif campo == 'rfc':
                     val_limpio = val_limpio.upper()
+                    sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
                     ok_rfc, err_rfc = validar_rfc_formato(val_limpio)
                     if not ok_rfc:
                         formato_invalido = True
                         aviso_formato = f"\n⚠️ **Formato RFC no válido:** {err_rfc}"
                 elif campo == 'nss':
                     val_limpio = ''.join(c for c in val_limpio if c.isdigit())
+                    sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
                     if len(val_limpio) != 11:
                         formato_invalido = True
                         aviso_formato = "\n⚠️ **Formato NSS no válido:** Debe contener exactamente 11 dígitos numéricos."
@@ -1712,8 +1729,9 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
 
         # CAPTURA DE CURP POR TEXTO SI ESTABA EN ESPERANDO_DOC_CURP
         if estado == EstadoRegistro.ESPERANDO_DOC_CURP:
+            tiene_dom = bool('domicilio' in sesion.campos_confirmados or sesion.datos.get('calle') or sesion.datos.get('cp') or sesion.datos.get('ine'))
+            sig_post_curp = EstadoRegistro.ESPERANDO_CSF if tiene_dom else EstadoRegistro.ESPERANDO_DOMICILIO_CP
             if texto.lower() in ('omitir', '/omitir', 'no tengo'):
-                sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
                 await ir_al_estado(update, sesion, sig_post_curp, prefijo='⏩ Documento de CURP omitido.')
                 return True
             curp_text = texto.strip().upper()
@@ -1722,7 +1740,6 @@ async def atender_texto(update: Update, context: ContextTypes.DEFAULT_TYPE, text
             pref = f"✅ CURP ingresada: `{curp_text}`"
             if not ok_curp:
                 pref += f"\n⚠️ {err_curp}"
-            sig_post_curp = EstadoRegistro.ESPERANDO_CSF if ('domicilio' in sesion.campos_confirmados) else EstadoRegistro.ESPERANDO_DOMICILIO_CP
             await iniciar_confirmacion_critica(
                 update, sesion, ['curp'],
                 siguiente_estado=sig_post_curp,
@@ -2283,14 +2300,23 @@ async def _procesar_boton(update: Update, context: ContextTypes.DEFAULT_TYPE, se
 
     # Confirmación paso a paso de datos críticos
     if data == 'reg:conf_paso_ok':
-        if sesion.campo_confirmando:
-            sesion.campos_confirmados.add(sesion.campo_confirmando)
+        campo = sesion.campo_confirmando
+        if campo:
+            sesion.campos_confirmados.add(campo)
+        if campo == 'rfc':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
+        elif campo == 'nss':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
         await avanzar_confirmacion_critica(update, sesion)
         return
 
     if data == 'reg:conf_paso_corregir':
         sesion.estado = EstadoRegistro.ESPERANDO_CORRECCION_PASO
         campo = sesion.campo_confirmando
+        if campo == 'rfc':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
+        elif campo == 'nss':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
         etiqueta = ETIQUETAS_CAMPOS.get(campo, campo)
         val_act = sesion.datos.get(campo, '')
         texto = (
@@ -2304,6 +2330,11 @@ async def _procesar_boton(update: Update, context: ContextTypes.DEFAULT_TYPE, se
 
     if data == 'reg:conf_paso_refoto':
         sesion.estado = EstadoRegistro.ESPERANDO_CORRECCION_PASO
+        campo = sesion.campo_confirmando
+        if campo == 'rfc':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_NSS
+        elif campo == 'nss':
+            sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_EMERGENCIA_NOMBRE
         doc_tipo = sesion.ultimo_doc_para_reintentar or 'el documento'
         texto = (
             f"📸 **Tomar foto de nuevo — {doc_tipo}**\n\n"
@@ -2456,7 +2487,8 @@ async def procesar_omision(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_curp else EstadoRegistro.ESPERANDO_DOC_CURP
         await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Identificación (INE / Licencia) omitida.')
     elif estado == EstadoRegistro.ESPERANDO_DOC_CURP:
-        siguiente = EstadoRegistro.ESPERANDO_DOMICILIO_CP if 'domicilio' not in sesion.campos_confirmados else EstadoRegistro.ESPERANDO_CSF
+        tiene_dom = bool('domicilio' in sesion.campos_confirmados or sesion.datos.get('calle') or sesion.datos.get('cp') or sesion.datos.get('ine'))
+        siguiente = EstadoRegistro.ESPERANDO_CSF if tiene_dom else EstadoRegistro.ESPERANDO_DOMICILIO_CP
         await ir_al_estado(update, sesion, siguiente, prefijo='⏩ Documento de CURP omitido.')
     elif estado == EstadoRegistro.ESPERANDO_CSF:
         await _pedir_nss(update, sesion, prefijo='⏩ Constancia Fiscal omitida.')

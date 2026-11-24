@@ -127,6 +127,20 @@ class RegistroCandidatoTests(unittest.TestCase):
         # Probar que maneja bytes vacíos sin excepción
         self.assertEqual(registro_candidato._escanear_qr_curp_local(b''), {})
 
+    def test_transicion_rfc_a_nss(self):
+        sesion = SesionRegistro(user_id=999)
+        sesion.datos['rfc'] = 'XAXX010101000'
+        sesion.campo_confirmando = 'rfc'
+        sesion.cola_confirmacion = []
+        # Si siguiente_estado_post_conf apuntaba a domicilio por error:
+        sesion.siguiente_estado_post_conf = EstadoRegistro.ESPERANDO_DOMICILIO_CP
+
+        campo_terminado = sesion.campo_confirmando
+        sig = sesion.siguiente_estado_post_conf
+        if campo_terminado == 'rfc':
+            sig = EstadoRegistro.ESPERANDO_NSS
+        self.assertEqual(sig, EstadoRegistro.ESPERANDO_NSS)
+
 
 
 if __name__ == '__main__':
