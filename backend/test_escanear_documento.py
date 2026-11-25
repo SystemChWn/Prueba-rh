@@ -273,7 +273,7 @@ class EscanearDocumentoTests(unittest.TestCase):
         # CURP: ABCD950415HDFRRN01 -> Fecha 1995-04-15, MASCULINO, Ciudad de México
         respuesta = Mock()
         respuesta.json.return_value = {
-            'output_text': json.dumps({
+            'output_text': json.dumps({ 
                 'nombre_completo': 'Juan Perez',
                 'curp': 'ABCD950415HDFRRN01',
                 'fecha_nac': None,

@@ -75,7 +75,7 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     Nodo('dl_reclu', '📥 Descargar Excel Reclutamiento', TODOS, accion='dl_reclu'),
 
     # 8. Subir Papelería (Ingresar N°Emp o TEMP-N°)
-    Nodo('subir_papeleria', '📎 Subir Papelería', ADMIN, accion='subir_papeleria'),
+    Nodo('subir_papeleria', '📎 Subir Papelería', TODOS, accion='subir_papeleria'),
 )}
 
 
