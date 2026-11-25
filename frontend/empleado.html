@@ -594,8 +594,9 @@
 
         .incidencia-modal input[type="date"]::-webkit-calendar-picker-indicator,
         .incidencia-modal input[type="time"]::-webkit-calendar-picker-indicator {
-            filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg);
+            filter: brightness(0) invert(1);
             opacity: 1;
+            cursor: pointer;
         }
 
         .incidencia-modal form input[id$="-dias"] {
@@ -1274,11 +1275,15 @@
                     </div>
                 </div>
                 <div class="photo-actions">
-                    <label class="file-label" for="foto-input">SUBIR FOTO</label>
-                    <input id="foto-input" class="file-input" type="file" accept="image/*" />
+                    <div style="width:100%;">
+                        <div class="muted" style="margin-bottom:6px; text-align:left;">Fotografía</div>
+                        <label class="file-label" for="foto-input">SUBIR</label>
+                        <input id="foto-input" class="file-input" type="file" accept="image/*" />
+                    </div>
                     <div id="evaluacion-container" style="width:100%; margin-top:10px;">
+                        <div class="muted" style="margin-bottom:6px; text-align:left;">Evaluación de inducción</div>
                         <div id="evaluacion-subir-wrap">
-                            <label class="file-label" for="file-evaluacion" style="cursor:pointer; margin:0;">SUBIR EVALUACIÓN</label>
+                            <label class="file-label" for="file-evaluacion" style="cursor:pointer; margin:0;">SUBIR</label>
                             <input id="file-evaluacion" class="doc-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
                         </div>
                         <div id="evaluacion-botones-wrap" style="display:none; width:100%; gap:8px;">
