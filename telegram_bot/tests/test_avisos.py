@@ -85,15 +85,13 @@ async def test_comando_y_botones():
     chat = Chat()
     await avisos.cmd_avisos(texto(chat, '/avisos'), ctx)
     pantalla, teclado = chat.ultimo()
-    assert 'encendidos, a las 8:00' in pantalla and '✅ 8:00' in chat.botones()
-    await avisos.al_boton(pulsar(chat, 'av:h9'), ctx)
-    assert backend.cambios[-1] == {'hora': 9} and 'a las 9:00' in chat.ultimo()[0]
+    assert 'encendidos (lunes a sábado a las 6:30 a.m., hora de México).' in pantalla
+    assert '8:00' not in chat.botones()
     await avisos.al_boton(pulsar(chat, 'av:off'), ctx)
     assert backend.cambios[-1] == {'activos': False} and 'apagados' in chat.ultimo()[0]
-    assert '9:00' not in chat.botones()
     await avisos.al_boton(pulsar(chat, 'av:ver'), ctx)
     assert 'Hoy no hay avisos' in chat.ultimo()[0]
-    await avisos.al_boton(pulsar(chat, 'av:h3'), ctx)            # hora fuera de la lista: se ignora
+    await avisos.al_boton(pulsar(chat, 'av:h9'), ctx)            # botones de hora eliminados: se ignora
     assert backend.cambios[-1] == {'activos': False}
 
 

@@ -26,10 +26,9 @@ from bot.menu.formularios import TITULOS_INCIDENCIA
 logger = logging.getLogger(__name__)
 
 INTERVALO = 60
-HORAS = (6, 7, 8, 9, 10, 12, 14, 16, 18)
 MAX_POR_SECCION = 10
 DIAS = ('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo')
-PIE = 'Para cambiar la hora o apagar estos avisos: /avisos'
+PIE = 'Para apagar o ver estos avisos: /avisos'
 
 
 def _fecha(valor: str, hoy: date) -> str:
@@ -163,15 +162,12 @@ async def detener(app: Application) -> None:
 # --- /avisos -----------------------------------------------------------------------
 
 def _pantalla(preferencias: dict[str, Any]) -> tuple[str, InlineKeyboardMarkup]:
-    activos, hora = preferencias.get('activos'), int(preferencias.get('hora') or 8)
-    texto = ('🔔 Avisos diarios: ' + (f'encendidos, a las {hora}:00 (hora de México).' if activos else 'apagados.')
+    activos = preferencias.get('activos')
+    texto = ('🔔 Avisos diarios: ' + ('encendidos (lunes a sábado a las 6:30 a.m., hora de México).' if activos else 'apagados.')
              + '\n\nTe aviso de contratos por vencer, quién regresa o empieza una incidencia y candidatos sin '
                'asignar, según los permisos de tu cuenta. Si un día no hay nada, no te escribo.')
     filas = [[boton('🔕 Apagar' if activos else '🔔 Encender', 'av:off' if activos else 'av:on'),
               boton('👀 Ver los de hoy', 'av:ver')]]
-    if activos:
-        horas = [boton(('✅ ' if h == hora else '') + f'{h}:00', f'av:h{h}') for h in HORAS]
-        filas += [horas[i:i + 3] for i in range(0, len(horas), 3)]
     return texto, InlineKeyboardMarkup(filas)
 
 
@@ -198,8 +194,6 @@ async def al_boton(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
         if accion in ('on', 'off'):
             preferencias = await backend.avisos_preferencias(telegram_id, activos=accion == 'on')
-        elif accion.startswith('h') and accion[1:].isdigit() and int(accion[1:]) in HORAS:
-            preferencias = await backend.avisos_preferencias(telegram_id, hora=int(accion[1:]))
         else:
             return
     except ErrorBackend as error:

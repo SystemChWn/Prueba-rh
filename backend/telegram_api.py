@@ -457,10 +457,11 @@ def crear_blueprint(get_db_connection, normalizar_permisos, asegurar_esquema):
                     """UPDATE telegram_vinculos
                        SET avisos_ultimo = (now() AT TIME ZONE %s)::date
                        WHERE avisos_activos
-                         AND avisos_hora <= EXTRACT(HOUR FROM now() AT TIME ZONE %s)
+                         AND EXTRACT(ISODOW FROM now() AT TIME ZONE %s) BETWEEN 1 AND 6
+                         AND (now() AT TIME ZONE %s)::time >= TIME '06:30:00'
                          AND (avisos_ultimo IS NULL OR avisos_ultimo < (now() AT TIME ZONE %s)::date)
                        RETURNING telegram_id""",
-                    (ZONA_PRESUPUESTO,) * 3,
+                    (ZONA_PRESUPUESTO,) * 4,
                 )
                 telegram_ids = [fila[0] for fila in cur.fetchall()]
             conn.commit()
