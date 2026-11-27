@@ -110,15 +110,7 @@ function start(client) {
         text: message.body
       });
 
-      if (respuestaFlask.data && respuestaFlask.data.image_base64) {
-        await client.sendImageFromBase64(
-          message.from,
-          `data:image/png;base64,${respuestaFlask.data.image_base64}`,
-          'permiso_qr.png',
-          respuestaFlask.data.message || ''
-        );
-        console.log(`Imagen QR enviada a ${message.from}`);
-      } else if (respuestaFlask.data && respuestaFlask.data.message) {
+      if (respuestaFlask.data && respuestaFlask.data.message) {
         await client.sendText(message.from, respuestaFlask.data.message);
         console.log(`Respuesta enviada a ${message.from}`);
       }
