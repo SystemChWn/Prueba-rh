@@ -112,7 +112,13 @@ async def responder(update: Update, texto: str, reply_markup=None) -> None:
 async def mostrar(update: Update, texto: str, reply_markup=None, *, editar: bool = False) -> None:
     """Edita el mensaje del botón pulsado (menú más limpio) o responde uno nuevo."""
     consulta = update.callback_query
-    if editar and consulta is not None and len(texto) <= MAX_MENSAJE:
+    if (
+        editar
+        and consulta is not None
+        and consulta.message is not None
+        and consulta.message.text is not None
+        and len(texto) <= MAX_MENSAJE
+    ):
         await consulta.edit_message_text(texto, reply_markup=reply_markup)
         return
     await responder(update, texto, reply_markup)

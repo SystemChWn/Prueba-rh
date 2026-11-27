@@ -1535,7 +1535,6 @@ ACCIONES = {
     'seg_salidas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'salidas'),
     'seg_entradas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'entradas'),
     'seg_suspendidos': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'suspendidos'),
-    'seg_bajas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'bajas'),
     'seg_escanear_qr': lambda u, _c, _e: menu_seguridad.iniciar_escaner_qr(u),
 
     # Compatibilidad con acciones base

@@ -23,7 +23,7 @@ class Nodo:
 
 
 NODOS: dict[str, Nodo] = {n.clave: n for n in (
-    Nodo('raiz', 'Menú principal', hijos=(
+    Nodo('raiz', 'Menú principal', permisos=TODOS | SEGURIDAD, hijos=(
         'crear_evento',
         'asignar_acceso',
         'ingresos_pendientes',
@@ -37,7 +37,6 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
         'seg_salidas',
         'seg_entradas',
         'seg_suspendidos',
-        'seg_bajas',
         'seg_escanear_qr',
     )),
 
@@ -89,7 +88,6 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     Nodo('seg_salidas', '🚪 Lista de Salidas', SEGURIDAD, accion='seg_salidas'),
     Nodo('seg_entradas', '🚪 Lista de Entradas', SEGURIDAD, accion='seg_entradas'),
     Nodo('seg_suspendidos', '⛔ Lista de Suspendidos', SEGURIDAD, accion='seg_suspendidos'),
-    Nodo('seg_bajas', '❌ Lista de Bajas Confirmadas', SEGURIDAD, accion='seg_bajas'),
     Nodo('seg_escanear_qr', '📷 Escanear QR', SEGURIDAD, accion='seg_escanear_qr'),
 )}
 
