@@ -62,7 +62,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -75,7 +76,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -88,7 +90,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -101,7 +104,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -114,7 +118,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -127,7 +132,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {
@@ -354,7 +360,8 @@
       "permisos": [
         "admin",
         "reclutamiento",
-        "notificaciones"
+        "notificaciones",
+        "seguridad"
       ]
     },
     {

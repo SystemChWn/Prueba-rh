@@ -23,6 +23,7 @@ PREFIJOS_OCULTOS = (
     '/api/documentos',      # también /api/documentos-db
     '/api/health',
     '/api/registro-induccion',
+    '/api/seguridad',
     '/admin',
     '/static',
 )
@@ -33,8 +34,11 @@ RUTAS_OCULTAS = {
     ('POST', '/api/guardar-encuesta'),        # idem
     ('POST', '/api/escanear-documento'),      # manda imágenes a OpenAI
     ('GET', '/api/exportar-excel'),           # plantilla de ejemplo, sin datos
+    ('GET', '/api/exportar-permisos'),        # descarga Excel de permisos
     ('GET', '/api/ingresos-hoy'),             # usado por bot para formatos del día
     ('GET', '/api/exportar-ingresos-dia'),    # descarga de Excel de ingresos del día
+    ('PUT', '/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>'),
+    ('POST', '/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>/reenviar-qr'),
     ('GET', '/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>/archivo'),  # binario personal
     ('POST', '/api/guardar-ingresos'),        # lote; el bot usa guardar-ingreso
 }
@@ -154,8 +158,9 @@ def permisos_de(endpoint: str, metodo: str) -> list[str]:
     return {
         auth.ADMIN: ['admin'],
         auth.ADMIN_O_RECLUTAMIENTO: ['admin', 'reclutamiento'],
-        auth.SESION: ['admin', 'reclutamiento', 'notificaciones'],
-        auth.PUBLICO: ['admin', 'reclutamiento', 'notificaciones'],
+        auth.ADMIN_O_SEGURIDAD: ['admin', 'seguridad'],
+        auth.SESION: ['admin', 'reclutamiento', 'notificaciones', 'seguridad'],
+        auth.PUBLICO: ['admin', 'reclutamiento', 'notificaciones', 'seguridad'],
     }[nivel]
 
 

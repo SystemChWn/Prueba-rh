@@ -9,7 +9,7 @@ from functools import wraps
 from urllib.parse import urlsplit
 import requests
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import psycopg2
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -26,6 +26,7 @@ import telegram_api
 import avisos
 import tareas
 import memoria
+import seguridad_api
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
@@ -872,6 +873,16 @@ def asegurar_tabla_incidencias(cur):
         )
         """
     )
+    for col_sql in (
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS folio VARCHAR(80)",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS qr_vence_at TIMESTAMPTZ",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS confirmado BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS confirmado_at TIMESTAMPTZ",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS confirmado_por VARCHAR(100)",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS qr_enviado BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE incidencias_empleado ADD COLUMN IF NOT EXISTS tipo_incapacidad VARCHAR(100)",
+    ):
+        cur.execute(col_sql)
     cur.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_incidencias_empleado_registro_created
@@ -882,7 +893,7 @@ def asegurar_tabla_incidencias(cur):
 
 def serializar_incidencia(row):
     hora = row[7]
-    return {
+    res = {
         'id': row[0],
         'type': row[1],
         'motivo': row[2] or '',
@@ -900,6 +911,17 @@ def serializar_incidencia(row):
         'archivo_nombre': row[10],
         'createdAt': row[11].isoformat() if row[11] else None,
     }
+    if len(row) > 12:
+        res.update({
+            'folio': row[12] or '',
+            'qr_vence_at': row[13].isoformat() if row[13] else None,
+            'confirmado': bool(row[14]),
+            'confirmado_at': row[15].isoformat() if row[15] else None,
+            'confirmado_por': row[16] or '',
+            'qr_enviado': bool(row[17]),
+            'tipo_incapacidad': row[18] or '',
+        })
+    return res
 
 
 
@@ -916,7 +938,9 @@ def incidencias_empleado(registro_id):
                         """
                         SELECT id, tipo, motivo, fecha_inicio, fecha_reingreso,
                                dias, opcion, hora, motivos, otro_motivo, archivo_nombre,
-                               created_at
+                               created_at, folio, qr_vence_at, COALESCE(confirmado, FALSE),
+                               confirmado_at, confirmado_por, COALESCE(qr_enviado, FALSE),
+                               tipo_incapacidad
                         FROM incidencias_empleado
                         WHERE registro_id = %s
                         ORDER BY created_at ASC, id ASC
@@ -1011,6 +1035,8 @@ def incidencias_empleado(registro_id):
         return jsonify({'error': str(error)}), 400
 
     detalles['dias'] = dias
+    enviar_qr = str(datos.get('enviar_qr') or '').strip().lower() in {'1', 'true', 'si', 'yes'}
+    tipo_incapacidad = str(datos.get('tipo_incapacidad') or detalles.get('tipo_incapacidad') or '').strip()
     archivo = request.files.get('archivo')
     archivo_nombre = archivo_mime = archivo_contenido = None
     if archivo and archivo.filename:
@@ -1030,12 +1056,16 @@ def incidencias_empleado(registro_id):
         archivo_mime = tipos_archivo[archivo_extension]
 
     try:
+        qr_imagen_base64 = None
+        whatsapp_encolado = False
+        sin_telefono = False
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 asegurar_tabla_incidencias(cur)
+                seguridad_api.asegurar_tabla_whatsapp_cola(cur)
                 cur.execute(
                     """
-                    SELECT ip.no_empleado
+                    SELECT ip.no_empleado, r.nombre_completo, r.tel_movil, r.fotografia_base64
                     FROM registro AS r
                     LEFT JOIN ingresos_puesto AS ip ON ip.registro_id = r.id
                     WHERE r.id = %s
@@ -1048,20 +1078,34 @@ def incidencias_empleado(registro_id):
                 if not empleado:
                     return jsonify({'error': 'No se encontró al empleado.'}), 404
                 no_empleado = empleado[0]
+                nombre_emp = empleado[1] if len(empleado) > 1 else 'Empleado'
+                tel_movil = empleado[2] if len(empleado) > 2 else ''
+                foto_b64 = empleado[3] if len(empleado) > 3 else None
                 if not no_empleado:
                     return jsonify({'error': 'El empleado no tiene un número de empleado registrado.'}), 409
+
+                folio = None
+                qr_vence_at = None
+                qr_enviado = False
+                if tipo in {'suspension', 'entrada-salida'}:
+                    folio = seguridad_api.generar_folio(cur, nombre_emp, str(no_empleado))
+                    qr_vence_at = datetime.now(timezone.utc) + timedelta(hours=24)
+                    qr_enviado = enviar_qr
 
                 cur.execute(
                     """
                     INSERT INTO incidencias_empleado (
                         registro_id, no_empleado, tipo, motivo, fecha_inicio, fecha_reingreso,
                         dias, opcion, hora, motivos, otro_motivo, archivo_nombre,
-                        archivo_mime, archivo_contenido
+                        archivo_mime, archivo_contenido, folio, qr_vence_at, qr_enviado,
+                        tipo_incapacidad
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, tipo, motivo, fecha_inicio, fecha_reingreso,
                               dias, opcion, hora, motivos, otro_motivo, archivo_nombre,
-                              created_at
+                              created_at, folio, qr_vence_at, COALESCE(confirmado, FALSE),
+                              confirmado_at, confirmado_por, COALESCE(qr_enviado, FALSE),
+                              tipo_incapacidad
                     """,
                     (
                         registro_id,
@@ -1078,14 +1122,120 @@ def incidencias_empleado(registro_id):
                         archivo_nombre,
                         archivo_mime,
                         archivo_contenido,
+                        folio,
+                        qr_vence_at,
+                        qr_enviado,
+                        tipo_incapacidad or None,
+                    ),
+                )
+                incidencia = serializar_incidencia(cur.fetchone())
+                sin_telefono = not bool(re.sub(r'\D', '', str(tel_movil or '')))
+
+                if tipo in {'indisciplina', 'carta-suspension', 'vacaciones', 'incapacidad'}:
+                    msg_wpp = seguridad_api.formatear_mensaje_whatsapp(tipo, nombre_emp, incidencia)
+                    cola_id = seguridad_api.encolar_whatsapp(cur, tel_movil, msg_wpp, incidencia_id=incidencia['id'])
+                    whatsapp_encolado = bool(cola_id)
+                elif tipo in {'suspension', 'entrada-salida'} and enviar_qr:
+                    tipo_label = seguridad_api._etiqueta_tipo_permiso(tipo, opcion)
+                    fecha_txt = seguridad_api._fecha_espanol(seguridad_api.ahora_mx())
+                    png = seguridad_api.generar_imagen_qr_permiso(
+                        nombre_emp, str(no_empleado), tipo_label, fecha_txt, folio, foto_b64
+                    )
+                    qr_imagen_base64 = base64.b64encode(png).decode('ascii')
+                    msg_wpp = seguridad_api.formatear_mensaje_whatsapp(tipo, nombre_emp, incidencia)
+                    cola_id = seguridad_api.encolar_whatsapp(
+                        cur, tel_movil, msg_wpp, imagen_png=png, incidencia_id=incidencia['id']
+                    )
+                    whatsapp_encolado = bool(cola_id)
+            conn.commit()
+        return jsonify({
+            'incidencia': incidencia,
+            'whatsapp_encolado': whatsapp_encolado,
+            'sin_telefono': sin_telefono,
+            'qr_imagen_base64': qr_imagen_base64,
+        }), 201
+    except psycopg2.Error as error:
+        print(f"Error al guardar incidencia del empleado {registro_id}: {error}")
+        return jsonify({'error': 'No se pudo guardar la incidencia.'}), 500
+
+
+@app.route('/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>', methods=['PUT'])
+def actualizar_incidencia_empleado(registro_id, incidencia_id):
+    datos = request.get_json(silent=True) or {}
+    if not isinstance(datos, dict):
+        return jsonify({'error': 'Datos no válidos.'}), 400
+    motivo = str(datos.get('motivo') or '').strip()
+    fecha_inicio_str = str(datos.get('fecha_inicio') or '').strip()
+    fecha_reingreso_str = str(datos.get('fecha_reingreso') or '').strip()
+    hora_str = str(datos.get('hora') or '').strip()
+    opcion_str = str(datos.get('opcion') or '').strip()
+    tipo_incapacidad = str(datos.get('tipo_incapacidad') or '').strip()
+    otro_motivo = str(datos.get('otro_motivo') or '').strip()
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else None
+        fecha_reingreso = datetime.strptime(fecha_reingreso_str, '%Y-%m-%d').date() if fecha_reingreso_str else None
+        if hora_str:
+            datetime.strptime(hora_str, '%H:%M')
+    except ValueError:
+        return jsonify({'error': 'Formato de fecha u hora no válido.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                asegurar_tabla_incidencias(cur)
+                cur.execute(
+                    "SELECT tipo, dias FROM incidencias_empleado WHERE id = %s AND registro_id = %s LIMIT 1",
+                    (incidencia_id, registro_id),
+                )
+                actual = cur.fetchone()
+                if not actual:
+                    return jsonify({'error': 'La incidencia no existe.'}), 404
+                tipo_actual, dias_actual = actual
+                if fecha_inicio and fecha_reingreso and tipo_actual in {'suspension', 'carta-suspension', 'vacaciones', 'incapacidad'}:
+                    if fecha_reingreso < fecha_inicio:
+                        return jsonify({'error': 'La fecha final no puede ser anterior a la inicial.'}), 400
+                    dias_actual = (fecha_reingreso - fecha_inicio).days + 1
+                    if tipo_actual in {'suspension', 'carta-suspension'}:
+                        dias_actual -= 1
+                    dias_actual = max(1, min(dias_actual, 999))
+
+                cur.execute(
+                    """
+                    UPDATE incidencias_empleado
+                    SET motivo = COALESCE(NULLIF(%s, ''), motivo),
+                        fecha_inicio = COALESCE(%s, fecha_inicio),
+                        fecha_reingreso = COALESCE(%s, fecha_reingreso),
+                        dias = %s,
+                        hora = COALESCE(%s, hora),
+                        opcion = COALESCE(NULLIF(%s, ''), opcion),
+                        otro_motivo = %s,
+                        tipo_incapacidad = COALESCE(NULLIF(%s, ''), tipo_incapacidad)
+                    WHERE id = %s AND registro_id = %s
+                    RETURNING id, tipo, motivo, fecha_inicio, fecha_reingreso,
+                              dias, opcion, hora, motivos, otro_motivo, archivo_nombre,
+                              created_at, folio, qr_vence_at, COALESCE(confirmado, FALSE),
+                              confirmado_at, confirmado_por, COALESCE(qr_enviado, FALSE),
+                              tipo_incapacidad
+                    """,
+                    (
+                        motivo,
+                        fecha_inicio,
+                        fecha_reingreso,
+                        dias_actual,
+                        hora_str or None,
+                        opcion_str,
+                        otro_motivo or None,
+                        tipo_incapacidad,
+                        incidencia_id,
+                        registro_id,
                     ),
                 )
                 incidencia = serializar_incidencia(cur.fetchone())
             conn.commit()
-        return jsonify({'incidencia': incidencia}), 201
+        return jsonify({'incidencia': incidencia}), 200
     except psycopg2.Error as error:
-        print(f"Error al guardar incidencia del empleado {registro_id}: {error}")
-        return jsonify({'error': 'No se pudo guardar la incidencia.'}), 500
+        print(f"Error al actualizar incidencia {incidencia_id}: {error}")
+        return jsonify({'error': 'No se pudo actualizar la incidencia.'}), 500
 
 
 @app.route('/api/empleados/<int:registro_id>/incidencias/<int:incidencia_id>', methods=['DELETE'])
@@ -1468,7 +1618,7 @@ def asegurar_tabla_usuarios_acceso(cur):
         """
     )
 def normalizar_permisos(permisos):
-    permitidos = {'admin', 'reclutamiento', 'notificaciones'}
+    permitidos = {'admin', 'reclutamiento', 'notificaciones', 'seguridad'}
     if not isinstance(permisos, list):
         return []
     permisos_normalizados = [
@@ -4473,6 +4623,7 @@ app.register_blueprint(telegram_api.crear_blueprint(
 app.register_blueprint(avisos.crear_blueprint(lambda: get_db_connection()))
 app.register_blueprint(tareas.crear_blueprint(lambda: get_db_connection(), asegurar_esquema_sesion))
 app.register_blueprint(memoria.crear_blueprint(lambda: get_db_connection(), asegurar_esquema_sesion))
+app.register_blueprint(seguridad_api.crear_blueprint(lambda: get_db_connection()))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))

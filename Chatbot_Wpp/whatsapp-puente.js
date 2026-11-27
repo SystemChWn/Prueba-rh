@@ -33,6 +33,42 @@ wppconnect
 function start(client) {
   console.log('¡WhatsApp conectado correctamente y listo para recibir mensajes!');
 
+  let procesandoCola = false;
+  setInterval(async () => {
+    if (procesandoCola) return;
+    procesandoCola = true;
+    try {
+      const resp = await axios.get('http://localhost:5002/cola-whatsapp', { timeout: 5000 });
+      const items = (resp.data && resp.data.items) || [];
+      for (const item of items) {
+        try {
+          const destino = item.telefono.includes('@') ? item.telefono : `${item.telefono}@c.us`;
+          if (item.imagen_base64) {
+            await client.sendImageFromBase64(
+              destino,
+              `data:image/png;base64,${item.imagen_base64}`,
+              'permiso_qr.png',
+              item.mensaje || ''
+            );
+          } else {
+            await client.sendText(destino, item.mensaje || '');
+          }
+          await axios.post(`http://localhost:5002/cola-whatsapp/${item.id}/resultado`, { ok: true });
+        } catch (errEnvio) {
+          console.error(`Error enviando mensaje cola #${item.id}:`, errEnvio.message);
+          await axios.post(`http://localhost:5002/cola-whatsapp/${item.id}/resultado`, {
+            ok: false,
+            error: errEnvio.message || 'Error al enviar'
+          }).catch(() => {});
+        }
+      }
+    } catch (_) {
+      // Silencioso si Flask aún está iniciando
+    } finally {
+      procesandoCola = false;
+    }
+  }, 4000);
+
   client.onMessage(async (message) => {
     if (message.isGroupMsg || message.fromMe) {
       return;

@@ -332,5 +332,90 @@ def mensaje_menu_colaborador(estado):
   )
 
 
+def asegurar_tabla_whatsapp_cola(cur):
+  cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS whatsapp_cola (
+      id BIGSERIAL PRIMARY KEY,
+      telefono VARCHAR(40) NOT NULL,
+      mensaje TEXT NOT NULL,
+      imagen_base64 TEXT,
+      incidencia_id BIGINT,
+      estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+      intentos SMALLINT NOT NULL DEFAULT 0,
+      error TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      enviado_at TIMESTAMPTZ
+    )
+    """
+  )
+
+
+@app.route("/cola-whatsapp", methods=["GET"])
+def obtener_cola_whatsapp():
+  try:
+    with conectar_db() as conn:
+      with conn.cursor() as cur:
+        asegurar_tabla_whatsapp_cola(cur)
+        cur.execute(
+          """
+          WITH pendientes AS (
+            SELECT id
+            FROM whatsapp_cola
+            WHERE estado = 'pendiente'
+            ORDER BY id ASC
+            LIMIT 10
+            FOR UPDATE SKIP LOCKED
+          )
+          UPDATE whatsapp_cola AS c
+          SET estado = 'procesando',
+              intentos = c.intentos + 1
+          FROM pendientes
+          WHERE c.id = pendientes.id
+          RETURNING c.id, c.telefono, c.mensaje, c.imagen_base64
+          """
+        )
+        items = [
+          {
+            "id": row[0],
+            "telefono": row[1],
+            "mensaje": row[2],
+            "imagen_base64": row[3] or None,
+          }
+          for row in cur.fetchall()
+        ]
+      conn.commit()
+    return jsonify({"items": items}), 200
+  except Exception as error:
+    logger.exception("Error consultando cola_whatsapp")
+    return jsonify({"items": [], "error": str(error)}), 500
+
+
+@app.route("/cola-whatsapp/<int:item_id>/resultado", methods=["POST"])
+def resultado_cola_whatsapp(item_id):
+  datos = request.get_json(silent=True) or {}
+  ok = bool(datos.get("ok"))
+  error_msg = str(datos.get("error") or "")[:500]
+  try:
+    with conectar_db() as conn:
+      with conn.cursor() as cur:
+        asegurar_tabla_whatsapp_cola(cur)
+        if ok:
+          cur.execute(
+            "UPDATE whatsapp_cola SET estado = 'enviado', enviado_at = now() WHERE id = %s",
+            (item_id,),
+          )
+        else:
+          cur.execute(
+            "UPDATE whatsapp_cola SET estado = 'error', error = %s WHERE id = %s",
+            (error_msg, item_id),
+          )
+      conn.commit()
+    return jsonify({"ok": True}), 200
+  except Exception as error:
+    logger.exception("Error actualizando cola_whatsapp")
+    return jsonify({"ok": False, "error": str(error)}), 500
+
+
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))

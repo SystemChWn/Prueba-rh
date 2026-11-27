@@ -14,6 +14,7 @@ function obtenerNombreAsignacion(permisos) {
         admin: 'Admin',
         reclutamiento: 'Reclutamiento',
         notificaciones: 'Notificaciones',
+        seguridad: 'Seguridad (Solo Telegram)',
     };
     return permisos.map((permiso) => nombres[permiso] || permiso).join(', ');
 }
@@ -75,8 +76,58 @@ function crearCeldaTelegram(usuario) {
     if (vinculo) {
         cell.append(' ');
         cell.appendChild(crearBotonAcceso('Revocar', 'revoke-telegram', 'delete-access-button'));
+    } else if (Array.isArray(usuario.permisos) && usuario.permisos.includes('seguridad')) {
+        cell.append(' ');
+        cell.appendChild(crearBotonAcceso('Código Telegram', 'generate-telegram'));
     }
     return cell;
+}
+
+function mostrarModalCodigoTelegram(nombreUsuario, datos) {
+    const prev = document.getElementById('modal-codigo-seguridad');
+    if (prev) prev.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-codigo-seguridad';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10050;padding:16px;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#1e1e1e;color:#fff;border:1px solid #444;border-radius:10px;padding:24px;width:min(440px,100%);box-shadow:0 12px 32px rgba(0,0,0,0.6);';
+    const enlaceHtml = datos.enlace
+        ? `<p style="word-break:break-all;margin:8px 0;"><a href="${datos.enlace}" target="_blank" rel="noopener" style="color:#4da3ff;">${datos.enlace}</a></p>`
+        : '';
+    box.innerHTML = `
+        <h3 style="margin:0 0 10px;">Código de Telegram — ${nombreUsuario}</h3>
+        <p style="color:#ccc;font-size:0.92rem;margin:6px 0;">Este acceso es exclusivo de Telegram. Comparte este código con el guardia de seguridad para vincular su bot (<code>/vincular ${datos.codigo}</code>):</p>
+        <div style="font-family:ui-monospace,monospace;font-size:2rem;letter-spacing:4px;text-align:center;background:#111;border:1px dashed #555;border-radius:8px;padding:12px;margin:14px 0;color:#55c878;">${datos.codigo}</div>
+        ${enlaceHtml}
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" id="btn-copiar-cod-seg" style="padding:8px 14px;border-radius:6px;border:1px solid #007bff;background:#007bff;color:#fff;font-weight:600;cursor:pointer;">Copiar código</button>
+            <button type="button" id="btn-cerrar-cod-seg" style="padding:8px 14px;border-radius:6px;border:1px solid #555;background:#333;color:#fff;font-weight:600;cursor:pointer;">Cerrar</button>
+        </div>
+    `;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    overlay.querySelector('#btn-cerrar-cod-seg').onclick = () => overlay.remove();
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    overlay.querySelector('#btn-copiar-cod-seg').onclick = () => {
+        navigator.clipboard?.writeText(datos.codigo).catch(() => {});
+        overlay.querySelector('#btn-copiar-cod-seg').textContent = '¡Copiado!';
+    };
+}
+
+async function generarCodigoTelegramUsuario(usuarioId, nombreUsuario) {
+    try {
+        const resp = await fetch('/api/telegram/codigo', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario_id: usuarioId }),
+        });
+        const datos = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(datos.error || `Error ${resp.status}`);
+        mostrarModalCodigoTelegram(nombreUsuario, datos);
+    } catch (error) {
+        mostrarMensajeAcceso('access-users-feedback', error.message, 'error');
+    }
 }
 
 async function cargarVinculosTelegram() {
@@ -209,7 +260,7 @@ async function guardarNuevoUsuario(event) {
             return;
         }
 
-        await window.AccessControlUsers.create({
+        const creado = await window.AccessControlUsers.create({
             usuario: document.getElementById('acceso-usuario').value.trim(),
             password,
             permisos: [permission],
@@ -218,6 +269,9 @@ async function guardarNuevoUsuario(event) {
         await cargarUsuariosRegistrados();
         mostrarMensajeAcceso(feedbackId, 'El acceso se guardó correctamente.', 'success');
         mostrarMensajeAcceso('access-users-feedback', '');
+        if (permission === 'seguridad' && creado && creado.id) {
+            await generarCodigoTelegramUsuario(creado.id, creado.usuario);
+        }
     } catch (error) {
         mostrarMensajeAcceso(feedbackId, error.message, 'error');
     }
@@ -269,6 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'revoke-telegram':
                 revocarTelegram(row.dataset.usuarioId);
                 break;
+            case 'generate-telegram': {
+                const usr = usuariosRegistrados.find((item) => String(item.id) === String(row.dataset.usuarioId));
+                if (usr) generarCodigoTelegramUsuario(usr.id, usr.usuario);
+                break;
+            }
             default:
                 break;
         }

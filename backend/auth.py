@@ -32,6 +32,7 @@ PUBLICO = 'publico'
 SESION = 'sesion'  # cualquier usuario con sesión
 ADMIN = frozenset({'admin'})
 ADMIN_O_RECLUTAMIENTO = frozenset({'admin', 'reclutamiento'})
+ADMIN_O_SEGURIDAD = frozenset({'admin', 'seguridad'})
 
 # endpoint -> permiso, o {metodo: permiso} cuando cambia por método.
 PERMISOS_POR_ENDPOINT = {
@@ -107,8 +108,15 @@ PERMISOS_POR_ENDPOINT = {
     'exportar_excel': ADMIN,
     'eliminar_empleado_completo': ADMIN,
     'incidencias_empleado': ADMIN,
+    'actualizar_incidencia_empleado': ADMIN,
     'eliminar_incidencia_empleado': ADMIN,
     'descargar_archivo_incidencia': ADMIN,
+    'seguridad.reenviar_qr_incidencia': ADMIN,
+    'seguridad.exportar_permisos': ADMIN,
+    'seguridad.listar_seguridad': ADMIN_O_SEGURIDAD,
+    'seguridad.foto_empleado_seguridad': ADMIN_O_SEGURIDAD,
+    'seguridad.validar_qr_seguridad': ADMIN_O_SEGURIDAD,
+    'seguridad.confirmar_permiso_seguridad': ADMIN_O_SEGURIDAD,
     'obtener_pendientes': ADMIN_O_RECLUTAMIENTO,
     'eliminar_pendiente': ADMIN,
     'guardar_ingreso': ADMIN,

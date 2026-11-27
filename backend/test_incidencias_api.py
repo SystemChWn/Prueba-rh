@@ -123,7 +123,7 @@ class IncidenciasApiTests(unittest.TestCase):
             date(2026, 11, 1),
             date(2026, 11, 3),
         ))
-        self.assertEqual(len(self.cursor.inserted), 14)
+        self.assertEqual(len(self.cursor.inserted), 18)
         self.assertIn('dias, opcion, hora, motivos, otro_motivo, archivo_nombre', self.cursor.insert_sql)
         self.assertEqual(self.cursor.inserted[6], 3)
 

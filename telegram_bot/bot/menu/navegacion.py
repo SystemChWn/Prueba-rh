@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 TODOS = frozenset({'admin', 'reclutamiento'})
 ADMIN = frozenset({'admin'})
+SEGURIDAD = frozenset({'seguridad'})
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,11 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
         'generar_registro',
         'team_reclu',
         'subir_papeleria',
+        'seg_salidas',
+        'seg_entradas',
+        'seg_suspendidos',
+        'seg_bajas',
+        'seg_escanear_qr',
     )),
 
     # 1. Crear Nuevo Evento
@@ -76,6 +82,13 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
 
     # 8. Subir Papelería (Ingresar N°Emp o TEMP-N°)
     Nodo('subir_papeleria', '📎 Subir Papelería', TODOS, accion='subir_papeleria'),
+
+    # 9. Acceso Seguridad (exclusivo rol seguridad)
+    Nodo('seg_salidas', '🚪 Lista de Salidas', SEGURIDAD, accion='seg_salidas'),
+    Nodo('seg_entradas', '🚪 Lista de Entradas', SEGURIDAD, accion='seg_entradas'),
+    Nodo('seg_suspendidos', '⛔ Lista de Suspendidos', SEGURIDAD, accion='seg_suspendidos'),
+    Nodo('seg_bajas', '❌ Lista de Bajas Confirmadas', SEGURIDAD, accion='seg_bajas'),
+    Nodo('seg_escanear_qr', '📷 Escanear QR', SEGURIDAD, accion='seg_escanear_qr'),
 )}
 
 

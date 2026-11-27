@@ -4,7 +4,7 @@
     const legacyUsersStorageKey = 'cwAccessUsers';
 
     function normalizePermissions(permissions) {
-        const allowed = new Set(['admin', 'reclutamiento', 'notificaciones']);
+        const allowed = new Set(['admin', 'reclutamiento', 'notificaciones', 'seguridad']);
         if (!Array.isArray(permissions)) return [];
         return [...new Set(permissions
             .filter((permission) => typeof permission === 'string')

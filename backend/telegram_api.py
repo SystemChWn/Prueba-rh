@@ -182,6 +182,13 @@ def crear_blueprint(get_db_connection, normalizar_permisos, asegurar_esquema):
         usuario = g.usuario
         if not usuario or usuario['canal'] != auth.CANAL_WEB:
             return jsonify({'error': 'Genera el código desde el panel.'}), 403
+        datos = request.get_json(silent=True) or {}
+        target_usuario_id = usuario['id']
+        if datos.get('usuario_id') is not None and 'admin' in usuario.get('permisos', []):
+            try:
+                target_usuario_id = int(datos['usuario_id'])
+            except (TypeError, ValueError):
+                return jsonify({'error': 'usuario_id no es válido.'}), 400
         codigo = generar_codigo()
         expira = datetime.now(timezone.utc) + timedelta(minutes=minutos_codigo())
         with get_db_connection() as conn:
@@ -189,11 +196,11 @@ def crear_blueprint(get_db_connection, normalizar_permisos, asegurar_esquema):
                 asegurar_esquema(cur)
                 cur.execute(
                     'DELETE FROM telegram_codigos WHERE usuario_id = %s AND usado_en IS NULL',
-                    (usuario['id'],),
+                    (target_usuario_id,),
                 )
                 cur.execute(
                     'INSERT INTO telegram_codigos (codigo_hash, usuario_id, expira_en) VALUES (%s, %s, %s)',
-                    (hash_codigo(codigo), usuario['id'], expira),
+                    (hash_codigo(codigo), target_usuario_id, expira),
                 )
             conn.commit()
         return jsonify({

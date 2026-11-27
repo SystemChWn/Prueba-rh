@@ -35,7 +35,7 @@ from bot.interfaz import (
     teclado_confirmar,
     texto_error,
 )
-from bot import documentos, registro_candidato
+from bot import documentos, menu_seguridad, registro_candidato
 from bot.menu import formularios
 from bot.menu.asistente import Asistente
 from bot.menu.navegacion import NODOS, hijos_visibles, padre_de, puede
@@ -1523,6 +1523,13 @@ ACCIONES = {
 
     # 11. Subir Papelería
     'subir_papeleria': accion_subir_papeleria,
+
+    # 12. Seguridad
+    'seg_salidas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'salidas'),
+    'seg_entradas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'entradas'),
+    'seg_suspendidos': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'suspendidos'),
+    'seg_bajas': lambda u, c, _e: menu_seguridad.mostrar_lista(u, _backend(c), 'bajas'),
+    'seg_escanear_qr': lambda u, _c, _e: menu_seguridad.iniciar_escaner_qr(u),
 
     # Compatibilidad con acciones base
     'buscar_empleado': accion_buscar_empleado,
