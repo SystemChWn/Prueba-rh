@@ -1,11 +1,16 @@
 FROM python:3.12-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY *.py ./
+COPY logo_cw_superior.png logo_cw_inferior.png ./
 RUN rm -f test_*.py
 
 EXPOSE 8000

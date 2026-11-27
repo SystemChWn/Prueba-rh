@@ -24,9 +24,15 @@ def ahora_mx():
 
 def _cargar_fuente(tamano: int):
     rutas = [
+        # Debian/Ubuntu con fonts-dejavu-core (soporte completo UTF-8/acentos)
         '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
         '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/DejaVuSans.ttf',
+        # Windows
+        'C:\\Windows\\Fonts\\arialbd.ttf',
         'C:\\Windows\\Fonts\\arial.ttf',
+        'C:\\Windows\\Fonts\\segoeui.ttf',
     ]
     for ruta in rutas:
         if os.path.exists(ruta):
@@ -126,27 +132,41 @@ def _decodificar_foto(foto_base64: str | None):
         return None
 
 
-def _dibujar_logo_cw(draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
-    """Dibuja el logo estilizado CW (azul marino + punto rojo) como en la plantilla."""
-    azul = '#1E1B84'
-    rojo = '#EF4444'
-    # Arco C
-    draw.arc([x, y + 6, x + 56, y + 62], start=50, end=310, fill=azul, width=10)
-    # Punto rojo superior
-    draw.ellipse([x + 30, y - 2, x + 52, y + 20], fill=rojo)
-    # Trazo W
-    draw.line([(x + 48, y + 44), (x + 58, y + 58), (x + 68, y + 46), (x + 78, y + 58), (x + 90, y + 44)],
-              fill=azul, width=9, joint='curve')
+_DIR_MODULO = os.path.dirname(os.path.abspath(__file__))
 
 
-def _dibujar_icono_inferior(draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
-    """Icono pequeño azul/rojo de Cheong Woon en la esquina inferior derecha."""
-    azul = '#1E1B84'
-    rojo = '#EF4444'
-    draw.ellipse([x + 6, y, x + 22, y + 16], fill=azul)
-    draw.pieslice([x, y + 16, x + 28, y + 38], start=180, end=360, fill=azul)
-    draw.ellipse([x + 22, y + 10, x + 34, y + 22], fill=rojo)
-    draw.pieslice([x + 18, y + 22, x + 38, y + 38], start=180, end=360, fill=rojo)
+def _logo_superior() -> Image.Image | None:
+    """Carga el logo superior (CW grande) desde archivo PNG junto al módulo."""
+    ruta = os.path.join(_DIR_MODULO, 'logo_cw_superior.png')
+    if os.path.exists(ruta):
+        try:
+            return Image.open(ruta).convert('RGBA')
+        except Exception:
+            pass
+    return None
+
+
+def _logo_inferior() -> Image.Image | None:
+    """Carga el logo inferior (CW pequeño) desde archivo PNG junto al módulo."""
+    ruta = os.path.join(_DIR_MODULO, 'logo_cw_inferior.png')
+    if os.path.exists(ruta):
+        try:
+            return Image.open(ruta).convert('RGBA')
+        except Exception:
+            pass
+    return None
+
+
+def _pegar_logo(canvas: Image.Image, logo: Image.Image | None, x: int, y: int, ancho_max: int, alto_max: int) -> None:
+    """Escala el logo manteniendo proporciones y lo pega en (x, y) sobre canvas."""
+    if logo is None:
+        return
+    copia = logo.copy()
+    copia.thumbnail((ancho_max, alto_max), Image.LANCZOS)
+    if copia.mode == 'RGBA':
+        canvas.paste(copia, (x, y), mask=copia.split()[3])
+    else:
+        canvas.paste(copia, (x, y))
 
 
 def generar_imagen_qr_permiso(
@@ -163,7 +183,7 @@ def generar_imagen_qr_permiso(
     draw = ImageDraw.Draw(img)
 
     draw.rectangle([10, 10, ancho - 10, alto - 10], outline='#94A3B8', width=2)
-    _dibujar_logo_cw(draw, 44, 34)
+    _pegar_logo(img, _logo_superior(), 36, 28, 170, 90)
 
     f_datos = _cargar_fuente(23)
     f_nombre = _cargar_fuente(22)
@@ -217,7 +237,7 @@ def generar_imagen_qr_permiso(
         draw.text((ancho // 2, y_legal), lin, fill='#0F172A', font=f_legal, anchor='mm')
         y_legal += 24
 
-    _dibujar_icono_inferior(draw, ancho - 62, alto - 58)
+    _pegar_logo(img, _logo_inferior(), ancho - 72, alto - 68, 58, 54)
 
     buf = io.BytesIO()
     img.save(buf, format='PNG')
@@ -235,7 +255,7 @@ def generar_imagen_tarjeta_chica(
     draw = ImageDraw.Draw(img)
 
     draw.rectangle([8, 8, ancho - 8, alto - 8], outline='#94A3B8', width=2)
-    _dibujar_logo_cw(draw, 36, 30)
+    _pegar_logo(img, _logo_superior(), 30, 20, 150, 80)
 
     f_nombre = _cargar_fuente(22)
     f_datos = _cargar_fuente(22)
@@ -262,7 +282,7 @@ def generar_imagen_tarjeta_chica(
         y_txt += 30
     draw.text((36, max(y_txt + 16, 226)), f"N° Emp: {no_empleado}", fill='#1E293B', font=f_datos, anchor='lm')
 
-    _dibujar_icono_inferior(draw, ancho - 56, alto - 52)
+    _pegar_logo(img, _logo_inferior(), ancho - 66, alto - 60, 50, 46)
 
     buf = io.BytesIO()
     img.save(buf, format='PNG')
