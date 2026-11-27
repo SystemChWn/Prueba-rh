@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import sys
@@ -13,6 +14,7 @@ backend_root = os.path.join(project_root, "backend")
 module_root = project_root if os.path.exists(os.path.join(project_root, "utily.py")) else backend_root
 sys.path.insert(0, module_root)
 from utily import asegurar_columna_nombre_completo
+import seguridad_api
 
 app = Flask(__name__)
 logger = getLogger(__name__)
@@ -313,11 +315,63 @@ def webhook_whatsapp():
         "Envía 0 para volver."
       ),
     }
+    if mensaje == "4":
+      try:
+        permiso = obtener_permiso_qr_activo(estado["registro_id"])
+      except psycopg2.Error:
+        logger.exception("Error al consultar permiso QR del colaborador")
+        return enviar_respuesta(
+          remitente,
+          "No pudimos consultar tu permiso en este momento. Intenta de nuevo más tarde.\n\nEnvía 0 para volver.",
+        )
+      if not permiso:
+        return enviar_respuesta(
+          remitente,
+          "No tienes ningún permiso de Entrada/Salida autorizado o vigente en este momento.\n\nEnvía 0 para volver.",
+        )
+      _, tipo_perm, opcion_perm, folio_perm, _, nombre_emp, no_emp, foto_b64 = permiso
+      tipo_label = seguridad_api._etiqueta_tipo_permiso(tipo_perm, opcion_perm)
+      fecha_txt = seguridad_api._fecha_espanol(seguridad_api.ahora_mx())
+      png = seguridad_api.generar_imagen_qr_permiso(
+        nombre_emp, str(no_emp), tipo_label, fecha_txt, folio_perm, foto_b64
+      )
+      caption = (
+        seguridad_api.formatear_mensaje_whatsapp(tipo_perm, nombre_emp, {"opcion": opcion_perm})
+        + "\n\nEnvía 0 para volver."
+      )
+      return jsonify({
+        "status": "simulated",
+        "success": True,
+        "message": caption,
+        "image_base64": base64.b64encode(png).decode("ascii"),
+      }), 200
     if mensaje in respuestas:
       return enviar_respuesta(remitente, respuestas[mensaje])
-    return enviar_respuesta(remitente, "Opción no válida. Envía un número del 1 al 3, o 0.")
+    return enviar_respuesta(remitente, "Opción no válida. Envía un número del 1 al 4, o 0.")
 
   return bienvenida(remitente)
+
+
+def obtener_permiso_qr_activo(registro_id):
+  with conectar_db() as conn:
+    with conn.cursor() as cur:
+      cur.execute(
+        """
+        SELECT i.id, i.tipo, i.opcion, i.folio, i.qr_vence_at,
+               r.nombre_completo, i.no_empleado, r.fotografia_base64
+        FROM incidencias_empleado AS i
+        JOIN registro AS r ON r.id = i.registro_id
+        WHERE i.registro_id = %s
+          AND i.tipo IN ('entrada-salida', 'suspension')
+          AND i.folio IS NOT NULL
+          AND COALESCE(i.confirmado, FALSE) = FALSE
+          AND (i.qr_vence_at IS NULL OR i.qr_vence_at > now())
+        ORDER BY i.id DESC
+        LIMIT 1
+        """,
+        (registro_id,),
+      )
+      return cur.fetchone()
 
 
 def mensaje_menu_colaborador(estado):
@@ -327,7 +381,8 @@ def mensaje_menu_colaborador(estado):
     "Selecciona una opción:\n"
     "1. Ruta asignada\n"
     "2. Vacaciones\n"
-    "3. Aviso de privacidad\n\n"
+    "3. Aviso de privacidad\n"
+    "4. Permiso Entrada/Salida\n\n"
     "Envía 0 para volver al menú principal."
   )
 

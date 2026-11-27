@@ -1617,10 +1617,7 @@
                                     <div class="form-group" style="flex: 1;"><label for="suspension-hasta">Fecha de Fin:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
                                 <div id="suspension-regreso-aviso" class="muted" style="font-size:0.85rem; margin-bottom:14px; color:#93c5fd;"></div>
-                                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
-                                    <button class="action-btn" type="submit" data-enviar-qr="0" style="width: fit-content; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">Solo Guardar</button>
-                                    <button class="action-btn" type="submit" data-enviar-qr="1" style="width: fit-content; color: #38bdf8; font-weight: bold; font-size: 0.9rem; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">📲 Enviar QR</button>
-                                </div>
+                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
 
                             <form id="form-carta-suspension" onsubmit="guardarIncidencia(event, 'carta-suspension')" style="display:none;">
@@ -1650,10 +1647,7 @@
                                     <label for="pase-otro-motivo">Especifica el motivo:</label>
                                     <textarea id="pase-otro-motivo" class="editable-control" rows="2" style="margin-top: 6px;" placeholder="Escribe aquí el motivo o comentario..."></textarea>
                                 </div>
-                                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:12px;">
-                                    <button class="action-btn" type="submit" data-enviar-qr="0" style="width: fit-content; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">Solo Guardar</button>
-                                    <button class="action-btn" type="submit" data-enviar-qr="1" style="width: fit-content; color: #38bdf8; font-weight: bold; font-size: 0.9rem; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">📲 Enviar QR</button>
-                                </div>
+                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; margin-top: 12px; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
 
                             <form id="form-indisciplina" onsubmit="guardarIncidencia(event, 'indisciplina')" style="display:none;">
@@ -1729,7 +1723,6 @@
                                 </div>
                                 <p id="detalle-notif-folio" style="font-size:0.85rem; color:#93c5fd; margin-top:10px; display:none;"></p>
                                 <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px;">
-                                    <button id="btn-detalle-reenviar-qr" type="button" class="action-btn" style="display:none; width:fit-content; color:#38bdf8; font-weight:bold; font-size:0.9rem; border:1px solid #38bdf8; padding:8px 14px; border-radius:5px; background:transparent; cursor:pointer;">🔄 Reenviar QR</button>
                                     <button id="btn-detalle-eliminar" type="button" class="action-btn" style="width:fit-content; color:#f87171; font-weight:bold; font-size:0.9rem; border:1px solid #f87171; padding:8px 14px; border-radius:5px; background:transparent; cursor:pointer;">Eliminar</button>
                                     <button type="submit" class="action-btn" style="width:fit-content; color:#28df50; font-weight:bold; font-size:0.9rem; border:1px solid #28df50; padding:8px 16px; border-radius:5px; background:transparent; cursor:pointer;">Guardar cambios</button>
                                 </div>
@@ -3283,7 +3276,6 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
             }
 
             const folioEl = document.getElementById('detalle-notif-folio');
-            const btnReenviar = document.getElementById('btn-detalle-reenviar-qr');
             if (folioEl) {
                 if (incident.folio) {
                     folioEl.textContent = `Folio QR: ${incident.folio}${incident.confirmado ? ' (Confirmado)' : ''}`;
@@ -3292,14 +3284,8 @@ h1{text-align:center;margin-bottom:32px;}.block{margin-bottom:16px;}.sign{margin
                     folioEl.style.display = 'none';
                 }
             }
-            if (btnReenviar) {
-                if (['suspension', 'entrada-salida'].includes(incident.type)) {
-                    btnReenviar.style.display = 'inline-block';
-                    btnReenviar.onclick = () => reenviarQrIncidencia(incident.id);
-                } else {
-                    btnReenviar.style.display = 'none';
-                }
-            }
+            const btnReenviar = document.getElementById('btn-detalle-reenviar-qr');
+            if (btnReenviar) btnReenviar.style.display = 'none';
             const btnEliminar = document.getElementById('btn-detalle-eliminar');
             if (btnEliminar) {
                 btnEliminar.onclick = async () => {
