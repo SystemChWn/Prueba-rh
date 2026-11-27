@@ -403,6 +403,12 @@ async def accion_dl_reclu(update, context, estado) -> None:
                      f'reclutamiento_{dia.year}_{dia.month:02d}.xlsx')
 
 
+async def accion_dl_permisos(update, context, _estado) -> None:
+    dia = hoy(context)
+    await _descargar(update, context, '/api/exportar-permisos', {},
+                     f'lista_permisos_{dia.isoformat()}.xlsx', volver_menu='m:raiz')
+
+
 # --- Nuevas acciones del menú de Recursos Humanos -------------------------------------------
 
 async def accion_ev_cumple(update, context, estado: EstadoUsuario) -> None:
@@ -1509,6 +1515,7 @@ ACCIONES = {
     # 7. Listado General
     'dl_cw': accion_dl_empresa,
     'dl_kronos': accion_dl_empresa,
+    'dl_permisos': accion_dl_permisos,
 
     # 8. Generar Registro
     'generar_registro': accion_generar_registro,

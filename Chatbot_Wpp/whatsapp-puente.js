@@ -30,6 +30,32 @@ wppconnect
     console.log('Error al iniciar WPPConnect: ', error);
   });
 
+async function resolverDestinoWhatsApp(client, telefono) {
+  const limpio = String(telefono || '').replace(/\D/g, '');
+  if (!limpio) return null;
+  const candidatos = [];
+  if (limpio.length === 10) {
+    candidatos.push(`521${limpio}@c.us`, `52${limpio}@c.us`);
+  } else if (limpio.startsWith('521') && limpio.length === 13) {
+    candidatos.push(`${limpio}@c.us`, `52${limpio.slice(3)}@c.us`);
+  } else if (limpio.startsWith('52') && limpio.length === 12) {
+    candidatos.push(`521${limpio.slice(2)}@c.us`, `${limpio}@c.us`);
+  } else {
+    candidatos.push(`${limpio}@c.us`);
+  }
+  for (const cand of candidatos) {
+    try {
+      const st = await client.checkNumberStatus(cand);
+      if (st && st.numberExists && st.id && st.id._serialized) {
+        return st.id._serialized;
+      }
+    } catch (_) {
+      // probar siguiente formato
+    }
+  }
+  return candidatos[0];
+}
+
 function start(client) {
   console.log('¡WhatsApp conectado correctamente y listo para recibir mensajes!');
 
@@ -42,7 +68,8 @@ function start(client) {
       const items = (resp.data && resp.data.items) || [];
       for (const item of items) {
         try {
-          const destino = item.telefono.includes('@') ? item.telefono : `${item.telefono}@c.us`;
+          const destino = await resolverDestinoWhatsApp(client, item.telefono);
+          if (!destino) throw new Error('Teléfono vacío');
           if (item.imagen_base64) {
             await client.sendImageFromBase64(
               destino,
@@ -53,6 +80,7 @@ function start(client) {
           } else {
             await client.sendText(destino, item.mensaje || '');
           }
+          console.log(`Mensaje automático enviado a ${destino} (cola #${item.id})`);
           await axios.post(`http://localhost:5002/cola-whatsapp/${item.id}/resultado`, { ok: true });
         } catch (errEnvio) {
           console.error(`Error enviando mensaje cola #${item.id}:`, errEnvio.message);

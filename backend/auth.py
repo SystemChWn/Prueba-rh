@@ -115,6 +115,7 @@ PERMISOS_POR_ENDPOINT = {
     'seguridad.exportar_permisos': ADMIN,
     'seguridad.listar_seguridad': ADMIN_O_SEGURIDAD,
     'seguridad.foto_empleado_seguridad': ADMIN_O_SEGURIDAD,
+    'seguridad.tarjeta_empleado_seguridad': ADMIN_O_SEGURIDAD,
     'seguridad.validar_qr_seguridad': ADMIN_O_SEGURIDAD,
     'seguridad.confirmar_permiso_seguridad': ADMIN_O_SEGURIDAD,
     'obtener_pendientes': ADMIN_O_RECLUTAMIENTO,

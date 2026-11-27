@@ -126,6 +126,29 @@ def _decodificar_foto(foto_base64: str | None):
         return None
 
 
+def _dibujar_logo_cw(draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
+    """Dibuja el logo estilizado CW (azul marino + punto rojo) como en la plantilla."""
+    azul = '#1E1B84'
+    rojo = '#EF4444'
+    # Arco C
+    draw.arc([x, y + 6, x + 56, y + 62], start=50, end=310, fill=azul, width=10)
+    # Punto rojo superior
+    draw.ellipse([x + 30, y - 2, x + 52, y + 20], fill=rojo)
+    # Trazo W
+    draw.line([(x + 48, y + 44), (x + 58, y + 58), (x + 68, y + 46), (x + 78, y + 58), (x + 90, y + 44)],
+              fill=azul, width=9, joint='curve')
+
+
+def _dibujar_icono_inferior(draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
+    """Icono pequeño azul/rojo de Cheong Woon en la esquina inferior derecha."""
+    azul = '#1E1B84'
+    rojo = '#EF4444'
+    draw.ellipse([x + 6, y, x + 22, y + 16], fill=azul)
+    draw.pieslice([x, y + 16, x + 28, y + 38], start=180, end=360, fill=azul)
+    draw.ellipse([x + 22, y + 10, x + 34, y + 22], fill=rojo)
+    draw.pieslice([x + 18, y + 22, x + 38, y + 38], start=180, end=360, fill=rojo)
+
+
 def generar_imagen_qr_permiso(
     nombre_completo: str,
     no_empleado: str,
@@ -134,78 +157,112 @@ def generar_imagen_qr_permiso(
     folio: str,
     foto_base64: str | None = None,
 ) -> bytes:
-    """Genera tarjeta PNG con foto, nombre, N° Emp, código QR y leyenda oficial."""
-    ancho, alto = 760, 980
+    """Genera tarjeta grande PNG idéntica al diseño: logo CW, nombre/N°Emp izq, foto der, QR centro y leyenda abajo."""
+    ancho, alto = 740, 960
     img = Image.new('RGB', (ancho, alto), '#FFFFFF')
     draw = ImageDraw.Draw(img)
 
-    # Marco y cabecera azul corporativo
-    draw.rectangle([0, 0, ancho, 110], fill='#0F2C59')
-    draw.rectangle([12, 12, ancho - 12, alto - 12], outline='#CBD5E1', width=3)
+    draw.rectangle([10, 10, ancho - 10, alto - 10], outline='#94A3B8', width=2)
+    _dibujar_logo_cw(draw, 44, 34)
 
-    f_titulo = _cargar_fuente(30)
-    f_sub = _cargar_fuente(20)
-    f_nombre = _cargar_fuente(24)
-    f_datos = _cargar_fuente(21)
+    f_datos = _cargar_fuente(23)
+    f_nombre = _cargar_fuente(22)
+    f_folio = _cargar_fuente(18)
     f_legal = _cargar_fuente(18)
 
-    draw.text((ancho // 2, 38), 'CHEONG WOON MÉXICO', fill='#FFFFFF', font=f_titulo, anchor='mm')
-    draw.text((ancho // 2, 78), 'PASE DE PERMISO AUTORIZADO', fill='#E2E8F0', font=f_sub, anchor='mm')
-
-    # Foto del empleado (arriba al centro) + datos
-    y_actual = 135
+    # Foto arriba a la derecha
+    foto_x, foto_y, foto_w, foto_h = ancho - 205, 36, 155, 190
     foto_img = _decodificar_foto(foto_base64)
     if foto_img is not None:
-        lado = 160
-        foto_img.thumbnail((lado, lado))
-        fx = (ancho - foto_img.width) // 2
-        img.paste(foto_img, (fx, y_actual))
-        draw.rectangle([fx - 2, y_actual - 2, fx + foto_img.width + 2, y_actual + foto_img.height + 2], outline='#0F2C59', width=2)
-        y_actual += foto_img.height + 18
+        foto_fit = foto_img.copy()
+        foto_fit.thumbnail((foto_w - 4, foto_h - 4))
+        px = foto_x + (foto_w - foto_fit.width) // 2
+        py = foto_y + (foto_h - foto_fit.height) // 2
+        img.paste(foto_fit, (px, py))
     else:
-        draw.rectangle([(ancho - 140) // 2, y_actual, (ancho + 140) // 2, y_actual + 140], outline='#94A3B8', fill='#F1F5F9', width=2)
-        draw.text((ancho // 2, y_actual + 70), 'SIN FOTO', fill='#64748B', font=f_sub, anchor='mm')
-        y_actual += 158
+        draw.text((foto_x + foto_w // 2, foto_y + foto_h // 2), 'SIN FOTO', fill='#64748B', font=f_folio, anchor='mm')
+    draw.rectangle([foto_x, foto_y, foto_x + foto_w, foto_y + foto_h], outline='#64748B', width=2)
 
-    nombre_lin = textwrap.wrap(str(nombre_completo or '').upper(), width=38)[:2]
-    for lin in nombre_lin:
-        draw.text((ancho // 2, y_actual), lin, fill='#0F172A', font=f_nombre, anchor='mm')
-        y_actual += 30
+    # Nombre y N° Emp a la izquierda debajo del logo
+    nombre_lineas = textwrap.wrap(f"Nombre: {str(nombre_completo or '').strip()}", width=34)[:2]
+    y_txt = 128
+    for lin in nombre_lineas:
+        draw.text((44, y_txt), lin, fill='#1E293B', font=f_nombre, anchor='lm')
+        y_txt += 30
+    draw.text((44, max(y_txt + 12, 198)), f"N° Emp: {no_empleado}", fill='#1E293B', font=f_datos, anchor='lm')
 
-    draw.text((ancho // 2, y_actual + 6), f'N° Empleado: {no_empleado}', fill='#334155', font=f_datos, anchor='mm')
-    y_actual += 38
-
-    # Código QR
+    # Código QR centrado con borde morado/azul
     bc = zxingcpp.create_barcode(folio, zxingcpp.BarcodeFormat.QRCode)
     qr_arr = zxingcpp.write_barcode_to_image(bc, scale=10, add_quiet_zones=True)
     qr_pil = Image.fromarray(qr_arr).convert('RGB')
-    qr_tam = 270
+    qr_tam = 380
     qr_pil = qr_pil.resize((qr_tam, qr_tam), Image.NEAREST)
     qx = (ancho - qr_tam) // 2
-    img.paste(qr_pil, (qx, y_actual))
-    y_actual += qr_tam + 16
+    qy = 258
+    img.paste(qr_pil, (qx, qy))
+    draw.rectangle([qx - 6, qy - 6, qx + qr_tam + 6, qy + qr_tam + 6], outline='#9333EA', width=3)
 
-    draw.text((ancho // 2, y_actual), f'Folio: {folio}', fill='#0F2C59', font=f_datos, anchor='mm')
-    y_actual += 36
+    draw.text((ancho // 2, qy + qr_tam + 22), f"Folio: {folio}", fill='#334155', font=f_folio, anchor='mm')
 
-    # Línea separadora
-    draw.line([(45, y_actual), (ancho - 45, y_actual)], fill='#CBD5E1', width=2)
-    y_actual += 24
-
-    texto_1 = (
+    # Texto legal abajo
+    texto_legal = (
         f"Permiso de {tipo_permiso}, válido únicamente el {fecha_texto}, "
-        "autorizado por Recursos Humanos de Cheong Woon."
-    )
-    texto_2 = (
+        "autorizado por Recursos Humanos de Cheong Woon. "
         "Presente su gafete físico junto con este código QR al guardia en caseta "
         "para validar y registrar su permiso. Este código es intransferible y expira "
         "al usarse o al finalizar el día."
     )
-    for parrafo, color in ((texto_1, '#0F172A'), (texto_2, '#475569')):
-        for lin in textwrap.wrap(parrafo, width=58):
-            draw.text((ancho // 2, y_actual), lin, fill=color, font=f_legal, anchor='mm')
-            y_actual += 24
-        y_actual += 8
+    y_legal = qy + qr_tam + 54
+    for lin in textwrap.wrap(texto_legal, width=58):
+        draw.text((ancho // 2, y_legal), lin, fill='#0F172A', font=f_legal, anchor='mm')
+        y_legal += 24
+
+    _dibujar_icono_inferior(draw, ancho - 62, alto - 58)
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    return buf.getvalue()
+
+
+def generar_imagen_tarjeta_chica(
+    nombre_completo: str,
+    no_empleado: str,
+    foto_base64: str | None = None,
+) -> bytes:
+    """Genera tarjeta apaisada (formato chico sin QR) para mostrar en Telegram a los guardias."""
+    ancho, alto = 680, 310
+    img = Image.new('RGB', (ancho, alto), '#FFFFFF')
+    draw = ImageDraw.Draw(img)
+
+    draw.rectangle([8, 8, ancho - 8, alto - 8], outline='#94A3B8', width=2)
+    _dibujar_logo_cw(draw, 36, 30)
+
+    f_nombre = _cargar_fuente(22)
+    f_datos = _cargar_fuente(22)
+    f_sin = _cargar_fuente(16)
+
+    # Foto derecha
+    foto_x, foto_y, foto_w, foto_h = ancho - 205, 32, 150, 185
+    foto_img = _decodificar_foto(foto_base64)
+    if foto_img is not None:
+        foto_fit = foto_img.copy()
+        foto_fit.thumbnail((foto_w - 4, foto_h - 4))
+        px = foto_x + (foto_w - foto_fit.width) // 2
+        py = foto_y + (foto_h - foto_fit.height) // 2
+        img.paste(foto_fit, (px, py))
+    else:
+        draw.text((foto_x + foto_w // 2, foto_y + foto_h // 2), 'SIN FOTO', fill='#64748B', font=f_sin, anchor='mm')
+    draw.rectangle([foto_x, foto_y, foto_x + foto_w, foto_y + foto_h], outline='#64748B', width=2)
+
+    # Nombre y N° Emp izquierda abajo
+    nombre_lineas = textwrap.wrap(f"Nombre: {str(nombre_completo or '').strip()}", width=32)[:2]
+    y_txt = 152
+    for lin in nombre_lineas:
+        draw.text((36, y_txt), lin, fill='#1E293B', font=f_nombre, anchor='lm')
+        y_txt += 30
+    draw.text((36, max(y_txt + 16, 226)), f"N° Emp: {no_empleado}", fill='#1E293B', font=f_datos, anchor='lm')
+
+    _dibujar_icono_inferior(draw, ancho - 56, alto - 52)
 
     buf = io.BytesIO()
     img.save(buf, format='PNG')
@@ -465,6 +522,34 @@ def crear_blueprint(get_db_connection):
                 raw = raw.split(',', 1)[1]
             datos = base64.b64decode(raw)
             return Response(datos, mimetype='image/jpeg')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @bp.route('/api/seguridad/tarjeta/<int:registro_id>', methods=['GET'])
+    def tarjeta_empleado_seguridad(registro_id):
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT r.nombre_completo,
+                               COALESCE(ip.no_empleado, r.numero_temporal, 'S/N'),
+                               r.fotografia_base64
+                        FROM registro AS r
+                        LEFT JOIN LATERAL (
+                            SELECT no_empleado FROM ingresos_puesto
+                            WHERE registro_id = r.id
+                            ORDER BY id DESC LIMIT 1
+                        ) AS ip ON TRUE
+                        WHERE r.id = %s LIMIT 1
+                        """,
+                        (registro_id,),
+                    )
+                    row = cur.fetchone()
+            if not row:
+                return jsonify({'error': 'Empleado no encontrado.'}), 404
+            png = generar_imagen_tarjeta_chica(row[0], row[1], row[2])
+            return Response(png, mimetype='image/png')
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 

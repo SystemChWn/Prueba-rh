@@ -30,6 +30,11 @@ class SeguridadApiTests(unittest.TestCase):
         self.assertTrue(codigos, 'El QR generado debe ser legible por zxingcpp')
         self.assertEqual(codigos[0].text, folio)
 
+    def test_generar_imagen_tarjeta_chica(self):
+        png = seguridad_api.generar_imagen_tarjeta_chica('Juan Pérez López', '1045')
+        img = Image.open(io.BytesIO(png))
+        self.assertEqual(img.size, (680, 310))
+
     def test_formatos_whatsapp_contienen_campos_clave(self):
         msg_ind = seguridad_api.formatear_mensaje_whatsapp('indisciplina', 'Juan', {'motivo': 'Llegada tarde'})
         self.assertIn('acumulación de 2 reportes', msg_ind)

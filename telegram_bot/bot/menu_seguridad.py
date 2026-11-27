@@ -125,19 +125,19 @@ async def _enviar_ficha_empleado(
     botones.append([InlineKeyboardButton('🏠 Menú principal', callback_data='m:raiz')])
     teclado = InlineKeyboardMarkup(botones)
 
-    if item.get('tiene_foto') and item.get('registro_id'):
+    if item.get('registro_id'):
         try:
-            foto_resp = await backend.peticion(telegram_id, 'GET', f"/api/seguridad/foto/{item['registro_id']}")
-            if foto_resp.contenido:
+            tarjeta_resp = await backend.peticion(telegram_id, 'GET', f"/api/seguridad/tarjeta/{item['registro_id']}")
+            if tarjeta_resp.contenido:
                 await chat_message.reply_photo(
-                    photo=io.BytesIO(foto_resp.contenido),
+                    photo=io.BytesIO(tarjeta_resp.contenido),
                     caption=texto[:1024],
                     parse_mode='Markdown',
                     reply_markup=teclado,
                 )
                 return
         except Exception as exc:
-            logger.debug('No se pudo cargar la foto del empleado %s: %s', item.get('registro_id'), exc)
+            logger.debug('No se pudo cargar la tarjeta del empleado %s: %s', item.get('registro_id'), exc)
 
     await chat_message.reply_text(texto, parse_mode='Markdown', reply_markup=teclado)
 

@@ -1611,16 +1611,16 @@
 
                             <form id="form-suspension" onsubmit="guardarIncidencia(event, 'suspension')" style="display:none;">
                                 <div class="form-group"><label for="suspension-motivo">Motivo:</label><textarea id="suspension-motivo" class="editable-control" rows="3" style="margin-top: 8px;" required></textarea></div>
-                                <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+                                <div class="form-row" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 8px;">
                                     <div class="form-group" style="max-width: 90px;"><label for="suspension-dias">N° de días:</label><input id="suspension-dias" class="editable-control" type="number" min="1" max="999" readonly required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">De fecha:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
-                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">A fecha:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-desde">Fecha de Inicio:</label><input id="suspension-desde" class="editable-control" type="date" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="suspension-hasta">Fecha de Fin:</label><input id="suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
-                                <div class="form-group" style="margin: 20px 0;">
-                                    <label for="suspension-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
-                                    <input id="suspension-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
-                                </div>                            
-                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar Suspensión</button>
+                                <div id="suspension-regreso-aviso" class="muted" style="font-size:0.85rem; margin-bottom:14px; color:#93c5fd;"></div>
+                                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                                    <button class="action-btn" type="submit" data-enviar-qr="0" style="width: fit-content; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">Solo Guardar</button>
+                                    <button class="action-btn" type="submit" data-enviar-qr="1" style="width: fit-content; color: #38bdf8; font-weight: bold; font-size: 0.9rem; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">📲 Enviar QR</button>
+                                </div>
                             </form>
 
                             <form id="form-carta-suspension" onsubmit="guardarIncidencia(event, 'carta-suspension')" style="display:none;">
@@ -1630,37 +1630,36 @@
                                     <div class="form-group" style="flex: 1;"><label for="carta-suspension-desde">De fecha:</label><input id="carta-suspension-desde" class="editable-control" type="date" required></div>
                                     <div class="form-group" style="flex: 1;"><label for="carta-suspension-hasta">A fecha:</label><input id="carta-suspension-hasta" class="editable-control" type="date" required></div>
                                 </div>
-                                <div class="form-group" style="margin: 20px 0;">
-                                    <label for="carta-suspension-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
-                                    <input id="carta-suspension-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
-                                </div>
                                 <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar Carta Compromiso</button>
                             </form>
                             
                             <form id="form-entrada-salida" onsubmit="guardarIncidencia(event, 'entrada-salida')" style="display:none;">
                                 <div class="form-row" style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 5px;">
                                     <div class="form-group" style="flex: 1;"><label for="pase-tipo">Opción:</label><select id="pase-tipo" class="editable-control" required><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
-                                    <div class="form-group" style="flex: 1;"><label for="pase-hora">Hora:</label><input id="pase-hora" class="editable-control" type="time" step="60" inputmode="none" required></div>
+                                    <div class="form-group" style="flex: 1;"><label for="pase-hora">Hora (1 y media hora):</label><select id="pase-hora" class="editable-control" required></select></div>
                                 </div>
                                 <div class="form-group"><label>Motivo:</label>
-                                    <div class="motivo-options"><label><input type="checkbox" name="pase-motivo" value="Compromiso Personal">Compromiso Personal</label><label><input type="checkbox" name="pase-motivo" value="Asistencia a cita Medica">Asistencia a cita Médica</label><label><input type="checkbox" name="pase-motivo" value="Sentirse mal">Sentirse mal</label></div>
+                                    <div class="motivo-options">
+                                        <label><input type="checkbox" name="pase-motivo" value="Compromiso Personal">Compromiso Personal</label>
+                                        <label><input type="checkbox" name="pase-motivo" value="Asistencia a cita Medica">Asistencia a cita Médica</label>
+                                        <label><input type="checkbox" name="pase-motivo" value="Sentirse mal">Sentirse mal</label>
+                                        <label><input type="checkbox" id="pase-check-otro" value="Otro motivo">Otro motivo</label>
+                                    </div>
                                 </div>
-                                <div class="form-group" style="margin-top: 2px; margin-bottom: 5px;"><label for="pase-otro-motivo">Otro Motivo:</label><textarea id="pase-otro-motivo" class="editable-control" rows="2" style="margin-top: 8px;"></textarea></div>
-                                <div class="form-group" style="margin: 15px 0;">
-                                    <label for="pase-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
-                                    <input id="pase-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
-                                </div>                           
-                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
+                                <div id="pase-otro-motivo-group" class="form-group" style="display:none; margin-top: 6px; margin-bottom: 12px;">
+                                    <label for="pase-otro-motivo">Especifica el motivo:</label>
+                                    <textarea id="pase-otro-motivo" class="editable-control" rows="2" style="margin-top: 6px;" placeholder="Escribe aquí el motivo o comentario..."></textarea>
+                                </div>
+                                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:12px;">
+                                    <button class="action-btn" type="submit" data-enviar-qr="0" style="width: fit-content; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">Solo Guardar</button>
+                                    <button class="action-btn" type="submit" data-enviar-qr="1" style="width: fit-content; color: #38bdf8; font-weight: bold; font-size: 0.9rem; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer;">📲 Enviar QR</button>
+                                </div>
                             </form>
 
                             <form id="form-indisciplina" onsubmit="guardarIncidencia(event, 'indisciplina')" style="display:none;">
                                 <div class="form-group"><label for="disciplina-motivo">Motivo:</label><select id="disciplina-motivo" class="editable-control" required><option value="">Selecciona un motivo</option><option value="SALIDAS SIN PERMISO DEL AREA">Salidas sin permiso del área</option><option value="LLEGADAS TARDE AL AREA DE TRABAJO">Llegadas tarde al área de trabajo</option><option value="DEFECTOS">Defectos</option><option value="NO USO DE EQUIPO DE SEGURIDAD">No uso de equipo de seguridad</option><option value="DESOBEDECER ORDENES">Desobedecer órdenes</option><option value="JUGAR EN EL AREA">Jugar en el área</option><option value="FALTA INJUSTIFICADA">Falta injustificada</option><option value="FUMAR SIN PERMISO O EN AREAS NO PERMITIDAS">Fumar sin permiso o en áreas no permitidas</option><option value="USO DEL CELULAR DENTRO DEL AREA">Uso del celular dentro del área</option><option value="TARDAR AL REGRESAR DEL COMEDOR O DEL BAÑO">Tardar al regresar del comedor o del baño</option><option value="FALTA DE RESPETO O ACOSO A COMPAÑEROS">Falta de respeto o acoso a compañeros</option><option value="SALIR CON COMIDA A LINEAS">Salir con comida a líneas</option><option value="otro">Otro motivo</option></select></div>
                                 <div id="disciplina-otro-motivo-group" class="form-group" style="display: none;"><textarea id="disciplina-otro-motivo" class="editable-control" rows="2" placeholder="Escribe el otro motivo"></textarea></div>
-                                <div class="form-group" style="margin: 20px 0;">
-                                    <label for="indiciplina-archivo" style="display: block; width: 100%; box-sizing: border-box; background: #1e1e1e; color: #007bff; border: 1px solid #007bff; padding: 10px 15px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.3s;">📁 Adjuntar Archivo</label>
-                                    <input id="indiciplina-archivo" type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
-                                </div>                         
-                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
+                                <button class="action-btn" type="submit" style="display: block; margin-left: auto; margin-top: 15px; width: fit-content; text-decoration: none; color: #28df50; font-weight: bold; font-size: 0.9rem; border: 1px solid #28df50; padding: 8px 16px; border-radius: 5px; background: transparent; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#28df50'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='#28df50';">Guardar</button>
                             </form>
 
                             <form id="form-vacaciones" onsubmit="guardarIncidencia(event, 'vacaciones')" style="display:none;">

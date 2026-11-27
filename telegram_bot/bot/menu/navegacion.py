@@ -30,6 +30,7 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
         'formatos_dia',
         'subir_reporte_induccion',
         'listado_general',
+        'dl_permisos',
         'generar_registro',
         'team_reclu',
         'subir_papeleria',
@@ -69,6 +70,7 @@ NODOS: dict[str, Nodo] = {n.clave: n for n in (
     Nodo('listado_general', '📑 Listado General', ADMIN, hijos=('dl_cw', 'dl_kronos')),
     Nodo('dl_cw', 'Cheong Woon', ADMIN, accion='dl_cw'),
     Nodo('dl_kronos', 'Kronos', ADMIN, accion='dl_kronos'),
+    Nodo('dl_permisos', '📥 Descargar Lista de Permisos', ADMIN, accion='dl_permisos'),
 
     # 6. Generar Registro
     Nodo('generar_registro', '✍️ Generar Registro', TODOS, accion='generar_registro'),
